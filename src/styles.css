@@ -59,6 +59,15 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sky: var(--sky);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-panel-muted: var(--panel-muted);
+  --color-accent2: var(--accent2);
+  --color-danger: var(--danger);
+  --font-display: "Bebas Neue", system-ui, sans-serif;
+  --font-sans: "Barlow", system-ui, sans-serif;
+  --shadow-panel: 0 8px 24px -8px oklch(0.2 0.03 250 / 0.55);
 }
 
 :root {
@@ -95,6 +104,16 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  /* game palette */
+  --sky: oklch(0.82 0.06 225);
+  --panel: oklch(0.28 0.028 255);
+  --panel-foreground: oklch(0.97 0.01 90);
+  --panel-muted: oklch(0.75 0.02 250);
+  --accent2: oklch(0.8 0.15 80);
+  --danger: oklch(0.68 0.19 25);
+  --accent: oklch(0.8 0.15 80);
+  --accent-foreground: oklch(0.24 0.03 60);
 }
 
 .dark {
@@ -138,7 +157,16 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background-color: var(--color-sky);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .font-display {
+    font-family: var(--font-display);
   }
 }
