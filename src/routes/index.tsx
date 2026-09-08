@@ -1,24 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { GameCanvas } from "@/components/game/GameCanvas";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Rotwood Defense — Idle Zombie Tower Defense" },
+      {
+        name: "description",
+        content:
+          "Defend the last village from endless zombie waves. Upgrade four low-poly towers, grow your idle gold income, and survive as long as you can.",
+      },
+      { property: "og:title", content: "Rotwood Defense — Idle Zombie Tower Defense" },
+      {
+        property: "og:description",
+        content:
+          "A low-poly idle tower defense game for phones. Upgrade towers, farm gold, hold the line against the horde.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Rotwood" },
+      { name: "theme-color", content: "#1d2430" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+      },
+    ],
+  }),
+  component: GameCanvas,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
