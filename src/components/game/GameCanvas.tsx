@@ -1,8 +1,9 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Scene } from "./Scene";
+import { Scene, type Selection } from "./Scene";
 import { HUD } from "./HUD";
 import { game } from "@/game/engine";
+import { unlockAudio } from "@/game/audio";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -21,19 +22,24 @@ function useGameSnapshot() {
 
 export function GameCanvas() {
   const state = useGameSnapshot();
-  const [selected, setSelected] = useState<number | null>(1);
+  const [selection, setSelection] = useState<Selection>(null);
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-sky">
+    <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
       <Canvas
         shadows
         dpr={[1, 2]}
         camera={{ position: [2, 26, 30], fov: 40 }}
-        onPointerMissed={() => setSelected(null)}
+        onPointerMissed={() => setSelection(null)}
       >
-        <Scene towers={state.towers} selected={selected} onSelect={setSelected} />
+        <Scene
+          towers={state.towers}
+          selection={selection}
+          onSelectTower={(id) => setSelection({ kind: "tower", id })}
+          onSelectSpot={(index) => setSelection({ kind: "spot", index })}
+        />
       </Canvas>
-      <HUD state={state} selected={selected} onSelect={setSelected} />
+      <HUD state={state} selection={selection} onSelect={setSelection} />
     </div>
   );
 }
