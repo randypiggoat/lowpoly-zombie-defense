@@ -29,7 +29,16 @@ import {
   type TowerKind,
 } from "@/game/engine";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
-import { profile, xpForLevel, type PlayerProfile } from "@/game/profile";
+import {
+  ACHIEVEMENT_DEFS,
+  DAILY_LOGIN_REWARDS,
+  DAILY_MISSION_DEFS,
+  dateKey,
+  profile,
+  xpForLevel,
+  type AchievementProgress,
+  type PlayerProfile,
+} from "@/game/profile";
 import type { Selection } from "./Scene";
 
 function useProfileSnapshot() {
@@ -148,6 +157,56 @@ function Stat({
   );
 }
 
+function progressPercent(progress: AchievementProgress | undefined, target: number) {
+  const current = progress?.progress ?? 0;
+  return Math.min(100, (current / Math.max(1, target)) * 100);
+}
+
+function ProgressTrack({
+  progress,
+  target,
+}: {
+  progress: AchievementProgress | undefined;
+  target: number;
+}) {
+  return (
+    <div className="mt-1.5">
+      <div className="flex items-center justify-between text-[10px] text-panel-muted">
+        <span>Progress</span>
+        <span className="tabular-nums">
+          {Math.min(target, progress?.progress ?? 0)} / {target}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/30">
+        <div
+          className="h-full rounded-full bg-accent transition-[width]"
+          style={{ width: `${progressPercent(progress, target)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ClaimButton({
+  disabled,
+  onClick,
+  children,
+}: {
+  disabled: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-lg bg-accent px-3 py-2 text-[11px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
 function PathColumn({ tower, path, gold }: { tower: Tower; path: "a" | "b"; gold: number }) {
   const def = TOWER_PATHS[tower.kind][path];
   const owned = path === "a" ? tower.a : tower.b;
@@ -216,6 +275,8 @@ export function HUD({
   const towerMetaCost = tower ? towerProfileUpgradeCost(tower.kind) : Infinity;
   const towerMetaBonus = tower ? towerProfileBonus(tower.kind) : null;
   const nextTarget = nextProgressionTarget(player);
+  const today = dateKey();
+  const claimedLoginToday = player.lastLoginClaimDate === today;
 
   useEffect(() => {
     if (!levelUpNotice) return;
@@ -223,6 +284,12 @@ export function HUD({
     const timeout = window.setTimeout(() => setActiveLevel(null), 2200);
     return () => window.clearTimeout(timeout);
   }, [levelUpNotice]);
+
+  useEffect(() => {
+    profile.refreshRetentionState();
+    const interval = window.setInterval(() => profile.refreshRetentionState(), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -258,6 +325,130 @@ export function HUD({
       </div>
 
       <div className="pointer-events-auto max-h-[58vh] space-y-2 overflow-y-auto pr-1">
+        <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg tracking-wide text-panel-foreground">
+                Daily Login Reward
+              </h2>
+              <p className="text-[11px] text-panel-muted">
+                7-day cycle · missing a day does not reset your main progression
+              </p>
+            </div>
+            <ClaimButton
+              onClick={() => profile.claimDailyLoginReward()}
+              disabled={claimedLoginToday}
+            >
+              {claimedLoginToday ? "Claimed today" : `Claim Day ${player.loginCycleDay}`}
+            </ClaimButton>
+          </div>
+          <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+            {DAILY_LOGIN_REWARDS.map((reward) => {
+              const claimed = claimedLoginToday && player.lastLoginRewardDayClaimed === reward.day;
+              const active = !claimedLoginToday && player.loginCycleDay === reward.day;
+              return (
+                <div
+                  key={reward.day}
+                  className="rounded-xl border border-white/10 bg-black/25 px-2 py-2 text-center"
+                  data-active={active}
+                >
+                  <p className="font-display text-xs tracking-wide text-panel-foreground">
+                    Day {reward.day}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-panel-muted">{reward.title}</p>
+                  <p className="mt-1 text-[10px] leading-tight text-panel-foreground">
+                    {reward.reward.label}
+                  </p>
+                  <p className="mt-1 text-[10px] text-accent">
+                    {claimed ? "Claimed" : active ? "Ready" : ""}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg tracking-wide text-panel-foreground">
+                Daily Missions
+              </h2>
+              <p className="text-[11px] text-panel-muted">
+                3 missions · progress saves and resets daily
+              </p>
+            </div>
+          </div>
+          <div className="mt-2 space-y-2">
+            {DAILY_MISSION_DEFS.map((mission) => {
+              const progress = player.dailyMissionProgress[mission.id];
+              return (
+                <div key={mission.id} className="rounded-xl bg-black/25 p-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-display text-sm tracking-wide text-panel-foreground">
+                        {mission.description}
+                      </p>
+                      <p className="text-[11px] text-panel-muted">
+                        Reward · {mission.reward.label}
+                      </p>
+                    </div>
+                    <ClaimButton
+                      onClick={() => profile.claimDailyMission(mission.id)}
+                      disabled={!progress?.completed || Boolean(progress?.claimed)}
+                    >
+                      {progress?.claimed
+                        ? "Claimed"
+                        : progress?.completed
+                          ? "Claim"
+                          : "In progress"}
+                    </ClaimButton>
+                  </div>
+                  <ProgressTrack progress={progress} target={mission.target} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
+          <div>
+            <h2 className="font-display text-lg tracking-wide text-panel-foreground">
+              Achievements
+            </h2>
+            <p className="text-[11px] text-panel-muted">
+              Data-driven milestones with persistent rewards
+            </p>
+          </div>
+          <div className="mt-2 space-y-2">
+            {ACHIEVEMENT_DEFS.map((achievement) => {
+              const progress = player.achievements[achievement.id];
+              return (
+                <div key={achievement.id} className="rounded-xl bg-black/25 p-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-display text-sm tracking-wide text-panel-foreground">
+                        {achievement.title}
+                      </p>
+                      <p className="text-[11px] text-panel-muted">{achievement.description}</p>
+                      <p className="mt-1 text-[11px] text-panel-foreground">
+                        Reward · {achievement.reward.label}
+                      </p>
+                    </div>
+                    <ClaimButton
+                      onClick={() => profile.claimAchievement(achievement.id)}
+                      disabled={!progress?.completed || Boolean(progress?.claimed)}
+                    >
+                      {progress?.claimed ? "Claimed" : progress?.completed ? "Claim" : "Locked"}
+                    </ClaimButton>
+                  </div>
+                  <ProgressTrack progress={progress} target={achievement.target} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {!tower && spot === null && state.towers.length === 0 && (
           <div className="rounded-2xl bg-panel/90 p-3 text-center shadow-panel backdrop-blur">
             <p className="font-display text-lg tracking-wide text-panel-foreground">

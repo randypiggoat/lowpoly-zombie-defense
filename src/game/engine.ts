@@ -983,6 +983,7 @@ export class Game {
       aim: 0,
       recoil: 0,
     });
+    profile.recordTowerBuilt(kind);
     sfx("build");
     this.emit();
     return true;
