@@ -39,8 +39,10 @@ function blank(): PlayerProfile {
     totalKills: 0,
     gamesPlayed: 0,
     towerUpgrades: {},
+    unlockedTowers: [],
   };
 }
+
 
 /** XP required to advance from `level` to `level + 1`. */
 export function xpForLevel(level: number): number {
