@@ -217,7 +217,7 @@ function BuildPads({
                 flatShading
               />
             </mesh>
-            <group ref={active ? pulse : undefined}>
+            <group ref={active ? pulse : null}>
               <mesh rotation-x={-Math.PI / 2} position={[0, 0.2, 0]}>
                 <ringGeometry args={[1.05, 1.25, 6]} />
                 <meshBasicMaterial
