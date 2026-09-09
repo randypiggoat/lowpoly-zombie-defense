@@ -9,13 +9,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Defend the last village from endless zombie waves. Upgrade four low-poly towers, grow your idle gold income, and survive as long as you can.",
+          "Defend the last village from endless zombie waves with eight distinct low-poly towers, layered upgrades, and escalating zombie hordes.",
       },
       { property: "og:title", content: "Rotwood Defense — Idle Zombie Tower Defense" },
       {
         property: "og:description",
         content:
-          "A low-poly idle tower defense game for phones. Upgrade towers, farm gold, hold the line against the horde.",
+          "A low-poly idle tower defense game for phones. Build and upgrade eight towers, control the horde, and hold the line.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

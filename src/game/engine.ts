@@ -96,14 +96,7 @@ export type Gib = {
 };
 
 export type TowerKind =
-  | "rifleman"
-  | "shotgunner"
-  | "sniper"
-  | "tesla"
-  | "flamethrower"
-  | "freezer"
-  | "rocket"
-  | "laser";
+  "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser";
 
 export const TOWER_KINDS: TowerKind[] = [
   "rifleman",
@@ -145,6 +138,7 @@ export type Bullet = {
   chain: number;
   slow: number;
   burn: number;
+  gold: number;
   crit: boolean;
   alive: boolean;
 };
@@ -298,7 +292,10 @@ export const BULLET_SPEED: Record<TowerKind, number> = {
 };
 
 /** Which existing shot sound each tower reuses. */
-export const SHOOT_SFX: Record<TowerKind, "shootGunner" | "shootCannon" | "shootFrost" | "shootTesla"> = {
+export const SHOOT_SFX: Record<
+  TowerKind,
+  "shootGunner" | "shootCannon" | "shootFrost" | "shootTesla"
+> = {
   rifleman: "shootGunner",
   shotgunner: "shootCannon",
   sniper: "shootCannon",
@@ -321,13 +318,11 @@ export const GORE_BASE: Record<TowerKind, number> = {
   laser: 1.3,
 };
 
-
 /** Gold cost of the next level-up for this tower. */
 export function towerUpgradeCost(t: Tower) {
   if (t.level >= MAX_TOWER_LEVEL) return Infinity;
   return Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, t.level - 1));
 }
-
 
 /* ---------------- upgrade paths ---------------- */
 
@@ -353,10 +348,30 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       name: "Marksman",
       focus: "Range & precision",
       tiers: [
-        { name: "Long Barrel", desc: "+25% range, +15% damage", cost: 50, mods: { range: 1.25, dmg: 1.15 } },
-        { name: "Scope", desc: "+20% range, 20% crit chance", cost: 110, mods: { range: 1.2, crit: 0.2 } },
-        { name: "Hollow Points", desc: "+60% damage, 30% crit", cost: 240, mods: { dmg: 1.6, crit: 0.3 } },
-        { name: "Deadeye", desc: "+120% damage, wide reach", cost: 520, mods: { dmg: 2.2, range: 1.25, crit: 0.4, gore: 1.5 } },
+        {
+          name: "Long Barrel",
+          desc: "+25% range, +15% damage",
+          cost: 50,
+          mods: { range: 1.25, dmg: 1.15 },
+        },
+        {
+          name: "Scope",
+          desc: "+20% range, 20% crit chance",
+          cost: 110,
+          mods: { range: 1.2, crit: 0.2 },
+        },
+        {
+          name: "Hollow Points",
+          desc: "+60% damage, 30% crit",
+          cost: 240,
+          mods: { dmg: 1.6, crit: 0.3 },
+        },
+        {
+          name: "Deadeye",
+          desc: "+120% damage, wide reach",
+          cost: 520,
+          mods: { dmg: 2.2, range: 1.25, crit: 0.4, gore: 1.5 },
+        },
       ],
     },
     b: {
@@ -365,8 +380,18 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       tiers: [
         { name: "Quick Hands", desc: "+40% fire rate", cost: 45, mods: { rate: 1.4 } },
         { name: "Drum Mag", desc: "+45% fire rate", cost: 100, mods: { rate: 1.45 } },
-        { name: "Twin Barrels", desc: "+60% rate, +25% damage", cost: 230, mods: { rate: 1.6, dmg: 1.25 } },
-        { name: "Minigun", desc: "+120% rate, more gold per kill", cost: 500, mods: { rate: 2.2, dmg: 1.2, gold: 1.25 } },
+        {
+          name: "Twin Barrels",
+          desc: "+60% rate, +25% damage",
+          cost: 230,
+          mods: { rate: 1.6, dmg: 1.25 },
+        },
+        {
+          name: "Minigun",
+          desc: "+120% rate, more gold per kill",
+          cost: 500,
+          mods: { rate: 2.2, dmg: 1.2, gold: 1.25 },
+        },
       ],
     },
   },
@@ -376,19 +401,44 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Range & slowing shrapnel",
       tiers: [
         { name: "Long Gun", desc: "+30% range", cost: 80, mods: { range: 1.3 } },
-        { name: "Tar Shells", desc: "Shots slow zombies 35%", cost: 170, mods: { slow: 0.35, splash: 0.6 } },
-        { name: "Cluster Shot", desc: "+1.4 blast radius, +25% damage", cost: 340, mods: { splash: 1.4, dmg: 1.25 } },
-        { name: "Bombardier", desc: "+45% range, 55% slow, huge blast", cost: 720, mods: { range: 1.45, slow: 0.55, splash: 1.8, dmg: 1.3 } },
+        {
+          name: "Tar Shells",
+          desc: "Shots slow zombies 35%",
+          cost: 170,
+          mods: { slow: 0.35, splash: 0.6 },
+        },
+        {
+          name: "Cluster Shot",
+          desc: "+1.4 blast radius, +25% damage",
+          cost: 340,
+          mods: { splash: 1.4, dmg: 1.25 },
+        },
+        {
+          name: "Bombardier",
+          desc: "+45% range, 55% slow, huge blast",
+          cost: 720,
+          mods: { range: 1.45, slow: 0.55, splash: 1.8, dmg: 1.3 },
+        },
       ],
     },
     b: {
       name: "Point Blank",
       focus: "Pure close-range killing",
       tiers: [
-        { name: "Packed Powder", desc: "+70% damage, -10% range", cost: 85, mods: { dmg: 1.7, range: 0.9 } },
+        {
+          name: "Packed Powder",
+          desc: "+70% damage, -10% range",
+          cost: 85,
+          mods: { dmg: 1.7, range: 0.9 },
+        },
         { name: "Rapid Loader", desc: "+55% fire rate", cost: 180, mods: { rate: 1.55 } },
         { name: "Siege Slugs", desc: "+110% damage", cost: 360, mods: { dmg: 2.1 } },
-        { name: "Meat Grinder", desc: "+180% damage, gibs everything", cost: 760, mods: { dmg: 2.8, rate: 1.3, gore: 2.5 } },
+        {
+          name: "Meat Grinder",
+          desc: "+180% damage, gibs everything",
+          cost: 760,
+          mods: { dmg: 2.8, rate: 1.3, gore: 2.5 },
+        },
       ],
     },
   },
@@ -397,10 +447,30 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       name: "Deep Freeze",
       focus: "Crowd control",
       tiers: [
-        { name: "Chill Mist", desc: "Slow 45%, small blast", cost: 65, mods: { slow: 0.45, splash: 1 } },
-        { name: "Wide Nozzle", desc: "+30% range, bigger blast", cost: 140, mods: { range: 1.3, splash: 1 } },
-        { name: "Cryo Core", desc: "Slow 62%, +50% rate", cost: 290, mods: { slow: 0.62, rate: 1.5 } },
-        { name: "Absolute Zero", desc: "Slow 75% in a huge radius", cost: 600, mods: { slow: 0.75, splash: 1.6, range: 1.25 } },
+        {
+          name: "Chill Mist",
+          desc: "Slow 45%, small blast",
+          cost: 65,
+          mods: { slow: 0.45, splash: 1 },
+        },
+        {
+          name: "Wide Nozzle",
+          desc: "+30% range, bigger blast",
+          cost: 140,
+          mods: { range: 1.3, splash: 1 },
+        },
+        {
+          name: "Cryo Core",
+          desc: "Slow 62%, +50% rate",
+          cost: 290,
+          mods: { slow: 0.62, rate: 1.5 },
+        },
+        {
+          name: "Absolute Zero",
+          desc: "Slow 75% in a huge radius",
+          cost: 600,
+          mods: { slow: 0.75, splash: 1.6, range: 1.25 },
+        },
       ],
     },
     b: {
@@ -408,9 +478,24 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Damage on frozen flesh",
       tiers: [
         { name: "Ice Shards", desc: "+90% damage", cost: 70, mods: { dmg: 1.9 } },
-        { name: "Frostbite", desc: "+70% damage, 20% crit", cost: 150, mods: { dmg: 1.7, crit: 0.2 } },
-        { name: "Brittle Bones", desc: "+90% damage, 35% crit", cost: 310, mods: { dmg: 1.9, crit: 0.35 } },
-        { name: "Shatterstorm", desc: "+150% damage, bodies explode", cost: 640, mods: { dmg: 2.5, rate: 1.3, gore: 2.2 } },
+        {
+          name: "Frostbite",
+          desc: "+70% damage, 20% crit",
+          cost: 150,
+          mods: { dmg: 1.7, crit: 0.2 },
+        },
+        {
+          name: "Brittle Bones",
+          desc: "+90% damage, 35% crit",
+          cost: 310,
+          mods: { dmg: 1.9, crit: 0.35 },
+        },
+        {
+          name: "Shatterstorm",
+          desc: "+150% damage, bodies explode",
+          cost: 640,
+          mods: { dmg: 2.5, rate: 1.3, gore: 2.2 },
+        },
       ],
     },
   },
@@ -420,9 +505,24 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Hitting the whole horde",
       tiers: [
         { name: "Extra Arc", desc: "+1 chain target", cost: 100, mods: { chain: 1, splash: 0.4 } },
-        { name: "Conductors", desc: "+30% range, +1 chain", cost: 210, mods: { range: 1.3, chain: 1 } },
-        { name: "Storm Net", desc: "+2 chains, +25% damage", cost: 420, mods: { chain: 2, dmg: 1.25, splash: 0.6 } },
-        { name: "Tempest", desc: "+3 chains, +40% range", cost: 880, mods: { chain: 3, range: 1.4, dmg: 1.3 } },
+        {
+          name: "Conductors",
+          desc: "+30% range, +1 chain",
+          cost: 210,
+          mods: { range: 1.3, chain: 1 },
+        },
+        {
+          name: "Storm Net",
+          desc: "+2 chains, +25% damage",
+          cost: 420,
+          mods: { chain: 2, dmg: 1.25, splash: 0.6 },
+        },
+        {
+          name: "Tempest",
+          desc: "+3 chains, +40% range",
+          cost: 880,
+          mods: { chain: 3, range: 1.4, dmg: 1.3 },
+        },
       ],
     },
     b: {
@@ -431,8 +531,18 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       tiers: [
         { name: "Capacitors", desc: "+80% damage", cost: 95, mods: { dmg: 1.8 } },
         { name: "Fast Discharge", desc: "+60% fire rate", cost: 200, mods: { rate: 1.6 } },
-        { name: "Arc Furnace", desc: "+110% damage, 25% crit", cost: 400, mods: { dmg: 2.1, crit: 0.25 } },
-        { name: "Annihilator", desc: "+200% damage, vaporizes bodies", cost: 840, mods: { dmg: 3, rate: 1.25, gore: 3 } },
+        {
+          name: "Arc Furnace",
+          desc: "+110% damage, 25% crit",
+          cost: 400,
+          mods: { dmg: 2.1, crit: 0.25 },
+        },
+        {
+          name: "Annihilator",
+          desc: "+200% damage, vaporizes bodies",
+          cost: 840,
+          mods: { dmg: 3, rate: 1.25, gore: 3 },
+        },
       ],
     },
   },
@@ -442,19 +552,49 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Crowd shredding",
       tiers: [
         { name: "Wide Choke", desc: "+0.8 blast radius", cost: 60, mods: { splash: 0.8 } },
-        { name: "Buckshot", desc: "+45% damage, bigger spread", cost: 130, mods: { dmg: 1.45, splash: 0.6 } },
-        { name: "Dragon's Breath", desc: "Shots set zombies alight", cost: 280, mods: { burn: 6, splash: 0.6 } },
-        { name: "Riot Storm", desc: "+90% damage, huge spread", cost: 590, mods: { dmg: 1.9, splash: 1.4, gore: 2 } },
+        {
+          name: "Buckshot",
+          desc: "+45% damage, bigger spread",
+          cost: 130,
+          mods: { dmg: 1.45, splash: 0.6 },
+        },
+        {
+          name: "Dragon's Breath",
+          desc: "Shots set zombies alight",
+          cost: 280,
+          mods: { burn: 6, splash: 0.6 },
+        },
+        {
+          name: "Riot Storm",
+          desc: "+90% damage, huge spread",
+          cost: 590,
+          mods: { dmg: 1.9, splash: 1.4, gore: 2 },
+        },
       ],
     },
     b: {
       name: "Executioner",
       focus: "Point-blank stopping power",
       tiers: [
-        { name: "Slug Rounds", desc: "+75% damage, -15% spread", cost: 65, mods: { dmg: 1.75, splash: -0.4 } },
+        {
+          name: "Slug Rounds",
+          desc: "+75% damage, -15% spread",
+          cost: 65,
+          mods: { dmg: 1.75, splash: -0.4 },
+        },
         { name: "Pump Grip", desc: "+50% fire rate", cost: 140, mods: { rate: 1.5 } },
-        { name: "Breacher", desc: "+90% damage, 25% crit", cost: 300, mods: { dmg: 1.9, crit: 0.25 } },
-        { name: "Gore Cannon", desc: "+170% damage, gibs everything", cost: 620, mods: { dmg: 2.7, rate: 1.25, gore: 2.6 } },
+        {
+          name: "Breacher",
+          desc: "+90% damage, 25% crit",
+          cost: 300,
+          mods: { dmg: 1.9, crit: 0.25 },
+        },
+        {
+          name: "Gore Cannon",
+          desc: "+170% damage, gibs everything",
+          cost: 620,
+          mods: { dmg: 2.7, rate: 1.25, gore: 2.6 },
+        },
       ],
     },
   },
@@ -464,9 +604,24 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Reach across the map",
       tiers: [
         { name: "Bipod", desc: "+25% range", cost: 90, mods: { range: 1.25 } },
-        { name: "Rangefinder", desc: "+20% range, 25% crit", cost: 200, mods: { range: 1.2, crit: 0.25 } },
-        { name: "Match Barrel", desc: "+70% damage, +15% range", cost: 400, mods: { dmg: 1.7, range: 1.15 } },
-        { name: "God's Eye", desc: "+150% damage, 45% crit", cost: 850, mods: { dmg: 2.5, crit: 0.45, range: 1.2, gore: 1.8 } },
+        {
+          name: "Rangefinder",
+          desc: "+20% range, 25% crit",
+          cost: 200,
+          mods: { range: 1.2, crit: 0.25 },
+        },
+        {
+          name: "Match Barrel",
+          desc: "+70% damage, +15% range",
+          cost: 400,
+          mods: { dmg: 1.7, range: 1.15 },
+        },
+        {
+          name: "God's Eye",
+          desc: "+150% damage, 45% crit",
+          cost: 850,
+          mods: { dmg: 2.5, crit: 0.45, range: 1.2, gore: 1.8 },
+        },
       ],
     },
     b: {
@@ -475,8 +630,18 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       tiers: [
         { name: "Quick Bolt", desc: "+45% fire rate", cost: 95, mods: { rate: 1.45 } },
         { name: "Heavy Rounds", desc: "+80% damage", cost: 210, mods: { dmg: 1.8 } },
-        { name: "Explosive Tips", desc: "+1.6 blast radius", cost: 430, mods: { splash: 1.6, dmg: 1.2 } },
-        { name: "Brute Breaker", desc: "+200% damage, wrecks brutes", cost: 900, mods: { dmg: 3, rate: 1.2, gore: 2.4 } },
+        {
+          name: "Explosive Tips",
+          desc: "+1.6 blast radius",
+          cost: 430,
+          mods: { splash: 1.6, dmg: 1.2 },
+        },
+        {
+          name: "Brute Breaker",
+          desc: "+200% damage, wrecks brutes",
+          cost: 900,
+          mods: { dmg: 3, rate: 1.2, gore: 2.4 },
+        },
       ],
     },
   },
@@ -486,19 +651,44 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Burning damage over time",
       tiers: [
         { name: "Hot Fuel", desc: "+6 burn damage per second", cost: 70, mods: { burn: 6 } },
-        { name: "Sticky Napalm", desc: "+9 burn, bigger cone", cost: 150, mods: { burn: 9, splash: 0.5 } },
-        { name: "Firestorm", desc: "+14 burn, +30% range", cost: 320, mods: { burn: 14, range: 1.3 } },
-        { name: "Hellmouth", desc: "+26 burn, everything cooks", cost: 660, mods: { burn: 26, splash: 0.8, gore: 2.2 } },
+        {
+          name: "Sticky Napalm",
+          desc: "+9 burn, bigger cone",
+          cost: 150,
+          mods: { burn: 9, splash: 0.5 },
+        },
+        {
+          name: "Firestorm",
+          desc: "+14 burn, +30% range",
+          cost: 320,
+          mods: { burn: 14, range: 1.3 },
+        },
+        {
+          name: "Hellmouth",
+          desc: "+26 burn, everything cooks",
+          cost: 660,
+          mods: { burn: 26, splash: 0.8, gore: 2.2 },
+        },
       ],
     },
     b: {
       name: "Pressure Tank",
       focus: "Raw output on groups",
       tiers: [
-        { name: "Wide Cone", desc: "+0.7 spread, +20% range", cost: 75, mods: { splash: 0.7, range: 1.2 } },
+        {
+          name: "Wide Cone",
+          desc: "+0.7 spread, +20% range",
+          cost: 75,
+          mods: { splash: 0.7, range: 1.2 },
+        },
         { name: "High Pressure", desc: "+45% fire rate", cost: 160, mods: { rate: 1.45 } },
         { name: "Twin Nozzles", desc: "+90% damage", cost: 330, mods: { dmg: 1.9 } },
-        { name: "Purifier", desc: "+160% damage, huge cone", cost: 680, mods: { dmg: 2.6, splash: 1.2, rate: 1.2 } },
+        {
+          name: "Purifier",
+          desc: "+160% damage, huge cone",
+          cost: 680,
+          mods: { dmg: 2.6, splash: 1.2, rate: 1.2 },
+        },
       ],
     },
   },
@@ -508,9 +698,24 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Single-target annihilation",
       tiers: [
         { name: "Tight Beam", desc: "+70% damage", cost: 170, mods: { dmg: 1.7 } },
-        { name: "Prism Lens", desc: "+55% damage, 25% crit", cost: 360, mods: { dmg: 1.55, crit: 0.25 } },
-        { name: "Fusion Core", desc: "+90% damage, +20% range", cost: 700, mods: { dmg: 1.9, range: 1.2 } },
-        { name: "Deathray", desc: "+220% damage, vaporizes bodies", cost: 1400, mods: { dmg: 3.2, crit: 0.4, gore: 3 } },
+        {
+          name: "Prism Lens",
+          desc: "+55% damage, 25% crit",
+          cost: 360,
+          mods: { dmg: 1.55, crit: 0.25 },
+        },
+        {
+          name: "Fusion Core",
+          desc: "+90% damage, +20% range",
+          cost: 700,
+          mods: { dmg: 1.9, range: 1.2 },
+        },
+        {
+          name: "Deathray",
+          desc: "+220% damage, vaporizes bodies",
+          cost: 1400,
+          mods: { dmg: 3.2, crit: 0.4, gore: 3 },
+        },
       ],
     },
     b: {
@@ -518,14 +723,28 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       focus: "Cutting through crowds",
       tiers: [
         { name: "Beam Splitter", desc: "+1 chain target", cost: 165, mods: { chain: 1 } },
-        { name: "Refraction", desc: "+2 chains, +25% range", cost: 350, mods: { chain: 2, range: 1.25 } },
-        { name: "Thermal Bloom", desc: "Beams ignite for 18/s", cost: 680, mods: { burn: 18, splash: 0.6 } },
-        { name: "Starfall", desc: "+3 chains, +80% damage", cost: 1350, mods: { chain: 3, dmg: 1.8, rate: 1.2 } },
+        {
+          name: "Refraction",
+          desc: "+2 chains, +25% range",
+          cost: 350,
+          mods: { chain: 2, range: 1.25 },
+        },
+        {
+          name: "Thermal Bloom",
+          desc: "Beams ignite for 18/s",
+          cost: 680,
+          mods: { burn: 18, splash: 0.6 },
+        },
+        {
+          name: "Starfall",
+          desc: "+3 chains, +80% damage",
+          cost: 1350,
+          mods: { chain: 3, dmg: 1.8, rate: 1.2 },
+        },
       ],
     },
   },
 };
-
 
 /** Classic rule: only one path may go past tier 2. */
 export function canBuyTier(t: Tower, path: "a" | "b") {
@@ -543,7 +762,18 @@ export function tierCost(t: Tower, path: "a" | "b") {
 }
 
 function mods(t: Tower): Required<Mods> {
-  const out = { dmg: 1, rate: 1, range: 1, slow: 0, splash: 0, chain: 0, crit: 0, gold: 1, gore: 1, burn: 0 };
+  const out = {
+    dmg: 1,
+    rate: 1,
+    range: 1,
+    slow: 0,
+    splash: 0,
+    chain: 0,
+    crit: 0,
+    gold: 1,
+    gore: 1,
+    burn: 0,
+  };
   const apply = (p: "a" | "b", n: number) => {
     const tiers = TOWER_PATHS[t.kind][p].tiers;
     for (let i = 0; i < n; i++) {
@@ -630,7 +860,6 @@ export function towerUnlocked(kind: TowerKind, playerLevel: number, purchased: s
   const def = TOWER_INFO[kind];
   return def.coinUnlock === 0 || playerLevel >= def.unlockLevel || purchased.includes(kind);
 }
-
 
 export function incomeCost(level: number) {
   return Math.round(50 * Math.pow(1.8, level - 1));
@@ -756,7 +985,6 @@ export class Game {
     return true;
   }
 
-
   sell(towerId: number) {
     const s = this.state;
     const i = s.towers.findIndex((t) => t.id === towerId);
@@ -850,7 +1078,14 @@ export class Game {
   }
 
   /** Shared damage application — used by bullets, splash, chains and burning. */
-  private damage(z: Zombie, dmg: number, fromX: number, fromZ: number, goreBase: number) {
+  private damage(
+    z: Zombie,
+    dmg: number,
+    fromX: number,
+    fromZ: number,
+    goreBase: number,
+    goldMult = 1,
+  ) {
     const s = this.state;
     if (z.dead) return;
     z.hp -= dmg;
@@ -862,7 +1097,7 @@ export class Game {
     z.dead = true;
     z.fade = 0;
     s.kills += 1;
-    s.gold += Math.round(4 + Math.floor(z.maxHp / 12));
+    s.gold += Math.round((4 + Math.floor(z.maxHp / 12)) * goldMult);
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
     const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
     const force = goreBase * (0.8 + overkill * 0.6);
@@ -881,8 +1116,6 @@ export class Game {
     }
     this.emit();
   }
-
-
 
   private spawnGibs(z: Zombie, count: number, force: number) {
     const s = this.state;
@@ -1050,6 +1283,7 @@ export class Game {
             chain: towerChain(t),
             slow: towerSlow(t),
             burn: towerBurn(t),
+            gold: towerGold(t),
             crit,
             alive: true,
           });
@@ -1080,7 +1314,7 @@ export class Game {
               z.burn = Math.max(z.burn, b.burn);
               z.burnTime = Math.max(z.burnTime, 2.4);
             }
-            this.damage(z, dmg, b.x, b.z, goreBase);
+            this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
           };
           hit(target, b.damage);
           const splash = b.splash;
@@ -1107,7 +1341,6 @@ export class Game {
         b.z += (dz / d) * step;
       }
     }
-
 
     if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 2);
 
