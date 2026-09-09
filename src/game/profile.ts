@@ -1,4 +1,5 @@
 // Persistent player progression. Stored client-side in localStorage.
+import { STAGE_DEFS, getNextStageId } from "./navigation";
 
 const KEY = "rotwood.profile.v1";
 const PROFILE_VERSION = 3;
@@ -198,6 +199,14 @@ export type PlayerProfile = {
   unlockedTowers: string[];
   achievements: Record<string, AchievementProgress>;
   dailyMissionProgress: Record<string, DailyMissionProgress>;
+  stageProgress: Record<string, StageProgress>;
+};
+
+export type StageProgress = {
+  unlocked: boolean;
+  completed: boolean;
+  bestWave: number;
+  stars: number;
 };
 
 export type TowerUpgradeProfile = {
@@ -214,6 +223,12 @@ export type RunReward = {
   gems: number;
   leveledTo: number | null;
   newRecord: boolean;
+  stageId: number | null;
+  stageCompleted: boolean;
+  starsEarned: number;
+  bestStars: number;
+  previousBestWave: number;
+  previousBestStars: number;
 };
 
 export type LevelUpNotice = {
@@ -249,6 +264,21 @@ function blankDailyProgress(date: string): Record<string, DailyMissionProgress> 
   );
 }
 
+function blankStageProgress(unlocked: boolean): StageProgress {
+  return {
+    unlocked,
+    completed: false,
+    bestWave: 0,
+    stars: 0,
+  };
+}
+
+function defaultStageProgress(): Record<string, StageProgress> {
+  return Object.fromEntries(
+    STAGE_DEFS.map((stage) => [String(stage.id), blankStageProgress(stage.id === 1)]),
+  );
+}
+
 function blank(): PlayerProfile {
   const today = dateKey();
   return {
@@ -271,6 +301,7 @@ function blank(): PlayerProfile {
     unlockedTowers: [],
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
+    stageProgress: defaultStageProgress(),
   };
 }
 
@@ -331,6 +362,59 @@ function normalizeClaimProgressRecords(value: unknown): Record<string, Achieveme
       ];
     }),
   );
+}
+
+function normalizeStageProgressRecords(value: unknown): Record<string, StageProgress> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).map(([id, raw]) => {
+      const entry = isRecord(raw) ? raw : {};
+      return [
+        id,
+        {
+          unlocked: Boolean(entry.unlocked),
+          completed: Boolean(entry.completed),
+          bestWave: Math.max(0, Number(entry.bestWave) || 0),
+          stars: Math.min(3, Math.max(0, Number(entry.stars) || 0)),
+        },
+      ];
+    }),
+  );
+}
+
+function ensureStageProgressState(profile: PlayerProfile) {
+  let changed = false;
+  for (const stage of STAGE_DEFS) {
+    const key = String(stage.id);
+    const existing = profile.stageProgress[key];
+    if (!existing) {
+      profile.stageProgress[key] = blankStageProgress(stage.id === 1);
+      changed = true;
+      continue;
+    }
+    if (stage.id === 1 && !existing.unlocked) {
+      existing.unlocked = true;
+      changed = true;
+    }
+    const clampedStars = Math.min(3, Math.max(0, existing.stars));
+    if (existing.stars !== clampedStars) {
+      existing.stars = clampedStars;
+      changed = true;
+    }
+    if (existing.completed) {
+      const nextStageId = getNextStageId(stage.id);
+      if (nextStageId !== null) {
+        const nextKey = String(nextStageId);
+        const nextStage = profile.stageProgress[nextKey] ?? blankStageProgress(false);
+        if (!profile.stageProgress[nextKey]) profile.stageProgress[nextKey] = nextStage;
+        if (!nextStage.unlocked) {
+          nextStage.unlocked = true;
+          changed = true;
+        }
+      }
+    }
+  }
+  return changed;
 }
 
 function ensureDailyMissionState(profile: PlayerProfile, today: string) {
@@ -433,10 +517,26 @@ function load(): PlayerProfile {
       unlockedTowers: normalizeStringArray(parsed.unlockedTowers),
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
+      stageProgress: normalizeStageProgressRecords(parsed.stageProgress),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
     syncAchievements(merged, today);
+    ensureStageProgressState(merged);
+    const stageOne = merged.stageProgress["1"];
+    if (stageOne && merged.highestWave > stageOne.bestWave) {
+      stageOne.bestWave = merged.highestWave;
+      if (stageOne.bestWave > 0) stageOne.completed = true;
+      const legacyStars =
+        stageOne.bestWave >= 20 ? 3 : stageOne.bestWave >= 12 ? 2 : stageOne.bestWave >= 6 ? 1 : 0;
+      stageOne.stars = Math.max(stageOne.stars, legacyStars);
+    }
+    if (stageOne?.completed) {
+      const stageTwo = merged.stageProgress["2"];
+      if (stageTwo && !stageTwo.unlocked) {
+        stageTwo.unlocked = true;
+      }
+    }
     return merged;
   } catch {
     return blank();
@@ -589,14 +689,60 @@ class ProfileStore {
     return { xp, coins, ...result };
   }
 
+  private stageEntry(stageId: number): StageProgress {
+    const key = String(stageId);
+    const existing = this.profile.stageProgress[key];
+    if (existing) return existing;
+    const created = blankStageProgress(stageId === 1);
+    this.profile.stageProgress[key] = created;
+    return created;
+  }
+
   /** Called when a run ends (win or loss). Awards completion XP, coins and gems. */
-  completeRun(wave: number, kills: number): RunReward {
+  completeRun(
+    wave: number,
+    kills: number,
+    options?: {
+      stageId?: number;
+      stageCompleted?: boolean;
+      starsEarned?: number;
+      bonusCoins?: number;
+      bonusXp?: number;
+    },
+  ): RunReward {
     this.refreshRetentionState();
     const p = this.profile;
-    const xp = 20 + wave * 10 + Math.floor(kills / 2);
-    const coins = 12 + wave * 4 + Math.floor(kills / 4);
+    const stageCompleted = Boolean(options?.stageCompleted);
+    const stageId = options?.stageId ?? null;
+    const baseXp = 20 + wave * 10 + Math.floor(kills / 2);
+    const baseCoins = 12 + wave * 4 + Math.floor(kills / 4);
+    const bonusXp = stageCompleted ? Math.max(0, options?.bonusXp ?? 0) : 0;
+    const bonusCoins = stageCompleted ? Math.max(0, options?.bonusCoins ?? 0) : 0;
+    const xp = baseXp + bonusXp;
+    const coins = baseCoins + bonusCoins;
+    const rawStars = options?.starsEarned ?? 0;
+    const starsEarned = stageCompleted ? Math.min(3, Math.max(1, rawStars)) : 0;
     const newRecord = wave > p.highestWave;
     const gems = Math.floor(wave / 7) + (newRecord && wave >= 3 ? 1 : 0);
+    let previousBestWave = 0;
+    let previousBestStars = 0;
+    let bestStars = 0;
+
+    if (stageId !== null) {
+      const progress = this.stageEntry(stageId);
+      previousBestWave = progress.bestWave;
+      previousBestStars = progress.stars;
+      if (wave > progress.bestWave) progress.bestWave = wave;
+      if (stageCompleted) {
+        progress.completed = true;
+        progress.stars = Math.max(progress.stars, starsEarned);
+        const nextStageId = getNextStageId(stageId);
+        if (nextStageId !== null) {
+          this.stageEntry(nextStageId).unlocked = true;
+        }
+      }
+      bestStars = progress.stars;
+    }
 
     p.coins += coins;
     p.gems += gems;
@@ -614,6 +760,12 @@ class ProfileStore {
       gems: gems + result.levelsGained,
       leveledTo: result.leveledTo,
       newRecord,
+      stageId,
+      stageCompleted,
+      starsEarned,
+      bestStars,
+      previousBestWave,
+      previousBestStars,
     };
     this.lastReward = reward;
     this.save();
