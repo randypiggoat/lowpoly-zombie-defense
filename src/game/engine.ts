@@ -1036,11 +1036,6 @@ export class Game {
       }
     }
 
-      } else {
-        b.x += (dx / d) * step;
-        b.z += (dz / d) * step;
-      }
-    }
 
     if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 2);
 
