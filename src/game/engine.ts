@@ -967,28 +967,21 @@ export class Game {
             id: nextId++,
             x: t.x,
             z: t.z,
-            y: 1.6 + towerLevel(t) * 0.03,
+            y: 1.6 + t.level * 0.03,
             tx: best.x,
             tz: best.z,
-            speed: t.kind === "cannon" ? 14 : t.kind === "tesla" ? 30 : 20,
+            speed: BULLET_SPEED[t.kind],
             damage: towerDamage(t) * (crit ? 2.5 : 1),
             target: best.id,
             kind: t.kind,
             splash: towerSplash(t),
             chain: towerChain(t),
             slow: towerSlow(t),
+            burn: towerBurn(t),
             crit,
             alive: true,
           });
-          sfx(
-            t.kind === "gunner"
-              ? "shootGunner"
-              : t.kind === "cannon"
-                ? "shootCannon"
-                : t.kind === "frost"
-                  ? "shootFrost"
-                  : "shootTesla",
-          );
+          sfx(SHOOT_SFX[t.kind]);
         }
       }
     }
@@ -1008,38 +1001,14 @@ export class Game {
       if (d <= step || !target) {
         b.alive = false;
         if (target) {
-          const goreBase = b.kind === "cannon" ? 1.4 : b.kind === "tesla" ? 1.1 : 1;
+          const goreBase = GORE_BASE[b.kind];
           const hit = (z: Zombie, dmg: number) => {
-            z.hp -= dmg;
             if (b.slow > 0) z.slow = Math.max(z.slow, b.slow);
-            if (z.hp > 0) {
-              z.flash = 1;
-              sfx("hit");
-              return;
+            if (b.burn > 0) {
+              z.burn = Math.max(z.burn, b.burn);
+              z.burnTime = Math.max(z.burnTime, 2.4);
             }
-            if (z.dead) return;
-            z.dead = true;
-            z.fade = 0;
-            s.kills += 1;
-            s.gold += Math.round((4 + Math.floor(z.maxHp / 12)) * 1);
-            // ragdoll launch away from the impact
-            const away = Math.atan2(z.x - b.x, z.z - b.z);
-            const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
-            const force = goreBase * (0.8 + overkill * 0.6);
-            z.vx = Math.sin(away) * 2.2 * force;
-            z.vz = Math.cos(away) * 2.2 * force;
-            z.vy = 2.5 + Math.random() * 2 * force;
-            z.spin = (Math.random() - 0.5) * 9 * force;
-            const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
-            if (explode) {
-              z.gibbed = true;
-              this.spawnGibs(z, 8, Math.min(2.2, force));
-              sfx("gib");
-            } else {
-              this.spawnGibs(z, 3, 0.8);
-              sfx("death");
-            }
-            this.emit();
+            this.damage(z, dmg, b.x, b.z, goreBase);
           };
           hit(target, b.damage);
           const splash = b.splash;
@@ -1061,6 +1030,12 @@ export class Game {
             }
           }
         }
+      } else {
+        b.x += (dx / d) * step;
+        b.z += (dz / d) * step;
+      }
+    }
+
       } else {
         b.x += (dx / d) * step;
         b.z += (dz / d) * step;
