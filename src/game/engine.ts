@@ -2,6 +2,7 @@
 // No React, no three.js — just numbers the renderer reads each frame.
 
 import { sfx } from "./audio";
+import { evaluateStageObjectives, type StageDefinition, type StageEnemyKind } from "./navigation";
 import { profile } from "./profile";
 
 export type Vec2 = { x: number; z: number };
@@ -896,11 +897,14 @@ export type GameState = {
   gold: number;
   baseHp: number;
   baseMaxHp: number;
+  stageId: number;
+  stageWaveTarget: number;
   wave: number;
   waveTimer: number;
   spawnQueue: number;
   spawnTimer: number;
   kills: number;
+  towersPlaced: number;
   income: number;
   incomeLevel: number;
   zombies: Zombie[];
@@ -908,21 +912,48 @@ export type GameState = {
   gibs: Gib[];
   towers: Tower[];
   gameOver: boolean;
+  stageWon: boolean;
   flash: number;
 };
 
+type StageRunConfig = Pick<
+  StageDefinition,
+  | "id"
+  | "startingCoins"
+  | "startingBaseHealth"
+  | "waveCount"
+  | "enemyPool"
+  | "boss"
+  | "rewards"
+  | "objectives"
+>;
+
 let nextId = 1;
 
-function makeState(): GameState {
+const DEFAULT_STAGE: StageRunConfig = {
+  id: 1,
+  startingCoins: 180,
+  startingBaseHealth: 20,
+  waveCount: 6,
+  enemyPool: { normalKinds: [0, 1] },
+  boss: { enabled: false, wave: null, kind: null, count: 0 },
+  rewards: { coins: 0, xp: 0 },
+  objectives: [],
+};
+
+function makeState(stage: StageRunConfig): GameState {
   return {
-    gold: 180,
-    baseHp: 20,
-    baseMaxHp: 20,
+    gold: stage.startingCoins,
+    baseHp: stage.startingBaseHealth,
+    baseMaxHp: stage.startingBaseHealth,
+    stageId: stage.id,
+    stageWaveTarget: Math.max(1, stage.waveCount),
     wave: 0,
     waveTimer: 10,
     spawnQueue: 0,
     spawnTimer: 0,
     kills: 0,
+    towersPlaced: 0,
     income: 0,
     incomeLevel: 1,
     zombies: [],
@@ -930,12 +961,14 @@ function makeState(): GameState {
     gibs: [],
     towers: [],
     gameOver: false,
+    stageWon: false,
     flash: 0,
   };
 }
 
 export class Game {
-  state: GameState = makeState();
+  state: GameState = makeState(DEFAULT_STAGE);
+  private stage: StageRunConfig = DEFAULT_STAGE;
   private listeners = new Set<() => void>();
 
   subscribe(fn: () => void) {
@@ -947,7 +980,13 @@ export class Game {
   }
 
   reset() {
-    this.state = makeState();
+    this.state = makeState(this.stage);
+    this.emit();
+  }
+
+  startStage(stage: StageRunConfig) {
+    this.stage = stage;
+    this.state = makeState(stage);
     this.emit();
   }
 
@@ -983,6 +1022,7 @@ export class Game {
       aim: 0,
       recoil: 0,
     });
+    s.towersPlaced += 1;
     profile.recordTowerBuilt(kind);
     sfx("build");
     this.emit();
@@ -1092,8 +1132,25 @@ export class Game {
   private spawn() {
     const s = this.state;
     const w = s.wave;
+    const isBossWave = this.stage.boss.enabled && this.stage.boss.wave === w;
+    const bossKind = this.stage.boss.kind;
+    const kinds = this.stage.enemyPool.normalKinds;
     const roll = Math.random();
-    const kind: 0 | 1 | 2 = w > 3 && roll > 0.88 ? 2 : w > 1 && roll > 0.65 ? 1 : 0;
+    let kind: StageEnemyKind;
+    if (isBossWave && bossKind !== null) {
+      kind = bossKind;
+    } else if (kinds.length === 0) {
+      kind = 0;
+    } else {
+      const weighted = kinds
+        .map((entry) => {
+          if (entry === 2) return w > 3 && roll > 0.84 ? 2 : null;
+          if (entry === 1) return w > 1 && roll > 0.55 ? 1 : null;
+          return 0;
+        })
+        .find((entry): entry is StageEnemyKind => entry !== null);
+      kind = weighted ?? kinds[0]!;
+    }
     const baseHp = 16 * Math.pow(1.22, w - 1);
     const hp = kind === 2 ? baseHp * 3.2 : kind === 1 ? baseHp * 0.7 : baseHp;
     const speed = kind === 2 ? 0.85 : kind === 1 ? 2.2 : 1.3;
@@ -1210,11 +1267,13 @@ export class Game {
         s.spawnQueue -= 1;
         s.spawnTimer = Math.max(0.35, 1.1 - s.wave * 0.03);
       }
-    } else {
+    } else if (s.wave < s.stageWaveTarget) {
       s.waveTimer -= dt;
       if (s.waveTimer <= 0) {
         s.wave += 1;
-        s.spawnQueue = 4 + Math.floor(s.wave * 1.6);
+        const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+        const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+        s.spawnQueue = 4 + Math.floor(s.wave * 1.6) + bossCount;
         s.spawnTimer = 0;
         s.waveTimer = 14 + s.wave * 0.5;
         profile.recordWaveReached(s.wave);
@@ -1271,9 +1330,38 @@ export class Game {
         if (s.baseHp <= 0) {
           s.baseHp = 0;
           s.gameOver = true;
-          profile.completeRun(Math.max(1, s.wave), s.kills);
+          profile.completeRun(Math.max(1, s.wave), s.kills, {
+            stageId: this.stage.id,
+            stageCompleted: false,
+            starsEarned: 0,
+            bonusCoins: 0,
+            bonusXp: 0,
+          });
           sfx("gameOver");
         }
+        this.emit();
+      }
+    }
+
+    if (!s.gameOver && s.wave >= s.stageWaveTarget && s.spawnQueue === 0) {
+      const aliveZombies = s.zombies.some((z) => !z.dead);
+      if (!aliveZombies) {
+        s.gameOver = true;
+        s.stageWon = true;
+        const stars = evaluateStageObjectives(this.stage.objectives, {
+          stageCompleted: true,
+          baseHealth: s.baseHp,
+          baseMaxHealth: s.baseMaxHp,
+          towersPlaced: s.towersPlaced,
+        }).stars;
+        profile.completeRun(Math.max(1, s.wave), s.kills, {
+          stageId: this.stage.id,
+          stageCompleted: true,
+          starsEarned: stars,
+          bonusCoins: this.stage.rewards.coins,
+          bonusXp: this.stage.rewards.xp,
+        });
+        sfx("wave");
         this.emit();
       }
     }

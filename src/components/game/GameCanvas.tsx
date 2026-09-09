@@ -4,7 +4,13 @@ import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
 import { TOWER_INFO, TOWER_KINDS, game } from "@/game/engine";
-import { STAGE_DEFS, type PrimaryScreen } from "@/game/navigation";
+import {
+  STAGE_DEFS,
+  evaluateStageObjectives,
+  getStageById,
+  stageUnlockRequirementText,
+  type PrimaryScreen,
+} from "@/game/navigation";
 import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, profile } from "@/game/profile";
 
 function useGameSnapshot() {
@@ -75,20 +81,23 @@ export function GameCanvas() {
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
   const [muted, setMutedState] = useState(isMuted());
+  const activeStage = getStageById(activeStageId);
 
-  const stageOneStars =
-    player.highestWave >= 20 ? 3 : player.highestWave >= 12 ? 2 : player.highestWave >= 6 ? 1 : 0;
-
-  const stages = STAGE_DEFS.map((stage) =>
-    stage.id === 1
-      ? {
-          ...stage,
-          bestWave: player.highestWave,
-          completed: player.highestWave > 0,
-          stars: stageOneStars,
-        }
-      : stage,
-  );
+  const stages = STAGE_DEFS.map((stage) => {
+    const progress = player.stageProgress[String(stage.id)];
+    const isUnlocked = progress?.unlocked ?? stage.id === 1;
+    const bestWave = progress?.bestWave ?? 0;
+    const completed = progress?.completed ?? false;
+    const stars = progress?.stars ?? 0;
+    return {
+      ...stage,
+      locked: !isUnlocked,
+      requiredText: stageUnlockRequirementText(stage.unlockRequirement),
+      bestWave,
+      completed,
+      stars,
+    };
+  });
 
   const resetGameplayState = () => {
     profile.clearReward();
@@ -98,8 +107,13 @@ export function GameCanvas() {
   };
 
   const startStage = (stageId: number) => {
+    const stage = getStageById(stageId);
+    const progress = player.stageProgress[String(stage.id)];
+    const unlocked = progress?.unlocked ?? stage.id === 1;
+    if (!unlocked) return;
     resetGameplayState();
     setActiveStageId(stageId);
+    game.startStage(stage);
     setScreen("gameplay");
   };
 
@@ -160,7 +174,7 @@ export function GameCanvas() {
   }, [closeSettings, overlay, screen, state.gameOver]);
 
   const paused = screen !== "gameplay" || overlay !== null;
-  const resultLabel = state.baseHp > 0 ? "STAGE COMPLETE" : "GAME OVER";
+  const resultLabel = state.stageWon ? "STAGE COMPLETE" : "GAME OVER";
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
@@ -191,7 +205,8 @@ export function GameCanvas() {
           <div className="pointer-events-none absolute left-0 right-0 top-3 z-20 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
             <div className="ml-auto flex w-full max-w-xs items-center justify-end gap-2">
               <div className="rounded-xl bg-panel/85 px-3 py-2 text-xs font-semibold text-panel-foreground shadow-panel">
-                STAGE {activeStageId}
+                STAGE {activeStage.stageNumber} · WAVE {Math.min(state.wave, state.stageWaveTarget)}
+                /{state.stageWaveTarget}
               </div>
               <button
                 onClick={() => setOverlay("pause")}
@@ -241,6 +256,10 @@ export function GameCanvas() {
             <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
               ← BACK
             </ScreenButton>
+            <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">World 1</p>
+              <h2 className="font-display text-2xl tracking-wide">Suburbs</h2>
+            </div>
             <div className="mt-3 space-y-2">
               {stages.map((stage) => (
                 <div
@@ -249,13 +268,21 @@ export function GameCanvas() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-display text-lg tracking-wide">STAGE {stage.id}</p>
+                      <p className="font-display text-lg tracking-wide">
+                        STAGE {stage.stageNumber}
+                      </p>
                       <p className="text-sm">{stage.name}</p>
+                      <p className="mt-1 text-xs text-panel-muted">{stage.description}</p>
                     </div>
                     <p className="rounded-full bg-black/30 px-2 py-1 text-xs uppercase tracking-wider text-panel-muted">
                       {stage.difficulty}
                     </p>
                   </div>
+                  {stage.placeholder && (
+                    <p className="mt-2 rounded-lg bg-black/30 px-2 py-1 text-xs text-panel-muted">
+                      Placeholder stage content using current map.
+                    </p>
+                  )}
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-panel-muted">
                     <p>Best wave: {stage.bestWave}</p>
                     <p>Status: {stage.completed ? "Complete" : "Not completed"}</p>
@@ -269,7 +296,7 @@ export function GameCanvas() {
                     </div>
                   ) : (
                     <div className="mt-2">
-                      <ScreenButton onClick={() => startStage(stage.id)}>START STAGE</ScreenButton>
+                      <ScreenButton onClick={() => startStage(stage.id)}>PLAY</ScreenButton>
                     </div>
                   )}
                 </div>
@@ -425,16 +452,50 @@ export function GameCanvas() {
               <p className="text-right">{lastReward?.coins ?? 0}</p>
               <p>XP Earned</p>
               <p className="text-right">{lastReward?.xp ?? 0}</p>
+              <p>Stars Earned</p>
+              <p className="text-right">{"★".repeat(lastReward?.starsEarned ?? 0) || "—"}</p>
               <p>Best Wave</p>
-              <p className="text-right">{player.highestWave}</p>
+              <p className="text-right">
+                {lastReward?.previousBestWave ?? 0} →{" "}
+                {Math.max(lastReward?.previousBestWave ?? 0, state.wave)}
+              </p>
+              <p>Best Stars</p>
+              <p className="text-right">
+                {"★".repeat(lastReward?.previousBestStars ?? 0) || "—"} →{" "}
+                {"★".repeat(lastReward?.bestStars ?? 0) || "—"}
+              </p>
             </div>
             {lastReward?.newRecord && (
               <p className="mt-3 text-center font-display text-xl tracking-wide text-accent">
                 NEW RECORD!
               </p>
             )}
+            {lastReward?.stageCompleted && (
+              <div className="mt-3 space-y-1 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
+                {evaluateStageObjectives(activeStage.objectives, {
+                  stageCompleted: true,
+                  baseHealth: state.baseHp,
+                  baseMaxHealth: state.baseMaxHp,
+                  towersPlaced: state.towersPlaced,
+                }).results.map((result, index) => (
+                  <p key={result.objective.id}>
+                    {index + 1 === 1 ? "⭐" : index + 1 === 2 ? "⭐⭐" : "⭐⭐⭐"}{" "}
+                    {result.passed ? "✓" : "✕"} {result.objective.label}
+                  </p>
+                ))}
+              </div>
+            )}
             <div className="mt-4 space-y-2">
-              <ScreenButton onClick={() => startStage(activeStageId)}>PLAY AGAIN</ScreenButton>
+              {state.stageWon ? (
+                <ScreenButton onClick={leaveToStageSelect}>CONTINUE</ScreenButton>
+              ) : (
+                <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>
+              )}
+              {state.stageWon && (
+                <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">
+                  REPLAY
+                </ScreenButton>
+              )}
               <ScreenButton onClick={leaveToStageSelect} variant="secondary">
                 STAGE SELECT
               </ScreenButton>
