@@ -669,6 +669,11 @@ export class Game {
     const s = this.state;
     const pad = BUILD_SPOTS[spot];
     if (!pad || this.towerAtSpot(spot)) return false;
+    const p = profile.profile;
+    if (!towerUnlocked(kind, p.level, p.unlockedTowers)) {
+      sfx("deny");
+      return false;
+    }
     const cost = TOWER_INFO[kind].cost;
     if (s.gold < cost) {
       sfx("deny");
@@ -681,6 +686,7 @@ export class Game {
       spot,
       x: pad.x,
       z: pad.z,
+      level: 1,
       a: 0,
       b: 0,
       cooldown: 0,
@@ -691,6 +697,28 @@ export class Game {
     this.emit();
     return true;
   }
+
+  /** Straight level-up: costs gold, raises damage / rate / range. */
+  upgradeTower(towerId: number): boolean {
+    const s = this.state;
+    const t = s.towers.find((x) => x.id === towerId);
+    if (!t || t.level >= MAX_TOWER_LEVEL) {
+      sfx("deny");
+      return false;
+    }
+    const cost = towerUpgradeCost(t);
+    if (s.gold < cost) {
+      sfx("deny");
+      return false;
+    }
+    s.gold -= cost;
+    t.level += 1;
+    profile.recordTowerUpgrade(t.kind);
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
+
 
   sell(towerId: number) {
     const s = this.state;
