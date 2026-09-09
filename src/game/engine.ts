@@ -397,7 +397,96 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       ],
     },
   },
+  shotgunner: {
+    a: {
+      name: "Riot Spread",
+      focus: "Crowd shredding",
+      tiers: [
+        { name: "Wide Choke", desc: "+0.8 blast radius", cost: 60, mods: { splash: 0.8 } },
+        { name: "Buckshot", desc: "+45% damage, bigger spread", cost: 130, mods: { dmg: 1.45, splash: 0.6 } },
+        { name: "Dragon's Breath", desc: "Shots set zombies alight", cost: 280, mods: { burn: 6, splash: 0.6 } },
+        { name: "Riot Storm", desc: "+90% damage, huge spread", cost: 590, mods: { dmg: 1.9, splash: 1.4, gore: 2 } },
+      ],
+    },
+    b: {
+      name: "Executioner",
+      focus: "Point-blank stopping power",
+      tiers: [
+        { name: "Slug Rounds", desc: "+75% damage, -15% spread", cost: 65, mods: { dmg: 1.75, splash: -0.4 } },
+        { name: "Pump Grip", desc: "+50% fire rate", cost: 140, mods: { rate: 1.5 } },
+        { name: "Breacher", desc: "+90% damage, 25% crit", cost: 300, mods: { dmg: 1.9, crit: 0.25 } },
+        { name: "Gore Cannon", desc: "+170% damage, gibs everything", cost: 620, mods: { dmg: 2.7, rate: 1.25, gore: 2.6 } },
+      ],
+    },
+  },
+  sniper: {
+    a: {
+      name: "Overwatch",
+      focus: "Reach across the map",
+      tiers: [
+        { name: "Bipod", desc: "+25% range", cost: 90, mods: { range: 1.25 } },
+        { name: "Rangefinder", desc: "+20% range, 25% crit", cost: 200, mods: { range: 1.2, crit: 0.25 } },
+        { name: "Match Barrel", desc: "+70% damage, +15% range", cost: 400, mods: { dmg: 1.7, range: 1.15 } },
+        { name: "God's Eye", desc: "+150% damage, 45% crit", cost: 850, mods: { dmg: 2.5, crit: 0.45, range: 1.2, gore: 1.8 } },
+      ],
+    },
+    b: {
+      name: "Anti-Materiel",
+      focus: "Killing big targets fast",
+      tiers: [
+        { name: "Quick Bolt", desc: "+45% fire rate", cost: 95, mods: { rate: 1.45 } },
+        { name: "Heavy Rounds", desc: "+80% damage", cost: 210, mods: { dmg: 1.8 } },
+        { name: "Explosive Tips", desc: "+1.6 blast radius", cost: 430, mods: { splash: 1.6, dmg: 1.2 } },
+        { name: "Brute Breaker", desc: "+200% damage, wrecks brutes", cost: 900, mods: { dmg: 3, rate: 1.2, gore: 2.4 } },
+      ],
+    },
+  },
+  flamethrower: {
+    a: {
+      name: "Inferno",
+      focus: "Burning damage over time",
+      tiers: [
+        { name: "Hot Fuel", desc: "+6 burn damage per second", cost: 70, mods: { burn: 6 } },
+        { name: "Sticky Napalm", desc: "+9 burn, bigger cone", cost: 150, mods: { burn: 9, splash: 0.5 } },
+        { name: "Firestorm", desc: "+14 burn, +30% range", cost: 320, mods: { burn: 14, range: 1.3 } },
+        { name: "Hellmouth", desc: "+26 burn, everything cooks", cost: 660, mods: { burn: 26, splash: 0.8, gore: 2.2 } },
+      ],
+    },
+    b: {
+      name: "Pressure Tank",
+      focus: "Raw output on groups",
+      tiers: [
+        { name: "Wide Cone", desc: "+0.7 spread, +20% range", cost: 75, mods: { splash: 0.7, range: 1.2 } },
+        { name: "High Pressure", desc: "+45% fire rate", cost: 160, mods: { rate: 1.45 } },
+        { name: "Twin Nozzles", desc: "+90% damage", cost: 330, mods: { dmg: 1.9 } },
+        { name: "Purifier", desc: "+160% damage, huge cone", cost: 680, mods: { dmg: 2.6, splash: 1.2, rate: 1.2 } },
+      ],
+    },
+  },
+  laser: {
+    a: {
+      name: "Focus Array",
+      focus: "Single-target annihilation",
+      tiers: [
+        { name: "Tight Beam", desc: "+70% damage", cost: 170, mods: { dmg: 1.7 } },
+        { name: "Prism Lens", desc: "+55% damage, 25% crit", cost: 360, mods: { dmg: 1.55, crit: 0.25 } },
+        { name: "Fusion Core", desc: "+90% damage, +20% range", cost: 700, mods: { dmg: 1.9, range: 1.2 } },
+        { name: "Deathray", desc: "+220% damage, vaporizes bodies", cost: 1400, mods: { dmg: 3.2, crit: 0.4, gore: 3 } },
+      ],
+    },
+    b: {
+      name: "Scatter Optics",
+      focus: "Cutting through crowds",
+      tiers: [
+        { name: "Beam Splitter", desc: "+1 chain target", cost: 165, mods: { chain: 1 } },
+        { name: "Refraction", desc: "+2 chains, +25% range", cost: 350, mods: { chain: 2, range: 1.25 } },
+        { name: "Thermal Bloom", desc: "Beams ignite for 18/s", cost: 680, mods: { burn: 18, splash: 0.6 } },
+        { name: "Starfall", desc: "+3 chains, +80% damage", cost: 1350, mods: { chain: 3, dmg: 1.8, rate: 1.2 } },
+      ],
+    },
+  },
 };
+
 
 /** Classic rule: only one path may go past tier 2. */
 export function canBuyTier(t: Tower, path: "a" | "b") {
