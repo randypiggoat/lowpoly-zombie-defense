@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
+  MAX_PROFILE_TOWER_UPGRADE,
   MAX_TOWER_LEVEL,
   TOWER_INFO,
   TOWER_KINDS,
@@ -9,6 +10,9 @@ import {
   incomeCost,
   incomePerSecond,
   tierCost,
+  towerProfileBonus,
+  towerProfileUpgradeCost,
+  towerProfileUpgradeLevel,
   towerBurn,
   towerChain,
   towerCrit,
@@ -25,25 +29,37 @@ import {
   type TowerKind,
 } from "@/game/engine";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
-import { profile, xpForLevel } from "@/game/profile";
+import { profile, xpForLevel, type PlayerProfile } from "@/game/profile";
 import type { Selection } from "./Scene";
 
-function ProgressionBar() {
-  const p = profile.profile;
-  const need = xpForLevel(p.level);
-  const pct = Math.min(100, (p.xp / need) * 100);
+function useProfileSnapshot() {
+  useSyncExternalStore(
+    (cb) => profile.subscribe(cb),
+    () => profile.snapshot,
+    () => 0,
+  );
+  return {
+    player: profile.profile,
+    lastReward: profile.lastReward,
+    levelUpNotice: profile.levelUpNotice,
+  };
+}
+
+function ProgressionBar({ player }: { player: PlayerProfile }) {
+  const need = xpForLevel(player.level);
+  const pct = Math.min(100, (player.xp / need) * 100);
   return (
     <div className="rounded-xl bg-panel/85 px-3 py-1.5 shadow-panel backdrop-blur">
       <div className="flex items-baseline justify-between gap-3">
         <span className="font-display text-sm tracking-wide text-panel-foreground">
-          Lv {p.level}
+          Lv {player.level}
         </span>
         <span className="text-[10px] tabular-nums text-panel-muted">
-          {p.xp} / {need} XP · {need - p.xp} to next
+          {player.xp} / {need} XP · {need - player.xp} to next
         </span>
         <span className="flex gap-2 text-[11px] tabular-nums text-panel-foreground">
-          <span>🪙 {p.coins}</span>
-          <span>💎 {p.gems}</span>
+          <span>🪙 {player.coins}</span>
+          <span>💎 {player.gems}</span>
         </span>
       </div>
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/30">
@@ -57,6 +73,44 @@ function ProgressionBar() {
 }
 
 const KINDS: TowerKind[] = TOWER_KINDS;
+
+function nextProgressionTarget(player: PlayerProfile) {
+  const nextTower = KINDS.find((kind) => !towerUnlocked(kind, player.level, player.unlockedTowers));
+  if (nextTower) {
+    const info = TOWER_INFO[nextTower];
+    const xpLeft = Math.max(0, xpForLevel(player.level) - player.xp);
+    if (player.level < info.unlockLevel) {
+      return {
+        label: `${info.name} unlock`,
+        detail:
+          info.coinUnlock > 0
+            ? `Reach Lv ${info.unlockLevel} or save ${info.coinUnlock} coins · ${xpLeft} XP to next level`
+            : `Reach Lv ${info.unlockLevel} · ${xpLeft} XP to next level`,
+      };
+    }
+    return {
+      label: `${info.name} early unlock`,
+      detail: `${Math.max(0, info.coinUnlock - player.coins)} more coins needed`,
+    };
+  }
+
+  const towerToUpgrade = [...KINDS].sort((a, b) => {
+    const byLevel = towerProfileUpgradeLevel(a) - towerProfileUpgradeLevel(b);
+    return byLevel !== 0 ? byLevel : towerProfileUpgradeCost(a) - towerProfileUpgradeCost(b);
+  })[0];
+
+  if (towerToUpgrade && towerProfileUpgradeLevel(towerToUpgrade) < MAX_PROFILE_TOWER_UPGRADE) {
+    return {
+      label: `${TOWER_INFO[towerToUpgrade].name} mastery`,
+      detail: `Upgrade to Lv ${towerProfileUpgradeLevel(towerToUpgrade) + 1} for ${towerProfileUpgradeCost(towerToUpgrade)} coins`,
+    };
+  }
+
+  return {
+    label: `Player level ${player.level + 1}`,
+    detail: `${Math.max(0, xpForLevel(player.level) - player.xp)} XP to next level`,
+  };
+}
 
 function towerSpecialSummary(tower: Tower) {
   const parts: string[] = [];
@@ -151,15 +205,33 @@ export function HUD({
   onSelect: (s: Selection) => void;
 }) {
   const [muted, setMutedState] = useState(isMuted());
+  const { player, lastReward, levelUpNotice } = useProfileSnapshot();
+  const [activeLevel, setActiveLevel] = useState<number | null>(null);
   const tower =
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
   const spot = selection?.kind === "spot" ? selection.index : null;
   const incCost = incomeCost(state.incomeLevel);
-  const player = profile.profile;
   const levelCost = tower ? towerUpgradeCost(tower) : Infinity;
+  const towerMetaLevel = tower ? towerProfileUpgradeLevel(tower.kind) : 0;
+  const towerMetaCost = tower ? towerProfileUpgradeCost(tower.kind) : Infinity;
+  const towerMetaBonus = tower ? towerProfileBonus(tower.kind) : null;
+  const nextTarget = nextProgressionTarget(player);
+
+  useEffect(() => {
+    if (!levelUpNotice) return;
+    setActiveLevel(levelUpNotice.level);
+    const timeout = window.setTimeout(() => setActiveLevel(null), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [levelUpNotice]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+      {activeLevel !== null && !state.gameOver && (
+        <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-2xl bg-accent px-4 py-2 text-center shadow-panel">
+          <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
+          <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
+        </div>
+      )}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-2">
           <Stat label="Gold" value={`${Math.floor(state.gold)}`} tone="gold" />
@@ -182,7 +254,7 @@ export function HUD({
             {muted ? "🔇" : "🔊"}
           </button>
         </div>
-        <ProgressionBar />
+        <ProgressionBar player={player} />
       </div>
 
       <div className="pointer-events-auto max-h-[58vh] space-y-2 overflow-y-auto pr-1">
@@ -206,15 +278,13 @@ export function HUD({
               {KINDS.map((k) => {
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
-                const can = unlocked && state.gold >= info.cost;
+                const canBuild = unlocked && state.gold >= info.cost;
+                const unlockAffordable =
+                  !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
-                  <button
+                  <div
                     key={k}
-                    onClick={() => {
-                      if (game.build(spot, k)) onSelect(null);
-                    }}
-                    disabled={!can}
-                    className="rounded-xl border border-white/10 bg-black/25 px-2 py-3 text-left transition active:scale-[0.98] disabled:opacity-40"
+                    className="rounded-xl border border-white/10 bg-black/25 px-2 py-3 text-left"
                   >
                     <span className="mb-2 flex items-center justify-between gap-2">
                       <span className="flex items-center gap-2">
@@ -236,12 +306,38 @@ export function HUD({
                     <span className="mt-1 block text-[10px] text-panel-muted">
                       DMG {info.damage} · SPD {info.rate.toFixed(1)}/s · RNG {info.range.toFixed(1)}
                     </span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        if (game.build(spot, k)) onSelect(null);
+                      }}
+                      disabled={!canBuild}
+                      className="mt-2 w-full rounded-lg bg-accent px-2 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                    >
+                      {unlocked
+                        ? `Build · ${info.cost} gold`
+                        : `Locked until Lv ${info.unlockLevel}`}
+                    </button>
+                    {!unlocked && info.coinUnlock > 0 && (
+                      <button
+                        onClick={() => game.unlockTower(k)}
+                        disabled={!unlockAffordable}
+                        className="mt-1.5 w-full rounded-lg bg-black/30 px-2 py-2 text-[11px] font-semibold text-panel-foreground transition active:scale-[0.98] disabled:opacity-40"
+                      >
+                        Unlock early · {info.coinUnlock} coins
+                      </button>
+                    )}
+                    {unlocked && (
+                      <p className="mt-1.5 text-[10px] text-panel-muted">
+                        Workshop Lv {towerProfileUpgradeLevel(k)} · coins upgrade this tower family
+                        permanently
+                      </p>
+                    )}
+                  </div>
                 );
               })}
             </div>
             <p className="mt-2 text-[11px] text-panel-muted">
-              Locked towers unlock automatically as your profile level rises.
+              Locked towers unlock automatically as your profile level rises, or early with coins.
             </p>
           </div>
         )}
@@ -329,6 +425,31 @@ export function HUD({
             <p className="mt-1.5 text-center text-[10px] text-panel-muted">
               Flat levels boost damage, range, and fire rate. Only one path can go past tier 2.
             </p>
+            <div className="mt-2 rounded-xl bg-black/25 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-display text-sm tracking-wide text-panel-foreground">
+                    Workshop Lv {towerMetaLevel}
+                  </p>
+                  {towerMetaBonus && (
+                    <p className="text-[10px] text-panel-muted">
+                      Permanent +{Math.round((towerMetaBonus.damage - 1) * 100)}% DMG · +
+                      {Math.round((towerMetaBonus.rate - 1) * 100)}% SPD · +
+                      {Math.round((towerMetaBonus.range - 1) * 100)}% RNG
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => game.buyProfileTowerUpgrade(tower.kind)}
+                  disabled={!Number.isFinite(towerMetaCost) || player.coins < towerMetaCost}
+                  className="rounded-lg bg-accent px-3 py-2 text-[11px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                >
+                  {towerMetaLevel >= MAX_PROFILE_TOWER_UPGRADE
+                    ? "Mastery maxed"
+                    : `${towerMetaCost} coins`}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -356,20 +477,20 @@ export function HUD({
         <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 p-6 backdrop-blur">
           <h2 className="font-display text-5xl tracking-wide text-danger">Overrun</h2>
           <p className="text-sm text-panel-muted">
-            You survived {state.wave} waves and dropped {state.kills} zombies.
+            Wave reached {state.wave} · Zombies killed {state.kills}
           </p>
-          {profile.lastReward && (
+          {lastReward && (
             <div className="w-full max-w-xs rounded-2xl bg-panel/90 p-3 text-center shadow-panel">
-              {profile.lastReward.leveledTo !== null && (
+              {lastReward.leveledTo !== null && (
                 <p className="mb-2 rounded-lg bg-accent px-3 py-1.5 font-display text-lg tracking-wide text-accent-foreground">
-                  Level up! You reached level {profile.lastReward.leveledTo}
+                  Level up! You reached level {lastReward.leveledTo}
                 </p>
               )}
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  ["XP", `+${profile.lastReward.xp}`],
-                  ["Coins", `+${profile.lastReward.coins}`],
-                  ["Gems", `+${profile.lastReward.gems}`],
+                  ["XP", `+${lastReward.xp}`],
+                  ["Coins", `+${lastReward.coins}`],
+                  ["Gems", `+${lastReward.gems}`],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-lg bg-black/25 py-1.5">
                     <div className="font-display text-base text-panel-foreground">{value}</div>
@@ -380,10 +501,19 @@ export function HUD({
                 ))}
               </div>
               <p className="mt-2 text-[11px] text-panel-muted">
-                {profile.lastReward.newRecord ? "New best wave! · " : ""}
-                Best wave {profile.profile.highestWave} · {profile.profile.gamesPlayed} runs ·{" "}
-                {profile.profile.totalKills} total kills
+                {lastReward.newRecord ? "New best wave! · " : ""}
+                Best wave {player.highestWave} · {player.gamesPlayed} runs · {player.totalKills}{" "}
+                total kills
               </p>
+              <div className="mt-2 rounded-lg bg-black/25 px-3 py-2 text-left">
+                <p className="text-[10px] uppercase tracking-[0.16em] text-panel-muted">
+                  Next target
+                </p>
+                <p className="font-display text-sm tracking-wide text-panel-foreground">
+                  {nextTarget.label}
+                </p>
+                <p className="text-[11px] text-panel-muted">{nextTarget.detail}</p>
+              </div>
             </div>
           )}
 

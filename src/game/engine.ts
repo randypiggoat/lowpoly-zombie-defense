@@ -814,13 +814,13 @@ export function towerLevel(t: Tower) {
   return t.level;
 }
 export function towerDamage(t: Tower) {
-  return TOWER_INFO[t.kind].damage * mods(t).dmg * levelDmg(t);
+  return TOWER_INFO[t.kind].damage * mods(t).dmg * levelDmg(t) * towerProfileBonus(t.kind).damage;
 }
 export function towerRange(t: Tower) {
-  return TOWER_INFO[t.kind].range * mods(t).range * levelRange(t);
+  return TOWER_INFO[t.kind].range * mods(t).range * levelRange(t) * towerProfileBonus(t.kind).range;
 }
 export function towerRate(t: Tower) {
-  return TOWER_INFO[t.kind].rate * mods(t).rate * levelRate(t);
+  return TOWER_INFO[t.kind].rate * mods(t).rate * levelRate(t) * towerProfileBonus(t.kind).rate;
 }
 export function towerSlow(t: Tower) {
   return Math.max(TOWER_INFO[t.kind].slow ?? 0, mods(t).slow);
@@ -832,7 +832,11 @@ export function towerChain(t: Tower) {
   return (TOWER_INFO[t.kind].chain ?? 0) + mods(t).chain;
 }
 export function towerBurn(t: Tower) {
-  return Math.max(TOWER_INFO[t.kind].burn ?? 0, mods(t).burn) * levelDmg(t);
+  return (
+    Math.max(TOWER_INFO[t.kind].burn ?? 0, mods(t).burn) *
+    levelDmg(t) *
+    towerProfileBonus(t.kind).damage
+  );
 }
 export function towerCrit(t: Tower) {
   return mods(t).crit;
@@ -853,6 +857,26 @@ export function towerSellValue(t: Tower) {
     spent += Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, l - 1));
   }
   return Math.floor(spent * 0.6);
+}
+
+export const MAX_PROFILE_TOWER_UPGRADE = 5;
+
+export function towerProfileUpgradeLevel(kind: TowerKind) {
+  return profile.towerUpgradeLevel(kind);
+}
+
+export function towerProfileUpgradeCost(kind: TowerKind) {
+  return profile.towerUpgradeCost(TOWER_INFO[kind].upgradeBase, kind);
+}
+
+export function towerProfileBonus(kind: TowerKind) {
+  const level = towerProfileUpgradeLevel(kind);
+  return {
+    level,
+    damage: Math.pow(1.08, level),
+    rate: Math.pow(1.03, level),
+    range: 1 + level * 0.02,
+  };
 }
 
 /** Whether the player's progression allows building this tower. */
@@ -985,6 +1009,28 @@ export class Game {
     return true;
   }
 
+  buyProfileTowerUpgrade(kind: TowerKind): boolean {
+    const cost = towerProfileUpgradeCost(kind);
+    if (!Number.isFinite(cost) || !profile.buyTowerUpgrade(kind, cost)) {
+      sfx("deny");
+      return false;
+    }
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
+
+  unlockTower(kind: TowerKind): boolean {
+    const cost = TOWER_INFO[kind].coinUnlock;
+    if (cost <= 0 || !profile.unlockTower(kind, cost)) {
+      sfx("deny");
+      return false;
+    }
+    sfx("build");
+    this.emit();
+    return true;
+  }
+
   sell(towerId: number) {
     const s = this.state;
     const i = s.towers.findIndex((t) => t.id === towerId);
@@ -1098,6 +1144,7 @@ export class Game {
     z.fade = 0;
     s.kills += 1;
     s.gold += Math.round((4 + Math.floor(z.maxHp / 12)) * goldMult);
+    profile.recordZombieKill(z.kind);
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
     const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
     const force = goreBase * (0.8 + overkill * 0.6);
@@ -1169,6 +1216,7 @@ export class Game {
         s.spawnQueue = 4 + Math.floor(s.wave * 1.6);
         s.spawnTimer = 0;
         s.waveTimer = 14 + s.wave * 0.5;
+        profile.recordWaveReached(s.wave);
         sfx("wave");
         this.emit();
       }
