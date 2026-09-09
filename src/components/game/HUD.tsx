@@ -18,7 +18,34 @@ import {
   type TowerKind,
 } from "@/game/engine";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
+import { profile, xpForLevel } from "@/game/profile";
 import type { Selection } from "./Scene";
+
+function ProgressionBar() {
+  const p = profile.profile;
+  const need = xpForLevel(p.level);
+  const pct = Math.min(100, (p.xp / need) * 100);
+  return (
+    <div className="rounded-xl bg-panel/85 px-3 py-1.5 shadow-panel backdrop-blur">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-display text-sm tracking-wide text-panel-foreground">
+          Lv {p.level}
+        </span>
+        <span className="text-[10px] tabular-nums text-panel-muted">
+          {p.xp} / {need} XP · {need - p.xp} to next
+        </span>
+        <span className="flex gap-2 text-[11px] tabular-nums text-panel-foreground">
+          <span>🪙 {p.coins}</span>
+          <span>💎 {p.gems}</span>
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/30">
+        <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 
 const KINDS: TowerKind[] = ["gunner", "cannon", "frost", "tesla"];
 
@@ -108,27 +135,34 @@ export function HUD({
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
       {/* top */}
-      <div className="flex items-start justify-between gap-2">
-        <Stat label="Gold" value={`${Math.floor(state.gold)}`} tone="gold" />
-        <Stat label="Wave" value={`${state.wave || 1}`} />
-        <Stat
-          label="Base"
-          value={`${state.baseHp}/${state.baseMaxHp}`}
-          tone={state.baseHp <= 6 ? "danger" : undefined}
-        />
-        <Stat label="Kills" value={`${state.kills}`} />
-        <button
-          onClick={() => {
-            unlockAudio();
-            const v = !muted;
-            setMuted(v);
-            setMutedState(v);
-          }}
-          className="pointer-events-auto rounded-xl bg-panel/85 px-3 py-2 font-display text-sm text-panel-foreground shadow-panel backdrop-blur"
-        >
-          {muted ? "🔇" : "🔊"}
-        </button>
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <Stat label="Gold" value={`${Math.floor(state.gold)}`} tone="gold" />
+          <Stat label="Wave" value={`${state.wave || 1}`} />
+          <Stat
+            label="Base"
+            value={`${state.baseHp}/${state.baseMaxHp}`}
+            tone={state.baseHp <= 6 ? "danger" : undefined}
+          />
+          <Stat label="Kills" value={`${state.kills}`} />
+          <button
+            onClick={() => {
+              unlockAudio();
+              const v = !muted;
+              setMuted(v);
+              setMutedState(v);
+            }}
+            className="pointer-events-auto rounded-xl bg-panel/85 px-3 py-2 font-display text-sm text-panel-foreground shadow-panel backdrop-blur"
+          >
+            {muted ? "🔇" : "🔊"}
+          </button>
+        </div>
+        <ProgressionBar />
       </div>
+
+
+
+
 
       {/* bottom panel */}
       <div className="pointer-events-auto space-y-2">
@@ -271,13 +305,41 @@ export function HUD({
       </div>
 
       {state.gameOver && (
-        <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 backdrop-blur">
+        <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 p-6 backdrop-blur">
           <h2 className="font-display text-5xl tracking-wide text-danger">Overrun</h2>
           <p className="text-sm text-panel-muted">
             You survived {state.wave} waves and dropped {state.kills} zombies.
           </p>
+          {profile.lastReward && (
+            <div className="w-full max-w-xs rounded-2xl bg-panel/90 p-3 text-center shadow-panel">
+              {profile.lastReward.leveledTo !== null && (
+                <p className="mb-2 rounded-lg bg-accent px-3 py-1.5 font-display text-lg tracking-wide text-accent-foreground">
+                  Level up! You reached level {profile.lastReward.leveledTo}
+                </p>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  ["XP", `+${profile.lastReward.xp}`],
+                  ["Coins", `+${profile.lastReward.coins}`],
+                  ["Gems", `+${profile.lastReward.gems}`],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg bg-black/25 py-1.5">
+                    <div className="font-display text-base text-panel-foreground">{value}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-panel-muted">{label}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-panel-muted">
+                {profile.lastReward.newRecord ? "New best wave! · " : ""}
+                Best wave {profile.profile.highestWave} · {profile.profile.gamesPlayed} runs ·{" "}
+                {profile.profile.totalKills} total kills
+              </p>
+            </div>
+          )}
+
           <button
             onClick={() => {
+              profile.clearReward();
               game.reset();
               onSelect(null);
             }}

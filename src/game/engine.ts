@@ -2,6 +2,7 @@
 // No React, no three.js — just numbers the renderer reads each frame.
 
 import { sfx } from "./audio";
+import { profile } from "./profile";
 
 export type Vec2 = { x: number; z: number };
 
@@ -444,6 +445,7 @@ export class Game {
     s.gold -= cost;
     if (path === "a") t.a += 1;
     else t.b += 1;
+    profile.recordTowerUpgrade(t.kind);
     sfx("upgrade");
     this.emit();
   }
@@ -606,6 +608,7 @@ export class Game {
         if (s.baseHp <= 0) {
           s.baseHp = 0;
           s.gameOver = true;
+          profile.completeRun(Math.max(1, s.wave), s.kills);
           sfx("gameOver");
         }
         this.emit();
@@ -771,3 +774,6 @@ export class Game {
 }
 
 export const game = new Game();
+
+// dev aid
+if (typeof window !== "undefined") (window as any).__game = game;
