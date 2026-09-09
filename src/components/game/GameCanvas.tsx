@@ -5,10 +5,12 @@ import { Scene, type Selection } from "./Scene";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
 import { TOWER_INFO, TOWER_KINDS, game } from "@/game/engine";
 import {
+  ENDLESS_STAGE,
   STAGE_DEFS,
   evaluateStageObjectives,
   getStageById,
   stageUnlockRequirementText,
+  type RunMode,
   type PrimaryScreen,
 } from "@/game/navigation";
 import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, profile } from "@/game/profile";
@@ -80,8 +82,9 @@ export function GameCanvas() {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
+  const [activeRunMode, setActiveRunMode] = useState<RunMode>("stage");
   const [muted, setMutedState] = useState(isMuted());
-  const activeStage = getStageById(activeStageId);
+  const activeStage = activeRunMode === "endless" ? ENDLESS_STAGE : getStageById(activeStageId);
 
   const stages = STAGE_DEFS.map((stage) => {
     const progress = player.stageProgress[String(stage.id)];
@@ -113,7 +116,16 @@ export function GameCanvas() {
     if (!unlocked) return;
     resetGameplayState();
     setActiveStageId(stageId);
-    game.startStage(stage);
+    setActiveRunMode("stage");
+    game.startStage({ ...stage, mode: "stage" });
+    setScreen("gameplay");
+  };
+
+  const startEndless = () => {
+    resetGameplayState();
+    setActiveStageId(ENDLESS_STAGE.id);
+    setActiveRunMode("endless");
+    game.startStage(ENDLESS_STAGE);
     setScreen("gameplay");
   };
 
@@ -174,7 +186,12 @@ export function GameCanvas() {
   }, [closeSettings, overlay, screen, state.gameOver]);
 
   const paused = screen !== "gameplay" || overlay !== null;
-  const resultLabel = state.stageWon ? "STAGE COMPLETE" : "GAME OVER";
+  const resultLabel =
+    activeRunMode === "endless"
+      ? "ENDLESS RESULTS"
+      : state.stageWon
+        ? "STAGE COMPLETE"
+        : "GAME OVER";
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
@@ -302,6 +319,36 @@ export function GameCanvas() {
                   )}
                 </div>
               ))}
+              <div className="rounded-2xl border border-accent/45 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-display text-lg tracking-wide text-accent">∞ ENDLESS MODE</p>
+                    <p className="text-sm">No final wave. Survive for a new personal best.</p>
+                    <p className="mt-1 text-xs text-panel-muted">{ENDLESS_STAGE.description}</p>
+                  </div>
+                  <p className="rounded-full bg-accent/20 px-2 py-1 text-xs uppercase tracking-wider text-accent">
+                    Endless
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-panel-muted">
+                  <p>Best wave: {player.endlessRecords.highestWave}</p>
+                  <p>Best kills: {player.endlessRecords.highestKills}</p>
+                  <p>Best coins: {player.endlessRecords.bestCoins}</p>
+                  <p>Best XP: {player.endlessRecords.bestXp}</p>
+                </div>
+                <div className="mt-2 rounded-xl bg-black/20 px-3 py-2 text-xs text-panel-muted">
+                  <p>
+                    Rewards are reduced versus normal stages, but scale with performance for long
+                    runs.
+                  </p>
+                  <p className="mt-1">
+                    Bosses recur at shrinking intervals with stronger pressure.
+                  </p>
+                </div>
+                <div className="mt-2">
+                  <ScreenButton onClick={startEndless}>PLAY ENDLESS</ScreenButton>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -453,25 +500,53 @@ export function GameCanvas() {
               <p className="text-right">{lastReward?.coins ?? 0}</p>
               <p>XP Earned</p>
               <p className="text-right">{lastReward?.xp ?? 0}</p>
-              <p>Stars Earned</p>
-              <p className="text-right">{"★".repeat(lastReward?.starsEarned ?? 0) || "—"}</p>
-              <p>Best Wave</p>
-              <p className="text-right">
-                {lastReward?.previousBestWave ?? 0} →{" "}
-                {Math.max(lastReward?.previousBestWave ?? 0, state.wave)}
-              </p>
-              <p>Best Stars</p>
-              <p className="text-right">
-                {"★".repeat(lastReward?.previousBestStars ?? 0) || "—"} →{" "}
-                {"★".repeat(lastReward?.bestStars ?? 0) || "—"}
-              </p>
+              {activeRunMode === "endless" ? (
+                <>
+                  <p>Previous Record (Wave / Kills / Coins / XP)</p>
+                  <p className="text-right">
+                    {lastReward?.previousEndlessRecords?.highestWave ?? 0} /{" "}
+                    {lastReward?.previousEndlessRecords?.highestKills ?? 0} /{" "}
+                    {lastReward?.previousEndlessRecords?.bestCoins ?? 0} /{" "}
+                    {lastReward?.previousEndlessRecords?.bestXp ?? 0}
+                  </p>
+                  <p>Best Record Now (Wave / Kills / Coins / XP)</p>
+                  <p className="text-right">
+                    {player.endlessRecords.highestWave} / {player.endlessRecords.highestKills} /{" "}
+                    {player.endlessRecords.bestCoins} / {player.endlessRecords.bestXp}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>Stars Earned</p>
+                  <p className="text-right">{"★".repeat(lastReward?.starsEarned ?? 0) || "—"}</p>
+                  <p>Best Wave</p>
+                  <p className="text-right">
+                    {lastReward?.previousBestWave ?? 0} →{" "}
+                    {Math.max(lastReward?.previousBestWave ?? 0, state.wave)}
+                  </p>
+                  <p>Best Stars</p>
+                  <p className="text-right">
+                    {"★".repeat(lastReward?.previousBestStars ?? 0) || "—"} →{" "}
+                    {"★".repeat(lastReward?.bestStars ?? 0) || "—"}
+                  </p>
+                </>
+              )}
             </div>
             {lastReward?.newRecord && (
               <p className="mt-3 text-center font-display text-xl tracking-wide text-accent">
                 NEW RECORD!
               </p>
             )}
-            {lastReward?.stageCompleted && (
+            {activeRunMode === "endless" && lastReward?.endlessRecordDeltas && (
+              <div className="mt-3 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
+                <p className="font-semibold">Record updates</p>
+                <p>Wave: {lastReward.endlessRecordDeltas.highestWave ? "NEW" : "—"}</p>
+                <p>Kills: {lastReward.endlessRecordDeltas.highestKills ? "NEW" : "—"}</p>
+                <p>Coins: {lastReward.endlessRecordDeltas.bestCoins ? "NEW" : "—"}</p>
+                <p>XP: {lastReward.endlessRecordDeltas.bestXp ? "NEW" : "—"}</p>
+              </div>
+            )}
+            {activeRunMode !== "endless" && lastReward?.stageCompleted && (
               <div className="mt-3 space-y-1 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
                 {evaluateStageObjectives(activeStage.objectives, {
                   stageCompleted: true,
@@ -492,15 +567,21 @@ export function GameCanvas() {
               </div>
             )}
             <div className="mt-4 space-y-2">
-              {state.stageWon ? (
-                <ScreenButton onClick={leaveToStageSelect}>CONTINUE</ScreenButton>
+              {activeRunMode === "endless" ? (
+                <ScreenButton onClick={startEndless}>PLAY AGAIN</ScreenButton>
               ) : (
-                <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>
-              )}
-              {state.stageWon && (
-                <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">
-                  REPLAY
-                </ScreenButton>
+                <>
+                  {state.stageWon ? (
+                    <ScreenButton onClick={leaveToStageSelect}>CONTINUE</ScreenButton>
+                  ) : (
+                    <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>
+                  )}
+                  {state.stageWon && (
+                    <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">
+                      REPLAY
+                    </ScreenButton>
+                  )}
+                </>
               )}
               <ScreenButton onClick={leaveToStageSelect} variant="secondary">
                 STAGE SELECT
@@ -542,13 +623,23 @@ export function GameCanvas() {
         <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3">
           <ScreenCard>
             <h3 className="text-center font-display text-2xl tracking-wide text-panel-foreground">
-              Restart Stage {activeStageId}?
+              Restart {activeRunMode === "endless" ? "Endless Run" : `Stage ${activeStageId}`}?
             </h3>
             <p className="mt-2 text-center text-sm text-panel-muted">
               Current run progress will be lost.
             </p>
             <div className="mt-4 space-y-2">
-              <ScreenButton onClick={() => startStage(activeStageId)}>YES, RESTART</ScreenButton>
+              <ScreenButton
+                onClick={() => {
+                  if (activeRunMode === "endless") {
+                    startEndless();
+                    return;
+                  }
+                  startStage(activeStageId);
+                }}
+              >
+                YES, RESTART
+              </ScreenButton>
               <ScreenButton onClick={() => setOverlay("pause")} variant="secondary">
                 ← BACK
               </ScreenButton>

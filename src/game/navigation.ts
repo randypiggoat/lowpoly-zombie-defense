@@ -9,6 +9,8 @@ export type PrimaryScreen =
   | "shop"
   | "settings";
 
+export type RunMode = "stage" | "endless";
+
 export type StageDifficulty = "Easy" | "Normal" | "Hard";
 
 export type StageUnlockRequirement = { type: "none" } | { type: "complete-stage"; stageId: number };
@@ -90,6 +92,7 @@ export type StageDefinition = {
   rewards: StageRewards;
   objectives: StageObjectiveDefinition[];
   placeholder: boolean;
+  mode?: RunMode;
 };
 
 export const STAGE_DEFS: StageDefinition[] = [
@@ -329,6 +332,44 @@ export const STAGE_DEFS: StageDefinition[] = [
     placeholder: false,
   },
 ];
+
+export const ENDLESS_STAGE: StageDefinition = {
+  id: 999,
+  worldId: 0,
+  worldName: "Endless",
+  stageNumber: 0,
+  name: "Endless Mode",
+  description: "Survive as long as you can against escalating zombie waves.",
+  difficulty: "Hard",
+  unlockRequirement: { type: "none" },
+  startingCoins: 205,
+  startingBaseHealth: 20,
+  waveCount: Number.MAX_SAFE_INTEGER,
+  enemyPool: { normalKinds: [0, 1, 2], weights: { walker: 0.55, runner: 0.3, brute: 0.15 } },
+  gameplay: {
+    waveDifficultyMultiplier: 1.08,
+    waveSizeMultiplier: 1.18,
+    spawnIntervalMultiplier: 0.92,
+    waveDelayMultiplier: 0.86,
+    enemySpeedMultiplier: 1.06,
+    enemyHealthMultiplier: 1.04,
+  },
+  boss: { enabled: true, wave: null, kind: 2, count: 1 },
+  rewardMultiplier: 1,
+  specialRules: [
+    "No final wave: pressure continuously rises the longer you survive",
+    "Bosses recur at shrinking intervals with increasing counts",
+  ],
+  rewards: {
+    completionCoins: 0,
+    completionXp: 0,
+    completionStars: 0,
+    firstCompletionBonus: { coins: 0, xp: 0, stars: 0 },
+  },
+  objectives: [],
+  placeholder: false,
+  mode: "endless",
+};
 
 export function getStageById(stageId: number) {
   return STAGE_DEFS.find((stage) => stage.id === stageId) ?? STAGE_DEFS[0]!;

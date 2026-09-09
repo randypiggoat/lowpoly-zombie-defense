@@ -1,5 +1,5 @@
 // Persistent player progression. Stored client-side in localStorage.
-import { STAGE_DEFS, getNextStageId } from "./navigation";
+import { STAGE_DEFS, getNextStageId, type RunMode } from "./navigation";
 
 const KEY = "rotwood.profile.v1";
 const PROFILE_VERSION = 3;
@@ -200,6 +200,7 @@ export type PlayerProfile = {
   achievements: Record<string, AchievementProgress>;
   dailyMissionProgress: Record<string, DailyMissionProgress>;
   stageProgress: Record<string, StageProgress>;
+  endlessRecords: EndlessRecords;
 };
 
 export type StageProgress = {
@@ -215,7 +216,15 @@ export type TowerUpgradeProfile = {
   spentCoins: number;
 };
 
+export type EndlessRecords = {
+  highestWave: number;
+  highestKills: number;
+  bestCoins: number;
+  bestXp: number;
+};
+
 export type RunReward = {
+  mode: RunMode;
   wave: number;
   kills: number;
   xp: number;
@@ -230,6 +239,13 @@ export type RunReward = {
   bestStars: number;
   previousBestWave: number;
   previousBestStars: number;
+  previousEndlessRecords: EndlessRecords | null;
+  endlessRecordDeltas: {
+    highestWave: boolean;
+    highestKills: boolean;
+    bestCoins: boolean;
+    bestXp: boolean;
+  } | null;
 };
 
 export type LevelUpNotice = {
@@ -303,6 +319,7 @@ function blank(): PlayerProfile {
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
     stageProgress: defaultStageProgress(),
+    endlessRecords: { highestWave: 0, highestKills: 0, bestCoins: 0, bestXp: 0 },
   };
 }
 
@@ -335,6 +352,16 @@ function normalizeStringArray(value: unknown): string[] {
 
 function normalizeDate(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function normalizeEndlessRecords(value: unknown): EndlessRecords {
+  const record = isRecord(value) ? value : {};
+  return {
+    highestWave: Math.max(0, Number(record.highestWave) || 0),
+    highestKills: Math.max(0, Number(record.highestKills) || 0),
+    bestCoins: Math.max(0, Number(record.bestCoins) || 0),
+    bestXp: Math.max(0, Number(record.bestXp) || 0),
+  };
 }
 
 function normalizeDay(value: unknown): number {
@@ -519,6 +546,7 @@ function load(): PlayerProfile {
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
       stageProgress: normalizeStageProgressRecords(parsed.stageProgress),
+      endlessRecords: normalizeEndlessRecords(parsed.endlessRecords),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -704,6 +732,7 @@ class ProfileStore {
     wave: number,
     kills: number,
     options?: {
+      mode?: RunMode;
       stageId?: number;
       stageCompleted?: boolean;
       starsEarned?: number;
@@ -720,11 +749,13 @@ class ProfileStore {
   ): RunReward {
     this.refreshRetentionState();
     const p = this.profile;
+    const mode = options?.mode ?? "stage";
     const stageCompleted = Boolean(options?.stageCompleted);
-    const stageId = options?.stageId ?? null;
+    const stageId = mode === "stage" ? (options?.stageId ?? null) : null;
     const rewardMultiplier = Math.max(0.1, options?.rewardMultiplier ?? 1);
-    const baseXp = Math.round((20 + wave * 10 + Math.floor(kills / 2)) * rewardMultiplier);
-    const baseCoins = Math.round((12 + wave * 4 + Math.floor(kills / 4)) * rewardMultiplier);
+    const modeRewardMultiplier = mode === "endless" ? rewardMultiplier * 0.72 : rewardMultiplier;
+    const baseXp = Math.round((20 + wave * 10 + Math.floor(kills / 2)) * modeRewardMultiplier);
+    const baseCoins = Math.round((12 + wave * 4 + Math.floor(kills / 4)) * modeRewardMultiplier);
     const completionXp = stageCompleted ? Math.max(0, options?.bonusXp ?? 0) : 0;
     const completionCoins = stageCompleted ? Math.max(0, options?.bonusCoins ?? 0) : 0;
     const completionStars = stageCompleted ? Math.max(0, options?.bonusStars ?? 0) : 0;
@@ -732,7 +763,28 @@ class ProfileStore {
     let bonusCoins = completionCoins;
     let bonusStars = completionStars;
     let firstCompletionBonusApplied = false;
-    const newRecord = wave > p.highestWave;
+    const previousEndlessRecords = mode === "endless" ? { ...p.endlessRecords } : null;
+    const endlessRecordDeltas =
+      mode === "endless"
+        ? {
+            highestWave: wave > p.endlessRecords.highestWave,
+            highestKills: kills > p.endlessRecords.highestKills,
+            bestCoins: baseCoins > p.endlessRecords.bestCoins,
+            bestXp: baseXp > p.endlessRecords.bestXp,
+          }
+        : null;
+    let newRecord = wave > p.highestWave;
+    if (mode === "endless" && endlessRecordDeltas) {
+      p.endlessRecords.highestWave = Math.max(p.endlessRecords.highestWave, wave);
+      p.endlessRecords.highestKills = Math.max(p.endlessRecords.highestKills, kills);
+      p.endlessRecords.bestCoins = Math.max(p.endlessRecords.bestCoins, baseCoins);
+      p.endlessRecords.bestXp = Math.max(p.endlessRecords.bestXp, baseXp);
+      newRecord =
+        endlessRecordDeltas.highestWave ||
+        endlessRecordDeltas.highestKills ||
+        endlessRecordDeltas.bestCoins ||
+        endlessRecordDeltas.bestXp;
+    }
     const gems = Math.floor(wave / 7) + (newRecord && wave >= 3 ? 1 : 0);
     let previousBestWave = 0;
     let previousBestStars = 0;
@@ -772,6 +824,7 @@ class ProfileStore {
       this.updateDailyMission("gameCompleted", 1);
       this.syncAchievementProgress();
       const reward: RunReward = {
+        mode,
         wave,
         kills,
         xp: baseXp + bonusXp,
@@ -786,6 +839,8 @@ class ProfileStore {
         bestStars,
         previousBestWave,
         previousBestStars,
+        previousEndlessRecords,
+        endlessRecordDeltas,
       };
       this.lastReward = reward;
       this.save();
@@ -803,6 +858,7 @@ class ProfileStore {
     this.updateDailyMission("gameCompleted", 1);
     this.syncAchievementProgress();
     const reward: RunReward = {
+      mode,
       wave,
       kills,
       xp: baseXp + bonusXp,
@@ -817,6 +873,8 @@ class ProfileStore {
       bestStars,
       previousBestWave,
       previousBestStars,
+      previousEndlessRecords,
+      endlessRecordDeltas,
     };
     this.lastReward = reward;
     this.save();
