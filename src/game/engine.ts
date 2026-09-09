@@ -896,8 +896,15 @@ export class Game {
         continue;
       }
       z.wobble += dt * (4 + z.speed * 2);
+      if (z.burnTime > 0 && z.burn > 0) {
+        z.burnTime -= dt;
+        this.damage(z, z.burn * dt, z.x, z.z, 1);
+        if (z.dead) continue;
+        if (z.burnTime <= 0) z.burn = 0;
+      }
       z.dist += z.speed * dt * (1 - Math.min(0.85, z.slow));
       z.slow = 0;
+
       const p = pointAt(z.dist);
       z.x = p.x;
       z.z = p.z;
