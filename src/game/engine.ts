@@ -302,13 +302,14 @@ export type Mods = {
   crit?: number;
   gold?: number;
   gore?: number;
+  burn?: number;
 };
 
 export type Tier = { name: string; desc: string; cost: number; mods: Mods };
 export type UpgradePath = { name: string; focus: string; tiers: [Tier, Tier, Tier, Tier] };
 
 export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> = {
-  gunner: {
+  rifleman: {
     a: {
       name: "Marksman",
       focus: "Range & precision",
@@ -330,7 +331,7 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       ],
     },
   },
-  cannon: {
+  rocket: {
     a: {
       name: "Siege Artillery",
       focus: "Range & slowing shrapnel",
@@ -352,7 +353,7 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       ],
     },
   },
-  frost: {
+  freezer: {
     a: {
       name: "Deep Freeze",
       focus: "Crowd control",
