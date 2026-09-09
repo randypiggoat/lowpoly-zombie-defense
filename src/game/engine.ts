@@ -812,6 +812,41 @@ export class Game {
     });
   }
 
+  /** Shared damage application — used by bullets, splash, chains and burning. */
+  private damage(z: Zombie, dmg: number, fromX: number, fromZ: number, goreBase: number) {
+    const s = this.state;
+    if (z.dead) return;
+    z.hp -= dmg;
+    if (z.hp > 0) {
+      z.flash = 1;
+      if (dmg >= 0.5) sfx("hit");
+      return;
+    }
+    z.dead = true;
+    z.fade = 0;
+    s.kills += 1;
+    s.gold += Math.round(4 + Math.floor(z.maxHp / 12));
+    const away = Math.atan2(z.x - fromX, z.z - fromZ);
+    const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
+    const force = goreBase * (0.8 + overkill * 0.6);
+    z.vx = Math.sin(away) * 2.2 * force;
+    z.vz = Math.cos(away) * 2.2 * force;
+    z.vy = 2.5 + Math.random() * 2 * force;
+    z.spin = (Math.random() - 0.5) * 9 * force;
+    const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
+    if (explode) {
+      z.gibbed = true;
+      this.spawnGibs(z, 8, Math.min(2.2, force));
+      sfx("gib");
+    } else {
+      this.spawnGibs(z, 3, 0.8);
+      sfx("death");
+    }
+    this.emit();
+  }
+
+
+
   private spawnGibs(z: Zombie, count: number, force: number) {
     const s = this.state;
     if (s.gibs.length > 160) return;
