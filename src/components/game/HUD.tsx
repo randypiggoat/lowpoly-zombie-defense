@@ -28,7 +28,6 @@ import {
   type Tower,
   type TowerKind,
 } from "@/game/engine";
-import { isMuted, setMuted, unlockAudio } from "@/game/audio";
 import {
   ACHIEVEMENT_DEFS,
   DAILY_LOGIN_REWARDS,
@@ -52,33 +51,6 @@ function useProfileSnapshot() {
     lastReward: profile.lastReward,
     levelUpNotice: profile.levelUpNotice,
   };
-}
-
-function ProgressionBar({ player }: { player: PlayerProfile }) {
-  const need = xpForLevel(player.level);
-  const pct = Math.min(100, (player.xp / need) * 100);
-  return (
-    <div className="rounded-xl bg-panel/85 px-3 py-1.5 shadow-panel backdrop-blur">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="font-display text-sm tracking-wide text-panel-foreground">
-          Lv {player.level}
-        </span>
-        <span className="text-[10px] tabular-nums text-panel-muted">
-          {player.xp} / {need} XP · {need - player.xp} to next
-        </span>
-        <span className="flex gap-2 text-[11px] tabular-nums text-panel-foreground">
-          <span>🪙 {player.coins}</span>
-          <span>💎 {player.gems}</span>
-        </span>
-      </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/30">
-        <div
-          className="h-full rounded-full bg-accent transition-[width]"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
 }
 
 const KINDS: TowerKind[] = TOWER_KINDS;
@@ -145,14 +117,14 @@ function Stat({
   tone?: "gold" | "danger" | undefined;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-xl bg-panel/85 px-3 py-1.5 shadow-panel backdrop-blur">
+    <div className="flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
       <span
-        className="font-display text-lg leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
+        className="font-display text-base leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
         data-tone={tone}
       >
         {value}
       </span>
-      <span className="text-[10px] uppercase tracking-[0.16em] text-panel-muted">{label}</span>
+      <span className="text-[9px] uppercase tracking-[0.16em] text-panel-muted">{label}</span>
     </div>
   );
 }
@@ -258,16 +230,17 @@ export function HUD({
   state,
   selection,
   onSelect,
+  onPause,
   showMetaSections = true,
   showGameOverOverlay = true,
 }: {
   state: GameState;
   selection: Selection;
   onSelect: (s: Selection) => void;
+  onPause?: () => void;
   showMetaSections?: boolean;
   showGameOverOverlay?: boolean;
 }) {
-  const [muted, setMutedState] = useState(isMuted());
   const { player, lastReward, levelUpNotice } = useProfileSnapshot();
   const [activeLevel, setActiveLevel] = useState<number | null>(null);
   const tower =
@@ -281,6 +254,7 @@ export function HUD({
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
+  const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
 
   useEffect(() => {
     if (!levelUpNotice) return;
@@ -296,39 +270,36 @@ export function HUD({
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
       {activeLevel !== null && !state.gameOver && (
         <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-2xl bg-accent px-4 py-2 text-center shadow-panel">
           <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
           <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
         </div>
       )}
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <Stat label="Gold" value={`${Math.floor(state.gold)}`} tone="gold" />
+      <div className="space-y-1.5">
+        <div className="flex items-start gap-1.5">
+          <Stat label="Coins" value={`${Math.floor(state.gold)}`} tone="gold" />
           <Stat label="Wave" value={`${state.wave || 1}`} />
           <Stat
             label="Base"
             value={`${state.baseHp}/${state.baseMaxHp}`}
             tone={state.baseHp <= 6 ? "danger" : undefined}
           />
-          <Stat label="Kills" value={`${state.kills}`} />
           <button
-            onClick={() => {
-              unlockAudio();
-              const v = !muted;
-              setMuted(v);
-              setMutedState(v);
-            }}
-            className="pointer-events-auto rounded-xl bg-panel/85 px-3 py-2 font-display text-sm text-panel-foreground shadow-panel backdrop-blur"
+            onClick={() => onPause?.()}
+            className="pointer-events-auto ml-auto min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur"
           >
-            {muted ? "🔇" : "🔊"}
+            Pause
           </button>
         </div>
-        <ProgressionBar player={player} />
+        <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
+          <span>Lv {player.level}</span>
+          <span>Enemies {enemiesRemaining}</span>
+        </div>
       </div>
 
-      <div className="pointer-events-auto max-h-[58vh] space-y-2 overflow-y-auto pr-1">
+      <div className="pointer-events-auto max-h-[52vh] space-y-1.5 overflow-y-auto pr-1">
         {showMetaSections && (
           <>
             <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
@@ -459,12 +430,9 @@ export function HUD({
         )}
 
         {!tower && spot === null && state.towers.length === 0 && (
-          <div className="rounded-2xl bg-panel/90 p-3 text-center shadow-panel backdrop-blur">
-            <p className="font-display text-lg tracking-wide text-panel-foreground">
-              Tap a glowing pad to build a tower
-            </p>
-            <p className="text-[11px] text-panel-muted">
-              The horde arrives shortly — you start with no defences.
+          <div className="rounded-xl bg-panel/85 px-3 py-2 text-center shadow-panel backdrop-blur">
+            <p className="font-display text-sm tracking-wide text-panel-foreground">
+              Tap a glowing pad to build
             </p>
           </div>
         )}
@@ -543,7 +511,7 @@ export function HUD({
         )}
 
         {state.towers.length > 0 && (
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-4 gap-1">
             {state.towers.map((t) => {
               const info = TOWER_INFO[t.kind];
               const active = t.id === (selection?.kind === "tower" ? selection.id : -1);
@@ -551,19 +519,17 @@ export function HUD({
                 <button
                   key={t.id}
                   onClick={() => onSelect({ kind: "tower", id: t.id })}
-                  className="rounded-xl border border-white/10 bg-panel/85 px-1 py-1.5 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:bg-panel"
+                  className="rounded-lg border border-white/10 bg-panel/85 px-1 py-1 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:bg-panel"
                   data-active={active}
                 >
                   <span
-                    className="mx-auto mb-1 block h-2 w-2 rounded-full"
+                    className="mx-auto mb-0.5 block h-1.5 w-1.5 rounded-full"
                     style={{ backgroundColor: info.accent }}
                   />
-                  <span className="block font-display text-xs tracking-wide text-panel-foreground">
+                  <span className="block font-display text-[10px] tracking-wide text-panel-foreground">
                     {info.name}
                   </span>
-                  <span className="block text-[10px] text-panel-muted">
-                    Lv {t.level} · {t.a}/{t.b}
-                  </span>
+                  <span className="block text-[9px] text-panel-muted">Lv {t.level}</span>
                 </button>
               );
             })}
@@ -653,22 +619,22 @@ export function HUD({
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <button
             onClick={() => game.upgradeIncome()}
             disabled={state.gold < incCost}
-            className="flex-1 rounded-xl bg-panel/85 px-3 py-2 text-xs font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
+            className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Income +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
-            <span className="block text-[10px] text-panel-muted">{incCost} gold</span>
+            <span className="block text-[10px] text-panel-muted">{incCost}g</span>
           </button>
           <button
             onClick={() => game.repair()}
             disabled={state.gold < 30 || state.baseHp >= state.baseMaxHp}
-            className="flex-1 rounded-xl bg-panel/85 px-3 py-2 text-xs font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
+            className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Repair base +5
-            <span className="block text-[10px] text-panel-muted">30 gold</span>
+            <span className="block text-[10px] text-panel-muted">30g</span>
           </button>
         </div>
       </div>
