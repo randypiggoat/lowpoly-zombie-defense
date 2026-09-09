@@ -13,7 +13,10 @@ export type PlayerProfile = {
   gamesPlayed: number;
   /** Persistent per-tower-kind upgrade data, expandable later. */
   towerUpgrades: Record<string, { level: number; points: number }>;
+  /** Tower kinds bought early with coins. */
+  unlockedTowers: string[];
 };
+
 
 export type RunReward = {
   wave: number;
