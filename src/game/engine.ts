@@ -67,6 +67,8 @@ export type Zombie = {
   fade: number;
   flash: number;
   slow: number;
+  burn: number;
+  burnTime: number;
   // ragdoll
   vx: number;
   vy: number;
@@ -93,7 +95,26 @@ export type Gib = {
   tint: number;
 };
 
-export type TowerKind = "gunner" | "cannon" | "frost" | "tesla";
+export type TowerKind =
+  | "rifleman"
+  | "shotgunner"
+  | "sniper"
+  | "tesla"
+  | "flamethrower"
+  | "freezer"
+  | "rocket"
+  | "laser";
+
+export const TOWER_KINDS: TowerKind[] = [
+  "rifleman",
+  "shotgunner",
+  "sniper",
+  "tesla",
+  "flamethrower",
+  "freezer",
+  "rocket",
+  "laser",
+];
 
 export type Tower = {
   id: number;
@@ -101,6 +122,7 @@ export type Tower = {
   spot: number;
   x: number;
   z: number;
+  level: number; // 1..MAX_TOWER_LEVEL, bought with gold
   a: number; // tiers bought in path A (0-4)
   b: number; // tiers bought in path B (0-4)
   cooldown: number;
@@ -122,19 +144,190 @@ export type Bullet = {
   splash: number;
   chain: number;
   slow: number;
+  burn: number;
   crit: boolean;
   alive: boolean;
 };
 
-export const TOWER_INFO: Record<
-  TowerKind,
-  { name: string; blurb: string; damage: number; rate: number; range: number; cost: number; accent: string }
-> = {
-  gunner: { name: "Gunner", blurb: "Fast single shots", damage: 6, rate: 2.2, range: 6.5, cost: 40, accent: "#e9b44c" },
-  cannon: { name: "Cannon", blurb: "Slow, heavy hits", damage: 26, rate: 0.6, range: 7.5, cost: 70, accent: "#e2725b" },
-  frost: { name: "Frost", blurb: "Slows the horde", damage: 4, rate: 1.4, range: 6, cost: 60, accent: "#79c7e3" },
-  tesla: { name: "Tesla", blurb: "Chains damage", damage: 12, rate: 1.1, range: 5.5, cost: 90, accent: "#b892ff" },
+export type TowerDef = {
+  name: string;
+  blurb: string;
+  damage: number;
+  rate: number;
+  range: number;
+  cost: number;
+  accent: string;
+  /** Base gold cost of the first level-up; scales per level. */
+  upgradeBase: number;
+  /** Player level needed before this tower can be built. */
+  unlockLevel: number;
+  /** Coins that unlock the tower early (0 = free from the start). */
+  coinUnlock: number;
+  /** Innate behaviour. */
+  splash?: number;
+  chain?: number;
+  slow?: number;
+  burn?: number;
+  shape?: "double" | "long" | "wide" | "nozzle" | "orb" | "pods" | "lens";
 };
+
+export const TOWER_INFO: Record<TowerKind, TowerDef> = {
+  rifleman: {
+    name: "Rifleman",
+    blurb: "Cheap, fast shots at long range",
+    damage: 6,
+    rate: 2.2,
+    range: 7.6,
+    cost: 40,
+    accent: "#e9b44c",
+    upgradeBase: 30,
+    unlockLevel: 1,
+    coinUnlock: 0,
+  },
+  shotgunner: {
+    name: "Shotgunner",
+    blurb: "Short range, heavy spread damage",
+    damage: 15,
+    rate: 1.1,
+    range: 4.3,
+    cost: 65,
+    accent: "#d98a3c",
+    upgradeBase: 45,
+    unlockLevel: 1,
+    coinUnlock: 0,
+    splash: 1.9,
+    shape: "double",
+  },
+  freezer: {
+    name: "Freezer",
+    blurb: "Low damage, heavy slow",
+    damage: 4,
+    rate: 1.4,
+    range: 6,
+    cost: 60,
+    accent: "#79c7e3",
+    upgradeBase: 40,
+    unlockLevel: 1,
+    coinUnlock: 0,
+    slow: 0.35,
+    shape: "nozzle",
+  },
+  sniper: {
+    name: "Sniper",
+    blurb: "Very long range, huge single hits",
+    damage: 62,
+    rate: 0.36,
+    range: 14,
+    cost: 120,
+    accent: "#8fb98a",
+    upgradeBase: 80,
+    unlockLevel: 2,
+    coinUnlock: 350,
+    shape: "long",
+  },
+  tesla: {
+    name: "Tesla",
+    blurb: "Chain lightning across the horde",
+    damage: 12,
+    rate: 1.1,
+    range: 5.6,
+    cost: 90,
+    accent: "#b892ff",
+    upgradeBase: 60,
+    unlockLevel: 3,
+    coinUnlock: 550,
+    chain: 2,
+    shape: "orb",
+  },
+  flamethrower: {
+    name: "Flamethrower",
+    blurb: "Burns groups over time",
+    damage: 4,
+    rate: 3.4,
+    range: 5,
+    cost: 95,
+    accent: "#f2703b",
+    upgradeBase: 65,
+    unlockLevel: 4,
+    coinUnlock: 800,
+    burn: 7,
+    splash: 1.3,
+    shape: "wide",
+  },
+  rocket: {
+    name: "Rocket",
+    blurb: "Slow shots, big explosions",
+    damage: 42,
+    rate: 0.5,
+    range: 8.6,
+    cost: 130,
+    accent: "#e2725b",
+    upgradeBase: 90,
+    unlockLevel: 5,
+    coinUnlock: 1100,
+    splash: 3,
+    shape: "pods",
+  },
+  laser: {
+    name: "Laser",
+    blurb: "Expensive, melts single targets",
+    damage: 34,
+    rate: 2.6,
+    range: 9.2,
+    cost: 220,
+    accent: "#63e6c3",
+    upgradeBase: 150,
+    unlockLevel: 7,
+    coinUnlock: 1600,
+    shape: "lens",
+  },
+};
+
+export const MAX_TOWER_LEVEL = 8;
+
+/** Projectile flight speed per tower. */
+export const BULLET_SPEED: Record<TowerKind, number> = {
+  rifleman: 22,
+  shotgunner: 18,
+  sniper: 60,
+  tesla: 30,
+  flamethrower: 12,
+  freezer: 20,
+  rocket: 14,
+  laser: 80,
+};
+
+/** Which existing shot sound each tower reuses. */
+export const SHOOT_SFX: Record<TowerKind, "shootGunner" | "shootCannon" | "shootFrost" | "shootTesla"> = {
+  rifleman: "shootGunner",
+  shotgunner: "shootCannon",
+  sniper: "shootCannon",
+  tesla: "shootTesla",
+  flamethrower: "shootFrost",
+  freezer: "shootFrost",
+  rocket: "shootCannon",
+  laser: "shootTesla",
+};
+
+/** How violently kills from each tower come apart. */
+export const GORE_BASE: Record<TowerKind, number> = {
+  rifleman: 1,
+  shotgunner: 1.5,
+  sniper: 1.6,
+  tesla: 1.1,
+  flamethrower: 1.2,
+  freezer: 1,
+  rocket: 1.9,
+  laser: 1.3,
+};
+
+
+/** Gold cost of the next level-up for this tower. */
+export function towerUpgradeCost(t: Tower) {
+  if (t.level >= MAX_TOWER_LEVEL) return Infinity;
+  return Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, t.level - 1));
+}
+
 
 /* ---------------- upgrade paths ---------------- */
 
@@ -148,13 +341,14 @@ export type Mods = {
   crit?: number;
   gold?: number;
   gore?: number;
+  burn?: number;
 };
 
 export type Tier = { name: string; desc: string; cost: number; mods: Mods };
 export type UpgradePath = { name: string; focus: string; tiers: [Tier, Tier, Tier, Tier] };
 
 export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> = {
-  gunner: {
+  rifleman: {
     a: {
       name: "Marksman",
       focus: "Range & precision",
@@ -176,7 +370,7 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       ],
     },
   },
-  cannon: {
+  rocket: {
     a: {
       name: "Siege Artillery",
       focus: "Range & slowing shrapnel",
@@ -198,7 +392,7 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       ],
     },
   },
-  frost: {
+  freezer: {
     a: {
       name: "Deep Freeze",
       focus: "Crowd control",
@@ -242,7 +436,96 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
       ],
     },
   },
+  shotgunner: {
+    a: {
+      name: "Riot Spread",
+      focus: "Crowd shredding",
+      tiers: [
+        { name: "Wide Choke", desc: "+0.8 blast radius", cost: 60, mods: { splash: 0.8 } },
+        { name: "Buckshot", desc: "+45% damage, bigger spread", cost: 130, mods: { dmg: 1.45, splash: 0.6 } },
+        { name: "Dragon's Breath", desc: "Shots set zombies alight", cost: 280, mods: { burn: 6, splash: 0.6 } },
+        { name: "Riot Storm", desc: "+90% damage, huge spread", cost: 590, mods: { dmg: 1.9, splash: 1.4, gore: 2 } },
+      ],
+    },
+    b: {
+      name: "Executioner",
+      focus: "Point-blank stopping power",
+      tiers: [
+        { name: "Slug Rounds", desc: "+75% damage, -15% spread", cost: 65, mods: { dmg: 1.75, splash: -0.4 } },
+        { name: "Pump Grip", desc: "+50% fire rate", cost: 140, mods: { rate: 1.5 } },
+        { name: "Breacher", desc: "+90% damage, 25% crit", cost: 300, mods: { dmg: 1.9, crit: 0.25 } },
+        { name: "Gore Cannon", desc: "+170% damage, gibs everything", cost: 620, mods: { dmg: 2.7, rate: 1.25, gore: 2.6 } },
+      ],
+    },
+  },
+  sniper: {
+    a: {
+      name: "Overwatch",
+      focus: "Reach across the map",
+      tiers: [
+        { name: "Bipod", desc: "+25% range", cost: 90, mods: { range: 1.25 } },
+        { name: "Rangefinder", desc: "+20% range, 25% crit", cost: 200, mods: { range: 1.2, crit: 0.25 } },
+        { name: "Match Barrel", desc: "+70% damage, +15% range", cost: 400, mods: { dmg: 1.7, range: 1.15 } },
+        { name: "God's Eye", desc: "+150% damage, 45% crit", cost: 850, mods: { dmg: 2.5, crit: 0.45, range: 1.2, gore: 1.8 } },
+      ],
+    },
+    b: {
+      name: "Anti-Materiel",
+      focus: "Killing big targets fast",
+      tiers: [
+        { name: "Quick Bolt", desc: "+45% fire rate", cost: 95, mods: { rate: 1.45 } },
+        { name: "Heavy Rounds", desc: "+80% damage", cost: 210, mods: { dmg: 1.8 } },
+        { name: "Explosive Tips", desc: "+1.6 blast radius", cost: 430, mods: { splash: 1.6, dmg: 1.2 } },
+        { name: "Brute Breaker", desc: "+200% damage, wrecks brutes", cost: 900, mods: { dmg: 3, rate: 1.2, gore: 2.4 } },
+      ],
+    },
+  },
+  flamethrower: {
+    a: {
+      name: "Inferno",
+      focus: "Burning damage over time",
+      tiers: [
+        { name: "Hot Fuel", desc: "+6 burn damage per second", cost: 70, mods: { burn: 6 } },
+        { name: "Sticky Napalm", desc: "+9 burn, bigger cone", cost: 150, mods: { burn: 9, splash: 0.5 } },
+        { name: "Firestorm", desc: "+14 burn, +30% range", cost: 320, mods: { burn: 14, range: 1.3 } },
+        { name: "Hellmouth", desc: "+26 burn, everything cooks", cost: 660, mods: { burn: 26, splash: 0.8, gore: 2.2 } },
+      ],
+    },
+    b: {
+      name: "Pressure Tank",
+      focus: "Raw output on groups",
+      tiers: [
+        { name: "Wide Cone", desc: "+0.7 spread, +20% range", cost: 75, mods: { splash: 0.7, range: 1.2 } },
+        { name: "High Pressure", desc: "+45% fire rate", cost: 160, mods: { rate: 1.45 } },
+        { name: "Twin Nozzles", desc: "+90% damage", cost: 330, mods: { dmg: 1.9 } },
+        { name: "Purifier", desc: "+160% damage, huge cone", cost: 680, mods: { dmg: 2.6, splash: 1.2, rate: 1.2 } },
+      ],
+    },
+  },
+  laser: {
+    a: {
+      name: "Focus Array",
+      focus: "Single-target annihilation",
+      tiers: [
+        { name: "Tight Beam", desc: "+70% damage", cost: 170, mods: { dmg: 1.7 } },
+        { name: "Prism Lens", desc: "+55% damage, 25% crit", cost: 360, mods: { dmg: 1.55, crit: 0.25 } },
+        { name: "Fusion Core", desc: "+90% damage, +20% range", cost: 700, mods: { dmg: 1.9, range: 1.2 } },
+        { name: "Deathray", desc: "+220% damage, vaporizes bodies", cost: 1400, mods: { dmg: 3.2, crit: 0.4, gore: 3 } },
+      ],
+    },
+    b: {
+      name: "Scatter Optics",
+      focus: "Cutting through crowds",
+      tiers: [
+        { name: "Beam Splitter", desc: "+1 chain target", cost: 165, mods: { chain: 1 } },
+        { name: "Refraction", desc: "+2 chains, +25% range", cost: 350, mods: { chain: 2, range: 1.25 } },
+        { name: "Thermal Bloom", desc: "Beams ignite for 18/s", cost: 680, mods: { burn: 18, splash: 0.6 } },
+        { name: "Starfall", desc: "+3 chains, +80% damage", cost: 1350, mods: { chain: 3, dmg: 1.8, rate: 1.2 } },
+      ],
+    },
+  },
 };
+
 
 /** Classic rule: only one path may go past tier 2. */
 export function canBuyTier(t: Tower, path: "a" | "b") {
@@ -260,7 +543,7 @@ export function tierCost(t: Tower, path: "a" | "b") {
 }
 
 function mods(t: Tower): Required<Mods> {
-  const out = { dmg: 1, rate: 1, range: 1, slow: 0, splash: 0, chain: 0, crit: 0, gold: 1, gore: 1 };
+  const out = { dmg: 1, rate: 1, range: 1, slow: 0, splash: 0, chain: 0, crit: 0, gold: 1, gore: 1, burn: 0 };
   const apply = (p: "a" | "b", n: number) => {
     const tiers = TOWER_PATHS[t.kind][p].tiers;
     for (let i = 0; i < n; i++) {
@@ -274,6 +557,7 @@ function mods(t: Tower): Required<Mods> {
       if (m.crit) out.crit = Math.max(out.crit, m.crit);
       if (m.gold) out.gold *= m.gold;
       if (m.gore) out.gore = Math.max(out.gore, m.gore);
+      if (m.burn) out.burn = Math.max(out.burn, m.burn);
     }
   };
   apply("a", t.a);
@@ -281,29 +565,44 @@ function mods(t: Tower): Required<Mods> {
   return out;
 }
 
-export function towerLevel(t: Tower) {
+/** Flat level bonuses bought with the Upgrade button. */
+function levelDmg(t: Tower) {
+  return Math.pow(1.22, t.level - 1);
+}
+function levelRate(t: Tower) {
+  return Math.pow(1.06, t.level - 1);
+}
+function levelRange(t: Tower) {
+  return Math.pow(1.035, t.level - 1);
+}
+
+/** Total tiers bought across both paths (used for visuals). */
+export function towerTiers(t: Tower) {
   return t.a + t.b;
 }
+export function towerLevel(t: Tower) {
+  return t.level;
+}
 export function towerDamage(t: Tower) {
-  return TOWER_INFO[t.kind].damage * mods(t).dmg;
+  return TOWER_INFO[t.kind].damage * mods(t).dmg * levelDmg(t);
 }
 export function towerRange(t: Tower) {
-  return TOWER_INFO[t.kind].range * mods(t).range;
+  return TOWER_INFO[t.kind].range * mods(t).range * levelRange(t);
 }
 export function towerRate(t: Tower) {
-  return TOWER_INFO[t.kind].rate * mods(t).rate;
+  return TOWER_INFO[t.kind].rate * mods(t).rate * levelRate(t);
 }
 export function towerSlow(t: Tower) {
-  const base = t.kind === "frost" ? 0.35 : 0;
-  return Math.max(base, mods(t).slow);
+  return Math.max(TOWER_INFO[t.kind].slow ?? 0, mods(t).slow);
 }
 export function towerSplash(t: Tower) {
-  const base = t.kind === "cannon" ? 2.2 : 0;
-  return base + mods(t).splash;
+  return Math.max(0, (TOWER_INFO[t.kind].splash ?? 0) + mods(t).splash);
 }
 export function towerChain(t: Tower) {
-  const base = t.kind === "tesla" ? 2 : 0;
-  return base + mods(t).chain;
+  return (TOWER_INFO[t.kind].chain ?? 0) + mods(t).chain;
+}
+export function towerBurn(t: Tower) {
+  return Math.max(TOWER_INFO[t.kind].burn ?? 0, mods(t).burn) * levelDmg(t);
 }
 export function towerCrit(t: Tower) {
   return mods(t).crit;
@@ -320,8 +619,18 @@ export function towerSellValue(t: Tower) {
   const tiersB = TOWER_PATHS[t.kind].b.tiers;
   for (let i = 0; i < t.a; i++) spent += tiersA[i]!.cost;
   for (let i = 0; i < t.b; i++) spent += tiersB[i]!.cost;
+  for (let l = 1; l < t.level; l++) {
+    spent += Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, l - 1));
+  }
   return Math.floor(spent * 0.6);
 }
+
+/** Whether the player's progression allows building this tower. */
+export function towerUnlocked(kind: TowerKind, playerLevel: number, purchased: string[]) {
+  const def = TOWER_INFO[kind];
+  return def.coinUnlock === 0 || playerLevel >= def.unlockLevel || purchased.includes(kind);
+}
+
 
 export function incomeCost(level: number) {
   return Math.round(50 * Math.pow(1.8, level - 1));
@@ -397,6 +706,11 @@ export class Game {
     const s = this.state;
     const pad = BUILD_SPOTS[spot];
     if (!pad || this.towerAtSpot(spot)) return false;
+    const p = profile.profile;
+    if (!towerUnlocked(kind, p.level, p.unlockedTowers)) {
+      sfx("deny");
+      return false;
+    }
     const cost = TOWER_INFO[kind].cost;
     if (s.gold < cost) {
       sfx("deny");
@@ -409,6 +723,7 @@ export class Game {
       spot,
       x: pad.x,
       z: pad.z,
+      level: 1,
       a: 0,
       b: 0,
       cooldown: 0,
@@ -419,6 +734,28 @@ export class Game {
     this.emit();
     return true;
   }
+
+  /** Straight level-up: costs gold, raises damage / rate / range. */
+  upgradeTower(towerId: number): boolean {
+    const s = this.state;
+    const t = s.towers.find((x) => x.id === towerId);
+    if (!t || t.level >= MAX_TOWER_LEVEL) {
+      sfx("deny");
+      return false;
+    }
+    const cost = towerUpgradeCost(t);
+    if (s.gold < cost) {
+      sfx("deny");
+      return false;
+    }
+    s.gold -= cost;
+    t.level += 1;
+    profile.recordTowerUpgrade(t.kind);
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
+
 
   sell(towerId: number) {
     const s = this.state;
@@ -500,6 +837,8 @@ export class Game {
       fade: 0,
       flash: 0,
       slow: 0,
+      burn: 0,
+      burnTime: 0,
       vx: 0,
       vy: 0,
       vz: 0,
@@ -509,6 +848,41 @@ export class Game {
       gibbed: false,
     });
   }
+
+  /** Shared damage application — used by bullets, splash, chains and burning. */
+  private damage(z: Zombie, dmg: number, fromX: number, fromZ: number, goreBase: number) {
+    const s = this.state;
+    if (z.dead) return;
+    z.hp -= dmg;
+    if (z.hp > 0) {
+      z.flash = 1;
+      if (dmg >= 0.5) sfx("hit");
+      return;
+    }
+    z.dead = true;
+    z.fade = 0;
+    s.kills += 1;
+    s.gold += Math.round(4 + Math.floor(z.maxHp / 12));
+    const away = Math.atan2(z.x - fromX, z.z - fromZ);
+    const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
+    const force = goreBase * (0.8 + overkill * 0.6);
+    z.vx = Math.sin(away) * 2.2 * force;
+    z.vz = Math.cos(away) * 2.2 * force;
+    z.vy = 2.5 + Math.random() * 2 * force;
+    z.spin = (Math.random() - 0.5) * 9 * force;
+    const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
+    if (explode) {
+      z.gibbed = true;
+      this.spawnGibs(z, 8, Math.min(2.2, force));
+      sfx("gib");
+    } else {
+      this.spawnGibs(z, 3, 0.8);
+      sfx("death");
+    }
+    this.emit();
+  }
+
+
 
   private spawnGibs(z: Zombie, count: number, force: number) {
     const s = this.state;
@@ -594,8 +968,15 @@ export class Game {
         continue;
       }
       z.wobble += dt * (4 + z.speed * 2);
+      if (z.burnTime > 0 && z.burn > 0) {
+        z.burnTime -= dt;
+        this.damage(z, z.burn * dt, z.x, z.z, 1);
+        if (z.dead) continue;
+        if (z.burnTime <= 0) z.burn = 0;
+      }
       z.dist += z.speed * dt * (1 - Math.min(0.85, z.slow));
       z.slow = 0;
+
       const p = pointAt(z.dist);
       z.x = p.x;
       z.z = p.z;
@@ -658,28 +1039,21 @@ export class Game {
             id: nextId++,
             x: t.x,
             z: t.z,
-            y: 1.6 + towerLevel(t) * 0.03,
+            y: 1.6 + t.level * 0.03,
             tx: best.x,
             tz: best.z,
-            speed: t.kind === "cannon" ? 14 : t.kind === "tesla" ? 30 : 20,
+            speed: BULLET_SPEED[t.kind],
             damage: towerDamage(t) * (crit ? 2.5 : 1),
             target: best.id,
             kind: t.kind,
             splash: towerSplash(t),
             chain: towerChain(t),
             slow: towerSlow(t),
+            burn: towerBurn(t),
             crit,
             alive: true,
           });
-          sfx(
-            t.kind === "gunner"
-              ? "shootGunner"
-              : t.kind === "cannon"
-                ? "shootCannon"
-                : t.kind === "frost"
-                  ? "shootFrost"
-                  : "shootTesla",
-          );
+          sfx(SHOOT_SFX[t.kind]);
         }
       }
     }
@@ -699,38 +1073,14 @@ export class Game {
       if (d <= step || !target) {
         b.alive = false;
         if (target) {
-          const goreBase = b.kind === "cannon" ? 1.4 : b.kind === "tesla" ? 1.1 : 1;
+          const goreBase = GORE_BASE[b.kind];
           const hit = (z: Zombie, dmg: number) => {
-            z.hp -= dmg;
             if (b.slow > 0) z.slow = Math.max(z.slow, b.slow);
-            if (z.hp > 0) {
-              z.flash = 1;
-              sfx("hit");
-              return;
+            if (b.burn > 0) {
+              z.burn = Math.max(z.burn, b.burn);
+              z.burnTime = Math.max(z.burnTime, 2.4);
             }
-            if (z.dead) return;
-            z.dead = true;
-            z.fade = 0;
-            s.kills += 1;
-            s.gold += Math.round((4 + Math.floor(z.maxHp / 12)) * 1);
-            // ragdoll launch away from the impact
-            const away = Math.atan2(z.x - b.x, z.z - b.z);
-            const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
-            const force = goreBase * (0.8 + overkill * 0.6);
-            z.vx = Math.sin(away) * 2.2 * force;
-            z.vz = Math.cos(away) * 2.2 * force;
-            z.vy = 2.5 + Math.random() * 2 * force;
-            z.spin = (Math.random() - 0.5) * 9 * force;
-            const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
-            if (explode) {
-              z.gibbed = true;
-              this.spawnGibs(z, 8, Math.min(2.2, force));
-              sfx("gib");
-            } else {
-              this.spawnGibs(z, 3, 0.8);
-              sfx("death");
-            }
-            this.emit();
+            this.damage(z, dmg, b.x, b.z, goreBase);
           };
           hit(target, b.damage);
           const splash = b.splash;
@@ -757,6 +1107,7 @@ export class Game {
         b.z += (dz / d) * step;
       }
     }
+
 
     if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 2);
 

@@ -13,7 +13,10 @@ export type PlayerProfile = {
   gamesPlayed: number;
   /** Persistent per-tower-kind upgrade data, expandable later. */
   towerUpgrades: Record<string, { level: number; points: number }>;
+  /** Tower kinds bought early with coins. */
+  unlockedTowers: string[];
 };
+
 
 export type RunReward = {
   wave: number;
@@ -36,8 +39,10 @@ function blank(): PlayerProfile {
     totalKills: 0,
     gamesPlayed: 0,
     towerUpgrades: {},
+    unlockedTowers: [],
   };
 }
+
 
 /** XP required to advance from `level` to `level + 1`. */
 export function xpForLevel(level: number): number {
