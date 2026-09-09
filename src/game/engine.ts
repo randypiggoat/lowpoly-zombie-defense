@@ -1,6 +1,8 @@
 // Pure game simulation for the idle tower defense game.
 // No React, no three.js — just numbers the renderer reads each frame.
 
+import { sfx } from "./audio";
+
 export type Vec2 = { x: number; z: number };
 
 export const PATH: Vec2[] = [
@@ -35,6 +37,20 @@ export function pointAt(dist: number): Vec2 {
   return PATH[PATH.length - 1]!;
 }
 
+/** Fixed pads the player can build on. */
+export const BUILD_SPOTS: Vec2[] = [
+  { x: -9.6, z: -18 },
+  { x: -1.6, z: -14 },
+  { x: -9.2, z: -9 },
+  { x: 8.4, z: -12 },
+  { x: 0.2, z: -5.4 },
+  { x: 8.6, z: -3.6 },
+  { x: -8.6, z: -1.5 },
+  { x: 8.6, z: 5.4 },
+  { x: 1.6, z: 6.2 },
+  { x: -9.4, z: 7.4 },
+];
+
 export type Zombie = {
   id: number;
   dist: number;
@@ -43,11 +59,37 @@ export type Zombie = {
   speed: number;
   kind: 0 | 1 | 2; // walker, runner, brute
   x: number;
+  y: number;
   z: number;
   wobble: number;
   dead: boolean;
   fade: number;
-  slow?: boolean;
+  flash: number;
+  slow: number;
+  // ragdoll
+  vx: number;
+  vy: number;
+  vz: number;
+  tilt: number;
+  spin: number;
+  roll: number;
+  gibbed: boolean;
+};
+
+export type Gib = {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  rx: number;
+  ry: number;
+  spin: number;
+  life: number;
+  size: number;
+  tint: number;
 };
 
 export type TowerKind = "gunner" | "cannon" | "frost" | "tesla";
@@ -55,11 +97,14 @@ export type TowerKind = "gunner" | "cannon" | "frost" | "tesla";
 export type Tower = {
   id: number;
   kind: TowerKind;
+  spot: number;
   x: number;
   z: number;
-  level: number;
+  a: number; // tiers bought in path A (0-4)
+  b: number; // tiers bought in path B (0-4)
   cooldown: number;
   aim: number;
+  recoil: number;
 };
 
 export type Bullet = {
@@ -73,6 +118,10 @@ export type Bullet = {
   damage: number;
   target: number;
   kind: TowerKind;
+  splash: number;
+  chain: number;
+  slow: number;
+  crit: boolean;
   alive: boolean;
 };
 
@@ -85,6 +134,200 @@ export const TOWER_INFO: Record<
   frost: { name: "Frost", blurb: "Slows the horde", damage: 4, rate: 1.4, range: 6, cost: 60, accent: "#79c7e3" },
   tesla: { name: "Tesla", blurb: "Chains damage", damage: 12, rate: 1.1, range: 5.5, cost: 90, accent: "#b892ff" },
 };
+
+/* ---------------- upgrade paths ---------------- */
+
+export type Mods = {
+  dmg?: number;
+  rate?: number;
+  range?: number;
+  slow?: number;
+  splash?: number;
+  chain?: number;
+  crit?: number;
+  gold?: number;
+  gore?: number;
+};
+
+export type Tier = { name: string; desc: string; cost: number; mods: Mods };
+export type UpgradePath = { name: string; focus: string; tiers: [Tier, Tier, Tier, Tier] };
+
+export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> = {
+  gunner: {
+    a: {
+      name: "Marksman",
+      focus: "Range & precision",
+      tiers: [
+        { name: "Long Barrel", desc: "+25% range, +15% damage", cost: 50, mods: { range: 1.25, dmg: 1.15 } },
+        { name: "Scope", desc: "+20% range, 20% crit chance", cost: 110, mods: { range: 1.2, crit: 0.2 } },
+        { name: "Hollow Points", desc: "+60% damage, 30% crit", cost: 240, mods: { dmg: 1.6, crit: 0.3 } },
+        { name: "Deadeye", desc: "+120% damage, wide reach", cost: 520, mods: { dmg: 2.2, range: 1.25, crit: 0.4, gore: 1.5 } },
+      ],
+    },
+    b: {
+      name: "Suppressor",
+      focus: "Rate of fire",
+      tiers: [
+        { name: "Quick Hands", desc: "+40% fire rate", cost: 45, mods: { rate: 1.4 } },
+        { name: "Drum Mag", desc: "+45% fire rate", cost: 100, mods: { rate: 1.45 } },
+        { name: "Twin Barrels", desc: "+60% rate, +25% damage", cost: 230, mods: { rate: 1.6, dmg: 1.25 } },
+        { name: "Minigun", desc: "+120% rate, more gold per kill", cost: 500, mods: { rate: 2.2, dmg: 1.2, gold: 1.25 } },
+      ],
+    },
+  },
+  cannon: {
+    a: {
+      name: "Siege Artillery",
+      focus: "Range & slowing shrapnel",
+      tiers: [
+        { name: "Long Gun", desc: "+30% range", cost: 80, mods: { range: 1.3 } },
+        { name: "Tar Shells", desc: "Shots slow zombies 35%", cost: 170, mods: { slow: 0.35, splash: 0.6 } },
+        { name: "Cluster Shot", desc: "+1.4 blast radius, +25% damage", cost: 340, mods: { splash: 1.4, dmg: 1.25 } },
+        { name: "Bombardier", desc: "+45% range, 55% slow, huge blast", cost: 720, mods: { range: 1.45, slow: 0.55, splash: 1.8, dmg: 1.3 } },
+      ],
+    },
+    b: {
+      name: "Point Blank",
+      focus: "Pure close-range killing",
+      tiers: [
+        { name: "Packed Powder", desc: "+70% damage, -10% range", cost: 85, mods: { dmg: 1.7, range: 0.9 } },
+        { name: "Rapid Loader", desc: "+55% fire rate", cost: 180, mods: { rate: 1.55 } },
+        { name: "Siege Slugs", desc: "+110% damage", cost: 360, mods: { dmg: 2.1 } },
+        { name: "Meat Grinder", desc: "+180% damage, gibs everything", cost: 760, mods: { dmg: 2.8, rate: 1.3, gore: 2.5 } },
+      ],
+    },
+  },
+  frost: {
+    a: {
+      name: "Deep Freeze",
+      focus: "Crowd control",
+      tiers: [
+        { name: "Chill Mist", desc: "Slow 45%, small blast", cost: 65, mods: { slow: 0.45, splash: 1 } },
+        { name: "Wide Nozzle", desc: "+30% range, bigger blast", cost: 140, mods: { range: 1.3, splash: 1 } },
+        { name: "Cryo Core", desc: "Slow 62%, +50% rate", cost: 290, mods: { slow: 0.62, rate: 1.5 } },
+        { name: "Absolute Zero", desc: "Slow 75% in a huge radius", cost: 600, mods: { slow: 0.75, splash: 1.6, range: 1.25 } },
+      ],
+    },
+    b: {
+      name: "Shatter",
+      focus: "Damage on frozen flesh",
+      tiers: [
+        { name: "Ice Shards", desc: "+90% damage", cost: 70, mods: { dmg: 1.9 } },
+        { name: "Frostbite", desc: "+70% damage, 20% crit", cost: 150, mods: { dmg: 1.7, crit: 0.2 } },
+        { name: "Brittle Bones", desc: "+90% damage, 35% crit", cost: 310, mods: { dmg: 1.9, crit: 0.35 } },
+        { name: "Shatterstorm", desc: "+150% damage, bodies explode", cost: 640, mods: { dmg: 2.5, rate: 1.3, gore: 2.2 } },
+      ],
+    },
+  },
+  tesla: {
+    a: {
+      name: "Chain Coil",
+      focus: "Hitting the whole horde",
+      tiers: [
+        { name: "Extra Arc", desc: "+1 chain target", cost: 100, mods: { chain: 1, splash: 0.4 } },
+        { name: "Conductors", desc: "+30% range, +1 chain", cost: 210, mods: { range: 1.3, chain: 1 } },
+        { name: "Storm Net", desc: "+2 chains, +25% damage", cost: 420, mods: { chain: 2, dmg: 1.25, splash: 0.6 } },
+        { name: "Tempest", desc: "+3 chains, +40% range", cost: 880, mods: { chain: 3, range: 1.4, dmg: 1.3 } },
+      ],
+    },
+    b: {
+      name: "Overload",
+      focus: "Raw single-target power",
+      tiers: [
+        { name: "Capacitors", desc: "+80% damage", cost: 95, mods: { dmg: 1.8 } },
+        { name: "Fast Discharge", desc: "+60% fire rate", cost: 200, mods: { rate: 1.6 } },
+        { name: "Arc Furnace", desc: "+110% damage, 25% crit", cost: 400, mods: { dmg: 2.1, crit: 0.25 } },
+        { name: "Annihilator", desc: "+200% damage, vaporizes bodies", cost: 840, mods: { dmg: 3, rate: 1.25, gore: 3 } },
+      ],
+    },
+  },
+};
+
+/** Classic rule: only one path may go past tier 2. */
+export function canBuyTier(t: Tower, path: "a" | "b") {
+  const mine = path === "a" ? t.a : t.b;
+  const other = path === "a" ? t.b : t.a;
+  if (mine >= 4) return false;
+  if (mine >= 2 && other >= 3) return false;
+  return true;
+}
+
+export function tierCost(t: Tower, path: "a" | "b") {
+  const mine = path === "a" ? t.a : t.b;
+  if (mine >= 4) return Infinity;
+  return TOWER_PATHS[t.kind][path].tiers[mine]!.cost;
+}
+
+function mods(t: Tower): Required<Mods> {
+  const out = { dmg: 1, rate: 1, range: 1, slow: 0, splash: 0, chain: 0, crit: 0, gold: 1, gore: 1 };
+  const apply = (p: "a" | "b", n: number) => {
+    const tiers = TOWER_PATHS[t.kind][p].tiers;
+    for (let i = 0; i < n; i++) {
+      const m = tiers[i]!.mods;
+      if (m.dmg) out.dmg *= m.dmg;
+      if (m.rate) out.rate *= m.rate;
+      if (m.range) out.range *= m.range;
+      if (m.slow) out.slow = Math.max(out.slow, m.slow);
+      if (m.splash) out.splash += m.splash;
+      if (m.chain) out.chain += m.chain;
+      if (m.crit) out.crit = Math.max(out.crit, m.crit);
+      if (m.gold) out.gold *= m.gold;
+      if (m.gore) out.gore = Math.max(out.gore, m.gore);
+    }
+  };
+  apply("a", t.a);
+  apply("b", t.b);
+  return out;
+}
+
+export function towerLevel(t: Tower) {
+  return t.a + t.b;
+}
+export function towerDamage(t: Tower) {
+  return TOWER_INFO[t.kind].damage * mods(t).dmg;
+}
+export function towerRange(t: Tower) {
+  return TOWER_INFO[t.kind].range * mods(t).range;
+}
+export function towerRate(t: Tower) {
+  return TOWER_INFO[t.kind].rate * mods(t).rate;
+}
+export function towerSlow(t: Tower) {
+  const base = t.kind === "frost" ? 0.35 : 0;
+  return Math.max(base, mods(t).slow);
+}
+export function towerSplash(t: Tower) {
+  const base = t.kind === "cannon" ? 2.2 : 0;
+  return base + mods(t).splash;
+}
+export function towerChain(t: Tower) {
+  const base = t.kind === "tesla" ? 2 : 0;
+  return base + mods(t).chain;
+}
+export function towerCrit(t: Tower) {
+  return mods(t).crit;
+}
+export function towerGore(t: Tower) {
+  return mods(t).gore;
+}
+export function towerGold(t: Tower) {
+  return mods(t).gold;
+}
+export function towerSellValue(t: Tower) {
+  let spent = TOWER_INFO[t.kind].cost;
+  const tiersA = TOWER_PATHS[t.kind].a.tiers;
+  const tiersB = TOWER_PATHS[t.kind].b.tiers;
+  for (let i = 0; i < t.a; i++) spent += tiersA[i]!.cost;
+  for (let i = 0; i < t.b; i++) spent += tiersB[i]!.cost;
+  return Math.floor(spent * 0.6);
+}
+
+export function incomeCost(level: number) {
+  return Math.round(50 * Math.pow(1.8, level - 1));
+}
+export function incomePerSecond(level: number) {
+  return 2 + (level - 1) * 2.5;
+}
 
 export type GameState = {
   gold: number;
@@ -99,39 +342,21 @@ export type GameState = {
   incomeLevel: number;
   zombies: Zombie[];
   bullets: Bullet[];
+  gibs: Gib[];
   towers: Tower[];
   gameOver: boolean;
   flash: number;
 };
 
-export function towerDamage(t: Tower) {
-  return TOWER_INFO[t.kind].damage * Math.pow(1.55, t.level - 1);
-}
-export function towerRange(t: Tower) {
-  return TOWER_INFO[t.kind].range + (t.level - 1) * 0.35;
-}
-export function towerRate(t: Tower) {
-  return TOWER_INFO[t.kind].rate * (1 + (t.level - 1) * 0.12);
-}
-export function upgradeCost(t: Tower) {
-  return Math.round(TOWER_INFO[t.kind].cost * Math.pow(1.7, t.level - 1));
-}
-export function incomeCost(level: number) {
-  return Math.round(50 * Math.pow(1.8, level - 1));
-}
-export function incomePerSecond(level: number) {
-  return 2 + (level - 1) * 2.5;
-}
-
 let nextId = 1;
 
 function makeState(): GameState {
   return {
-    gold: 120,
+    gold: 180,
     baseHp: 20,
     baseMaxHp: 20,
     wave: 0,
-    waveTimer: 4,
+    waveTimer: 10,
     spawnQueue: 0,
     spawnTimer: 0,
     kills: 0,
@@ -139,12 +364,8 @@ function makeState(): GameState {
     incomeLevel: 1,
     zombies: [],
     bullets: [],
-    towers: [
-      { id: 1, kind: "gunner", x: -8.3, z: -9, level: 1, cooldown: 0, aim: 0 },
-      { id: 2, kind: "cannon", x: 7.8, z: -4.5, level: 1, cooldown: 0, aim: 0 },
-      { id: 3, kind: "frost", x: 1.5, z: 5.5, level: 1, cooldown: 0, aim: 0 },
-      { id: 4, kind: "tesla", x: -7.8, z: 6.5, level: 1, cooldown: 0, aim: 0 },
-    ],
+    gibs: [],
+    towers: [],
     gameOver: false,
     flash: 0,
   };
@@ -167,23 +388,76 @@ export class Game {
     this.emit();
   }
 
-  upgrade(towerId: number) {
+  towerAtSpot(spot: number) {
+    return this.state.towers.find((t) => t.spot === spot) ?? null;
+  }
+
+  build(spot: number, kind: TowerKind): boolean {
+    const s = this.state;
+    const pad = BUILD_SPOTS[spot];
+    if (!pad || this.towerAtSpot(spot)) return false;
+    const cost = TOWER_INFO[kind].cost;
+    if (s.gold < cost) {
+      sfx("deny");
+      return false;
+    }
+    s.gold -= cost;
+    s.towers.push({
+      id: nextId++,
+      kind,
+      spot,
+      x: pad.x,
+      z: pad.z,
+      a: 0,
+      b: 0,
+      cooldown: 0,
+      aim: 0,
+      recoil: 0,
+    });
+    sfx("build");
+    this.emit();
+    return true;
+  }
+
+  sell(towerId: number) {
+    const s = this.state;
+    const i = s.towers.findIndex((t) => t.id === towerId);
+    if (i < 0) return;
+    s.gold += towerSellValue(s.towers[i]!);
+    s.towers.splice(i, 1);
+    sfx("build");
+    this.emit();
+  }
+
+  buyTier(towerId: number, path: "a" | "b") {
     const s = this.state;
     const t = s.towers.find((x) => x.id === towerId);
-    if (!t) return;
-    const cost = upgradeCost(t);
-    if (s.gold < cost) return;
+    if (!t || !canBuyTier(t, path)) {
+      sfx("deny");
+      return;
+    }
+    const cost = tierCost(t, path);
+    if (s.gold < cost) {
+      sfx("deny");
+      return;
+    }
     s.gold -= cost;
-    t.level += 1;
+    if (path === "a") t.a += 1;
+    else t.b += 1;
+    sfx("upgrade");
     this.emit();
   }
 
   upgradeIncome() {
     const s = this.state;
     const cost = incomeCost(s.incomeLevel);
-    if (s.gold < cost) return;
+    if (s.gold < cost) {
+      sfx("deny");
+      return;
+    }
     s.gold -= cost;
     s.incomeLevel += 1;
+    sfx("upgrade");
     this.emit();
   }
 
@@ -191,9 +465,13 @@ export class Game {
     const s = this.state;
     if (s.baseHp >= s.baseMaxHp) return;
     const cost = 30;
-    if (s.gold < cost) return;
+    if (s.gold < cost) {
+      sfx("deny");
+      return;
+    }
     s.gold -= cost;
     s.baseHp = Math.min(s.baseMaxHp, s.baseHp + 5);
+    sfx("upgrade");
     this.emit();
   }
 
@@ -213,11 +491,45 @@ export class Game {
       speed,
       kind,
       x: PATH[0]!.x,
+      y: 0,
       z: PATH[0]!.z,
       wobble: Math.random() * 10,
       dead: false,
       fade: 0,
+      flash: 0,
+      slow: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      tilt: 0,
+      spin: 0,
+      roll: 0,
+      gibbed: false,
     });
+  }
+
+  private spawnGibs(z: Zombie, count: number, force: number) {
+    const s = this.state;
+    if (s.gibs.length > 160) return;
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = (1.5 + Math.random() * 3) * force;
+      s.gibs.push({
+        id: nextId++,
+        x: z.x,
+        y: 0.6 + Math.random() * 0.9,
+        z: z.z,
+        vx: Math.cos(a) * sp,
+        vy: 2.5 + Math.random() * 3.5 * force,
+        vz: Math.sin(a) * sp,
+        rx: Math.random() * 3,
+        ry: Math.random() * 3,
+        spin: (Math.random() - 0.5) * 14,
+        life: 0,
+        size: 0.12 + Math.random() * 0.16,
+        tint: i % 3,
+      });
+    }
   }
 
   tick(dtRaw: number) {
@@ -248,37 +560,80 @@ export class Game {
         s.spawnQueue = 4 + Math.floor(s.wave * 1.6);
         s.spawnTimer = 0;
         s.waveTimer = 14 + s.wave * 0.5;
+        sfx("wave");
+        this.emit();
       }
     }
 
     // zombies
     for (const z of s.zombies) {
+      if (z.flash > 0) z.flash = Math.max(0, z.flash - dt * 4);
       if (z.dead) {
-        z.fade += dt * 2.5;
+        // ragdoll
+        z.fade += dt * 0.55;
+        z.vy -= 16 * dt;
+        z.y += z.vy * dt;
+        z.x += z.vx * dt;
+        z.z += z.vz * dt;
+        z.tilt += z.spin * dt;
+        z.roll += z.spin * 0.6 * dt;
+        if (z.y <= 0) {
+          z.y = 0;
+          if (z.vy < -0.4) {
+            z.vy = -z.vy * 0.3;
+            z.spin *= 0.4;
+          } else {
+            z.vy = 0;
+            z.spin *= Math.exp(-8 * dt);
+          }
+          z.vx *= Math.exp(-6 * dt);
+          z.vz *= Math.exp(-6 * dt);
+        }
         continue;
       }
       z.wobble += dt * (4 + z.speed * 2);
-      z.dist += z.speed * dt * (z.slow ? 0.55 : 1);
-      z.slow = false;
+      z.dist += z.speed * dt * (1 - Math.min(0.85, z.slow));
+      z.slow = 0;
       const p = pointAt(z.dist);
       z.x = p.x;
       z.z = p.z;
       if (z.dist >= PATH_LENGTH) {
         z.dead = true;
-        z.fade = 1;
+        z.fade = 1.4;
         s.baseHp -= z.kind === 2 ? 3 : 1;
         s.flash = 1;
+        sfx("baseHit");
         if (s.baseHp <= 0) {
           s.baseHp = 0;
           s.gameOver = true;
+          sfx("gameOver");
         }
         this.emit();
+      }
+    }
+
+    // gibs
+    for (const g of s.gibs) {
+      g.life += dt;
+      g.vy -= 18 * dt;
+      g.x += g.vx * dt;
+      g.y += g.vy * dt;
+      g.z += g.vz * dt;
+      g.rx += g.spin * dt;
+      g.ry += g.spin * 0.7 * dt;
+      if (g.y < 0.06) {
+        g.y = 0.06;
+        g.vy = Math.abs(g.vy) > 1 ? -g.vy * 0.25 : 0;
+        g.vx *= Math.exp(-7 * dt);
+        g.vz *= Math.exp(-7 * dt);
+        g.spin *= Math.exp(-7 * dt);
       }
     }
 
     // towers
     for (const t of s.towers) {
       t.cooldown -= dt;
+      if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
       const range = towerRange(t);
       let best: Zombie | null = null;
       let bestDist = Infinity;
@@ -294,19 +649,34 @@ export class Game {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (t.cooldown <= 0) {
           t.cooldown = 1 / towerRate(t);
+          t.recoil = 1;
+          const crit = Math.random() < towerCrit(t);
           s.bullets.push({
             id: nextId++,
             x: t.x,
             z: t.z,
-            y: 1.6 + t.level * 0.05,
+            y: 1.6 + towerLevel(t) * 0.03,
             tx: best.x,
             tz: best.z,
             speed: t.kind === "cannon" ? 14 : t.kind === "tesla" ? 30 : 20,
-            damage: towerDamage(t),
+            damage: towerDamage(t) * (crit ? 2.5 : 1),
             target: best.id,
             kind: t.kind,
+            splash: towerSplash(t),
+            chain: towerChain(t),
+            slow: towerSlow(t),
+            crit,
             alive: true,
           });
+          sfx(
+            t.kind === "gunner"
+              ? "shootGunner"
+              : t.kind === "cannon"
+                ? "shootCannon"
+                : t.kind === "frost"
+                  ? "shootFrost"
+                  : "shootTesla",
+          );
         }
       }
     }
@@ -326,23 +696,56 @@ export class Game {
       if (d <= step || !target) {
         b.alive = false;
         if (target) {
+          const goreBase = b.kind === "cannon" ? 1.4 : b.kind === "tesla" ? 1.1 : 1;
           const hit = (z: Zombie, dmg: number) => {
             z.hp -= dmg;
-            if (b.kind === "frost") z.slow = true;
-            if (z.hp <= 0 && !z.dead) {
-              z.dead = true;
-              z.fade = 0;
-              s.kills += 1;
-              s.gold += 4 + Math.floor(z.maxHp / 12);
-              this.emit();
+            if (b.slow > 0) z.slow = Math.max(z.slow, b.slow);
+            if (z.hp > 0) {
+              z.flash = 1;
+              sfx("hit");
+              return;
             }
+            if (z.dead) return;
+            z.dead = true;
+            z.fade = 0;
+            s.kills += 1;
+            s.gold += Math.round((4 + Math.floor(z.maxHp / 12)) * 1);
+            // ragdoll launch away from the impact
+            const away = Math.atan2(z.x - b.x, z.z - b.z);
+            const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
+            const force = goreBase * (0.8 + overkill * 0.6);
+            z.vx = Math.sin(away) * 2.2 * force;
+            z.vz = Math.cos(away) * 2.2 * force;
+            z.vy = 2.5 + Math.random() * 2 * force;
+            z.spin = (Math.random() - 0.5) * 9 * force;
+            const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
+            if (explode) {
+              z.gibbed = true;
+              this.spawnGibs(z, 8, Math.min(2.2, force));
+              sfx("gib");
+            } else {
+              this.spawnGibs(z, 3, 0.8);
+              sfx("death");
+            }
+            this.emit();
           };
           hit(target, b.damage);
-          if (b.kind === "cannon" || b.kind === "tesla") {
-            const splash = b.kind === "cannon" ? 2.2 : 3.2;
+          const splash = b.splash;
+          if (splash > 0) {
             for (const z of s.zombies) {
               if (z.dead || z.id === target.id) continue;
               if (Math.hypot(z.x - target.x, z.z - target.z) < splash) hit(z, b.damage * 0.5);
+            }
+          }
+          if (b.chain > 0) {
+            let hits = 0;
+            for (const z of s.zombies) {
+              if (hits >= b.chain) break;
+              if (z.dead || z.id === target.id) continue;
+              if (Math.hypot(z.x - target.x, z.z - target.z) < 3.4) {
+                hit(z, b.damage * 0.6);
+                hits += 1;
+              }
             }
           }
         }
@@ -356,10 +759,13 @@ export class Game {
 
     // cleanup
     if (s.zombies.length > 0) {
-      s.zombies = s.zombies.filter((z) => !(z.dead && z.fade > 1.2));
+      s.zombies = s.zombies.filter((z) => !(z.dead && z.fade > 1.6));
     }
     if (s.bullets.length > 0) {
       s.bullets = s.bullets.filter((b) => b.alive);
+    }
+    if (s.gibs.length > 0) {
+      s.gibs = s.gibs.filter((g) => g.life < 3.2);
     }
   }
 }
