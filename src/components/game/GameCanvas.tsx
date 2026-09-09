@@ -288,6 +288,20 @@ export function GameCanvas() {
                     <p>Status: {stage.completed ? "Complete" : "Not completed"}</p>
                     <p>Stars: {"★".repeat(stage.stars) || "—"}</p>
                     <p>{stage.locked ? "Locked" : "Unlocked"}</p>
+                    <p>Waves: {stage.waveCount}</p>
+                    <p>Reward x{stage.rewardMultiplier.toFixed(2)}</p>
+                  </div>
+                  <div className="mt-2 rounded-xl bg-black/20 px-3 py-2 text-xs text-panel-muted">
+                    <p>
+                      Completion Reward: +{stage.rewards.completionCoins} coins · +
+                      {stage.rewards.completionXp} XP
+                    </p>
+                    <p>
+                      First Clear Bonus: +{stage.rewards.firstCompletionBonus.coins} coins · +
+                      {stage.rewards.firstCompletionBonus.xp} XP · +
+                      {stage.rewards.firstCompletionBonus.stars}★
+                    </p>
+                    <p className="mt-1">Rule: {stage.specialRules.join(" • ")}</p>
                   </div>
                   {stage.locked ? (
                     <div className="mt-2 rounded-xl bg-black/30 px-3 py-2 text-sm">
@@ -483,6 +497,11 @@ export function GameCanvas() {
                     {result.passed ? "✓" : "✕"} {result.objective.label}
                   </p>
                 ))}
+                <p className="pt-1 text-xs text-panel-muted">
+                  {lastReward.firstCompletionBonusApplied
+                    ? "First-clear bonus awarded."
+                    : "Replay rewards awarded (first-clear bonus already claimed)."}
+                </p>
               </div>
             )}
             <div className="mt-4 space-y-2">

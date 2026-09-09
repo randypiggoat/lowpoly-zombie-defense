@@ -923,7 +923,10 @@ type StageRunConfig = Pick<
   | "startingBaseHealth"
   | "waveCount"
   | "enemyPool"
+  | "gameplay"
   | "boss"
+  | "rewardMultiplier"
+  | "specialRules"
   | "rewards"
   | "objectives"
 >;
@@ -935,9 +938,24 @@ const DEFAULT_STAGE: StageRunConfig = {
   startingCoins: 180,
   startingBaseHealth: 20,
   waveCount: 6,
-  enemyPool: { normalKinds: [0, 1] },
+  enemyPool: { normalKinds: [0, 1], weights: { walker: 0.8, runner: 0.2 } },
+  gameplay: {
+    waveDifficultyMultiplier: 1,
+    waveSizeMultiplier: 1,
+    spawnIntervalMultiplier: 1,
+    waveDelayMultiplier: 1,
+    enemySpeedMultiplier: 1,
+    enemyHealthMultiplier: 1,
+  },
   boss: { enabled: false, wave: null, kind: null, count: 0 },
-  rewards: { coins: 0, xp: 0 },
+  rewardMultiplier: 1,
+  specialRules: [],
+  rewards: {
+    completionCoins: 0,
+    completionXp: 0,
+    completionStars: 0,
+    firstCompletionBonus: { coins: 0, xp: 0, stars: 0 },
+  },
   objectives: [],
 };
 
@@ -1135,25 +1153,47 @@ export class Game {
     const isBossWave = this.stage.boss.enabled && this.stage.boss.wave === w;
     const bossKind = this.stage.boss.kind;
     const kinds = this.stage.enemyPool.normalKinds;
-    const roll = Math.random();
     let kind: StageEnemyKind;
     if (isBossWave && bossKind !== null) {
       kind = bossKind;
     } else if (kinds.length === 0) {
       kind = 0;
     } else {
-      const weighted = kinds
-        .map((entry) => {
-          if (entry === 2) return w > 3 && roll > 0.84 ? 2 : null;
-          if (entry === 1) return w > 1 && roll > 0.55 ? 1 : null;
-          return 0;
-        })
-        .find((entry): entry is StageEnemyKind => entry !== null);
-      kind = weighted ?? kinds[0]!;
+      const baseWeights = this.stage.enemyPool.weights;
+      const walkerWeight = baseWeights?.walker ?? (kinds.includes(0) ? 1 : 0);
+      const runnerWeight =
+        (baseWeights?.runner ?? (kinds.includes(1) ? 0.65 : 0)) * (w > 1 ? 1 : 0.25);
+      const bruteWeight = (baseWeights?.brute ?? (kinds.includes(2) ? 0.4 : 0)) * (w > 3 ? 1 : 0.2);
+      const totalWeight = walkerWeight + runnerWeight + bruteWeight;
+      if (totalWeight <= 0) {
+        kind = kinds[0]!;
+      } else {
+        let pick = Math.random() * totalWeight;
+        if (kinds.includes(0)) {
+          pick -= walkerWeight;
+          if (pick <= 0) kind = 0;
+          else kind = 1;
+        } else {
+          kind = kinds[0]!;
+        }
+        if (kind !== 0) {
+          if (kinds.includes(1)) {
+            pick -= runnerWeight;
+            if (pick <= 0) kind = 1;
+            else kind = 2;
+          } else {
+            kind = 2;
+          }
+        }
+        if (!kinds.includes(kind)) kind = kinds[0]!;
+      }
     }
-    const baseHp = 16 * Math.pow(1.22, w - 1);
+    const difficultyMult = Math.max(0.75, this.stage.gameplay.waveDifficultyMultiplier);
+    const healthMult = Math.max(0.7, this.stage.gameplay.enemyHealthMultiplier);
+    const speedMult = Math.max(0.7, this.stage.gameplay.enemySpeedMultiplier);
+    const baseHp = 16 * Math.pow(1.22, w - 1) * (0.8 + difficultyMult * 0.2) * healthMult;
     const hp = kind === 2 ? baseHp * 3.2 : kind === 1 ? baseHp * 0.7 : baseHp;
-    const speed = kind === 2 ? 0.85 : kind === 1 ? 2.2 : 1.3;
+    const speed = (kind === 2 ? 0.85 : kind === 1 ? 2.2 : 1.3) * speedMult;
     s.zombies.push({
       id: nextId++,
       dist: -Math.random() * 2,
@@ -1265,7 +1305,8 @@ export class Game {
       if (s.spawnTimer <= 0) {
         this.spawn();
         s.spawnQueue -= 1;
-        s.spawnTimer = Math.max(0.35, 1.1 - s.wave * 0.03);
+        const spawnIntervalMult = Math.max(0.6, this.stage.gameplay.spawnIntervalMultiplier);
+        s.spawnTimer = Math.max(0.25, (1.1 - s.wave * 0.03) * spawnIntervalMult);
       }
     } else if (s.wave < s.stageWaveTarget) {
       s.waveTimer -= dt;
@@ -1273,9 +1314,12 @@ export class Game {
         s.wave += 1;
         const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
         const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
-        s.spawnQueue = 4 + Math.floor(s.wave * 1.6) + bossCount;
+        const queueMult =
+          Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
+          Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
+        s.spawnQueue = Math.max(1, Math.floor((4 + s.wave * 1.6) * queueMult) + bossCount);
         s.spawnTimer = 0;
-        s.waveTimer = 14 + s.wave * 0.5;
+        s.waveTimer = (14 + s.wave * 0.5) * Math.max(0.7, this.stage.gameplay.waveDelayMultiplier);
         profile.recordWaveReached(s.wave);
         sfx("wave");
         this.emit();
@@ -1336,6 +1380,7 @@ export class Game {
             starsEarned: 0,
             bonusCoins: 0,
             bonusXp: 0,
+            rewardMultiplier: this.stage.rewardMultiplier,
           });
           sfx("gameOver");
         }
@@ -1358,8 +1403,11 @@ export class Game {
           stageId: this.stage.id,
           stageCompleted: true,
           starsEarned: stars,
-          bonusCoins: this.stage.rewards.coins,
-          bonusXp: this.stage.rewards.xp,
+          bonusCoins: this.stage.rewards.completionCoins,
+          bonusXp: this.stage.rewards.completionXp,
+          bonusStars: this.stage.rewards.completionStars,
+          firstCompletionBonus: this.stage.rewards.firstCompletionBonus,
+          rewardMultiplier: this.stage.rewardMultiplier,
         });
         sfx("wave");
         this.emit();

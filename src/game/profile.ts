@@ -226,6 +226,7 @@ export type RunReward = {
   stageId: number | null;
   stageCompleted: boolean;
   starsEarned: number;
+  firstCompletionBonusApplied: boolean;
   bestStars: number;
   previousBestWave: number;
   previousBestStars: number;
@@ -708,20 +709,29 @@ class ProfileStore {
       starsEarned?: number;
       bonusCoins?: number;
       bonusXp?: number;
+      bonusStars?: number;
+      firstCompletionBonus?: {
+        coins: number;
+        xp: number;
+        stars: number;
+      };
+      rewardMultiplier?: number;
     },
   ): RunReward {
     this.refreshRetentionState();
     const p = this.profile;
     const stageCompleted = Boolean(options?.stageCompleted);
     const stageId = options?.stageId ?? null;
-    const baseXp = 20 + wave * 10 + Math.floor(kills / 2);
-    const baseCoins = 12 + wave * 4 + Math.floor(kills / 4);
-    const bonusXp = stageCompleted ? Math.max(0, options?.bonusXp ?? 0) : 0;
-    const bonusCoins = stageCompleted ? Math.max(0, options?.bonusCoins ?? 0) : 0;
-    const xp = baseXp + bonusXp;
-    const coins = baseCoins + bonusCoins;
-    const rawStars = options?.starsEarned ?? 0;
-    const starsEarned = stageCompleted ? Math.min(3, Math.max(1, rawStars)) : 0;
+    const rewardMultiplier = Math.max(0.1, options?.rewardMultiplier ?? 1);
+    const baseXp = Math.round((20 + wave * 10 + Math.floor(kills / 2)) * rewardMultiplier);
+    const baseCoins = Math.round((12 + wave * 4 + Math.floor(kills / 4)) * rewardMultiplier);
+    const completionXp = stageCompleted ? Math.max(0, options?.bonusXp ?? 0) : 0;
+    const completionCoins = stageCompleted ? Math.max(0, options?.bonusCoins ?? 0) : 0;
+    const completionStars = stageCompleted ? Math.max(0, options?.bonusStars ?? 0) : 0;
+    let bonusXp = completionXp;
+    let bonusCoins = completionCoins;
+    let bonusStars = completionStars;
+    let firstCompletionBonusApplied = false;
     const newRecord = wave > p.highestWave;
     const gems = Math.floor(wave / 7) + (newRecord && wave >= 3 ? 1 : 0);
     let previousBestWave = 0;
@@ -732,6 +742,17 @@ class ProfileStore {
       const progress = this.stageEntry(stageId);
       previousBestWave = progress.bestWave;
       previousBestStars = progress.stars;
+      if (stageCompleted && !progress.completed) {
+        const firstBonus = options?.firstCompletionBonus;
+        if (firstBonus) {
+          bonusCoins += Math.max(0, firstBonus.coins);
+          bonusXp += Math.max(0, firstBonus.xp);
+          bonusStars += Math.max(0, firstBonus.stars);
+          firstCompletionBonusApplied = true;
+        }
+      }
+      const rawStars = options?.starsEarned ?? 0;
+      const starsEarned = stageCompleted ? Math.min(3, Math.max(1, rawStars + bonusStars)) : 0;
       if (wave > progress.bestWave) progress.bestWave = wave;
       if (stageCompleted) {
         progress.completed = true;
@@ -742,27 +763,57 @@ class ProfileStore {
         }
       }
       bestStars = progress.stars;
+      p.coins += baseCoins + bonusCoins;
+      p.gems += gems;
+      p.gamesPlayed += 1;
+      if (wave > p.highestWave) p.highestWave = wave;
+
+      const result = this.awardXp(baseXp + bonusXp);
+      this.updateDailyMission("gameCompleted", 1);
+      this.syncAchievementProgress();
+      const reward: RunReward = {
+        wave,
+        kills,
+        xp: baseXp + bonusXp,
+        coins: baseCoins + bonusCoins,
+        gems: gems + result.levelsGained,
+        leveledTo: result.leveledTo,
+        newRecord,
+        stageId,
+        stageCompleted,
+        starsEarned,
+        firstCompletionBonusApplied,
+        bestStars,
+        previousBestWave,
+        previousBestStars,
+      };
+      this.lastReward = reward;
+      this.save();
+      return reward;
     }
 
-    p.coins += coins;
+    const rawStars = options?.starsEarned ?? 0;
+    const starsEarned = stageCompleted ? Math.min(3, Math.max(1, rawStars + bonusStars)) : 0;
+    p.coins += baseCoins + bonusCoins;
     p.gems += gems;
     p.gamesPlayed += 1;
     if (wave > p.highestWave) p.highestWave = wave;
 
-    const result = this.awardXp(xp);
+    const result = this.awardXp(baseXp + bonusXp);
     this.updateDailyMission("gameCompleted", 1);
     this.syncAchievementProgress();
     const reward: RunReward = {
       wave,
       kills,
-      xp,
-      coins,
+      xp: baseXp + bonusXp,
+      coins: baseCoins + bonusCoins,
       gems: gems + result.levelsGained,
       leveledTo: result.leveledTo,
       newRecord,
       stageId,
       stageCompleted,
       starsEarned,
+      firstCompletionBonusApplied,
       bestStars,
       previousBestWave,
       previousBestStars,
