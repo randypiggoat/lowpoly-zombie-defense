@@ -646,8 +646,11 @@ function CameraRig() {
   return null;
 }
 
-function Simulation() {
-  useFrame((_, dt) => game.tick(dt));
+function Simulation({ paused }: { paused: boolean }) {
+  useFrame((_, dt) => {
+    if (paused) return;
+    game.tick(dt);
+  });
   return null;
 }
 
@@ -656,11 +659,13 @@ export function Scene({
   selection,
   onSelectTower,
   onSelectSpot,
+  paused = false,
 }: {
   towers: Tower[];
   selection: Selection;
   onSelectTower: (id: number) => void;
   onSelectSpot: (i: number) => void;
+  paused?: boolean;
 }) {
   const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
   return (
@@ -680,7 +685,7 @@ export function Scene({
         shadow-camera-bottom={-26}
       />
       <CameraRig />
-      <Simulation />
+      <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground />
         <Scenery />
