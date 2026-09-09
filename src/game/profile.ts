@@ -17,7 +17,6 @@ export type PlayerProfile = {
   unlockedTowers: string[];
 };
 
-
 export type RunReward = {
   wave: number;
   kills: number;
@@ -42,7 +41,6 @@ function blank(): PlayerProfile {
     unlockedTowers: [],
   };
 }
-
 
 /** XP required to advance from `level` to `level + 1`. */
 export function xpForLevel(level: number): number {

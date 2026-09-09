@@ -9,7 +9,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Defend the last village from endless zombie waves. Upgrade four low-poly towers, grow your idle gold income, and survive as long as you can.",
+          "Defend the last village from endless zombie waves. Build and upgrade eight low-poly towers, grow your idle gold income, and survive as long as you can.",
       },
       { property: "og:title", content: "Rotwood Defense — Idle Zombie Tower Defense" },
       {
