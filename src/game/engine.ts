@@ -67,6 +67,8 @@ export type Zombie = {
   fade: number;
   flash: number;
   slow: number;
+  burn: number;
+  burnTime: number;
   // ragdoll
   vx: number;
   vy: number;
@@ -770,6 +772,8 @@ export class Game {
       fade: 0,
       flash: 0,
       slow: 0,
+      burn: 0,
+      burnTime: 0,
       vx: 0,
       vy: 0,
       vz: 0,
