@@ -504,7 +504,7 @@ export function tierCost(t: Tower, path: "a" | "b") {
 }
 
 function mods(t: Tower): Required<Mods> {
-  const out = { dmg: 1, rate: 1, range: 1, slow: 0, splash: 0, chain: 0, crit: 0, gold: 1, gore: 1 };
+  const out = { dmg: 1, rate: 1, range: 1, slow: 0, splash: 0, chain: 0, crit: 0, gold: 1, gore: 1, burn: 0 };
   const apply = (p: "a" | "b", n: number) => {
     const tiers = TOWER_PATHS[t.kind][p].tiers;
     for (let i = 0; i < n; i++) {
@@ -518,6 +518,7 @@ function mods(t: Tower): Required<Mods> {
       if (m.crit) out.crit = Math.max(out.crit, m.crit);
       if (m.gold) out.gold *= m.gold;
       if (m.gore) out.gore = Math.max(out.gore, m.gore);
+      if (m.burn) out.burn = Math.max(out.burn, m.burn);
     }
   };
   apply("a", t.a);
@@ -525,29 +526,44 @@ function mods(t: Tower): Required<Mods> {
   return out;
 }
 
-export function towerLevel(t: Tower) {
+/** Flat level bonuses bought with the Upgrade button. */
+function levelDmg(t: Tower) {
+  return Math.pow(1.22, t.level - 1);
+}
+function levelRate(t: Tower) {
+  return Math.pow(1.06, t.level - 1);
+}
+function levelRange(t: Tower) {
+  return Math.pow(1.035, t.level - 1);
+}
+
+/** Total tiers bought across both paths (used for visuals). */
+export function towerTiers(t: Tower) {
   return t.a + t.b;
 }
+export function towerLevel(t: Tower) {
+  return t.level;
+}
 export function towerDamage(t: Tower) {
-  return TOWER_INFO[t.kind].damage * mods(t).dmg;
+  return TOWER_INFO[t.kind].damage * mods(t).dmg * levelDmg(t);
 }
 export function towerRange(t: Tower) {
-  return TOWER_INFO[t.kind].range * mods(t).range;
+  return TOWER_INFO[t.kind].range * mods(t).range * levelRange(t);
 }
 export function towerRate(t: Tower) {
-  return TOWER_INFO[t.kind].rate * mods(t).rate;
+  return TOWER_INFO[t.kind].rate * mods(t).rate * levelRate(t);
 }
 export function towerSlow(t: Tower) {
-  const base = t.kind === "frost" ? 0.35 : 0;
-  return Math.max(base, mods(t).slow);
+  return Math.max(TOWER_INFO[t.kind].slow ?? 0, mods(t).slow);
 }
 export function towerSplash(t: Tower) {
-  const base = t.kind === "cannon" ? 2.2 : 0;
-  return base + mods(t).splash;
+  return Math.max(0, (TOWER_INFO[t.kind].splash ?? 0) + mods(t).splash);
 }
 export function towerChain(t: Tower) {
-  const base = t.kind === "tesla" ? 2 : 0;
-  return base + mods(t).chain;
+  return (TOWER_INFO[t.kind].chain ?? 0) + mods(t).chain;
+}
+export function towerBurn(t: Tower) {
+  return Math.max(TOWER_INFO[t.kind].burn ?? 0, mods(t).burn) * levelDmg(t);
 }
 export function towerCrit(t: Tower) {
   return mods(t).crit;
@@ -564,8 +580,18 @@ export function towerSellValue(t: Tower) {
   const tiersB = TOWER_PATHS[t.kind].b.tiers;
   for (let i = 0; i < t.a; i++) spent += tiersA[i]!.cost;
   for (let i = 0; i < t.b; i++) spent += tiersB[i]!.cost;
+  for (let l = 1; l < t.level; l++) {
+    spent += Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, l - 1));
+  }
   return Math.floor(spent * 0.6);
 }
+
+/** Whether the player's progression allows building this tower. */
+export function towerUnlocked(kind: TowerKind, playerLevel: number, purchased: string[]) {
+  const def = TOWER_INFO[kind];
+  return def.coinUnlock === 0 || playerLevel >= def.unlockLevel || purchased.includes(kind);
+}
+
 
 export function incomeCost(level: number) {
   return Math.round(50 * Math.pow(1.8, level - 1));
