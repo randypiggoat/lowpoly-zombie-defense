@@ -967,7 +967,7 @@ function makeState(stage: StageRunConfig): GameState {
     stageId: stage.id,
     stageWaveTarget: Math.max(1, stage.waveCount),
     wave: 0,
-    waveTimer: 10,
+    waveTimer: 0.6,
     spawnQueue: 0,
     spawnTimer: 0,
     kills: 0,
@@ -1147,53 +1147,92 @@ export class Game {
     this.emit();
   }
 
+  private waveIntensityBand(wave: number, waveTarget: number) {
+    const normalized = Math.round((wave / Math.max(1, waveTarget)) * 20);
+    if (normalized <= 3) return 1;
+    if (normalized <= 6) return 2;
+    if (normalized <= 9) return 3;
+    if (normalized <= 10) return 4;
+    if (normalized <= 15) return 5;
+    if (normalized <= 19) return 6;
+    return 7;
+  }
+
+  private waveSpawnPlan(wave: number, waveTarget: number) {
+    const band = this.waveIntensityBand(wave, waveTarget);
+    const sizeMultiplier = [1, 1.1, 1.22, 1.38, 1.58, 1.76, 1.95][band - 1]!;
+    const intervalMultiplier = [1, 0.84, 0.72, 0.62, 0.56, 0.5, 0.45][band - 1]!;
+    const batchSize = [1, 1, 2, 2, 2, 3, 3][band - 1]!;
+    const clearDelay = [0.55, 0.45, 0.38, 0.32, 0.28, 0.24, 0.2][band - 1]!;
+    return { sizeMultiplier, intervalMultiplier, batchSize, clearDelay };
+  }
+
+  private chooseEnemyKind(wave: number): StageEnemyKind {
+    const isBossWave = this.stage.boss.enabled && this.stage.boss.wave === wave;
+    const bossKind = this.stage.boss.kind;
+    const kinds = this.stage.enemyPool.normalKinds;
+    if (isBossWave && bossKind !== null) return bossKind;
+    if (kinds.length === 0) return 0;
+    const weights = this.stage.enemyPool.weights;
+    const progress = Math.max(0, (wave - 1) / Math.max(1, this.state.stageWaveTarget - 1));
+    const pool: Array<{ kind: StageEnemyKind; weight: number }> = [];
+    for (const kind of kinds) {
+      const baseWeight =
+        kind === 0
+          ? (weights?.walker ?? 1)
+          : kind === 1
+            ? (weights?.runner ?? 0.65)
+            : (weights?.brute ?? 0.45);
+      const wavePressure =
+        kind === 0
+          ? 1 - progress * 0.35
+          : kind === 1
+            ? 0.35 + progress * 1.1
+            : progress < 0.22
+              ? 0.2
+              : 0.35 + progress * 0.95;
+      pool.push({ kind, weight: Math.max(0.05, baseWeight * wavePressure) });
+    }
+    const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
+    let pick = Math.random() * total;
+    for (const entry of pool) {
+      pick -= entry.weight;
+      if (pick <= 0) return entry.kind;
+    }
+    return pool[pool.length - 1]!.kind;
+  }
+
+  private beginNextWave() {
+    const s = this.state;
+    s.wave += 1;
+    const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const queueMult =
+      Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
+      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
+    const plan = this.waveSpawnPlan(s.wave, s.stageWaveTarget);
+    const queue = Math.floor((4 + s.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
+    s.spawnQueue = Math.min(64, Math.max(1, queue));
+    s.spawnTimer = 0;
+    s.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
+    profile.recordWaveReached(s.wave);
+    sfx("wave");
+    this.emit();
+  }
+
   private spawn() {
     const s = this.state;
     const w = s.wave;
-    const isBossWave = this.stage.boss.enabled && this.stage.boss.wave === w;
-    const bossKind = this.stage.boss.kind;
-    const kinds = this.stage.enemyPool.normalKinds;
-    let kind: StageEnemyKind;
-    if (isBossWave && bossKind !== null) {
-      kind = bossKind;
-    } else if (kinds.length === 0) {
-      kind = 0;
-    } else {
-      const baseWeights = this.stage.enemyPool.weights;
-      const walkerWeight = baseWeights?.walker ?? (kinds.includes(0) ? 1 : 0);
-      const runnerWeight =
-        (baseWeights?.runner ?? (kinds.includes(1) ? 0.65 : 0)) * (w > 1 ? 1 : 0.25);
-      const bruteWeight = (baseWeights?.brute ?? (kinds.includes(2) ? 0.4 : 0)) * (w > 3 ? 1 : 0.2);
-      const totalWeight = walkerWeight + runnerWeight + bruteWeight;
-      if (totalWeight <= 0) {
-        kind = kinds[0]!;
-      } else {
-        let pick = Math.random() * totalWeight;
-        if (kinds.includes(0)) {
-          pick -= walkerWeight;
-          if (pick <= 0) kind = 0;
-          else kind = 1;
-        } else {
-          kind = kinds[0]!;
-        }
-        if (kind !== 0) {
-          if (kinds.includes(1)) {
-            pick -= runnerWeight;
-            if (pick <= 0) kind = 1;
-            else kind = 2;
-          } else {
-            kind = 2;
-          }
-        }
-        if (!kinds.includes(kind)) kind = kinds[0]!;
-      }
-    }
+    const kind = this.chooseEnemyKind(w);
     const difficultyMult = Math.max(0.75, this.stage.gameplay.waveDifficultyMultiplier);
     const healthMult = Math.max(0.7, this.stage.gameplay.enemyHealthMultiplier);
     const speedMult = Math.max(0.7, this.stage.gameplay.enemySpeedMultiplier);
-    const baseHp = 16 * Math.pow(1.22, w - 1) * (0.8 + difficultyMult * 0.2) * healthMult;
-    const hp = kind === 2 ? baseHp * 3.2 : kind === 1 ? baseHp * 0.7 : baseHp;
-    const speed = (kind === 2 ? 0.85 : kind === 1 ? 2.2 : 1.3) * speedMult;
+    const progress = Math.max(0, (w - 1) / Math.max(1, this.state.stageWaveTarget - 1));
+    const baseHp = 18 * Math.pow(1.22, w - 1) * (0.85 + difficultyMult * 0.22) * healthMult;
+    const hpScale = 1 + progress * 0.45 + Math.max(0, w - 3) * 0.02;
+    const hp = (kind === 2 ? baseHp * 3.7 : kind === 1 ? baseHp * 0.8 : baseHp * 1.15) * hpScale;
+    const speedPressure = 1 + progress * 0.14;
+    const speed = (kind === 2 ? 0.92 : kind === 1 ? 2.18 : 1.36) * speedMult * speedPressure;
     s.zombies.push({
       id: nextId++,
       dist: -Math.random() * 2,
@@ -1303,26 +1342,17 @@ export class Game {
     if (s.spawnQueue > 0) {
       s.spawnTimer -= dt;
       if (s.spawnTimer <= 0) {
-        this.spawn();
-        s.spawnQueue -= 1;
+        const plan = this.waveSpawnPlan(s.wave, s.stageWaveTarget);
+        const burst = Math.min(s.spawnQueue, plan.batchSize);
+        for (let i = 0; i < burst; i++) {
+          this.spawn();
+          s.spawnQueue -= 1;
+        }
         const spawnIntervalMult = Math.max(0.6, this.stage.gameplay.spawnIntervalMultiplier);
-        s.spawnTimer = Math.max(0.25, (1.1 - s.wave * 0.03) * spawnIntervalMult);
-      }
-    } else if (s.wave < s.stageWaveTarget) {
-      s.waveTimer -= dt;
-      if (s.waveTimer <= 0) {
-        s.wave += 1;
-        const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
-        const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
-        const queueMult =
-          Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
-          Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
-        s.spawnQueue = Math.max(1, Math.floor((4 + s.wave * 1.6) * queueMult) + bossCount);
-        s.spawnTimer = 0;
-        s.waveTimer = (14 + s.wave * 0.5) * Math.max(0.7, this.stage.gameplay.waveDelayMultiplier);
-        profile.recordWaveReached(s.wave);
-        sfx("wave");
-        this.emit();
+        s.spawnTimer = Math.max(
+          0.12,
+          (0.85 - s.wave * 0.02) * spawnIntervalMult * plan.intervalMultiplier,
+        );
       }
     }
 
@@ -1388,8 +1418,9 @@ export class Game {
       }
     }
 
+    const aliveZombies = s.zombies.some((z) => !z.dead);
+
     if (!s.gameOver && s.wave >= s.stageWaveTarget && s.spawnQueue === 0) {
-      const aliveZombies = s.zombies.some((z) => !z.dead);
       if (!aliveZombies) {
         s.gameOver = true;
         s.stageWon = true;
@@ -1412,6 +1443,9 @@ export class Game {
         sfx("wave");
         this.emit();
       }
+    } else if (!s.gameOver && s.wave < s.stageWaveTarget && s.spawnQueue === 0 && !aliveZombies) {
+      s.waveTimer -= dt;
+      if (s.waveTimer <= 0) this.beginNextWave();
     }
 
     // gibs

@@ -199,23 +199,10 @@ export function GameCanvas() {
             state={state}
             selection={selection}
             onSelect={setSelection}
+            onPause={() => setOverlay("pause")}
             showMetaSections={false}
             showGameOverOverlay={false}
           />
-          <div className="pointer-events-none absolute left-0 right-0 top-3 z-20 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-            <div className="ml-auto flex w-full max-w-xs items-center justify-end gap-2">
-              <div className="rounded-xl bg-panel/85 px-3 py-2 text-xs font-semibold text-panel-foreground shadow-panel">
-                STAGE {activeStage.stageNumber} · WAVE {Math.min(state.wave, state.stageWaveTarget)}
-                /{state.stageWaveTarget}
-              </div>
-              <button
-                onClick={() => setOverlay("pause")}
-                className="pointer-events-auto rounded-xl bg-panel/90 px-4 py-2 text-sm font-semibold text-panel-foreground shadow-panel"
-              >
-                MENU
-              </button>
-            </div>
-          </div>
         </>
       )}
 
