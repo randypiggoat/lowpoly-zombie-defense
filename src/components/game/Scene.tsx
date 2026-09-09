@@ -112,7 +112,7 @@ function Scenery() {
     const trees: [number, number, number][] = [];
     const rocks: [number, number, number][] = [];
     let seed = 7;
-    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
     for (let i = 0; i < 46; i++) {
       const x = (rnd() - 0.5) * 56;
       const z = (rnd() - 0.5) * 60 - 4;
@@ -245,6 +245,140 @@ function BuildPads({
 
 /* ---------------- towers ---------------- */
 
+function WeaponAssembly({
+  kind,
+  level,
+  accent,
+}: {
+  kind: Tower["kind"];
+  level: number;
+  accent: string;
+}) {
+  const length = 1.3 + Math.min(level, 8) * 0.08;
+  const shape = TOWER_INFO[kind].shape;
+
+  if (shape === "double") {
+    return (
+      <>
+        {[-0.2, 0.2].map((x) => (
+          <mesh key={x} position={[x, 0.05, 0]} castShadow>
+            <boxGeometry args={[0.18, 0.22, length * 0.95]} />
+            <meshStandardMaterial color="#4a4a52" flatShading />
+          </mesh>
+        ))}
+      </>
+    );
+  }
+
+  if (shape === "long") {
+    return (
+      <mesh position={[0, 0.04, 0.12]} castShadow>
+        <boxGeometry args={[0.16, 0.18, length * 1.45]} />
+        <meshStandardMaterial color="#4a4a52" flatShading />
+      </mesh>
+    );
+  }
+
+  if (shape === "wide") {
+    return (
+      <>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <boxGeometry args={[0.48, 0.22, length * 0.8]} />
+          <meshStandardMaterial color="#4a4a52" flatShading />
+        </mesh>
+        <mesh position={[0, 0.18, 0.62]} castShadow>
+          <boxGeometry args={[0.7, 0.08, 0.34]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.35}
+            flatShading
+          />
+        </mesh>
+      </>
+    );
+  }
+
+  if (shape === "nozzle") {
+    return (
+      <>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <boxGeometry args={[0.34, 0.24, length * 0.8]} />
+          <meshStandardMaterial color="#4a4a52" flatShading />
+        </mesh>
+        <mesh position={[0, 0.1, 0.58]} castShadow>
+          <cylinderGeometry args={[0.18, 0.24, 0.36, 6]} />
+          <meshStandardMaterial color={accent} flatShading />
+        </mesh>
+      </>
+    );
+  }
+
+  if (shape === "orb") {
+    return (
+      <>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <boxGeometry args={[0.22, 0.22, length * 0.75]} />
+          <meshStandardMaterial color="#4a4a52" flatShading />
+        </mesh>
+        <mesh position={[0, 0.5, 0]}>
+          <icosahedronGeometry args={[0.3, 0]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.8}
+            flatShading
+          />
+        </mesh>
+      </>
+    );
+  }
+
+  if (shape === "pods") {
+    return (
+      <>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <boxGeometry args={[0.28, 0.24, length]} />
+          <meshStandardMaterial color="#4a4a52" flatShading />
+        </mesh>
+        {[-0.34, 0.34].map((x) => (
+          <mesh key={x} position={[x, 0.18, 0.25]} castShadow>
+            <cylinderGeometry args={[0.16, 0.16, 0.7, 6]} />
+            <meshStandardMaterial color={accent} flatShading />
+          </mesh>
+        ))}
+      </>
+    );
+  }
+
+  if (shape === "lens") {
+    return (
+      <>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <boxGeometry args={[0.24, 0.2, length * 0.9]} />
+          <meshStandardMaterial color="#4a4a52" flatShading />
+        </mesh>
+        <mesh position={[0, 0.08, 0.72]} castShadow>
+          <cylinderGeometry args={[0.28, 0.28, 0.12, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.45}
+            flatShading
+          />
+        </mesh>
+      </>
+    );
+  }
+
+  return (
+    <mesh position={[0, 0.05, 0]} castShadow>
+      <boxGeometry args={[0.26, 0.26, length]} />
+      <meshStandardMaterial color="#4a4a52" flatShading />
+    </mesh>
+  );
+}
+
 function TowerMesh({
   tower,
   selected,
@@ -255,7 +389,7 @@ function TowerMesh({
   onSelect: (id: number) => void;
 }) {
   const turret = useRef<THREE.Group>(null);
-  const barrel = useRef<THREE.Mesh>(null);
+  const barrel = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
   const accent = TOWER_INFO[tower.kind].accent;
   const level = towerLevel(tower);
@@ -305,28 +439,31 @@ function TowerMesh({
           <boxGeometry args={[1.1, 0.6, 1.1]} />
           <meshStandardMaterial color={accent} flatShading />
         </mesh>
-        <mesh ref={barrel} position={[0, 0.05, 0.95]} castShadow>
-          <boxGeometry args={[0.26, 0.26, 1.3 + Math.min(level, 8) * 0.08]} />
-          <meshStandardMaterial color="#4a4a52" flatShading />
-        </mesh>
-        {tower.kind === "tesla" && (
-          <mesh position={[0, 0.55, 0]}>
-            <icosahedronGeometry args={[0.3, 0]} />
-            <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.8} flatShading />
-          </mesh>
-        )}
+        <group ref={barrel} position={[0, 0.05, 0.95]}>
+          <WeaponAssembly kind={tower.kind} level={level} accent={accent} />
+        </group>
       </group>
       {/* path pips: left = path A, right = path B */}
       {Array.from({ length: tower.a }, (_, i) => (
         <mesh key={`a${i}`} position={[-0.75, 0.5 + i * 0.24, 1.15]}>
           <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} flatShading />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.5}
+            flatShading
+          />
         </mesh>
       ))}
       {Array.from({ length: tower.b }, (_, i) => (
         <mesh key={`b${i}`} position={[0.75, 0.5 + i * 0.24, 1.15]}>
           <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial color="#f4ead6" emissive="#f4ead6" emissiveIntensity={0.35} flatShading />
+          <meshStandardMaterial
+            color="#f4ead6"
+            emissive="#f4ead6"
+            emissiveIntensity={0.35}
+            flatShading
+          />
         </mesh>
       ))}
     </group>
@@ -466,9 +603,20 @@ function Bullets() {
       }
       m.visible = true;
       m.position.set(b.x, b.y, b.z);
+      m.lookAt(b.tx, b.y, b.tz);
       const c = TOWER_INFO[b.kind].accent;
       (m.material as THREE.MeshBasicMaterial).color.set(b.crit ? "#fff3c4" : c);
-      m.scale.setScalar((b.kind === "cannon" ? 1.7 : 1) * (b.crit ? 1.5 : 1));
+      const critScale = b.crit ? 1.5 : 1;
+      if (b.kind === "shotgunner")
+        m.scale.set(0.28 * critScale, 0.28 * critScale, 0.28 * critScale);
+      else if (b.kind === "rocket")
+        m.scale.set(0.34 * critScale, 0.34 * critScale, 0.8 * critScale);
+      else if (b.kind === "laser")
+        m.scale.set(0.18 * critScale, 0.18 * critScale, 1.15 * critScale);
+      else if (b.kind === "tesla") m.scale.set(0.22 * critScale, 0.22 * critScale, 0.6 * critScale);
+      else if (b.kind === "flamethrower")
+        m.scale.set(0.3 * critScale, 0.16 * critScale, 0.5 * critScale);
+      else m.scale.setScalar(critScale);
     }
   });
   return (
