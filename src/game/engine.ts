@@ -774,6 +774,3 @@ export class Game {
 }
 
 export const game = new Game();
-
-// dev aid
-if (typeof window !== "undefined") (window as any).__game = game;
