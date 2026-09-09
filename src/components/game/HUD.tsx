@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   TOWER_INFO,
   TOWER_PATHS,
+  TOWER_KINDS,
   canBuyTier,
   game,
   incomeCost,
@@ -15,7 +16,6 @@ import {
   towerSlow,
   type GameState,
   type Tower,
-  type TowerKind,
 } from "@/game/engine";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
 import { profile, xpForLevel } from "@/game/profile";
@@ -46,8 +46,8 @@ function ProgressionBar() {
   );
 }
 
-
-const KINDS: TowerKind[] = ["gunner", "cannon", "frost", "tesla"];
+// Show first 4 tower kinds in build menu (unlocked by default or level-based)
+const STARTER_KINDS = ["rifleman", "shotgunner", "freezer", "tesla"] as const;
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "gold" | "danger" | undefined }) {
   return (
@@ -160,10 +160,6 @@ export function HUD({
         <ProgressionBar />
       </div>
 
-
-
-
-
       {/* bottom panel */}
       <div className="pointer-events-auto space-y-2">
         {!tower && spot === null && state.towers.length === 0 && (
@@ -179,7 +175,7 @@ export function HUD({
           <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
             <h2 className="font-display text-lg tracking-wide text-panel-foreground">Build a tower</h2>
             <div className="mt-2 grid grid-cols-4 gap-1.5">
-              {KINDS.map((k) => {
+              {STARTER_KINDS.map((k) => {
                 const info = TOWER_INFO[k];
                 const can = state.gold >= info.cost;
                 return (
@@ -204,7 +200,7 @@ export function HUD({
               })}
             </div>
             <p className="mt-2 text-[11px] text-panel-muted">
-              Gunner: rapid shots · Cannon: heavy blasts · Frost: slows · Tesla: chains
+              Rifleman: rapid shots · Shotgunner: heavy blasts · Freezer: slows · Tesla: chains
             </p>
           </div>
         )}
@@ -218,7 +214,7 @@ export function HUD({
                 <button
                   key={t.id}
                   onClick={() => onSelect({ kind: "tower", id: t.id })}
-                  className="flex-1 rounded-xl border border-white/10 bg-panel/85 px-1 py-1.5 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:bg-panel"
+                  className="flex-1 rounded-xl border border-white/10 bg-panel/85 px-1 py-1.5 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:border-2"
                   data-active={active}
                 >
                   <span
