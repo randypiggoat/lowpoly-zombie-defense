@@ -8,7 +8,9 @@ let muted = false;
 function ensure(): Ctx {
   if (typeof window === "undefined") return null;
   if (!ctx) {
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const AC =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
     master = ctx.createGain();
@@ -104,12 +106,14 @@ export function sfx(name: SfxName) {
       const now = c.currentTime;
       if (now - lastShot < 0.045) return;
       lastShot = now;
-      if (name === "shootGunner") tone({ freq: 620, to: 260, dur: 0.06, type: "square", gain: 0.08 });
+      if (name === "shootGunner")
+        tone({ freq: 620, to: 260, dur: 0.06, type: "square", gain: 0.08 });
       if (name === "shootCannon") {
         tone({ freq: 160, to: 45, dur: 0.2, type: "sawtooth", gain: 0.16 });
         noise(0.14, 0.1, 600);
       }
-      if (name === "shootFrost") tone({ freq: 1200, to: 700, dur: 0.1, type: "triangle", gain: 0.07 });
+      if (name === "shootFrost")
+        tone({ freq: 1200, to: 700, dur: 0.1, type: "triangle", gain: 0.07 });
       if (name === "shootTesla") {
         tone({ freq: 900, to: 1800, dur: 0.08, type: "sawtooth", gain: 0.07 });
         noise(0.07, 0.05, 3000);
