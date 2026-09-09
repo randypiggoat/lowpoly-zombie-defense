@@ -93,7 +93,26 @@ export type Gib = {
   tint: number;
 };
 
-export type TowerKind = "gunner" | "cannon" | "frost" | "tesla";
+export type TowerKind =
+  | "rifleman"
+  | "shotgunner"
+  | "sniper"
+  | "tesla"
+  | "flamethrower"
+  | "freezer"
+  | "rocket"
+  | "laser";
+
+export const TOWER_KINDS: TowerKind[] = [
+  "rifleman",
+  "shotgunner",
+  "sniper",
+  "tesla",
+  "flamethrower",
+  "freezer",
+  "rocket",
+  "laser",
+];
 
 export type Tower = {
   id: number;
@@ -101,6 +120,7 @@ export type Tower = {
   spot: number;
   x: number;
   z: number;
+  level: number; // 1..MAX_TOWER_LEVEL, bought with gold
   a: number; // tiers bought in path A (0-4)
   b: number; // tiers bought in path B (0-4)
   cooldown: number;
@@ -122,19 +142,153 @@ export type Bullet = {
   splash: number;
   chain: number;
   slow: number;
+  burn: number;
   crit: boolean;
   alive: boolean;
 };
 
-export const TOWER_INFO: Record<
-  TowerKind,
-  { name: string; blurb: string; damage: number; rate: number; range: number; cost: number; accent: string }
-> = {
-  gunner: { name: "Gunner", blurb: "Fast single shots", damage: 6, rate: 2.2, range: 6.5, cost: 40, accent: "#e9b44c" },
-  cannon: { name: "Cannon", blurb: "Slow, heavy hits", damage: 26, rate: 0.6, range: 7.5, cost: 70, accent: "#e2725b" },
-  frost: { name: "Frost", blurb: "Slows the horde", damage: 4, rate: 1.4, range: 6, cost: 60, accent: "#79c7e3" },
-  tesla: { name: "Tesla", blurb: "Chains damage", damage: 12, rate: 1.1, range: 5.5, cost: 90, accent: "#b892ff" },
+export type TowerDef = {
+  name: string;
+  blurb: string;
+  damage: number;
+  rate: number;
+  range: number;
+  cost: number;
+  accent: string;
+  /** Base gold cost of the first level-up; scales per level. */
+  upgradeBase: number;
+  /** Player level needed before this tower can be built. */
+  unlockLevel: number;
+  /** Coins that unlock the tower early (0 = free from the start). */
+  coinUnlock: number;
+  /** Innate behaviour. */
+  splash?: number;
+  chain?: number;
+  slow?: number;
+  burn?: number;
+  shape?: "double" | "long" | "wide" | "nozzle" | "orb" | "pods" | "lens";
 };
+
+export const TOWER_INFO: Record<TowerKind, TowerDef> = {
+  rifleman: {
+    name: "Rifleman",
+    blurb: "Cheap, fast shots at long range",
+    damage: 6,
+    rate: 2.2,
+    range: 7.6,
+    cost: 40,
+    accent: "#e9b44c",
+    upgradeBase: 30,
+    unlockLevel: 1,
+    coinUnlock: 0,
+  },
+  shotgunner: {
+    name: "Shotgunner",
+    blurb: "Short range, heavy spread damage",
+    damage: 15,
+    rate: 1.1,
+    range: 4.3,
+    cost: 65,
+    accent: "#d98a3c",
+    upgradeBase: 45,
+    unlockLevel: 1,
+    coinUnlock: 0,
+    splash: 1.9,
+    shape: "double",
+  },
+  freezer: {
+    name: "Freezer",
+    blurb: "Low damage, heavy slow",
+    damage: 4,
+    rate: 1.4,
+    range: 6,
+    cost: 60,
+    accent: "#79c7e3",
+    upgradeBase: 40,
+    unlockLevel: 1,
+    coinUnlock: 0,
+    slow: 0.35,
+    shape: "nozzle",
+  },
+  sniper: {
+    name: "Sniper",
+    blurb: "Very long range, huge single hits",
+    damage: 62,
+    rate: 0.36,
+    range: 14,
+    cost: 120,
+    accent: "#8fb98a",
+    upgradeBase: 80,
+    unlockLevel: 2,
+    coinUnlock: 350,
+    shape: "long",
+  },
+  tesla: {
+    name: "Tesla",
+    blurb: "Chain lightning across the horde",
+    damage: 12,
+    rate: 1.1,
+    range: 5.6,
+    cost: 90,
+    accent: "#b892ff",
+    upgradeBase: 60,
+    unlockLevel: 3,
+    coinUnlock: 550,
+    chain: 2,
+    shape: "orb",
+  },
+  flamethrower: {
+    name: "Flamethrower",
+    blurb: "Burns groups over time",
+    damage: 4,
+    rate: 3.4,
+    range: 5,
+    cost: 95,
+    accent: "#f2703b",
+    upgradeBase: 65,
+    unlockLevel: 4,
+    coinUnlock: 800,
+    burn: 7,
+    splash: 1.3,
+    shape: "wide",
+  },
+  rocket: {
+    name: "Rocket",
+    blurb: "Slow shots, big explosions",
+    damage: 42,
+    rate: 0.5,
+    range: 8.6,
+    cost: 130,
+    accent: "#e2725b",
+    upgradeBase: 90,
+    unlockLevel: 5,
+    coinUnlock: 1100,
+    splash: 3,
+    shape: "pods",
+  },
+  laser: {
+    name: "Laser",
+    blurb: "Expensive, melts single targets",
+    damage: 34,
+    rate: 2.6,
+    range: 9.2,
+    cost: 220,
+    accent: "#63e6c3",
+    upgradeBase: 150,
+    unlockLevel: 7,
+    coinUnlock: 1600,
+    shape: "lens",
+  },
+};
+
+export const MAX_TOWER_LEVEL = 8;
+
+/** Gold cost of the next level-up for this tower. */
+export function towerUpgradeCost(t: Tower) {
+  if (t.level >= MAX_TOWER_LEVEL) return Infinity;
+  return Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, t.level - 1));
+}
+
 
 /* ---------------- upgrade paths ---------------- */
 
