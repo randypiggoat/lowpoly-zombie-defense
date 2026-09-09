@@ -285,6 +285,43 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
 
 export const MAX_TOWER_LEVEL = 8;
 
+/** Projectile flight speed per tower. */
+export const BULLET_SPEED: Record<TowerKind, number> = {
+  rifleman: 22,
+  shotgunner: 18,
+  sniper: 60,
+  tesla: 30,
+  flamethrower: 12,
+  freezer: 20,
+  rocket: 14,
+  laser: 80,
+};
+
+/** Which existing shot sound each tower reuses. */
+export const SHOOT_SFX: Record<TowerKind, "shootGunner" | "shootCannon" | "shootFrost" | "shootTesla"> = {
+  rifleman: "shootGunner",
+  shotgunner: "shootCannon",
+  sniper: "shootCannon",
+  tesla: "shootTesla",
+  flamethrower: "shootFrost",
+  freezer: "shootFrost",
+  rocket: "shootCannon",
+  laser: "shootTesla",
+};
+
+/** How violently kills from each tower come apart. */
+export const GORE_BASE: Record<TowerKind, number> = {
+  rifleman: 1,
+  shotgunner: 1.5,
+  sniper: 1.6,
+  tesla: 1.1,
+  flamethrower: 1.2,
+  freezer: 1,
+  rocket: 1.9,
+  laser: 1.3,
+};
+
+
 /** Gold cost of the next level-up for this tower. */
 export function towerUpgradeCost(t: Tower) {
   if (t.level >= MAX_TOWER_LEVEL) return Infinity;
