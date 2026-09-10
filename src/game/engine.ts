@@ -1325,10 +1325,30 @@ export class Game {
     }
   }
 
+  /** Frame-rate independent entry point: runs fixed sim steps for the elapsed time. */
   tick(dtRaw: number) {
+    if (this.state.gameOver) return;
+    // Cap catch-up so a long tab stall can't fast-forward the whole run.
+    this.accumulator += Math.min(Math.max(dtRaw, 0), 0.5);
+    const STEP = 1 / 60;
+    let steps = 0;
+    while (this.accumulator >= STEP && steps < 30) {
+      this.accumulator -= STEP;
+      steps++;
+      this.step(STEP);
+      if (this.state.gameOver) {
+        this.accumulator = 0;
+        break;
+      }
+    }
+  }
+
+  private accumulator = 0;
+
+  private step(dt: number) {
     const s = this.state;
-    const dt = Math.min(dtRaw, 0.05);
     if (s.gameOver) return;
+
 
     // idle income
     s.income += incomePerSecond(s.incomeLevel) * dt;
