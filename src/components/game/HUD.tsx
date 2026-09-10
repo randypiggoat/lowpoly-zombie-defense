@@ -299,7 +299,7 @@ export function HUD({
         </div>
       </div>
 
-      <div className="pointer-events-auto max-h-[44vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1">>
+      <div className="pointer-events-auto max-h-[44vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1">
         {showMetaSections && (
           <>
             <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
