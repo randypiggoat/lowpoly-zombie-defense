@@ -98,6 +98,8 @@ export type Gib = {
 
 export type TargetMode = "first" | "last" | "strongest";
 
+export type TargetMode = "first" | "last" | "strongest";
+
 export type Tower = {
   id: number;
   kind: TowerKind;
@@ -123,20 +125,6 @@ export const TOWER_KINDS: TowerKind[] = [
   "rocket",
   "laser",
 ];
-
-export type Tower = {
-  id: number;
-  kind: TowerKind;
-  spot: number;
-  x: number;
-  z: number;
-  level: number; // 1..MAX_TOWER_LEVEL, bought with gold
-  a: number; // tiers bought in path A (0-4)
-  b: number; // tiers bought in path B (0-4)
-  cooldown: number;
-  aim: number;
-  recoil: number;
-};
 
 export type Bullet = {
   id: number;
