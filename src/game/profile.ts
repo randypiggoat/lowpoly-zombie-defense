@@ -318,9 +318,9 @@ function normalizeTowerUpgrades(value: unknown): Record<string, TowerUpgradeProf
       return [
         kind,
         {
-          level: Math.max(0, Number(entry.level) || 0),
-          points: Math.max(0, Number(entry.points) || 0),
-          spentCoins: Math.max(0, Number(entry.spentCoins) || 0),
+          level: Math.max(0, Number(entry['level']) || 0),
+          points: Math.max(0, Number(entry['points']) || 0),
+          spentCoins: Math.max(0, Number(entry['spentCoins']) || 0),
         },
       ];
     }),
@@ -347,18 +347,18 @@ function normalizeClaimProgressRecords(value: unknown): Record<string, Achieveme
   return Object.fromEntries(
     Object.entries(value).map(([id, raw]) => {
       const entry = isRecord(raw) ? raw : {};
-      const target = Math.max(0, Number(entry.target) || 0);
-      const progress = Math.max(0, Number(entry.progress) || 0);
+      const target = Math.max(0, Number(entry['target']) || 0);
+      const progress = Math.max(0, Number(entry['progress']) || 0);
       return [
         id,
         {
           progress,
           target,
-          completed: Boolean(entry.completed) || (target > 0 && progress >= target),
-          claimed: Boolean(entry.claimed),
-          updatedAt: normalizeDate(entry.updatedAt),
-          completedAt: normalizeDate(entry.completedAt),
-          claimedAt: normalizeDate(entry.claimedAt),
+          completed: Boolean(entry['completed']) || (target > 0 && progress >= target),
+          claimed: Boolean(entry['claimed']),
+          updatedAt: normalizeDate(entry['updatedAt']),
+          completedAt: normalizeDate(entry['completedAt']),
+          claimedAt: normalizeDate(entry['claimedAt']),
         },
       ];
     }),
@@ -373,10 +373,10 @@ function normalizeStageProgressRecords(value: unknown): Record<string, StageProg
       return [
         id,
         {
-          unlocked: Boolean(entry.unlocked),
-          completed: Boolean(entry.completed),
-          bestWave: Math.max(0, Number(entry.bestWave) || 0),
-          stars: Math.min(3, Math.max(0, Number(entry.stars) || 0)),
+          unlocked: Boolean(entry['unlocked']),
+          completed: Boolean(entry['completed']),
+          bestWave: Math.max(0, Number(entry['bestWave']) || 0),
+          stars: Math.min(3, Math.max(0, Number(entry['stars']) || 0)),
         },
       ];
     }),
@@ -428,7 +428,7 @@ function ensureDailyMissionState(profile: PlayerProfile, today: string) {
   let changed = false;
   for (const mission of DAILY_MISSION_DEFS) {
     const entry = profile.dailyMissionProgress[mission.id];
-    if (!entry || entry.target !== mission.target) {
+    if (!entry || entry['target'] !== mission.target) {
       profile.dailyMissionProgress[mission.id] = {
         ...blankProgress(mission.target),
         progress: Math.min(mission.target, entry?.progress ?? 0),
@@ -472,20 +472,20 @@ function syncAchievements(profile: PlayerProfile, stamp: string) {
       progress,
       target: achievement.target,
       completed,
-      claimed: entry.claimed,
-      updatedAt: progress !== entry.progress || entry.updatedAt === null ? stamp : entry.updatedAt,
-      completedAt: completed ? (entry.completedAt ?? stamp) : null,
-      claimedAt: entry.claimedAt ?? null,
+      claimed: entry['claimed'],
+      updatedAt: progress !== entry['progress'] || entry['updatedAt'] === null ? stamp : entry['updatedAt'],
+      completedAt: completed ? (entry['completedAt'] ?? stamp) : null,
+      claimedAt: entry['claimedAt'] ?? null,
     };
     if (
       !profile.achievements[achievement.id] ||
-      entry.progress !== next.progress ||
-      entry.target !== next.target ||
-      entry.completed !== next.completed ||
-      entry.claimed !== next.claimed ||
-      entry.updatedAt !== next.updatedAt ||
-      entry.completedAt !== next.completedAt ||
-      entry.claimedAt !== next.claimedAt
+      entry['progress'] !== next.progress ||
+      entry['target'] !== next.target ||
+      entry['completed'] !== next.completed ||
+      entry['claimed'] !== next.claimed ||
+      entry['updatedAt'] !== next.updatedAt ||
+      entry['completedAt'] !== next.completedAt ||
+      entry['claimedAt'] !== next.claimedAt
     ) {
       profile.achievements[achievement.id] = next;
       changed = true;
@@ -838,7 +838,7 @@ class ProfileStore {
     this.refreshRetentionState();
     const p = this.profile;
     const entry = this.towerUpgrade(kind);
-    entry.points += points;
+    entry['points'] += points;
     p.towerUpgradeActions += points;
     this.syncAchievementProgress();
     this.save();
@@ -857,10 +857,10 @@ class ProfileStore {
   buyTowerUpgrade(kind: string, cost: number) {
     const p = this.profile;
     const entry = this.towerUpgrade(kind);
-    if (entry.level >= MAX_TOWER_UPGRADE_LEVEL || p.coins < cost) return false;
+    if (entry['level'] >= MAX_TOWER_UPGRADE_LEVEL || p.coins < cost) return false;
     p.coins -= cost;
-    entry.level += 1;
-    entry.spentCoins += cost;
+    entry['level'] += 1;
+    entry['spentCoins'] += cost;
     this.save();
     return true;
   }
