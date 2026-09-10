@@ -575,6 +575,34 @@ export function HUD({
                 </div>
               ))}
             </div>
+<div className="mt-2 rounded-xl bg-black/25 p-2">
+  <p className="mb-1.5 text-[10px] uppercase tracking-[0.16em] text-panel-muted">
+    Targeting
+  </p>
+
+  <div className="grid grid-cols-3 gap-1.5">
+    {([
+      ["first", "First"],
+      ["last", "Last"],
+      ["strongest", "Strongest"],
+    ] as const).map(([mode, label]) => {
+      const active = tower.targetMode === mode;
+
+      return (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => game.setTowerTargetMode(tower.id, mode)}
+          className="min-h-11 rounded-lg border border-white/10 bg-panel/70 px-2 py-2 font-display text-xs tracking-wide text-panel-foreground transition active:scale-[0.97] data-[active=true]:border-accent data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
+          data-active={active}
+          aria-pressed={active}
+        >
+          {label}
+        </button>
+      );
+    })}
+  </div>
+</div>
             <button
               onClick={() => game.upgradeTower(tower.id)}
               disabled={tower.level >= MAX_TOWER_LEVEL || state.gold < levelCost}
