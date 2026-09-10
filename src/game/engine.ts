@@ -96,8 +96,22 @@ export type Gib = {
   tint: number;
 };
 
-export type TowerKind =
-  "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser";
+export type TargetMode = "first" | "last" | "strongest";
+
+export type Tower = {
+  id: number;
+  kind: TowerKind;
+  spot: number;
+  x: number;
+  z: number;
+  level: number; // 1..MAX_TOWER_LEVEL, bought with gold
+  a: number; // tiers bought in path A (0-4)
+  b: number; // tiers bought in path B (0-4)
+  targetMode: TargetMode;
+  cooldown: number;
+  aim: number;
+  recoil: number;
+};
 
 export const TOWER_KINDS: TowerKind[] = [
   "rifleman",
@@ -1010,7 +1024,15 @@ export class Game {
 
   towerAtSpot(spot: number) {
     return this.state.towers.find((t) => t.spot === spot) ?? null;
-  }
+  }setTowerTargetMode(towerId: number, mode: TargetMode): boolean {
+  const tower = this.state.towers.find((t) => t.id === towerId);
+
+  if (!tower) return false;
+
+  tower.targetMode = mode;
+  this.emit();
+  return true;
+}
 
   build(spot: number, kind: TowerKind): boolean {
     const s = this.state;
@@ -1027,19 +1049,20 @@ export class Game {
       return false;
     }
     s.gold -= cost;
-    s.towers.push({
-      id: nextId++,
-      kind,
-      spot,
-      x: pad.x,
-      z: pad.z,
-      level: 1,
-      a: 0,
-      b: 0,
-      cooldown: 0,
-      aim: 0,
-      recoil: 0,
-    });
+  s.towers.push({
+  id: nextId++,
+  kind,
+  spot,
+  x: pad.x,
+  z: pad.z,
+  level: 1,
+  a: 0,
+  b: 0,
+  targetMode: "first",
+  cooldown: 0,
+  aim: 0,
+  recoil: 0,
+});
     s.towersPlaced += 1;
     profile.recordTowerBuilt(kind);
     sfx("build");
@@ -1485,22 +1508,37 @@ export class Game {
         g.spin *= Math.exp(-7 * dt);
       }
     }
+    const chooseTowerTarget = (t: Tower): Zombie | null => {
+      const range = towerRange(t);
+      const candidates = s.zombies.filter((z) => {
+        if (z.dead) return false;
+        return Math.hypot(z.x - t.x, z.z - t.z) <= range;
+      });
 
+      if (candidates.length === 0) return null;
+
+      if (t.targetMode === "strongest") {
+        return candidates.reduce((best, z) =>
+          z.hp > best.hp ? z : best,
+        );
+      }
+
+      if (t.targetMode === "last") {
+        return candidates.reduce((best, z) =>
+          z.dist < best.dist ? z : best,
+        );
+      }
+
+      // "first" = zombie furthest along the path.
+      return candidates.reduce((best, z) =>
+        z.dist > best.dist ? z : best,
+      );
+    };
     // towers
     for (const t of s.towers) {
       t.cooldown -= dt;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
-      const range = towerRange(t);
-      let best: Zombie | null = null;
-      let bestDist = Infinity;
-      for (const z of s.zombies) {
-        if (z.dead) continue;
-        const d = Math.hypot(z.x - t.x, z.z - t.z);
-        if (d <= range && PATH_LENGTH - z.dist < bestDist) {
-          bestDist = PATH_LENGTH - z.dist;
-          best = z;
-        }
-      }
+      const best = chooseTowerTarget(t);
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (t.cooldown <= 0) {
