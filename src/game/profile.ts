@@ -357,8 +357,8 @@ function normalizeClaimProgressRecords(value: unknown): Record<string, Achieveme
           completed: Boolean(entry['completed']) || (target > 0 && progress >= target),
           claimed: Boolean(entry['claimed']),
           updatedAt: normalizeDate(entry['updatedAt']),
-          completedAt: normalizeDate(entry['completed']At),
-          claimedAt: normalizeDate(entry['claimed']At),
+          completedAt: normalizeDate(entry['completedAt']),
+          claimedAt: normalizeDate(entry['claimedAt']),
         },
       ];
     }),
@@ -474,8 +474,8 @@ function syncAchievements(profile: PlayerProfile, stamp: string) {
       completed,
       claimed: entry['claimed'],
       updatedAt: progress !== entry['progress'] || entry['updatedAt'] === null ? stamp : entry['updatedAt'],
-      completedAt: completed ? (entry['completed']At ?? stamp) : null,
-      claimedAt: entry['claimed']At ?? null,
+      completedAt: completed ? (entry['completedAt'] ?? stamp) : null,
+      claimedAt: entry['claimedAt'] ?? null,
     };
     if (
       !profile.achievements[achievement.id] ||
@@ -484,8 +484,8 @@ function syncAchievements(profile: PlayerProfile, stamp: string) {
       entry['completed'] !== next.completed ||
       entry['claimed'] !== next.claimed ||
       entry['updatedAt'] !== next.updatedAt ||
-      entry['completed']At !== next.completedAt ||
-      entry['claimed']At !== next.claimedAt
+      entry['completedAt'] !== next.completedAt ||
+      entry['claimedAt'] !== next.claimedAt
     ) {
       profile.achievements[achievement.id] = next;
       changed = true;
