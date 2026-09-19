@@ -188,14 +188,16 @@ function PathColumn({ tower, path, gold }: { tower: Tower; path: "a" | "b"; gold
   const affordable = !!next && !locked && gold >= cost;
 
   return (
-    <div className="flex-1 rounded-xl bg-black/25 p-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-display text-sm tracking-wide text-panel-foreground">{def.name}</span>
-        <span className="flex gap-0.5">
+    <div className="min-w-0 rounded-lg bg-black/25 p-1.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
+        <span className="truncate font-display text-xs tracking-wide text-panel-foreground">
+          {def.name}
+        </span>
+        <span className="flex shrink-0 gap-0.5">
           {[0, 1, 2, 3].map((i) => (
             <span
               key={i}
-              className="h-1.5 w-3 rounded-full"
+              className="h-1 w-2 rounded-full"
               style={{
                 backgroundColor:
                   i < owned ? TOWER_INFO[tower.kind].accent : "rgba(255,255,255,0.16)",
@@ -204,23 +206,23 @@ function PathColumn({ tower, path, gold }: { tower: Tower; path: "a" | "b"; gold
           ))}
         </span>
       </div>
-      <p className="mt-0.5 text-[10px] uppercase tracking-wider text-panel-muted">{def.focus}</p>
+      <p className="truncate text-[9px] uppercase tracking-wider text-panel-muted">{def.focus}</p>
       {next ? (
         <>
-          <p className="mt-1.5 text-[11px] leading-tight text-panel-foreground">
-            <span className="font-semibold">{next.name}</span>
-            <span className="block text-panel-muted">{next.desc}</span>
+          <p className="mt-1 min-h-8 text-[10px] leading-tight text-panel-foreground">
+            <span className="block truncate font-semibold">{next.name}</span>
+            <span className="line-clamp-2 text-panel-muted">{next.desc}</span>
           </p>
           <button
             onClick={() => game.buyTier(tower.id, path)}
             disabled={!affordable}
-            className="mt-2 w-full rounded-lg bg-accent px-2 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+            className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
           >
             {locked ? "Path locked" : `${cost} gold`}
           </button>
         </>
       ) : (
-        <p className="mt-3 text-center font-display text-sm text-accent">Path maxed</p>
+        <p className="mt-2 text-center font-display text-xs text-accent">Path maxed</p>
       )}
     </div>
   );
@@ -299,7 +301,7 @@ export function HUD({
         </div>
       </div>
 
-      <div className="pointer-events-auto max-h-[44vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1">
+      <div className="pointer-events-auto max-h-[56dvh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {showMetaSections && (
           <>
             <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
@@ -438,11 +440,20 @@ export function HUD({
         )}
 
         {spot !== null && (
-          <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
-            <h2 className="font-display text-lg tracking-wide text-panel-foreground">
-              Build a tower
-            </h2>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-panel/95 p-2 shadow-panel backdrop-blur">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <h2 className="truncate font-display text-base tracking-wide text-panel-foreground">
+                Build a tower
+              </h2>
+              <button
+                onClick={() => onSelect(null)}
+                aria-label="Close tower menu"
+                className="h-7 w-7 shrink-0 rounded-md bg-black/25 text-sm text-panel-muted"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               {KINDS.map((k) => {
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
@@ -452,61 +463,49 @@ export function HUD({
                 return (
                   <div
                     key={k}
-                    className="rounded-xl border border-white/10 bg-black/25 px-2 py-3 text-left"
+                    className="min-w-0 rounded-lg border border-white/10 bg-black/25 p-1.5 text-left"
                   >
-                    <span className="mb-2 flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-2">
+                    <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
+                      <span className="flex min-w-0 items-center gap-1.5">
                         <span
-                          className="block h-3 w-3 rounded-full"
+                          className="block h-2.5 w-2.5 shrink-0 rounded-full"
                           style={{ backgroundColor: info.accent }}
                         />
-                        <span className="font-display text-sm tracking-wide text-panel-foreground">
+                        <span className="truncate font-display text-xs tracking-wide text-panel-foreground">
                           {info.name}
                         </span>
                       </span>
-                      <span className="text-[10px] text-panel-muted">
+                      <span className="shrink-0 text-[9px] text-panel-muted">
                         {unlocked ? `${info.cost}g` : `Lv ${info.unlockLevel}`}
                       </span>
                     </span>
-                    <span className="block text-[11px] leading-tight text-panel-foreground">
-                      {info.blurb}
-                    </span>
-                    <span className="mt-1 block text-[10px] text-panel-muted">
-                      DMG {info.damage} · SPD {info.rate.toFixed(1)}/s · RNG {info.range.toFixed(1)}
+                    <span className="mt-1 block truncate text-[9px] text-panel-muted">
+                      {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG
                     </span>
                     <button
                       onClick={() => {
                         if (game.build(spot, k)) onSelect(null);
                       }}
                       disabled={!canBuild}
-                      className="mt-2 w-full rounded-lg bg-accent px-2 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                      className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
                     >
                       {unlocked
-                        ? `Build · ${info.cost} gold`
-                        : `Locked until Lv ${info.unlockLevel}`}
+                        ? `Build · ${info.cost}g`
+                        : `Unlocks Lv ${info.unlockLevel}`}
                     </button>
                     {!unlocked && info.coinUnlock > 0 && (
                       <button
                         onClick={() => game.unlockTower(k)}
                         disabled={!unlockAffordable}
-                        className="mt-1.5 w-full rounded-lg bg-black/30 px-2 py-2 text-[11px] font-semibold text-panel-foreground transition active:scale-[0.98] disabled:opacity-40"
+                        className="mt-1 w-full rounded-md bg-black/30 px-1.5 py-1.5 text-[9px] font-semibold text-panel-foreground transition active:scale-[0.98] disabled:opacity-40"
                       >
-                        Unlock early · {info.coinUnlock} coins
+                        Early unlock · {info.coinUnlock}
                       </button>
-                    )}
-                    {unlocked && (
-                      <p className="mt-1.5 text-[10px] text-panel-muted">
-                        Workshop Lv {towerProfileUpgradeLevel(k)} · coins upgrade this tower family
-                        permanently
-                      </p>
                     )}
                   </div>
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] text-panel-muted">
-              Locked towers unlock automatically as your profile level rises, or early with coins.
-            </p>
           </div>
         )}
 
@@ -537,9 +536,9 @@ export function HUD({
         )}
 
         {tower && (
-          <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="font-display text-xl tracking-wide text-panel-foreground">
+          <div className="rounded-xl bg-panel/95 p-2 shadow-panel backdrop-blur">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5">
+              <h2 className="truncate font-display text-lg tracking-wide text-panel-foreground">
                 {TOWER_INFO[tower.kind].name}{" "}
                 <span className="text-panel-muted">Lv {tower.level}</span>
               </h2>
@@ -548,14 +547,20 @@ export function HUD({
                   game.sell(tower.id);
                   onSelect(null);
                 }}
-                className="rounded-lg bg-black/25 px-2 py-1 text-[11px] text-panel-muted"
+                className="shrink-0 rounded-md bg-black/25 px-2 py-1 text-[10px] text-panel-muted"
               >
                 Sell · {towerSellValue(tower)}g
               </button>
+              <button
+                onClick={() => onSelect(null)}
+                aria-label="Close tower details"
+                className="h-7 w-7 shrink-0 rounded-md bg-black/25 text-sm text-panel-muted"
+              >
+                ×
+              </button>
             </div>
-            <p className="mt-1 text-sm text-panel-foreground">{TOWER_INFO[tower.kind].blurb}</p>
-            <p className="mt-1 text-[11px] text-panel-muted">{towerSpecialSummary(tower)}</p>
-            <div className="mt-2 grid grid-cols-2 gap-1.5 text-center sm:grid-cols-4">
+            <p className="truncate text-[10px] text-panel-muted">{towerSpecialSummary(tower)}</p>
+            <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
               {[
                 ["Damage", towerDamage(tower).toFixed(0)],
                 ["Rate", `${towerRate(tower).toFixed(1)}/s`],
@@ -567,20 +572,20 @@ export function HUD({
                     : `${Math.round(towerCrit(tower) * 100)}%`,
                 ],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-lg bg-black/20 py-1">
-                  <div className="font-display text-base text-panel-foreground">{value}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-panel-muted">
+                <div key={label} className="rounded-md bg-black/20 py-0.5">
+                  <div className="font-display text-sm text-panel-foreground">{value}</div>
+                  <div className="text-[8px] uppercase tracking-wider text-panel-muted">
                     {label}
                   </div>
                 </div>
               ))}
             </div>
-<div className="mt-2 rounded-xl bg-black/25 p-2">
-  <p className="mb-1.5 text-[10px] uppercase tracking-[0.16em] text-panel-muted">
+<div className="mt-1.5 rounded-lg bg-black/25 p-1.5">
+  <p className="mb-1 text-[8px] uppercase tracking-[0.16em] text-panel-muted">
     Targeting
   </p>
 
-  <div className="grid grid-cols-3 gap-1.5">
+  <div className="grid grid-cols-3 gap-1">
     {([
       ["first", "First"],
       ["last", "Last"],
@@ -593,7 +598,7 @@ export function HUD({
           key={mode}
           type="button"
           onClick={() => game.setTowerTargetMode(tower.id, mode)}
-          className="min-h-11 rounded-lg border border-white/10 bg-panel/70 px-2 py-2 font-display text-xs tracking-wide text-panel-foreground transition active:scale-[0.97] data-[active=true]:border-accent data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
+          className="min-h-9 rounded-md border border-white/10 bg-panel/70 px-1 py-1 font-display text-[11px] tracking-wide text-panel-foreground transition active:scale-[0.97] data-[active=true]:border-accent data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
           data-active={active}
           aria-pressed={active}
         >
@@ -606,27 +611,24 @@ export function HUD({
             <button
               onClick={() => game.upgradeTower(tower.id)}
               disabled={tower.level >= MAX_TOWER_LEVEL || state.gold < levelCost}
-              className="mt-2 w-full rounded-xl bg-accent px-3 py-2 font-display text-base tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+              className="mt-1.5 min-h-10 w-full rounded-lg bg-accent px-2 py-1.5 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
             >
               {tower.level >= MAX_TOWER_LEVEL
                 ? "Level maxed"
                 : `Upgrade to Lv ${tower.level + 1} · ${levelCost}g`}
             </button>
-            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            <div className="mt-1.5 grid grid-cols-2 gap-1">
               <PathColumn tower={tower} path="a" gold={state.gold} />
               <PathColumn tower={tower} path="b" gold={state.gold} />
             </div>
-            <p className="mt-1.5 text-center text-[10px] text-panel-muted">
-              Flat levels boost damage, range, and fire rate. Only one path can go past tier 2.
-            </p>
-            <div className="mt-2 rounded-xl bg-black/25 p-2">
+            <div className="mt-1.5 rounded-lg bg-black/25 p-1.5">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="font-display text-sm tracking-wide text-panel-foreground">
+                    <p className="font-display text-xs tracking-wide text-panel-foreground">
                     Workshop Lv {towerMetaLevel}
                   </p>
                   {towerMetaBonus && (
-                    <p className="text-[10px] text-panel-muted">
+                    <p className="line-clamp-1 text-[9px] text-panel-muted">
                       Permanent +{Math.round((towerMetaBonus.damage - 1) * 100)}% DMG · +
                       {Math.round((towerMetaBonus.rate - 1) * 100)}% SPD · +
                       {Math.round((towerMetaBonus.range - 1) * 100)}% RNG
@@ -636,7 +638,7 @@ export function HUD({
                 <button
                   onClick={() => game.buyProfileTowerUpgrade(tower.kind)}
                   disabled={!Number.isFinite(towerMetaCost) || player.coins < towerMetaCost}
-                  className="rounded-lg bg-accent px-3 py-2 text-[11px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                  className="shrink-0 rounded-md bg-accent px-2 py-1.5 text-[10px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {towerMetaLevel >= MAX_PROFILE_TOWER_UPGRADE
                     ? "Mastery maxed"
