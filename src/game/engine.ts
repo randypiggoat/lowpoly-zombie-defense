@@ -96,8 +96,15 @@ export type Gib = {
   tint: number;
 };
 
-export type TargetMode = "first" | "last" | "strongest";
-
+export type TowerKind =
+  | "rifleman"
+  | "shotgunner"
+  | "sniper"
+  | "tesla"
+  | "flamethrower"
+  | "freezer"
+  | "rocket"
+  | "laser";
 export type TargetMode = "first" | "last" | "strongest";
 
 export type Tower = {
@@ -1012,15 +1019,17 @@ export class Game {
 
   towerAtSpot(spot: number) {
     return this.state.towers.find((t) => t.spot === spot) ?? null;
-  }setTowerTargetMode(towerId: number, mode: TargetMode): boolean {
-  const tower = this.state.towers.find((t) => t.id === towerId);
+  }
 
-  if (!tower) return false;
+  setTowerTargetMode(towerId: number, mode: TargetMode): boolean {
+    const tower = this.state.towers.find((t) => t.id === towerId);
 
-  tower.targetMode = mode;
-  this.emit();
-  return true;
-}
+    if (!tower) return false;
+
+    tower.targetMode = mode;
+    this.emit();
+    return true;
+  }
 
   build(spot: number, kind: TowerKind): boolean {
     const s = this.state;
@@ -1037,20 +1046,20 @@ export class Game {
       return false;
     }
     s.gold -= cost;
-  s.towers.push({
-  id: nextId++,
-  kind,
-  spot,
-  x: pad.x,
-  z: pad.z,
-  level: 1,
-  a: 0,
-  b: 0,
-  targetMode: "first",
-  cooldown: 0,
-  aim: 0,
-  recoil: 0,
-});
+    s.towers.push({
+      id: nextId++,
+      kind,
+      spot,
+      x: pad.x,
+      z: pad.z,
+      level: 1,
+      a: 0,
+      b: 0,
+      targetMode: "first",
+      cooldown: 0,
+      aim: 0,
+      recoil: 0,
+    });
     s.towersPlaced += 1;
     profile.recordTowerBuilt(kind);
     sfx("build");
