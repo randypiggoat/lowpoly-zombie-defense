@@ -95,7 +95,16 @@ export type Gib = {
   size: number;
   tint: number;
 };
-
+export type DamagePopup = {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  value: number;
+  life: number;
+  crit: boolean;
+  gold: number;
+};
 export type TowerKind =
   | "rifleman"
   | "shotgunner"
@@ -919,7 +928,8 @@ export type GameState = {
   zombies: Zombie[];
   bullets: Bullet[];
   gibs: Gib[];
-  towers: Tower[];
+damagePopups: DamagePopup[];
+towers: Tower[];
   gameOver: boolean;
   stageWon: boolean;
   flash: number;
@@ -985,8 +995,9 @@ function makeState(stage: StageRunConfig): GameState {
     incomeLevel: 1,
     zombies: [],
     bullets: [],
-    gibs: [],
-    towers: [],
+   gibs: [],
+damagePopups: [],
+towers: [],
     gameOver: false,
     stageWon: false,
     flash: 0,
@@ -1292,6 +1303,21 @@ export class Game {
     const s = this.state;
     if (z.dead) return;
     z.hp -= dmg;
+const popupValue = Math.max(1, Math.round(dmg));
+const crit = dmg >= z.maxHp * 0.35;
+
+if (s.damagePopups.length < 80) {
+  s.damagePopups.push({
+    id: nextId++,
+    x: z.x + (Math.random() - 0.5) * 0.45,
+    y: 1.35 + Math.random() * 0.35,
+    z: z.z + (Math.random() - 0.5) * 0.45,
+    value: popupValue,
+    life: 0,
+    crit,
+    gold: 0,
+  });
+}
     if (z.hp > 0) {
       z.flash = 1;
       if (dmg >= 0.5) sfx("hit");
@@ -1300,7 +1326,21 @@ export class Game {
     z.dead = true;
     z.fade = 0;
     s.kills += 1;
-    s.gold += Math.round((4 + Math.floor(z.maxHp / 12)) * goldMult);
+    const killGold = Math.round((4 + Math.floor(z.maxHp / 12)) * goldMult);
+s.gold += killGold;
+
+if (s.damagePopups.length < 80) {
+  s.damagePopups.push({
+    id: nextId++,
+    x: z.x,
+    y: 1.65,
+    z: z.z,
+    value: 0,
+    life: 0,
+    crit: true,
+    gold: killGold,
+  });
+}
     profile.recordZombieKill(z.kind);
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
     const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
@@ -1368,6 +1408,16 @@ export class Game {
   private step(dt: number) {
     const s = this.state;
     if (s.gameOver) return;
+for (let i = s.damagePopups.length - 1; i >= 0; i--) {
+  const popup = s.damagePopups[i]!;
+
+  popup.life += dt;
+  popup.y += dt * (1.15 + popup.life * 0.15);
+
+  if (popup.life >= 0.9) {
+    s.damagePopups.splice(i, 1);
+  }
+}
 
 
     // idle income
