@@ -929,6 +929,9 @@ export type GameState = {
   bullets: Bullet[];
   gibs: Gib[];
 damagePopups: DamagePopup[];
+waveMessage: string;
+waveMessageLife: number;
+waveMessageType: "start" | "complete" | "boss" | "";
 towers: Tower[];
   gameOver: boolean;
   stageWon: boolean;
@@ -997,6 +1000,9 @@ function makeState(stage: StageRunConfig): GameState {
     bullets: [],
    gibs: [],
 damagePopups: [],
+waveMessage: "",
+waveMessageLife: 0,
+waveMessageType: "",
 towers: [],
     gameOver: false,
     stageWon: false,
@@ -1234,8 +1240,18 @@ export class Game {
   }
 
   private beginNextWave() {
-    const s = this.state;
-    s.wave += 1;
+  const s = this.state;
+  s.wave += 1;
+
+  const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+
+  s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
+  s.waveMessageLife = 2.2;
+  s.waveMessageType = bossWave ? "boss" : "start";
+
+s.waveMessage = `WAVE ${s.wave}`;
+s.waveMessageLife = 2.2;
+s.waveMessageType = "start";
     const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
     const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
     const queueMult =
@@ -1406,6 +1422,15 @@ if (s.damagePopups.length < 80) {
   private accumulator = 0;
 
   private step(dt: number) {
+if (s.waveMessageLife > 0) {
+  s.waveMessageLife -= dt;
+
+  if (s.waveMessageLife <= 0) {
+    s.waveMessageLife = 0;
+    s.waveMessage = "";
+    s.waveMessageType = "";
+  }
+}
     const s = this.state;
     if (s.gameOver) return;
 for (let i = s.damagePopups.length - 1; i >= 0; i--) {
@@ -1533,9 +1558,17 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         sfx("wave");
         this.emit();
       }
-    } else if (!s.gameOver && s.wave < s.stageWaveTarget && s.spawnQueue === 0 && !aliveZombies) {
-      s.waveTimer -= dt;
-      if (s.waveTimer <= 0) this.beginNextWave();
+    } } else if (!s.gameOver && s.wave < s.stageWaveTarget && s.spawnQueue === 0 && !aliveZombies) {
+  s.waveTimer -= dt;
+
+  if (s.waveTimer <= 0) {
+    s.waveMessage = "WAVE COMPLETE!";
+    s.waveMessageLife = 1.5;
+    s.waveMessageType = "complete";
+
+    this.beginNextWave();
+  }
+}
     }
 
     // gibs
