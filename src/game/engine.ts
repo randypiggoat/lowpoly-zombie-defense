@@ -1240,19 +1240,14 @@ export class Game {
   }
 
   private beginNextWave() {
-  const s = this.state;
-  s.wave += 1;
+    const s = this.state;
+    s.wave += 1;
 
-  const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
-
-  s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
-  s.waveMessageLife = 2.2;
-  s.waveMessageType = bossWave ? "boss" : "start";
-
-s.waveMessage = `WAVE ${s.wave}`;
-s.waveMessageLife = 2.2;
-s.waveMessageType = "start";
     const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+    s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
+    s.waveMessageLife = 2.2;
+    s.waveMessageType = bossWave ? "boss" : "start";
+
     const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
