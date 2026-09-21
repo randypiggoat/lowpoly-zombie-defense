@@ -1558,18 +1558,21 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         sfx("wave");
         this.emit();
       }
-    } } else if (!s.gameOver && s.wave < s.stageWaveTarget && s.spawnQueue === 0 && !aliveZombies) {
-  s.waveTimer -= dt;
-
-  if (s.waveTimer <= 0) {
-    s.waveMessage = "WAVE COMPLETE!";
-    s.waveMessageLife = 1.5;
-    s.waveMessageType = "complete";
-
-    this.beginNextWave();
-  }
-}
+    } else if (
+      !s.gameOver &&
+      s.wave < s.stageWaveTarget &&
+      s.spawnQueue === 0 &&
+      !aliveZombies
+    ) {
+      s.waveTimer -= dt;
+      if (s.waveTimer <= 0) {
+        s.waveMessage = "WAVE COMPLETE!";
+        s.waveMessageLife = 1.5;
+        s.waveMessageType = "complete";
+        this.beginNextWave();
+      }
     }
+
 
     // gibs
     for (const g of s.gibs) {
