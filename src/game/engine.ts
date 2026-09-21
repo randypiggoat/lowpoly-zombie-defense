@@ -1240,19 +1240,14 @@ export class Game {
   }
 
   private beginNextWave() {
-  const s = this.state;
-  s.wave += 1;
+    const s = this.state;
+    s.wave += 1;
 
-  const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
-
-  s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
-  s.waveMessageLife = 2.2;
-  s.waveMessageType = bossWave ? "boss" : "start";
-
-s.waveMessage = `WAVE ${s.wave}`;
-s.waveMessageLife = 2.2;
-s.waveMessageType = "start";
     const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+    s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
+    s.waveMessageLife = 2.2;
+    s.waveMessageType = bossWave ? "boss" : "start";
+
     const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
@@ -1422,17 +1417,17 @@ if (s.damagePopups.length < 80) {
   private accumulator = 0;
 
   private step(dt: number) {
-if (s.waveMessageLife > 0) {
-  s.waveMessageLife -= dt;
-
-  if (s.waveMessageLife <= 0) {
-    s.waveMessageLife = 0;
-    s.waveMessage = "";
-    s.waveMessageType = "";
-  }
-}
     const s = this.state;
     if (s.gameOver) return;
+    if (s.waveMessageLife > 0) {
+      s.waveMessageLife -= dt;
+      if (s.waveMessageLife <= 0) {
+        s.waveMessageLife = 0;
+        s.waveMessage = "";
+        s.waveMessageType = "";
+      }
+    }
+
 for (let i = s.damagePopups.length - 1; i >= 0; i--) {
   const popup = s.damagePopups[i]!;
 
@@ -1558,18 +1553,21 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         sfx("wave");
         this.emit();
       }
-    } } else if (!s.gameOver && s.wave < s.stageWaveTarget && s.spawnQueue === 0 && !aliveZombies) {
-  s.waveTimer -= dt;
-
-  if (s.waveTimer <= 0) {
-    s.waveMessage = "WAVE COMPLETE!";
-    s.waveMessageLife = 1.5;
-    s.waveMessageType = "complete";
-
-    this.beginNextWave();
-  }
-}
+    } else if (
+      !s.gameOver &&
+      s.wave < s.stageWaveTarget &&
+      s.spawnQueue === 0 &&
+      !aliveZombies
+    ) {
+      s.waveTimer -= dt;
+      if (s.waveTimer <= 0) {
+        s.waveMessage = "WAVE COMPLETE!";
+        s.waveMessageLife = 1.5;
+        s.waveMessageType = "complete";
+        this.beginNextWave();
+      }
     }
+
 
     // gibs
     for (const g of s.gibs) {
