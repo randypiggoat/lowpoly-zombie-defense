@@ -279,6 +279,27 @@ export function HUD({
           <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
         </div>
       )}
+      
+            {state.waveMessage && !state.gameOver && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-[18%] -translate-x-1/2 text-center"
+          style={{
+            opacity: Math.min(1, state.waveMessageLife),
+          }}
+        >
+          <div
+            className={`font-display font-black tracking-[0.12em] drop-shadow-[0_3px_0_rgba(0,0,0,0.9)] ${
+              state.waveMessageType === "boss"
+                ? "text-4xl text-danger"
+                : state.waveMessageType === "complete"
+                  ? "text-3xl text-accent"
+                  : "text-3xl text-white"
+            }`}
+          >
+            {state.waveMessage}
+          </div>
+        </div>
+      )}
       <div className="space-y-1.5">
         <div className="flex items-start gap-1.5">
           <Stat label="Coins" value={`${Math.floor(state.gold)}`} tone="gold" />
