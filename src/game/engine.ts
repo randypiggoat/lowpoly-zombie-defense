@@ -1417,17 +1417,17 @@ if (s.damagePopups.length < 80) {
   private accumulator = 0;
 
   private step(dt: number) {
-if (s.waveMessageLife > 0) {
-  s.waveMessageLife -= dt;
-
-  if (s.waveMessageLife <= 0) {
-    s.waveMessageLife = 0;
-    s.waveMessage = "";
-    s.waveMessageType = "";
-  }
-}
     const s = this.state;
     if (s.gameOver) return;
+    if (s.waveMessageLife > 0) {
+      s.waveMessageLife -= dt;
+      if (s.waveMessageLife <= 0) {
+        s.waveMessageLife = 0;
+        s.waveMessage = "";
+        s.waveMessageType = "";
+      }
+    }
+
 for (let i = s.damagePopups.length - 1; i >= 0; i--) {
   const popup = s.damagePopups[i]!;
 
