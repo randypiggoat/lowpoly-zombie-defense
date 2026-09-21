@@ -1,4 +1,5 @@
 import { useFrame, useThree } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import {
@@ -763,7 +764,77 @@ function Gibs() {
     </group>
   );
 }
+function DamagePopups() {
+  const texts = useRef<
+    Array<
+      (THREE.Object3D & {
+        text?: string;
+        material?: THREE.Material & { opacity?: number; transparent?: boolean };
+      }) | null
+    >
+  >([]);
 
+  useFrame(() => {
+    const list = game.state.damagePopups;
+
+    for (let i = 0; i < 80; i++) {
+      const text = texts.current[i];
+      if (!text) continue;
+
+      const popup = list[i];
+
+      if (!popup) {
+        text.visible = false;
+        continue;
+      }
+
+      text.visible = true;
+
+      text.position.set(popup.x, popup.y, popup.z);
+
+      const age = popup.life / 0.9;
+      const fade = Math.max(0, 1 - age);
+
+      text.scale.setScalar(popup.crit ? 1.35 : 1);
+
+      if (popup.gold > 0) {
+        text.text = `+$${popup.gold}`;
+      } else {
+        text.text = `${popup.value}`;
+      }
+
+      const material = text.material;
+
+      if (material) {
+        material.transparent = true;
+        material.opacity = fade;
+      }
+    }
+  });
+
+  return (
+    <group>
+      {Array.from({ length: 80 }, (_, i) => (
+        <Text
+          key={i}
+          ref={(el) => {
+            texts.current[i] = el as typeof texts.current[number];
+          }}
+          visible={false}
+          fontSize={0.42}
+          color="#ffffff"
+          outlineColor="#111111"
+          outlineWidth={0.045}
+          anchorX="center"
+          anchorY="middle"
+          depthOffset={-2}
+        >
+          0
+        </Text>
+      ))}
+    </group>
+  );
+}
 function Bullets() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(() => {
@@ -876,6 +947,7 @@ export function Scene({
         ))}
         <Zombies />
         <Gibs />
+        <DamagePopups/>
         <Bullets />
       </group>
     </>
