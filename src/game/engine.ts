@@ -1239,7 +1239,10 @@ export class Game {
     return pool[pool.length - 1]!.kind;
   }
 
+  private waveEndNotified = false;
+
   private beginNextWave() {
+    this.waveEndNotified = false;
     const s = this.state;
     s.wave += 1;
 
