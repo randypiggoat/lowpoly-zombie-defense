@@ -1533,8 +1533,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     const aliveZombies = s.zombies.some((z) => !z.dead);
 
-    if (!s.gameOver && s.wave >= s.stageWaveTarget && s.spawnQueue === 0) {
-      if (!aliveZombies) {
+    if (!s.gameOver &&
+s.wave > 0 &&
+s.wave < s.stageWaveTarget &&
+s.spawnQueue === 0 &&
+!aliveZombies
+
         s.gameOver = true;
         s.stageWon = true;
         const stars = evaluateStageObjectives(this.stage.objectives, {
