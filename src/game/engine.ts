@@ -1562,11 +1562,16 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       s.spawnQueue === 0 &&
       !aliveZombies
     ) {
+      if (!this.waveEndNotified) {
+        this.waveEndNotified = true;
+        s.waveMessage = "WAVE COMPLETE!";
+        s.waveMessageLife = Math.max(1.5, s.waveTimer);
+        s.waveMessageType = "complete";
+        sfx("wave");
+        this.emit();
+      }
       s.waveTimer -= dt;
       if (s.waveTimer <= 0) {
-        s.waveMessage = "WAVE COMPLETE!";
-        s.waveMessageLife = 1.5;
-        s.waveMessageType = "complete";
         this.beginNextWave();
       }
     }
