@@ -300,6 +300,7 @@ export function HUD({
           </div>
         </div>
       )}
+
       <div className="space-y-1.5">
         <div className="flex items-start gap-1.5">
           <Stat label="Coins" value={`${Math.floor(state.gold)}`} tone="gold" />
