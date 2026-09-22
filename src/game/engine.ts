@@ -1533,33 +1533,32 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     const aliveZombies = s.zombies.some((z) => !z.dead);
 
-    if (!s.gameOver &&
-s.wave > 0 &&
-s.wave < s.stageWaveTarget &&
-s.spawnQueue === 0 &&
-!aliveZombies
-
-        s.gameOver = true;
-        s.stageWon = true;
-        const stars = evaluateStageObjectives(this.stage.objectives, {
-          stageCompleted: true,
-          baseHealth: s.baseHp,
-          baseMaxHealth: s.baseMaxHp,
-          towersPlaced: s.towersPlaced,
-        }).stars;
-        profile.completeRun(Math.max(1, s.wave), s.kills, {
-          stageId: this.stage.id,
-          stageCompleted: true,
-          starsEarned: stars,
-          bonusCoins: this.stage.rewards.completionCoins,
-          bonusXp: this.stage.rewards.completionXp,
-          bonusStars: this.stage.rewards.completionStars,
-          firstCompletionBonus: this.stage.rewards.firstCompletionBonus,
-          rewardMultiplier: this.stage.rewardMultiplier,
-        });
-        sfx("wave");
-        this.emit();
-      }
+    if (
+      !s.gameOver &&
+      s.wave >= s.stageWaveTarget &&
+      s.spawnQueue === 0 &&
+      !aliveZombies
+    ) {
+      s.gameOver = true;
+      s.stageWon = true;
+      const stars = evaluateStageObjectives(this.stage.objectives, {
+        stageCompleted: true,
+        baseHealth: s.baseHp,
+        baseMaxHealth: s.baseMaxHp,
+        towersPlaced: s.towersPlaced,
+      }).stars;
+      profile.completeRun(Math.max(1, s.wave), s.kills, {
+        stageId: this.stage.id,
+        stageCompleted: true,
+        starsEarned: stars,
+        bonusCoins: this.stage.rewards.completionCoins,
+        bonusXp: this.stage.rewards.completionXp,
+        bonusStars: this.stage.rewards.completionStars,
+        firstCompletionBonus: this.stage.rewards.firstCompletionBonus,
+        rewardMultiplier: this.stage.rewardMultiplier,
+      });
+      sfx("wave");
+      this.emit();
     } else if (
       !s.gameOver &&
       s.wave < s.stageWaveTarget &&
