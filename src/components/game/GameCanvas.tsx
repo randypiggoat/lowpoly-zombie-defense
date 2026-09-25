@@ -81,6 +81,7 @@ export function GameCanvas() {
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
   const [muted, setMutedState] = useState(isMuted());
+  const [canvasReady, setCanvasReady] = useState(false);
   const activeStage = getStageById(activeStageId);
 
   const stages = STAGE_DEFS.map((stage) => {
@@ -143,6 +144,10 @@ export function GameCanvas() {
   }, [settingsBackScreen]);
 
   useEffect(() => {
+    setCanvasReady(true);
+  }, []);
+
+  useEffect(() => {
     if (screen === "gameplay" && state.gameOver) {
       setOverlay(null);
       setSelection(null);
@@ -178,28 +183,30 @@ export function GameCanvas() {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
-      <Canvas
-        shadows
-        dpr={[1, 2]}
-        gl={{
-          antialias: false,
-          powerPreference: "high-performance",
-          failIfMajorPerformanceCaveat: false,
-        }}
-        camera={{ position: [2, 26, 30], fov: 40 }}
-        onCreated={({ gl }) => {
-          gl.setClearColor("#8fc4d8");
-        }}
-        onPointerMissed={() => setSelection(null)}
-      >
-        <Scene
-          paused={paused}
-          towers={state.towers}
-          selection={selection}
-          onSelectTower={(id) => setSelection({ kind: "tower", id })}
-          onSelectSpot={(index) => setSelection({ kind: "spot", index })}
-        />
-      </Canvas>
+      {canvasReady && (
+        <Canvas
+          shadows
+          dpr={[1, 2]}
+          gl={{
+            antialias: false,
+            powerPreference: "high-performance",
+            failIfMajorPerformanceCaveat: false,
+          }}
+          camera={{ position: [2, 26, 30], fov: 40 }}
+          onCreated={({ gl }) => {
+            gl.setClearColor("#8fc4d8");
+          }}
+          onPointerMissed={() => setSelection(null)}
+        >
+          <Scene
+            paused={paused}
+            towers={state.towers}
+            selection={selection}
+            onSelectTower={(id) => setSelection({ kind: "tower", id })}
+            onSelectSpot={(index) => setSelection({ kind: "spot", index })}
+          />
+        </Canvas>
+      )}
 
       {screen === "gameplay" && (
         <>
