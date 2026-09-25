@@ -181,7 +181,15 @@ export function GameCanvas() {
       <Canvas
         shadows
         dpr={[1, 2]}
+        gl={{
+          antialias: false,
+          powerPreference: "high-performance",
+          failIfMajorPerformanceCaveat: false,
+        }}
         camera={{ position: [2, 26, 30], fov: 40 }}
+        onCreated={({ gl }) => {
+          gl.setClearColor("#8fc4d8");
+        }}
         onPointerMissed={() => setSelection(null)}
       >
         <Scene
