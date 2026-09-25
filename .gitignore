@@ -34,7 +34,3 @@ dist-ssr
 # Playwright generated test artifacts
 playwright-report/
 test-results/
-
-# Playwright generated test artifacts
-playwright-report/
-test-results/
