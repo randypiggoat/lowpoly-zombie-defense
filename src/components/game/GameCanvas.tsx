@@ -1,5 +1,12 @@
 import { Canvas } from "@react-three/fiber";
-import { type ReactNode, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  Suspense,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
 import { isMuted, setMuted, unlockAudio } from "@/game/audio";
@@ -198,13 +205,15 @@ export function GameCanvas() {
           }}
           onPointerMissed={() => setSelection(null)}
         >
-          <Scene
-            paused={paused}
-            towers={state.towers}
-            selection={selection}
-            onSelectTower={(id) => setSelection({ kind: "tower", id })}
-            onSelectSpot={(index) => setSelection({ kind: "spot", index })}
-          />
+          <Suspense fallback={null}>
+            <Scene
+              paused={paused}
+              towers={state.towers}
+              selection={selection}
+              onSelectTower={(id) => setSelection({ kind: "tower", id })}
+              onSelectSpot={(index) => setSelection({ kind: "spot", index })}
+            />
+          </Suspense>
         </Canvas>
       )}
 
