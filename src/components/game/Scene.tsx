@@ -765,74 +765,70 @@ function Gibs() {
   );
 }
 function DamagePopups() {
-  const texts = useRef<
-    Array<
-      (THREE.Object3D & {
-        text?: string;
-        material?: THREE.Material & { opacity?: number; transparent?: boolean };
-      }) | null
-    >
-  >([]);
+  const popups = game.state.damagePopups;
+
+  return (
+    <group>
+      {popups.map((popup) => (
+        <DamagePopup key={popup.id} popup={popup} />
+      ))}
+    </group>
+  );
+}
+
+function DamagePopup({
+  popup,
+}: {
+  popup: {
+    id: number;
+    x: number;
+    y: number;
+    z: number;
+    value: number;
+    life: number;
+    crit: boolean;
+    gold: number;
+  };
+}) {
+  const text = useRef<THREE.Object3D & {
+    text?: string;
+    material?: THREE.Material & { opacity?: number; transparent?: boolean };
+  }>(null);
 
   useFrame(() => {
-    const list = game.state.damagePopups;
+    const object = text.current;
+    if (!object) return;
 
-    for (let i = 0; i < 80; i++) {
-      const text = texts.current[i];
-      if (!text) continue;
+    object.position.set(popup.x, popup.y, popup.z);
 
-      const popup = list[i];
+    const age = popup.life / 0.9;
+    const fade = Math.max(0, 1 - age);
 
-      if (!popup) {
-        text.visible = false;
-        continue;
-      }
+    object.scale.setScalar(popup.crit ? 1.35 : 1);
+    object.text = popup.gold > 0 ? `+${popup.gold}` : `${popup.value}`;
 
-      text.visible = true;
-
-      text.position.set(popup.x, popup.y, popup.z);
-
-      const age = popup.life / 0.9;
-      const fade = Math.max(0, 1 - age);
-
-      text.scale.setScalar(popup.crit ? 1.35 : 1);
-
-      if (popup.gold > 0) {
-        text.text = `+$${popup.gold}`;
-      } else {
-        text.text = `${popup.value}`;
-      }
-
-      const material = text.material;
-
-      if (material) {
-        material.transparent = true;
-        material.opacity = fade;
-      }
+    const material = object.material;
+    if (material) {
+      material.transparent = true;
+      material.opacity = fade;
     }
   });
 
   return (
-    <group>
-      {Array.from({ length: 80 }, (_, i) => (
-        <Text
-          key={i}
-          ref={(el) => {
-            texts.current[i] = el as typeof texts.current[number];
-          }}
-          visible={false}
-          fontSize={0.42}
-          color="#ffffff"
-          outlineColor="#111111"
-          outlineWidth={0.045}
-          anchorX="center"
-          anchorY="middle"
-          depthOffset={-2}
-        >
-          0
-        </Text>
-      ))}
-    </group>
+    <Text
+      ref={(el) => {
+        text.current = el as typeof text.current;
+      }}
+      fontSize={0.42}
+      color="#ffffff"
+      outlineColor="#111111"
+      outlineWidth={0.045}
+      anchorX="center"
+      anchorY="middle"
+      depthOffset={-2}
+    >
+      0
+    </Text>
   );
 }
 function Bullets() {
