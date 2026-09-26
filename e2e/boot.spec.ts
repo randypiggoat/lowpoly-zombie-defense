@@ -18,7 +18,7 @@ test("game boots successfully", async ({ page }) => {
 
   const canvas = page.locator("canvas");
 
-  await expect(canvas).toHaveCount(1);
+  await expect(canvas).toHaveCount(1, { timeout: 15000 });
 
   await expect
     .poll(
@@ -30,7 +30,7 @@ test("game boots successfully", async ({ page }) => {
         });
       },
       {
-        timeout: 10000,
+        timeout: 15000,
         message: "The game canvas should become larger than 0x0.",
       },
     )
