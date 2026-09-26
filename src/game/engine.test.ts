@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import {
-  BUILD_SPOTS,
-  Game,
-  type Zombie,
-  getStageById,
-} from "./engine";
+import { BUILD_SPOTS, Game, type Zombie } from "./engine";
+import { getStageById } from "./navigation";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
   const pad = BUILD_SPOTS[0]!;
