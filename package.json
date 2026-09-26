@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:unit": "bun test ./src/game"
   },
   "overrides": {
     "rolldown": "1.2.1"
