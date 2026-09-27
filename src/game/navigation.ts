@@ -6,6 +6,7 @@ export type PrimaryScreen =
   | "results"
   | "towers"
   | "collection"
+  | "events"
   | "missions"
   | "achievements"
   | "shop"
