@@ -587,6 +587,12 @@ class ProfileStore {
     this.loaded = true;
   }
   private revision = 0;
+  private lastRunRewardBoosted = false;
+
+  get canClaimLastRunRewardBoost() {
+    return Boolean(this.lastReward) && !this.lastRunRewardBoosted;
+  }
+
   private levelUpNoticeId = 0;
   lastReward: RunReward | null = null;
   levelUpNotice: LevelUpNotice | null = null;
@@ -1012,8 +1018,26 @@ class ProfileStore {
     return true;
   }
 
+  claimLastRunRewardBoost(): boolean {
+    const reward = this.lastReward;
+    if (!reward || this.lastRunRewardBoosted) return false;
+
+    this.profile.coins += reward.coins;
+    this.awardXp(reward.xp);
+    this.lastReward = { ...reward, coins: reward.coins * 2, xp: reward.xp * 2 };
+    this.lastRunRewardBoosted = true;
+    this.save();
+    return true;
+  }
+
+  setAdsRemoved(value: boolean) {
+    this.profile.adsRemoved = value;
+    this.save();
+  }
+
   clearReward() {
     this.lastReward = null;
+    this.lastRunRewardBoosted = false;
     this.notify();
   }
 }
