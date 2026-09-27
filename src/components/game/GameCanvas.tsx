@@ -1,6 +1,5 @@
 import { Canvas } from "@react-three/fiber";
 import {
-  Suspense,
   type ReactNode,
   useCallback,
   useEffect,
@@ -205,15 +204,13 @@ export function GameCanvas() {
           }}
           onPointerMissed={() => setSelection(null)}
         >
-          <Suspense fallback={null}>
-            <Scene
-              paused={paused}
-              towers={state.towers}
-              selection={selection}
-              onSelectTower={(id) => setSelection({ kind: "tower", id })}
-              onSelectSpot={(index) => setSelection({ kind: "spot", index })}
-            />
-          </Suspense>
+          <Scene
+            paused={paused}
+            towers={state.towers}
+            selection={selection}
+            onSelectTower={(id) => setSelection({ kind: "tower", id })}
+            onSelectSpot={(index) => setSelection({ kind: "spot", index })}
+          />
         </Canvas>
       )}
 
