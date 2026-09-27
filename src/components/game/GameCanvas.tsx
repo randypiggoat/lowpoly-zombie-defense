@@ -171,7 +171,7 @@ export function GameCanvas() {
   }, []);
 
   useEffect(() => {
-    if (screen === "gameplay" && state.gameOver) {
+    if (screen === "gameplay" && state.gameOver && !state.defeatOffer) {
       setOverlay(null);
       setSelection(null);
       setScreen("results");
@@ -261,6 +261,40 @@ export function GameCanvas() {
         </Canvas>
       )}
 
+      {screen === "gameplay" && state.defeatOffer && (
+        <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
+          <ScreenCard>
+            <p className="text-center text-xs uppercase tracking-[0.22em] text-danger">Base breached</p>
+            <h2 className="mt-1 text-center font-display text-3xl tracking-wide text-panel-foreground">LAST STAND</h2>
+            <p className="mt-2 text-center text-sm text-panel-muted">
+              You have {Math.ceil(state.defeatOfferTime)} seconds to decide.
+            </p>
+            <div className="mt-4 space-y-2">
+              {!player.adsRemoved && rewardedAvailable && state.revivesUsed < 1 && (
+                <ScreenButton
+                  onClick={async () => {
+                    const { showRewarded } = await import("@/game/monetization");
+                    const earned = await showRewarded("revive");
+                    if (earned) game.reviveRun();
+                  }}
+                >
+                  REVIVE · WATCH AD
+                </ScreenButton>
+              )}
+              <ScreenButton
+                onClick={() => game.finalizeDefeat()}
+                variant="secondary"
+              >
+                END RUN
+              </ScreenButton>
+            </div>
+            <p className="mt-3 text-center text-[10px] text-panel-muted">
+              One revive per run. Watching an ad is optional.
+            </p>
+          </ScreenCard>
+        </div>
+      )}
+
       {screen === "gameplay" && (
         <>
           <HUD
@@ -270,6 +304,7 @@ export function GameCanvas() {
             onPause={() => setOverlay("pause")}
             showMetaSections={false}
             showGameOverOverlay={false}
+            rewardedAvailable={rewardedAvailable}
           />
         </>
       )}
