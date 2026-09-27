@@ -96,6 +96,7 @@ export function GameCanvas() {
   const [activeChallenge, setActiveChallenge] = useState<EndlessChallenge | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
+  const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const activeStage = getStageById(activeStageId);
 
   const stages = STAGE_DEFS.map((stage) => {
@@ -159,6 +160,14 @@ export function GameCanvas() {
 
   useEffect(() => {
     setCanvasReady(true);
+    void import("@/game/monetization")
+      .then(({ installCapacitorAdMobProvider, isRewardedAvailable }) => {
+        installCapacitorAdMobProvider();
+        setRewardedAvailable(isRewardedAvailable());
+      })
+      .catch(() => {
+        setRewardedAvailable(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -168,6 +177,21 @@ export function GameCanvas() {
       setScreen("results");
     }
   }, [screen, state.gameOver]);
+
+  useEffect(() => {
+    if (screen !== "results" || !state.gameOver || !lastReward) return;
+    if (player.adsRemoved || player.gamesPlayed < 2) return;
+
+    void import("@/game/monetization")
+      .then(({ showInterstitial }) =>
+        showInterstitial("run-complete", {
+          now: Date.now(),
+          inCombat: false,
+          adsRemoved: player.adsRemoved,
+        }),
+      )
+      .catch(() => false);
+  }, [lastReward, player.adsRemoved, player.gamesPlayed, screen, state.gameOver]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -595,6 +619,21 @@ export function GameCanvas() {
                 NEW RECORD!
               </p>
             )}
+            {lastReward &&
+              !player.adsRemoved &&
+              rewardedAvailable &&
+              profile.canClaimLastRunRewardBoost && (
+                <ScreenButton
+                  onClick={async () => {
+                    const { showRewarded } = await import("@/game/monetization");
+                    const earned = await showRewarded("double-run-rewards");
+                    if (earned) profile.claimLastRunRewardBoost();
+                  }}
+                  variant="secondary"
+                >
+                  DOUBLE REWARDS · WATCH AD
+                </ScreenButton>
+              )}
             {lastReward?.stageCompleted && (
               <div className="mt-3 space-y-1 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
                 {evaluateStageObjectives(activeStage.objectives, {
