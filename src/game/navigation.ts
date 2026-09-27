@@ -1,6 +1,7 @@
 export type PrimaryScreen =
   | "main-menu"
   | "stage-select"
+  | "endless-select"
   | "gameplay"
   | "results"
   | "towers"

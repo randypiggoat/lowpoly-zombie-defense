@@ -30,6 +30,7 @@ import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
 import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
 import { track } from "./analytics";
+import { createEndlessStage, type EndlessChallenge } from "./endless";
 
 export type Vec2 = { x: number; z: number };
 
@@ -915,6 +916,11 @@ waveMessageType: "start" | "complete" | "boss" | "";
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
+  endlessMode: boolean;
+  challengeId: string | null;
+  challengeName: string | null;
+  challengePeriod: "free" | "daily" | "weekly" | null;
+  challengeKey: string | null;
 towers: Tower[];
   gameOver: boolean;
   stageWon: boolean;
@@ -934,7 +940,11 @@ type StageRunConfig = Pick<
   | "specialRules"
   | "rewards"
   | "objectives"
->;
+> & {
+  endless?: boolean;
+  challenge?: EndlessChallenge;
+  challengeKey?: string;
+};
 
 
 const DEFAULT_STAGE: StageRunConfig = {
@@ -990,6 +1000,11 @@ waveMessageType: "",
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
+    endlessMode: Boolean(stage.endless),
+    challengeId: stage.challenge?.id ?? null,
+    challengeName: stage.challenge?.name ?? null,
+    challengePeriod: stage.challenge?.period ?? null,
+    challengeKey: stage.challengeKey ?? null,
     towers: [],
     gameOver: false,
     stageWon: false,
@@ -1029,6 +1044,14 @@ reset() {
   this.emit();
 }
 
+ startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+  const stage = createEndlessStage(challenge);
+  this.stage = { ...stage, challenge, challengeKey, endless: true };
+  this.nextId = 1;
+  this.state = makeState(this.stage);
+  this.emit();
+}
+
   chooseRunModifier(id: RunModifierId): boolean {
     const state = this.state;
     const chosen = state.runModifierOffer.find((entry) => entry.id === id);
@@ -1043,8 +1066,16 @@ reset() {
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
-    const bossWave = this.stage.boss.enabled && this.stage.boss.wave === state.wave;
-    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const endlessBossWave =
+      Boolean(this.stage.endless) && state.wave >= 10 && state.wave % 10 === 0;
+    const bossWave =
+      endlessBossWave ||
+      (this.stage.boss.enabled && this.stage.boss.wave === state.wave);
+    const bossCount = endlessBossWave
+      ? 1 + Math.floor(state.wave / 30)
+      : bossWave
+        ? Math.max(0, this.stage.boss.count)
+        : 0;
     const queue = Math.floor((4 + state.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
     state.spawnQueue = Math.min(64, Math.max(1, queue));
     state.spawnTimer = 0;
@@ -1213,7 +1244,10 @@ reset() {
     const s = this.state;
     s.wave += 1;
 
-    const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+    const endlessBossWave =
+      Boolean(this.stage.endless) && s.wave >= 10 && s.wave % 10 === 0;
+    const bossWave =
+      endlessBossWave || (this.stage.boss.enabled && this.stage.boss.wave === s.wave);
     s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
@@ -1249,9 +1283,17 @@ reset() {
     const s = this.state;
     if (s.zombies.length >= 60) return;
     const w = s.wave;
+    const bossConfig = this.stage.endless
+      ? {
+          enabled: w >= 10 && w % 10 === 0,
+          wave: w >= 10 && w % 10 === 0 ? w : null,
+          kind: 2 as const,
+          count: 1 + Math.floor(w / 30),
+        }
+      : this.stage.boss;
     const kind = forcedKind ?? chooseEnemyKind(
       this.stage.enemyPool,
-      this.stage.boss,
+      bossConfig,
       w,
       this.state.stageWaveTarget,
       this.random,
@@ -1592,14 +1634,23 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         }
         if (baseHit.gameOver) {
           s.gameOver = true;
-          profile.completeRun(Math.max(1, s.wave), s.kills, {
-            stageId: this.stage.id,
-            stageCompleted: false,
-            starsEarned: 0,
-            bonusCoins: 0,
-            bonusXp: 0,
-            rewardMultiplier: this.stage.rewardMultiplier,
-          });
+          if (this.stage.endless) {
+            profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
+              challengeId: this.stage.challenge?.id,
+              challengePeriod: this.stage.challenge?.period,
+              challengeKey: this.stage.challengeKey,
+              rewardMultiplier: this.stage.rewardMultiplier,
+            });
+          } else {
+            profile.completeRun(Math.max(1, s.wave), s.kills, {
+              stageId: this.stage.id,
+              stageCompleted: false,
+              starsEarned: 0,
+              bonusCoins: 0,
+              bonusXp: 0,
+              rewardMultiplier: this.stage.rewardMultiplier,
+            });
+          }
           sfx("gameOver");
         }
         this.emit();
@@ -1609,6 +1660,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     const aliveZombies = s.zombies.some((z) => !z.dead);
 
     if (
+      !this.stage.endless &&
       !s.gameOver &&
       isStageWinReady(s.wave, s.stageWaveTarget, s.spawnQueue, aliveZombies)
     ) {
