@@ -24,6 +24,11 @@ const ZOMBIE_LOOKS = [
   { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
   { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
   { skin: "#8f332f", cloth: "#5d2428", legs: "#3f292d" },
+  { skin: "#89a36c", cloth: "#53614a", legs: "#36443d" },
+  { skin: "#c7b59b", cloth: "#8b4c35", legs: "#4c3940" },
+  { skin: "#9bb4b7", cloth: "#3f5960", legs: "#2e3c43" },
+  { skin: "#d49aa5", cloth: "#6a4d63", legs: "#40384d" },
+  { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
 ] as const;
 
 export type Selection = { kind: "tower"; id: number } | { kind: "spot"; index: number } | null;
@@ -579,6 +584,7 @@ function Zombies() {
   const groups = useRef<(THREE.Group | null)[]>([]);
   const legs = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
+  const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
 
   useFrame(() => {
@@ -593,7 +599,22 @@ function Zombies() {
       }
       g.visible = true;
       const look = ZOMBIE_LOOKS[z.kind];
-      const scale = z.kind === 2 ? 1.24 : z.kind === 1 ? 0.88 : 1;
+      const scale =
+        z.kind === 2
+          ? 1.24
+          : z.kind === 1
+            ? 0.88
+            : z.kind === 5
+              ? 1.18
+              : z.kind === 7
+                ? 0.72
+                : z.kind === 4
+                  ? 1.06
+                  : z.kind === 3
+                    ? 1.02
+                    : z.kind === 6
+                      ? 0.9
+                      : 1;
       if (lastKind.current[i] !== z.kind) {
         lastKind.current[i] = z.kind;
         const body = g.getObjectByName("body") as THREE.Mesh | undefined;
@@ -605,6 +626,11 @@ function Zombies() {
         const leftShoulder = g.getObjectByName("left-shoulder") as THREE.Mesh | undefined;
         const rightShoulder = g.getObjectByName("right-shoulder") as THREE.Mesh | undefined;
         const runnerCrest = g.getObjectByName("runner-crest") as THREE.Mesh | undefined;
+        const splitterCore = g.getObjectByName("splitter-core") as THREE.Mesh | undefined;
+        const bomberPack = g.getObjectByName("bomber-pack") as THREE.Mesh | undefined;
+        const guardianShield = g.getObjectByName("guardian-shield") as THREE.Mesh | undefined;
+        const healerAura = g.getObjectByName("healer-aura") as THREE.Mesh | undefined;
+        const swarmCrest = g.getObjectByName("swarm-crest") as THREE.Mesh | undefined;
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
           if (z.kind === 1) {
             body.position.set(0, 0.9, 0.08);
@@ -652,6 +678,11 @@ function Zombies() {
           rightShoulder.visible = z.kind === 2;
         }
         if (runnerCrest) runnerCrest.visible = z.kind === 1;
+        if (splitterCore) splitterCore.visible = z.kind === 3;
+        if (bomberPack) bomberPack.visible = z.kind === 4;
+        if (guardianShield) guardianShield.visible = z.kind === 5;
+        if (healerAura) healerAura.visible = z.kind === 6;
+        if (swarmCrest) swarmCrest.visible = z.kind === 7;
       }
       if (z.dead) {
         const f = Math.min(1, z.fade);
@@ -674,8 +705,20 @@ function Zombies() {
         g.traverse((o) => {
           const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
           if (m && m.isMeshStandardMaterial) {
-            m.emissive.setRGB(f * 0.9, 0, 0);
-            m.emissiveIntensity = f * 1.6;
+            const heal = z.dead ? 0 : (z.healFlash ?? 0);
+            m.emissive.setRGB(f * 0.9 + heal * 0.1, heal * 0.8, 0);
+            m.emissiveIntensity = Math.max(f * 1.6, heal * 0.8);
+          }
+        });
+      }
+      const heal = z.dead ? 0 : (z.healFlash ?? 0);
+      if (lastHealFlash.current[i] !== heal) {
+        lastHealFlash.current[i] = heal;
+        g.traverse((o) => {
+          const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+          if (m && m.isMeshStandardMaterial) {
+            m.emissive.setRGB(f * 0.9 + heal * 0.1, heal * 0.8, 0);
+            m.emissiveIntensity = Math.max(f * 1.6, heal * 0.8);
           }
         });
       }
@@ -716,6 +759,26 @@ function Zombies() {
           <mesh name="runner-crest" position={[0, 1.93, -0.05]} visible={false} castShadow>
             <coneGeometry args={[0.18, 0.48, 4]} />
             <meshStandardMaterial color="#f1c84a" flatShading />
+          </mesh>
+          <mesh name="splitter-core" position={[0, 1.05, 0.42]} visible={false}>
+            <icosahedronGeometry args={[0.2, 0]} />
+            <meshStandardMaterial color="#e1a04f" emissive="#e1a04f" emissiveIntensity={0.3} flatShading />
+          </mesh>
+          <mesh name="bomber-pack" position={[0, 0.92, -0.36]} visible={false} castShadow>
+            <boxGeometry args={[0.5, 0.6, 0.34]} />
+            <meshStandardMaterial color="#d55c43" flatShading />
+          </mesh>
+          <mesh name="guardian-shield" position={[0, 1.05, 0]} rotation-x={Math.PI / 2} visible={false}>
+            <torusGeometry args={[0.82, 0.08, 6, 12]} />
+            <meshStandardMaterial color="#83c8d1" emissive="#83c8d1" emissiveIntensity={0.45} flatShading />
+          </mesh>
+          <mesh name="healer-aura" position={[0, 0.12, 0]} rotation-x={-Math.PI / 2} visible={false}>
+            <ringGeometry args={[0.45, 0.7, 12]} />
+            <meshStandardMaterial color="#c886d4" emissive="#c886d4" emissiveIntensity={0.65} transparent opacity={0.7} flatShading />
+          </mesh>
+          <mesh name="swarm-crest" position={[0, 1.96, 0]} visible={false} castShadow>
+            <coneGeometry args={[0.16, 0.5, 5]} />
+            <meshStandardMaterial color="#9ce06d" flatShading />
           </mesh>
           <group ref={(el) => void (legs.current[i] = el)} position={[0, 0.5, 0]}>
             <mesh name="left-leg" position={[0.17, -0.25, 0]} castShadow>
