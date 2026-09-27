@@ -28,7 +28,6 @@ describe("tower combat loop rules", () => {
       id: 17,
       x: 2,
       z: -4,
-      y: 99,
       tx: 8,
       tz: 3,
       speed: 22,
