@@ -4,7 +4,14 @@ export type AnalyticsEventName =
   | "tower_built"
   | "tower_upgraded"
   | "modifier_chosen"
-  | "daily_mission_claimed";
+  | "daily_mission_claimed"
+  | "rewarded_ad_requested"
+  | "rewarded_ad_completed"
+  | "rewarded_ad_failed"
+  | "interstitial_requested"
+  | "interstitial_shown"
+  | "interstitial_failed"
+  | "iap_purchase";
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName;
