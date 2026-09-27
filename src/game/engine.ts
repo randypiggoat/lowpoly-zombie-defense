@@ -1379,7 +1379,11 @@ reset() {
       }
     }
 
-    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const bossCount = endlessBossWave
+      ? 1 + Math.floor(s.wave / 30)
+      : bossWave
+        ? Math.max(0, this.stage.boss.count)
+        : 0;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
@@ -1744,6 +1748,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (lifecycle.reachedBase) {
         z.dead = true;
         z.fade = 1.4;
+        if (s.baseShieldTimer > 0) {
+          sfx("baseHit"); // intentional feedback: shield absorbs the breach
+          this.emit();
+          continue;
+        }
         const baseHit = resolveBaseHit(s.baseHp, z.kind);
         s.baseHp = baseHit.nextHealth;
         s.flash = 1;
