@@ -31,13 +31,11 @@ export default defineConfig({
   },
 
   webServer: {
-    command: process.env.CI
-      ? "bun run preview -- --host 127.0.0.1 --port 4173"
-      : "bun run build && bun run preview -- --host 127.0.0.1 --port 4173",
+    command: "bun run dev -- --host 127.0.0.1 --port 4173",
 
     url: "http://127.0.0.1:4173",
 
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
 
     timeout: 120000,
   },
