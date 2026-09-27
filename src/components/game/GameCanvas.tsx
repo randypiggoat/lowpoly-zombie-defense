@@ -18,6 +18,7 @@ import {
   type PrimaryScreen,
 } from "@/game/navigation";
 import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, dateKey, profile } from "@/game/profile";
+import { TOWER_COSMETICS } from "@/game/collection";
 import {
   ENDLESS_CHALLENGES,
   getDailyChallenge,
@@ -267,6 +268,9 @@ export function GameCanvas() {
               <ScreenButton onClick={() => setScreen("towers")} variant="secondary">
                 TOWERS
               </ScreenButton>
+              <ScreenButton onClick={() => setScreen("collection")} variant="secondary">
+                COLLECTION
+              </ScreenButton>
               <ScreenButton onClick={() => setScreen("missions")} variant="secondary">
                 MISSIONS
               </ScreenButton>
@@ -415,6 +419,68 @@ export function GameCanvas() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === "collection" && (
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md">
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
+              ← BACK
+            </ScreenButton>
+            <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Long-term collection</p>
+              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Tower Skins</h2>
+              <p className="mt-1 text-xs text-panel-muted">
+                Cosmetic rewards are earned through gameplay milestones. No extra currency required.
+              </p>
+            </div>
+            <div className="mt-3 space-y-2">
+              {TOWER_COSMETICS.map((cosmetic) => {
+                const unlocked = cosmetic.unlock(player);
+                const targetKind = cosmetic.towerKind ?? "all";
+                const equipped = targetKind !== "all"
+                  ? profile.equippedTowerCosmetic(targetKind) === cosmetic.id
+                  : false;
+                return (
+                  <div key={cosmetic.id} className="rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="mt-0.5 h-12 w-12 shrink-0 rounded-xl border border-white/10"
+                        style={{
+                          background: cosmetic.accent || "rgba(233,180,76,0.96)",
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-display text-lg tracking-wide">{cosmetic.name}</p>
+                            <p className="text-xs text-panel-muted">{cosmetic.description}</p>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wider text-panel-muted">
+                            {targetKind === "all" ? "All" : targetKind}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[10px] text-panel-muted">
+                          {unlocked ? "Unlocked" : cosmetic.requirement}
+                        </p>
+                        {targetKind !== "all" && (
+                          <button
+                            type="button"
+                            disabled={!unlocked}
+                            onClick={() => profile.equipTowerCosmetic(targetKind, cosmetic.id)}
+                            className="mt-2 min-h-9 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                          >
+                            {equipped ? "Equipped" : "Equip"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
