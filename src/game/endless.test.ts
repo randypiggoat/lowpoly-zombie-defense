@@ -28,7 +28,7 @@ describe("endless challenge rotation", () => {
   test("endless stage has a long target and preserves the existing enemy roster", () => {
     const stage = createEndlessStage(getDailyChallenge("2026-09-27"));
     expect(stage.endless).toBe(true);
-    expect(stage.waveCount).toBe(9999);
+    expect(stage.waveCount).toBe(50);
     expect(stage.enemyPool.normalKinds).toContain(7);
   });
 });
