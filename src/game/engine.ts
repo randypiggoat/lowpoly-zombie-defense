@@ -4,6 +4,7 @@
 import { sfx } from "./audio";
 import { evaluateStageObjectives, type StageDefinition } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
+import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
@@ -1557,37 +1558,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         g.spin *= Math.exp(-7 * dt);
       }
     }
-    const chooseTowerTarget = (t: Tower): Zombie | null => {
-      const range = towerRange(t);
-      const candidates = s.zombies.filter((z) => {
-        if (z.dead) return false;
-        return Math.hypot(z.x - t.x, z.z - t.z) <= range;
-      });
-
-      if (candidates.length === 0) return null;
-
-      if (t.targetMode === "strongest") {
-        return candidates.reduce((best, z) =>
-          z.hp > best.hp ? z : best,
-        );
-      }
-
-      if (t.targetMode === "last") {
-        return candidates.reduce((best, z) =>
-          z.dist < best.dist ? z : best,
-        );
-      }
-
-      // "first" = zombie furthest along the path.
-      return candidates.reduce((best, z) =>
-        z.dist > best.dist ? z : best,
-      );
-    };
     // towers
     for (const t of s.towers) {
       t.cooldown -= dt;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
-      const best = chooseTowerTarget(t);
+      const best = selectTowerTarget(s.zombies, t, towerRange(t), t.targetMode);
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (t.cooldown <= 0) {
