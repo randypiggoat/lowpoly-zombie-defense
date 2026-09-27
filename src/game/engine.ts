@@ -9,6 +9,13 @@ import { getTowerCombatStats } from "./towerStats";
 import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import { applyProjectileStatusEffects } from "./projectileEffects";
+import {
+  advanceTowerCooldown,
+  createTowerProjectile,
+  PROJECTILE_CHAIN_DAMAGE_MULTIPLIER,
+  PROJECTILE_SPLASH_DAMAGE_MULTIPLIER,
+  stepProjectile,
+} from "./towerCombat";
 import { stepEnemyRagdoll, stepLivingEnemy, shouldDespawnEnemy } from "./enemyLifecycle";
 import {
   canBuyTier as canBuyTowerTier,
@@ -1544,34 +1551,39 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     }
     // towers
     for (const t of s.towers) {
-      t.cooldown -= dt;
+      const cooldown = advanceTowerCooldown(t.cooldown, dt);
+      t.cooldown = cooldown.cooldown;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
+
       const best = selectTowerTarget(s.zombies, t, towerRange(t), t.targetMode);
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
-        if (t.cooldown <= 0) {
-          t.cooldown = 1 / towerRate(t);
+        if (cooldown.ready) {
+          const rate = towerRate(t);
+          t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < towerCrit(t);
-          s.bullets.push({
-            id: this.nextId++,
-            x: t.x,
-            z: t.z,
-            y: 1.6 + t.level * 0.03,
-            tx: best.x,
-            tz: best.z,
-            speed: BULLET_SPEED[t.kind],
-            damage: towerDamage(t) * (crit ? 2.5 : 1),
-            target: best.id,
-            kind: t.kind,
-            splash: towerSplash(t),
-            chain: towerChain(t),
-            slow: towerSlow(t),
-            burn: towerBurn(t),
-            gold: towerGold(t),
-            crit,
-            alive: true,
-          });
+
+          s.bullets.push(
+            createTowerProjectile({
+              id: this.nextId++,
+              x: t.x,
+              z: t.z,
+              tx: best.x,
+              tz: best.z,
+              speed: BULLET_SPEED[t.kind],
+              damage: towerDamage(t) * (crit ? 2.5 : 1),
+              target: best.id,
+              kind: t.kind,
+              splash: towerSplash(t),
+              chain: towerChain(t),
+              slow: towerSlow(t),
+              burn: towerBurn(t),
+              gold: towerGold(t),
+              crit,
+              level: t.level,
+            }),
+          );
           sfx(SHOOT_SFX[t.kind]);
         }
       }
@@ -1579,57 +1591,54 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     // bullets
     for (const b of s.bullets) {
-      if (!b.alive) continue;
-      const target = s.zombies.find((z) => z.id === b.target && !z.dead);
-      if (target) {
-        b.tx = target.x;
-        b.tz = target.z;
-      }
-      const dx = b.tx - b.x;
-      const dz = b.tz - b.z;
-      const d = Math.hypot(dx, dz);
-      const step = b.speed * dt;
-      if (d <= step || !target) {
-        b.alive = false;
-        if (target) {
-          const goreBase = GORE_BASE[b.kind];
-          const hit = (z: Zombie, dmg: number) => {
-            const status = applyProjectileStatusEffects(
-              z,
-              b.slow,
-              b.burn,
-            );
-            z.slow = status.slow;
-            z.burn = status.burn;
-            z.burnTime = status.burnTime;
-            this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
-          };
-          hit(target, b.damage);
-          const splashTargets = getSplashTargets(
-            s.zombies,
-            target.id,
-            target.x,
-            target.z,
-            b.splash,
-          );
-          for (const z of splashTargets) {
-            hit(z, b.damage * 0.5);
-          }
+      const target = b.alive
+        ? s.zombies.find((z) => z.id === b.target && !z.dead) ?? null
+        : null;
+      const flight = stepProjectile(b, dt, target);
 
-          const chainTargets = getChainTargets(
-            s.zombies,
-            target.id,
-            target.x,
-            target.z,
-            b.chain,
+      b.tx = flight.tx;
+      b.tz = flight.tz;
+      b.x = flight.x;
+      b.z = flight.z;
+      b.alive = flight.alive;
+
+      if (flight.impacted && target) {
+        const goreBase = GORE_BASE[b.kind];
+        const hit = (z: Zombie, dmg: number) => {
+          const status = applyProjectileStatusEffects(
+            z,
+            b.slow,
+            b.burn,
           );
-          for (const z of chainTargets) {
-            hit(z, b.damage * 0.6);
-          }
+          z.slow = status.slow;
+          z.burn = status.burn;
+          z.burnTime = status.burnTime;
+          this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
+        };
+
+        hit(target, b.damage);
+
+        const splashTargets = getSplashTargets(
+          s.zombies,
+          target.id,
+          target.x,
+          target.z,
+          b.splash,
+        );
+        for (const z of splashTargets) {
+          hit(z, b.damage * PROJECTILE_SPLASH_DAMAGE_MULTIPLIER);
         }
-      } else {
-        b.x += (dx / d) * step;
-        b.z += (dz / d) * step;
+
+        const chainTargets = getChainTargets(
+          s.zombies,
+          target.id,
+          target.x,
+          target.z,
+          b.chain,
+        );
+        for (const z of chainTargets) {
+          hit(z, b.damage * PROJECTILE_CHAIN_DAMAGE_MULTIPLIER);
+        }
       }
     }
 
