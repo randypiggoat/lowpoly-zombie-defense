@@ -6,6 +6,12 @@ import { evaluateStageObjectives, type StageDefinition } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
+import {
+  canBuyTier as canBuyTowerTier,
+  tierCost as getTowerTierCost,
+  towerSellValue as calculateTowerSellValue,
+  towerUpgradeCost as calculateTowerUpgradeCost,
+} from "./towerActions";
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
 import type { RandomSource } from "./random";
@@ -345,8 +351,7 @@ export const GORE_BASE: Record<TowerKind, number> = {
 
 /** Gold cost of the next level-up for this tower. */
 export function towerUpgradeCost(t: Tower) {
-  if (t.level >= MAX_TOWER_LEVEL) return Infinity;
-  return Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, t.level - 1));
+  return calculateTowerUpgradeCost(t, TOWER_INFO[t.kind], MAX_TOWER_LEVEL);
 }
 
 /* ---------------- upgrade paths ---------------- */
@@ -773,17 +778,11 @@ export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> 
 
 /** Classic rule: only one path may go past tier 2. */
 export function canBuyTier(t: Tower, path: "a" | "b") {
-  const mine = path === "a" ? t.a : t.b;
-  const other = path === "a" ? t.b : t.a;
-  if (mine >= 4) return false;
-  if (mine >= 2 && other >= 3) return false;
-  return true;
+  return canBuyTowerTier(t, path);
 }
 
 export function tierCost(t: Tower, path: "a" | "b") {
-  const mine = path === "a" ? t.a : t.b;
-  if (mine >= 4) return Infinity;
-  return TOWER_PATHS[t.kind][path].tiers[mine]!.cost;
+  return getTowerTierCost(t, path, TOWER_PATHS[t.kind]);
 }
 
 function towerCombatStats(t: Tower) {
@@ -833,15 +832,12 @@ export function towerGold(t: Tower) {
   return towerCombatStats(t).gold;
 }
 export function towerSellValue(t: Tower) {
-  let spent = TOWER_INFO[t.kind].cost;
-  const tiersA = TOWER_PATHS[t.kind].a.tiers;
-  const tiersB = TOWER_PATHS[t.kind].b.tiers;
-  for (let i = 0; i < t.a; i++) spent += tiersA[i]!.cost;
-  for (let i = 0; i < t.b; i++) spent += tiersB[i]!.cost;
-  for (let l = 1; l < t.level; l++) {
-    spent += Math.round(TOWER_INFO[t.kind].upgradeBase * Math.pow(1.55, l - 1));
-  }
-  return Math.floor(spent * 0.6);
+  return calculateTowerSellValue(
+    t,
+    TOWER_INFO[t.kind],
+    TOWER_PATHS[t.kind],
+    MAX_TOWER_LEVEL,
+  );
 }
 
 export const MAX_PROFILE_TOWER_UPGRADE = 5;
