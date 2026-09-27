@@ -2,7 +2,8 @@
 // No React, no three.js — just numbers the renderer reads each frame.
 
 import { sfx } from "./audio";
-import { evaluateStageObjectives, type StageDefinition, type StageEnemyKind } from "./navigation";
+import { evaluateStageObjectives, type StageDefinition } from "./navigation";
+import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { profile } from "./profile";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
@@ -1193,41 +1194,6 @@ reset() {
     this.emit();
   }
 
-  private chooseEnemyKind(wave: number): StageEnemyKind {
-    const isBossWave = this.stage.boss.enabled && this.stage.boss.wave === wave;
-    const bossKind = this.stage.boss.kind;
-    const kinds = this.stage.enemyPool.normalKinds;
-    if (isBossWave && bossKind !== null) return bossKind;
-    if (kinds.length === 0) return 0;
-    const weights = this.stage.enemyPool.weights;
-    const progress = Math.max(0, (wave - 1) / Math.max(1, this.state.stageWaveTarget - 1));
-    const pool: Array<{ kind: StageEnemyKind; weight: number }> = [];
-    for (const kind of kinds) {
-      const baseWeight =
-        kind === 0
-          ? (weights?.walker ?? 1)
-          : kind === 1
-            ? (weights?.runner ?? 0.65)
-            : (weights?.brute ?? 0.45);
-      const wavePressure =
-        kind === 0
-          ? 1 - progress * 0.35
-          : kind === 1
-            ? 0.35 + progress * 1.1
-            : progress < 0.22
-              ? 0.2
-              : 0.35 + progress * 0.95;
-      pool.push({ kind, weight: Math.max(0.05, baseWeight * wavePressure) });
-    }
-    const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
-    let pick = this.random() * total;
-    for (const entry of pool) {
-      pick -= entry.weight;
-      if (pick <= 0) return entry.kind;
-    }
-    return pool[pool.length - 1]!.kind;
-  }
-
   private waveEndNotified = false;
 
   private beginNextWave() {
@@ -1257,16 +1223,19 @@ reset() {
   private spawn() {
     const s = this.state;
     const w = s.wave;
-    const kind = this.chooseEnemyKind(w);
-    const difficultyMult = Math.max(0.75, this.stage.gameplay.waveDifficultyMultiplier);
-    const healthMult = Math.max(0.7, this.stage.gameplay.enemyHealthMultiplier);
-    const speedMult = Math.max(0.7, this.stage.gameplay.enemySpeedMultiplier);
-    const progress = Math.max(0, (w - 1) / Math.max(1, this.state.stageWaveTarget - 1));
-    const baseHp = 18 * Math.pow(1.22, w - 1) * (0.85 + difficultyMult * 0.22) * healthMult;
-    const hpScale = 1 + progress * 0.45 + Math.max(0, w - 3) * 0.02;
-    const hp = (kind === 2 ? baseHp * 3.7 : kind === 1 ? baseHp * 0.8 : baseHp * 1.15) * hpScale;
-    const speedPressure = 1 + progress * 0.14;
-    const speed = (kind === 2 ? 0.92 : kind === 1 ? 2.18 : 1.36) * speedMult * speedPressure;
+    const kind = chooseEnemyKind(
+      this.stage.enemyPool,
+      this.stage.boss,
+      w,
+      this.state.stageWaveTarget,
+      this.random,
+    );
+    const { hp, speed } = getEnemySpawnStats(
+      this.stage.gameplay,
+      kind,
+      w,
+      this.state.stageWaveTarget,
+    );
     s.zombies.push({
       id: this.nextId++,
       dist: -this.random() * 2,
