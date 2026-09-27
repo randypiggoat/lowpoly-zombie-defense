@@ -804,7 +804,7 @@ function DamagePopup({
     const age = popup.life / 0.9;
     const fade = Math.max(0, 1 - age);
 
-    object.scale.setScalar(popup.crit ? 1.35 : 1);
+    object.scale.setScalar(popup.gold > 0 ? 1.55 : popup.crit ? 1.35 : 1);
     object.text = popup.gold > 0 ? `+${popup.gold}` : `${popup.value}`;
 
     const material = object.material;
@@ -820,7 +820,7 @@ function DamagePopup({
         text.current = el as typeof text.current;
       }}
       fontSize={0.42}
-      color="#ffffff"
+      color={popup.gold > 0 ? "#ffd86b" : popup.crit ? "#fff3c4" : "#ffffff"}
       outlineColor="#111111"
       outlineWidth={0.045}
       anchorX="center"
@@ -877,14 +877,34 @@ function Bullets() {
 
 function CameraRig() {
   const { camera, size } = useThree();
+  const basePosition = useRef(new THREE.Vector3());
+  const baseTarget = useRef(new THREE.Vector3());
   useEffect(() => {
     const portrait = size.height / Math.max(size.width, 1) > 1.4;
     const cam = camera as THREE.PerspectiveCamera;
     cam.fov = portrait ? 44 : 38;
     cam.position.set(0, portrait ? 38 : 34, portrait ? 15 : 26);
-    cam.lookAt(0, 0, portrait ? -3 : -2);
+    basePosition.current.copy(cam.position);
+    baseTarget.current.set(0, 0, portrait ? -3 : -2);
+    cam.lookAt(baseTarget.current);
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
+
+  useFrame(({ clock }) => {
+    const shake = Math.min(1, game.state.screenShake);
+    if (shake <= 0.001) {
+      camera.position.lerp(basePosition.current, 0.35);
+      camera.lookAt(baseTarget.current);
+      return;
+    }
+    const t = clock.elapsedTime * 54;
+    const amplitude = shake * 0.28;
+    camera.position.copy(basePosition.current);
+    camera.position.x += Math.sin(t * 1.7) * amplitude;
+    camera.position.y += Math.cos(t * 1.3) * amplitude * 0.7;
+    camera.position.z += Math.sin(t * 2.1) * amplitude * 0.5;
+    camera.lookAt(baseTarget.current);
+  });
   return null;
 }
 
