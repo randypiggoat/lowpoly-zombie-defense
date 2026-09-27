@@ -1,3 +1,5 @@
+import type { TowerKind } from "./engine";
+
 export type TowerCombatCooldown = {
   cooldown: number;
   ready: boolean;
@@ -24,7 +26,7 @@ export type ProjectileState = {
   speed: number;
   damage: number;
   target: number;
-  kind: string;
+  kind: TowerKind;
   splash: number;
   chain: number;
   slow: number;
@@ -34,7 +36,7 @@ export type ProjectileState = {
   alive: boolean;
 };
 
-export type ProjectileLaunchInput = Omit<ProjectileState, "alive"> & {
+export type ProjectileLaunchInput = Omit<ProjectileState, "alive" | "y"> & {
   level: number;
 };
 
