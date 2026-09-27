@@ -13,7 +13,7 @@ export type StageDifficulty = "Easy" | "Normal" | "Hard";
 
 export type StageUnlockRequirement = { type: "none" } | { type: "complete-stage"; stageId: number };
 
-export type StageEnemyKind = 0 | 1 | 2;
+export type StageEnemyKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type StageEnemyPool = {
   normalKinds: StageEnemyKind[];
@@ -21,6 +21,11 @@ export type StageEnemyPool = {
     walker?: number;
     runner?: number;
     brute?: number;
+    splitter?: number;
+    bomber?: number;
+    guardian?: number;
+    healer?: number;
+    swarm?: number;
   };
 };
 
@@ -199,7 +204,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     startingCoins: 200,
     startingBaseHealth: 19,
     waveCount: 8,
-    enemyPool: { normalKinds: [0, 1, 2], weights: { walker: 0.35, runner: 0.4, brute: 0.25 } },
+    enemyPool: { normalKinds: [0, 1, 2, 7], weights: { walker: 0.3, runner: 0.34, brute: 0.18, swarm: 0.18 } },
     gameplay: {
       waveDifficultyMultiplier: 1.12,
       waveSizeMultiplier: 1.15,
@@ -246,7 +251,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     startingCoins: 210,
     startingBaseHealth: 18,
     waveCount: 9,
-    enemyPool: { normalKinds: [0, 1, 2], weights: { walker: 0.2, runner: 0.35, brute: 0.45 } },
+    enemyPool: { normalKinds: [0, 1, 2, 3, 4, 5, 6], weights: { walker: 0.12, runner: 0.22, brute: 0.28, splitter: 0.12, bomber: 0.08, guardian: 0.1, healer: 0.08 } },
     gameplay: {
       waveDifficultyMultiplier: 1.22,
       waveSizeMultiplier: 1.25,
@@ -293,7 +298,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     startingCoins: 220,
     startingBaseHealth: 18,
     waveCount: 10,
-    enemyPool: { normalKinds: [0, 1, 2], weights: { walker: 0.15, runner: 0.45, brute: 0.4 } },
+    enemyPool: { normalKinds: [0, 1, 2, 3, 4, 5, 6, 7], weights: { walker: 0.1, runner: 0.2, brute: 0.2, splitter: 0.1, bomber: 0.1, guardian: 0.1, healer: 0.08, swarm: 0.12 } },
     gameplay: {
       waveDifficultyMultiplier: 1.35,
       waveSizeMultiplier: 1.45,
