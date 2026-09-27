@@ -1247,6 +1247,7 @@ reset() {
 
   private spawn(forcedKind?: StageEnemyKind, startDist?: number) {
     const s = this.state;
+    if (s.zombies.length >= 60) return;
     const w = s.wave;
     const kind = forcedKind ?? chooseEnemyKind(
       this.stage.enemyPool,
@@ -1731,7 +1732,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             b.slow,
             b.burn,
           );
-          z.slow = status.slow;
+          z.slow = z.kind === 5 ? status.slow * 0.45 : status.slow;
           z.burn = status.burn;
           z.burnTime = status.burnTime;
           this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
