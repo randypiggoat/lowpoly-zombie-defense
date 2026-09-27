@@ -90,7 +90,8 @@ export type SfxName =
   | "deny"
   | "baseHit"
   | "wave"
-  | "gameOver";
+  | "gameOver"
+  | "bigHit";
 
 let lastShot = 0;
 
@@ -153,6 +154,9 @@ export function sfx(name: SfxName) {
       return;
     case "gameOver":
       tone({ freq: 400, to: 80, dur: 0.9, type: "sawtooth", gain: 0.18 });
+      return;
+    case "bigHit":
+      tone({ freq: 920, to: 240, dur: 0.11, type: "triangle", gain: 0.1 });
       return;
   }
 }

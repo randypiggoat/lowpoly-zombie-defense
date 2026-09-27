@@ -273,6 +273,34 @@ export function HUD({
 
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
+      {state.runModifierOffer.length > 0 && (
+        <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel">
+            <p className="text-center text-[10px] uppercase tracking-[0.24em] text-accent">Wave {state.wave} reward</p>
+            <h2 className="mt-1 text-center font-display text-3xl tracking-wide text-panel-foreground">Choose Your Power</h2>
+            <p className="mt-1 text-center text-xs text-panel-muted">This choice lasts for the rest of the run.</p>
+            <div className="mt-4 space-y-2">
+              {state.runModifierOffer.map((modifier) => (
+                <button
+                  key={modifier.id}
+                  type="button"
+                  onClick={() => game.chooseRunModifier(modifier.id)}
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 p-3 text-left transition active:scale-[0.98] hover:border-accent/50"
+                >
+                  <p className="font-display text-lg tracking-wide text-panel-foreground">{modifier.name}</p>
+                  <p className="mt-0.5 text-xs text-panel-muted">{modifier.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
+        <div className="pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
+          <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">Keep the chain going</p>
+        </div>
+      )}
       {activeLevel !== null && !state.gameOver && (
         <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-2xl bg-accent px-4 py-2 text-center shadow-panel">
           <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
