@@ -1,6 +1,10 @@
+// Bun provides this module at test runtime; the project type checker does not
+// include Bun's ambient module declarations.
+// @ts-expect-error Bun test globals are available when this file runs under Bun.
 import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
 import { getStageById } from "./navigation";
+import { createSeededRandom } from "./random";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
   const pad = BUILD_SPOTS[0]!;
@@ -104,4 +108,23 @@ describe("Game simulation", () => {
     expect(game.state.zombies[0]?.dead).toBe(true);
     expect(game.state.gold).toBeGreaterThan(140);
   });
+
+  test("seeded randomness makes simulation results repeatable", () => {
+    const run = () => {
+      const game = new Game(createSeededRandom(12345));
+
+      game.startStage(getStageById(1));
+      game.tick(1);
+
+      return game.state.zombies.map((zombie) => ({
+        id: zombie.id,
+        kind: zombie.kind,
+        dist: zombie.dist,
+        wobble: zombie.wobble,
+      }));
+    };
+
+    expect(run()).toEqual(run());
+  });
 });
+

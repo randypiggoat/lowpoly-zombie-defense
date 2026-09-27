@@ -558,21 +558,27 @@ class ProfileStore {
   private data: PlayerProfile = blank();
   private loaded = false;
   private listeners = new Set<() => void>();
+
+  constructor() {
+    this.hydrate();
+  }
+
+  private hydrate() {
+    if (this.loaded) return;
+    this.data = load();
+    this.loaded = true;
+  }
   private revision = 0;
   private levelUpNoticeId = 0;
   lastReward: RunReward | null = null;
   levelUpNotice: LevelUpNotice | null = null;
 
   get profile(): PlayerProfile {
-    if (!this.loaded && typeof localStorage !== "undefined") {
-      this.data = load();
-      this.loaded = true;
-    }
+    this.hydrate();
     return this.data;
   }
 
   get snapshot() {
-    void this.profile;
     return this.revision;
   }
 
