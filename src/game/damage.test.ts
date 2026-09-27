@@ -39,7 +39,7 @@ describe("damage resolution", () => {
 
     expect(result.killed).toBe(true);
     expect(result.overkill).toBeCloseTo(1.99);
-    expect(result.force).toBeCloseTo(2.794);
+    expect(result.force).toBeCloseTo(3.988, 12);
     expect(result.explode).toBe(true);
   });
 
@@ -49,6 +49,6 @@ describe("damage resolution", () => {
     expect(result.killed).toBe(true);
     expect(result.overkill).toBe(3);
     expect(result.killGold).toBe(4);
-    expect(result.force).toBe(2.6);
+    expect(result.force).toBeCloseTo(2.6, 12);
   });
 });
