@@ -7,6 +7,7 @@ import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
 import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
+import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
@@ -1578,23 +1579,26 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
           };
           hit(target, b.damage);
-          const splash = b.splash;
-          if (splash > 0) {
-            for (const z of s.zombies) {
-              if (z.dead || z.id === target.id) continue;
-              if (Math.hypot(z.x - target.x, z.z - target.z) < splash) hit(z, b.damage * 0.5);
-            }
+          const splashTargets = getSplashTargets(
+            s.zombies,
+            target.id,
+            target.x,
+            target.z,
+            b.splash,
+          );
+          for (const z of splashTargets) {
+            hit(z, b.damage * 0.5);
           }
-          if (b.chain > 0) {
-            let hits = 0;
-            for (const z of s.zombies) {
-              if (hits >= b.chain) break;
-              if (z.dead || z.id === target.id) continue;
-              if (Math.hypot(z.x - target.x, z.z - target.z) < 3.4) {
-                hit(z, b.damage * 0.6);
-                hits += 1;
-              }
-            }
+
+          const chainTargets = getChainTargets(
+            s.zombies,
+            target.id,
+            target.x,
+            target.z,
+            b.chain,
+          );
+          for (const z of chainTargets) {
+            hit(z, b.damage * 0.6);
           }
         }
       } else {
