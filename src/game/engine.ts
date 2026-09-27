@@ -30,6 +30,7 @@ import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
 import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
 import { track } from "./analytics";
+import { createEndlessStage, type EndlessChallenge } from "./endless";
 
 export type Vec2 = { x: number; z: number };
 
