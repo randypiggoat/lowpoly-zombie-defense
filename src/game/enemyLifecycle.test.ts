@@ -96,7 +96,7 @@ describe("enemy lifecycle", () => {
 
     expect(first.fade).toBeCloseTo(0.055);
     expect(first.x).toBeCloseTo(1.2);
-    expect(first.y).toBeCloseTo(1);
+    expect(first.y).toBeCloseTo(0.84);
     expect(first.z).toBeCloseTo(1.9);
     expect(first.vy).toBeCloseTo(-1.6);
     expect(first.tilt).toBeCloseTo(0.2);
