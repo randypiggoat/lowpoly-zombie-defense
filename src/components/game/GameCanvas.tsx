@@ -26,6 +26,7 @@ import {
   getWeekKey,
   type EndlessChallenge,
 } from "@/game/endless";
+import { getSeasonalEvent, getSeasonalEventCycleKey, getSeasonalEventEnd } from "@/game/liveOps";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -84,6 +85,10 @@ function ScreenCard({ children }: { children: ReactNode }) {
       {children}
     </div>
   );
+}
+
+function seasonalEventProgressTarget(target: number, progress: number) {
+  return Math.min(target, Math.max(0, progress));
 }
 
 export function GameCanvas() {
@@ -210,6 +215,9 @@ export function GameCanvas() {
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
   const weeklyChallenge = getWeeklyChallenge(weekKey);
+  const seasonalEvent = getSeasonalEvent();
+  const seasonalCycleKey = getSeasonalEventCycleKey();
+  const seasonalEventEnd = getSeasonalEventEnd();
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
@@ -270,6 +278,9 @@ export function GameCanvas() {
               </ScreenButton>
               <ScreenButton onClick={() => setScreen("collection")} variant="secondary">
                 COLLECTION
+              </ScreenButton>
+              <ScreenButton onClick={() => setScreen("events")} variant="secondary">
+                EVENTS
               </ScreenButton>
               <ScreenButton onClick={() => setScreen("missions")} variant="secondary">
                 MISSIONS
@@ -478,6 +489,54 @@ export function GameCanvas() {
                         )}
                       </div>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === "events" && (
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md">
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
+              ← BACK
+            </ScreenButton>
+            <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Limited event</p>
+              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">{seasonalEvent.name}</h2>
+              <p className="mt-1 text-xs text-panel-muted">{seasonalEvent.tagline}</p>
+              <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-panel-muted">
+                Cycle {seasonalCycleKey} · Ends {seasonalEventEnd.toLocaleDateString()}
+              </p>
+            </div>
+            <div className="mt-3 space-y-2">
+              {seasonalEvent.milestones.map((milestone) => {
+                const progress = Math.min(seasonalEventProgressTarget(milestone.target, player.seasonalEventProgress), milestone.target);
+                const claimed = player.seasonalEventClaims.includes(milestone.id);
+                const pct = Math.min(1, progress / milestone.target);
+                return (
+                  <div key={milestone.id} className="rounded-2xl bg-panel/95 p-3 shadow-panel">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-display text-lg tracking-wide text-panel-foreground">{milestone.title}</p>
+                        <p className="text-xs text-panel-muted">
+                          {progress.toLocaleString()} / {milestone.target.toLocaleString()} event kills
+                        </p>
+                      </div>
+                      <p className="text-xs text-accent">{milestone.reward.label}</p>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/35">
+                      <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct * 100}%` }} />
+                    </div>
+                    <ScreenButton
+                      onClick={() => profile.claimSeasonalMilestone(milestone.id)}
+                      variant={claimed ? "secondary" : "primary"}
+                      disabled={claimed || progress < milestone.target}
+                    >
+                      {claimed ? "CLAIMED" : progress >= milestone.target ? "CLAIM REWARD" : "KEEP DEFENDING"}
+                    </ScreenButton>
                   </div>
                 );
               })}
