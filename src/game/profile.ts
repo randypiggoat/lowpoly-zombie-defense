@@ -200,6 +200,12 @@ export type PlayerProfile = {
   achievements: Record<string, AchievementProgress>;
   dailyMissionProgress: Record<string, DailyMissionProgress>;
   stageProgress: Record<string, StageProgress>;
+  endlessBestWave: number;
+  endlessBestScore: number;
+  dailyChallengeDate: string | null;
+  dailyChallengeBestScore: number;
+  weeklyChallengeKey: string | null;
+  weeklyChallengeBestScore: number;
 };
 
 export type StageProgress = {
@@ -303,6 +309,12 @@ function blank(): PlayerProfile {
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
     stageProgress: defaultStageProgress(),
+    endlessBestWave: 0,
+    endlessBestScore: 0,
+    dailyChallengeDate: today,
+    dailyChallengeBestScore: 0,
+    weeklyChallengeKey: null,
+    weeklyChallengeBestScore: 0,
   };
 }
 
@@ -519,6 +531,12 @@ function load(): PlayerProfile {
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
       stageProgress: normalizeStageProgressRecords(parsed.stageProgress),
+      endlessBestWave: Math.max(0, Number(parsed.endlessBestWave) || 0),
+      endlessBestScore: Math.max(0, Number(parsed.endlessBestScore) || 0),
+      dailyChallengeDate: normalizeDate(parsed.dailyChallengeDate) ?? today,
+      dailyChallengeBestScore: Math.max(0, Number(parsed.dailyChallengeBestScore) || 0),
+      weeklyChallengeKey: normalizeDate(parsed.weeklyChallengeKey),
+      weeklyChallengeBestScore: Math.max(0, Number(parsed.weeklyChallengeBestScore) || 0),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -683,6 +701,74 @@ class ProfileStore {
     this.syncAchievementProgress();
     this.save();
     return { xp, coins, ...result };
+  }
+
+  completeEndlessRun(
+    wave: number,
+    kills: number,
+    options?: {
+      challengeId?: string;
+      challengePeriod?: "free" | "daily" | "weekly";
+      challengeKey?: string;
+      rewardMultiplier?: number;
+    },
+  ): RunReward & { score: number; bestWave: number; bestScore: number } {
+    this.refreshRetentionState();
+    const p = this.profile;
+    const multiplier = Math.max(0.5, options?.rewardMultiplier ?? 1);
+    const score = Math.max(0, Math.round(wave * 100 + kills * 8 + p.level * 10));
+    const newWaveRecord = wave > p.endlessBestWave;
+    const newScoreRecord = score > p.endlessBestScore;
+    const baseXp = Math.round((25 + wave * 12 + Math.floor(kills / 2)) * multiplier);
+    const baseCoins = Math.round((15 + wave * 4.5 + Math.floor(kills / 4)) * multiplier);
+    const gems = Math.floor(wave / 10) + (newScoreRecord && wave >= 10 ? 2 : 0);
+
+    p.coins += baseCoins;
+    p.gems += gems;
+    p.gamesPlayed += 1;
+    if (newWaveRecord) p.endlessBestWave = wave;
+    if (newScoreRecord) p.endlessBestScore = score;
+
+    if (options?.challengePeriod === "daily" && options.challengeKey) {
+      if (p.dailyChallengeDate !== options.challengeKey) {
+        p.dailyChallengeDate = options.challengeKey;
+        p.dailyChallengeBestScore = 0;
+      }
+      p.dailyChallengeBestScore = Math.max(p.dailyChallengeBestScore, score);
+    }
+    if (options?.challengePeriod === "weekly" && options.challengeKey) {
+      if (p.weeklyChallengeKey !== options.challengeKey) {
+        p.weeklyChallengeKey = options.challengeKey;
+        p.weeklyChallengeBestScore = 0;
+      }
+      p.weeklyChallengeBestScore = Math.max(p.weeklyChallengeBestScore, score);
+    }
+
+    const result = this.awardXp(baseXp);
+    this.updateDailyMission("gameCompleted", 1);
+    this.syncAchievementProgress();
+    const reward: RunReward & { score: number; bestWave: number; bestScore: number } = {
+      wave,
+      kills,
+      xp: baseXp,
+      coins: baseCoins,
+      gems: gems + result.levelsGained,
+      leveledTo: result.leveledTo,
+      newRecord: newWaveRecord || newScoreRecord,
+      stageId: null,
+      stageCompleted: false,
+      starsEarned: 0,
+      firstCompletionBonusApplied: false,
+      bestStars: 0,
+      previousBestWave: Math.max(0, p.endlessBestWave - (newWaveRecord ? 1 : 0)),
+      previousBestStars: 0,
+      score,
+      bestWave: p.endlessBestWave,
+      bestScore: p.endlessBestScore,
+    };
+    this.lastReward = reward;
+    this.save();
+    return reward;
   }
 
   recordWaveReached(wave: number) {
