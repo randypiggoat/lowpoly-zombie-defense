@@ -1216,6 +1216,19 @@ reset() {
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
 
+    if (shouldOfferRunModifier(s.wave)) {
+      s.runModifierOffer = createRunModifierOffer(this.random, s.activeRunModifiers);
+      if (s.runModifierOffer.length > 0) {
+        s.waveMessage = "CHOOSE YOUR POWER";
+        s.waveMessageLife = 999;
+        s.waveMessageType = "complete";
+        profile.recordWaveReached(s.wave);
+        sfx("wave");
+        this.emit();
+        return;
+      }
+    }
+
     const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
