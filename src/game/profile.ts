@@ -668,11 +668,13 @@ class ProfileStore {
     syncAchievements(this.profile, dateKey());
   }
 
-  recordZombieKill(kind: 0 | 1 | 2) {
+  recordZombieKill(kind: number) {
     this.refreshRetentionState();
     const p = this.profile;
-    const xp = kind === 2 ? 5 : kind === 1 ? 3 : 2;
-    const coins = kind === 2 ? 3 : kind === 1 ? 2 : 1;
+    const xp =
+      kind === 2 ? 5 : kind === 1 ? 3 : kind === 4 ? 4 : kind === 5 ? 4 : kind === 6 ? 4 : kind === 3 ? 3 : 2;
+    const coins =
+      kind === 2 ? 3 : kind === 1 ? 2 : kind === 4 ? 4 : kind === 5 ? 3 : kind === 6 ? 4 : kind === 3 ? 2 : 1;
     p.totalKills += 1;
     if (kind === 2) p.bruteKills += 1;
     p.coins += coins;

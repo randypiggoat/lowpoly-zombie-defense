@@ -38,16 +38,36 @@ export function chooseEnemyKind(
         ? (weights?.walker ?? 1)
         : kind === 1
           ? (weights?.runner ?? 0.65)
-          : (weights?.brute ?? 0.45);
+          : kind === 2
+            ? (weights?.brute ?? 0.45)
+            : kind === 3
+              ? (weights?.splitter ?? 0.3)
+              : kind === 4
+                ? (weights?.bomber ?? 0.22)
+                : kind === 5
+                  ? (weights?.guardian ?? 0.24)
+                  : kind === 6
+                    ? (weights?.healer ?? 0.18)
+                    : (weights?.swarm ?? 0.3);
 
     const wavePressure =
       kind === 0
         ? 1 - progress * 0.35
         : kind === 1
           ? 0.35 + progress * 1.1
-          : progress < 0.22
-            ? 0.2
-            : 0.35 + progress * 0.95;
+          : kind === 2
+            ? progress < 0.22
+              ? 0.2
+              : 0.35 + progress * 0.95
+            : kind === 3
+              ? 0.1 + progress * 0.8
+              : kind === 4
+                ? 0.08 + progress * 0.7
+                : kind === 5
+                  ? 0.08 + progress * 0.55
+                  : kind === 6
+                    ? 0.05 + progress * 0.5
+                    : 0.12 + progress * 0.95;
 
     pool.push({ kind, weight: Math.max(0.05, baseWeight * wavePressure) });
   }
@@ -82,14 +102,44 @@ export function getEnemySpawnStats(
     (0.85 + difficultyMult * 0.22) *
     healthMult;
   const hpScale = 1 + progress * 0.45 + Math.max(0, wave - 3) * 0.02;
-  const hp =
-    (kind === 2 ? baseHp * 3.7 : kind === 1 ? baseHp * 0.8 : baseHp * 1.15) *
-    hpScale;
-  const speedPressure = 1 + progress * 0.14;
-  const speed =
-    (kind === 2 ? 0.92 : kind === 1 ? 2.18 : 1.36) *
-    speedMult *
-    speedPressure;
 
-  return { hp, speed };
+  const speedPressure = 1 + progress * 0.14;
+  const speedBase =
+    kind === 2
+      ? 0.92
+      : kind === 1
+        ? 2.18
+        : kind === 3
+          ? 1.18
+          : kind === 4
+            ? 1.62
+            : kind === 5
+              ? 0.96
+              : kind === 6
+                ? 1.1
+                : kind === 7
+                  ? 2.65
+                  : 1.36;
+  const hpBase =
+    kind === 2
+      ? baseHp * 3.7
+      : kind === 1
+        ? baseHp * 0.8
+        : kind === 3
+          ? baseHp * 1.45
+          : kind === 4
+            ? baseHp * 0.95
+            : kind === 5
+              ? baseHp * 2.65
+              : kind === 6
+                ? baseHp * 1.35
+                : kind === 7
+                  ? baseHp * 0.52
+                  : baseHp * 1.15;
+  const finalHp = hpBase * hpScale;
+
+  return {
+    hp: finalHp,
+    speed: speedBase * speedMult * speedPressure,
+  };
 }
