@@ -1656,7 +1656,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               chain: towerChain(t),
               slow: towerSlow(t) * runEffects.slowMultiplier,
               burn: towerBurn(t),
-              gold: towerGold(t) * runEffects.goldMultiplier,
+              gold: towerGold(t),
               crit,
               level: t.level,
             }),
