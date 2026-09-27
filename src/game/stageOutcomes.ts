@@ -1,7 +1,10 @@
 import type { StageEnemyKind } from "./navigation";
 
 export function baseDamageForEnemy(kind: StageEnemyKind) {
-  return kind === 2 ? 3 : 1;
+  if (kind === 2) return 3;
+  if (kind === 4) return 4;
+  if (kind === 5) return 2;
+  return 1;
 }
 
 export type BaseHitResult = {
