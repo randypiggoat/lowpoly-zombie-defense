@@ -200,6 +200,7 @@ export type PlayerProfile = {
   achievements: Record<string, AchievementProgress>;
   dailyMissionProgress: Record<string, DailyMissionProgress>;
   stageProgress: Record<string, StageProgress>;
+  adsRemoved: boolean;
 };
 
 export type StageProgress = {
@@ -303,6 +304,7 @@ function blank(): PlayerProfile {
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
     stageProgress: defaultStageProgress(),
+    adsRemoved: false,
   };
 }
 
@@ -519,6 +521,7 @@ function load(): PlayerProfile {
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
       stageProgress: normalizeStageProgressRecords(parsed.stageProgress),
+      adsRemoved: Boolean(parsed.adsRemoved),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -569,6 +572,7 @@ class ProfileStore {
     this.loaded = true;
   }
   private revision = 0;
+  private lastRunRewardBoosted = false;
   private levelUpNoticeId = 0;
   lastReward: RunReward | null = null;
   levelUpNotice: LevelUpNotice | null = null;
@@ -926,8 +930,25 @@ class ProfileStore {
     return true;
   }
 
+  claimLastRunRewardBoost(): boolean {
+    const reward = this.lastReward;
+    if (!reward || this.lastRunRewardBoosted) return false;
+
+    this.profile.coins += reward.coins;
+    this.awardXp(reward.xp);
+    this.lastRunRewardBoosted = true;
+    this.save();
+    return true;
+  }
+
+  setAdsRemoved(value: boolean) {
+    this.profile.adsRemoved = value;
+    this.save();
+  }
+
   clearReward() {
     this.lastReward = null;
+    this.lastRunRewardBoosted = false;
     this.notify();
   }
 }
