@@ -63,7 +63,7 @@ describe("tower stat calculations", () => {
       },
     );
 
-    expect(stats.damage).toBeCloseTo(10 * 2 * 1.22 ** 2 * 1.2);
+    expect(stats.damage).toBeCloseTo(10 * 3 * 1.22 ** 2 * 1.2);
     expect(stats.rate).toBeCloseTo(2 * 1.4 * 1.5 * 1.06 ** 2 * 1.1);
     expect(stats.range).toBeCloseTo(6 * 1.5 * 1.035 ** 2 * 1.04);
     expect(stats.slow).toBe(0.6);
