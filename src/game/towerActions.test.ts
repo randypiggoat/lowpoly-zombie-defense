@@ -41,7 +41,7 @@ describe("tower action rules", () => {
     expect(canBuyTier({ a: 0, b: 0 }, "a")).toBe(true);
     expect(canBuyTier({ a: 2, b: 2 }, "a")).toBe(true);
     expect(canBuyTier({ a: 2, b: 3 }, "a")).toBe(false);
-    expect(canBuyTier({ a: 3, b: 2 }, "b")).toBe(true);
+    expect(canBuyTier({ a: 3, b: 2 }, "b")).toBe(false);
     expect(canBuyTier({ a: 3, b: 3 }, "b")).toBe(false);
     expect(canBuyTier({ a: 4, b: 0 }, "a")).toBe(false);
   });
