@@ -2,7 +2,7 @@
 // No React, no three.js — just numbers the renderer reads each frame.
 
 import { sfx } from "./audio";
-import { evaluateStageObjectives, type StageDefinition } from "./navigation";
+import { evaluateStageObjectives, type StageDefinition, type StageEnemyKind } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
@@ -85,7 +85,7 @@ export type Zombie = {
   hp: number;
   maxHp: number;
   speed: number;
-  kind: 0 | 1 | 2; // walker, runner, brute
+  kind: StageEnemyKind; // walker, runner, brute, splitter, bomber, guardian, healer, swarm
   x: number;
   y: number;
   z: number;
@@ -1243,10 +1243,10 @@ reset() {
     this.emit();
   }
 
-  private spawn() {
+  private spawn(forcedKind?: StageEnemyKind, startDist?: number) {
     const s = this.state;
     const w = s.wave;
-    const kind = chooseEnemyKind(
+    const kind = forcedKind ?? chooseEnemyKind(
       this.stage.enemyPool,
       this.stage.boss,
       w,
@@ -1261,7 +1261,7 @@ reset() {
     );
     s.zombies.push({
       id: this.nextId++,
-      dist: -this.random() * 2,
+      dist: startDist ?? -this.random() * 2,
       hp,
       maxHp: hp,
       speed,
@@ -1276,6 +1276,8 @@ reset() {
       slow: 0,
       burn: 0,
       burnTime: 0,
+      healTimer: 0,
+      healFlash: 0,
       vx: 0,
       vy: 0,
       vz: 0,
@@ -1299,7 +1301,8 @@ reset() {
     const s = this.state;
     if (z.dead) return;
 
-    const result = resolveDamage(z.hp, z.maxHp, dmg, goreBase, goldMult);
+    const incomingDamage = z.kind === 5 ? dmg * 0.68 : dmg;
+    const result = resolveDamage(z.hp, z.maxHp, incomingDamage, goreBase, goldMult);
     z.hp = result.nextHp;
 
     if (s.damagePopups.length < 80) {
@@ -1357,6 +1360,16 @@ reset() {
     }
 
     profile.recordZombieKill(z.kind);
+
+    if (z.kind === 3) {
+      for (let i = 0; i < 2; i++) {
+        this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12));
+        const child = s.zombies[s.zombies.length - 1]!;
+        child.hp *= 0.45;
+        child.maxHp = child.hp;
+      }
+    }
+
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
     const force = result.force;
     z.vx = Math.sin(away) * 2.2 * force;
@@ -1511,6 +1524,30 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         continue;
       }
 
+      if (z.healFlash) z.healFlash = Math.max(0, z.healFlash - dt * 4);
+
+      if (z.kind === 6) {
+        z.healTimer = (z.healTimer ?? 0) + dt;
+        if (z.healTimer >= 0.9) {
+          z.healTimer = 0;
+          let target: Zombie | null = null;
+          let missing = 0;
+          for (const other of s.zombies) {
+            if (other.dead || other.id === z.id) continue;
+            if (Math.hypot(other.x - z.x, other.z - z.z) > 4.6) continue;
+            const otherMissing = other.maxHp - other.hp;
+            if (otherMissing > missing) {
+              target = other;
+              missing = otherMissing;
+            }
+          }
+          if (target && missing > 0) {
+            target.hp = Math.min(target.maxHp, target.hp + target.maxHp * 0.08);
+            target.healFlash = 1;
+          }
+        }
+      }
+
       const lifecycle = stepLivingEnemy({
         dist: z.dist,
         speed: z.speed,
@@ -1544,7 +1581,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         const baseHit = resolveBaseHit(s.baseHp, z.kind);
         s.baseHp = baseHit.nextHealth;
         s.flash = 1;
-        sfx("baseHit");
+        if (z.kind === 4) {
+          s.screenShake = Math.min(1.8, s.screenShake + 0.9);
+          sfx("gib");
+        } else {
+          sfx("baseHit");
+        }
         if (baseHit.gameOver) {
           s.gameOver = true;
           profile.completeRun(Math.max(1, s.wave), s.kills, {
