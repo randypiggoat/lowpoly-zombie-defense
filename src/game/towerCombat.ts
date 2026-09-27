@@ -43,9 +43,10 @@ export type ProjectileLaunchInput = Omit<ProjectileState, "alive" | "y"> & {
 export function createTowerProjectile(
   input: ProjectileLaunchInput,
 ): ProjectileState {
+  const { level, ...projectile } = input;
   return {
-    ...input,
-    y: 1.6 + input.level * 0.03,
+    ...projectile,
+    y: 1.6 + level * 0.03,
     alive: true,
   };
 }
@@ -85,6 +86,8 @@ export function stepProjectile(
   const distance = Math.hypot(dx, dz);
   const step = projectile.speed * dt;
 
+  // Preserve the projectile's current position on impact. The original engine
+  // marks it dead here and resolves damage from b.x/b.z rather than snapping it.
   if (distance <= step || !target) {
     return {
       x: projectile.x,
