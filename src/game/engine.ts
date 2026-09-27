@@ -5,6 +5,7 @@ import { sfx } from "./audio";
 import { evaluateStageObjectives, type StageDefinition, type StageEnemyKind } from "./navigation";
 import { profile } from "./profile";
 import type { RandomSource } from "./random";
+import { getWaveSpawnPlan } from "./waves";
 
 export type Vec2 = { x: number; z: number };
 
@@ -1192,26 +1193,6 @@ reset() {
     this.emit();
   }
 
-  private waveIntensityBand(wave: number, waveTarget: number) {
-    const normalized = Math.round((wave / Math.max(1, waveTarget)) * 20);
-    if (normalized <= 3) return 1;
-    if (normalized <= 6) return 2;
-    if (normalized <= 9) return 3;
-    if (normalized <= 10) return 4;
-    if (normalized <= 15) return 5;
-    if (normalized <= 19) return 6;
-    return 7;
-  }
-
-  private waveSpawnPlan(wave: number, waveTarget: number) {
-    const band = this.waveIntensityBand(wave, waveTarget);
-    const sizeMultiplier = [1, 1.1, 1.22, 1.38, 1.58, 1.76, 1.95][band - 1]!;
-    const intervalMultiplier = [1, 0.84, 0.72, 0.62, 0.56, 0.5, 0.45][band - 1]!;
-    const batchSize = [1, 1, 2, 2, 2, 3, 3][band - 1]!;
-    const clearDelay = [0.55, 0.45, 0.38, 0.32, 0.28, 0.24, 0.2][band - 1]!;
-    return { sizeMultiplier, intervalMultiplier, batchSize, clearDelay };
-  }
-
   private chooseEnemyKind(wave: number): StageEnemyKind {
     const isBossWave = this.stage.boss.enabled && this.stage.boss.wave === wave;
     const bossKind = this.stage.boss.kind;
@@ -1263,7 +1244,7 @@ reset() {
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
-    const plan = this.waveSpawnPlan(s.wave, s.stageWaveTarget);
+    const plan = getWaveSpawnPlan(s.wave, s.stageWaveTarget);
     const queue = Math.floor((4 + s.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
     s.spawnQueue = Math.min(64, Math.max(1, queue));
     s.spawnTimer = 0;
@@ -1465,7 +1446,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     if (s.spawnQueue > 0) {
       s.spawnTimer -= dt;
       if (s.spawnTimer <= 0) {
-        const plan = this.waveSpawnPlan(s.wave, s.stageWaveTarget);
+        const plan = getWaveSpawnPlan(s.wave, s.stageWaveTarget);
         const burst = Math.min(s.spawnQueue, plan.batchSize);
         for (let i = 0; i < burst; i++) {
           this.spawn();
