@@ -8,6 +8,7 @@ import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
 import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import { getChainTargets, getSplashTargets } from "./projectileImpact";
+import { applyProjectileStatusEffects } from "./projectileEffects";
 import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
@@ -1571,11 +1572,14 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (target) {
           const goreBase = GORE_BASE[b.kind];
           const hit = (z: Zombie, dmg: number) => {
-            if (b.slow > 0) z.slow = Math.max(z.slow, b.slow);
-            if (b.burn > 0) {
-              z.burn = Math.max(z.burn, b.burn);
-              z.burnTime = Math.max(z.burnTime, 2.4);
-            }
+            const status = applyProjectileStatusEffects(
+              z,
+              b.slow,
+              b.burn,
+            );
+            z.slow = status.slow;
+            z.burn = status.burn;
+            z.burnTime = status.burnTime;
             this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
           };
           hit(target, b.damage);
