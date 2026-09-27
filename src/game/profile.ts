@@ -1,3 +1,4 @@
+import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
 import { TOWER_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
@@ -208,6 +209,9 @@ export type PlayerProfile = {
   weeklyChallengeKey: string | null;
   weeklyChallengeBestScore: number;
   equippedTowerCosmetics: Record<string, string>;
+  seasonalEventCycleKey: string;
+  seasonalEventProgress: number;
+  seasonalEventClaims: string[];
 };
 
 export type StageProgress = {
@@ -318,6 +322,9 @@ function blank(): PlayerProfile {
     weeklyChallengeKey: null,
     weeklyChallengeBestScore: 0,
     equippedTowerCosmetics: {},
+    seasonalEventCycleKey: getSeasonalEventCycleKey(),
+    seasonalEventProgress: 0,
+    seasonalEventClaims: [],
   };
 }
 
@@ -547,6 +554,10 @@ function load(): PlayerProfile {
             ),
           )
         : {},
+      seasonalEventCycleKey:
+        normalizeDate(parsed.seasonalEventCycleKey) ?? getSeasonalEventCycleKey(),
+      seasonalEventProgress: Math.max(0, Number(parsed.seasonalEventProgress) || 0),
+      seasonalEventClaims: normalizeStringArray(parsed.seasonalEventClaims),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -618,6 +629,22 @@ class ProfileStore {
   private notify() {
     this.revision += 1;
     this.listeners.forEach((l) => l());
+  }
+
+  private refreshSeasonalEventState() {
+    const cycleKey = getSeasonalEventCycleKey();
+    if (this.profile.seasonalEventCycleKey !== cycleKey) {
+      this.profile.seasonalEventCycleKey = cycleKey;
+      this.profile.seasonalEventProgress = 0;
+      this.profile.seasonalEventClaims = [];
+      return true;
+    }
+    return false;
+  }
+
+  private addSeasonalEventKillProgress(amount = 1) {
+    this.refreshSeasonalEventState();
+    this.profile.seasonalEventProgress += Math.max(0, amount);
   }
 
   private save() {
@@ -727,6 +754,7 @@ class ProfileStore {
   recordZombieKill(kind: number) {
     this.refreshRetentionState();
     const p = this.profile;
+    this.addSeasonalEventKillProgress();
     const xp =
       kind === 2 ? 5 : kind === 1 ? 3 : kind === 4 ? 4 : kind === 5 ? 4 : kind === 6 ? 4 : kind === 3 ? 3 : 2;
     const coins =
@@ -1003,6 +1031,23 @@ class ProfileStore {
     if (p.coins < cost) return false;
     p.coins -= cost;
     p.unlockedTowers.push(kind);
+    this.save();
+    return true;
+  }
+
+  claimSeasonalMilestone(id: string) {
+    this.refreshRetentionState();
+    const event = getSeasonalEvent();
+    if (this.profile.seasonalEventCycleKey !== getSeasonalEventCycleKey()) {
+      this.refreshSeasonalEventState();
+    }
+    const milestone = event.milestones.find((entry) => entry.id === id);
+    if (!milestone || this.profile.seasonalEventClaims.includes(id)) return false;
+    if (this.profile.seasonalEventProgress < milestone.target) return false;
+    this.profile.seasonalEventClaims.push(id);
+    if (milestone.reward.coins) this.profile.coins += milestone.reward.coins;
+    if (milestone.reward.gems) this.profile.gems += milestone.reward.gems;
+    if (milestone.reward.xp) this.awardXp(milestone.reward.xp);
     this.save();
     return true;
   }
