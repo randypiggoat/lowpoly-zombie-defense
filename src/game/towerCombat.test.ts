@@ -60,7 +60,6 @@ describe("tower combat loop rules", () => {
     expect(projectile.crit).toBe(true);
     expect(projectile.alive).toBe(true);
   });
-  });
 
   test("projectile homes onto a living target before checking impact distance", () => {
     const result = stepProjectile(
