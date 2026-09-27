@@ -34,7 +34,7 @@ describe("enemy counterplay", () => {
     game.state.spawnQueue = 0;
     game.state.waveTimer = 999;
 
-    expect(game.build(0, "sniper")).toBe(true);
+    expect(game.build(0, "rifleman")).toBe(true);
 
     const pad = BUILD_SPOTS[0]!;
     game.state.zombies.push({
