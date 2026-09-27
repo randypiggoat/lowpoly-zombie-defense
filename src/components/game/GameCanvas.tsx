@@ -199,6 +199,12 @@ export function GameCanvas() {
       ? "STAGE COMPLETE"
       : "GAME OVER";
 
+  const endlessBestDisplay = state.challengePeriod === "daily"
+    ? player.dailyChallengeBestScore
+    : state.challengePeriod === "weekly"
+      ? player.weeklyChallengeBestScore
+      : player.endlessBestScore;
+
   const todayKey = dateKey();
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
@@ -551,6 +557,9 @@ export function GameCanvas() {
             <h2 className="text-center font-display text-3xl tracking-wide text-danger">
               {resultLabel}
             </h2>
+            {state.endlessMode && activeChallenge && (
+              <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
+            )}
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
               <p>Wave Reached</p>
               <p className="text-right">{state.wave}</p>
@@ -558,8 +567,8 @@ export function GameCanvas() {
                 <>
                   <p>Score</p>
                   <p className="text-right">{(lastReward && "score" in lastReward ? lastReward.score : 0).toLocaleString()}</p>
-                  <p>Best Siege Score</p>
-                  <p className="text-right">{player.endlessBestScore.toLocaleString()}</p>
+                  <p>Best Challenge Score</p>
+                  <p className="text-right">{endlessBestDisplay.toLocaleString()}</p>
                 </>
               )}
               <p>Zombies Killed</p>
@@ -609,6 +618,19 @@ export function GameCanvas() {
             <div className="mt-4 space-y-2">
               {state.stageWon ? (
                 <ScreenButton onClick={leaveToStageSelect}>CONTINUE</ScreenButton>
+) : state.endlessMode && activeChallenge ? (
+                <ScreenButton
+                  onClick={() => {
+                    resetGameplayState();
+                    game.startEndless(
+                      activeChallenge,
+                      activeChallenge.period === "weekly" ? weekKey : todayKey,
+                    );
+                    setScreen("gameplay");
+                  }}
+                >
+                  RETRY
+                </ScreenButton>
               ) : (
                 <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>
               )}
