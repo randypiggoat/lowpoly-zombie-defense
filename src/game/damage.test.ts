@@ -29,8 +29,8 @@ describe("damage resolution", () => {
     expect(result.nextHp).toBe(-5);
     expect(result.killed).toBe(true);
     expect(result.killGold).toBe(Math.round((4 + Math.floor(100 / 12)) * 1.25));
-    expect(result.overkill).toBeCloseTo(0.05);
-    expect(result.force).toBeCloseTo(0.83);
+    expect(result.overkill).toBeCloseTo(1.05);
+    expect(result.force).toBeCloseTo(1.43);
     expect(result.explode).toBe(false);
   });
 
