@@ -668,7 +668,7 @@ class ProfileStore {
     syncAchievements(this.profile, dateKey());
   }
 
-  recordZombieKill(kind: 0 | 1 | 2) {
+  recordZombieKill(kind: number) {
     this.refreshRetentionState();
     const p = this.profile;
     const xp = kind === 2 ? 5 : kind === 1 ? 3 : 2;
