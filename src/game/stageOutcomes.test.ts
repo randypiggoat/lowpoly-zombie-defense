@@ -12,17 +12,17 @@ describe("stage outcome rules", () => {
   });
 
   test("applies base damage without going below zero", () => {
-    expect(resolveBaseHit(10, 20, 0)).toEqual({
+    expect(resolveBaseHit(10, 0)).toEqual({
       nextHealth: 9,
       gameOver: false,
     });
 
-    expect(resolveBaseHit(2, 20, 2)).toEqual({
+    expect(resolveBaseHit(2, 2)).toEqual({
       nextHealth: 0,
       gameOver: true,
     });
 
-    expect(resolveBaseHit(1, 20, 0)).toEqual({
+    expect(resolveBaseHit(1, 0)).toEqual({
       nextHealth: 0,
       gameOver: true,
     });
