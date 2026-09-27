@@ -1062,7 +1062,11 @@ reset() {
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
     const bossWave = this.stage.boss.enabled && this.stage.boss.wave === state.wave;
-    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const bossCount = endlessBossWave
+      ? 1 + Math.floor(s.wave / 30)
+      : bossWave
+        ? Math.max(0, this.stage.boss.count)
+        : 0;
     const queue = Math.floor((4 + state.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
     state.spawnQueue = Math.min(64, Math.max(1, queue));
     state.spawnTimer = 0;
@@ -1231,7 +1235,10 @@ reset() {
     const s = this.state;
     s.wave += 1;
 
-    const bossWave = this.stage.boss.enabled && this.stage.boss.wave === s.wave;
+    const endlessBossWave =
+      Boolean(this.stage.endless) && s.wave >= 10 && s.wave % 10 === 0;
+    const bossWave =
+      endlessBossWave || (this.stage.boss.enabled && this.stage.boss.wave === s.wave);
     s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
@@ -1267,9 +1274,17 @@ reset() {
     const s = this.state;
     if (s.zombies.length >= 60) return;
     const w = s.wave;
+    const bossConfig = this.stage.endless
+      ? {
+          enabled: w >= 10 && w % 10 === 0,
+          wave: w >= 10 && w % 10 === 0 ? w : null,
+          kind: 2 as const,
+          count: 1 + Math.floor(w / 30),
+        }
+      : this.stage.boss;
     const kind = forcedKind ?? chooseEnemyKind(
       this.stage.enemyPool,
-      this.stage.boss,
+      bossConfig,
       w,
       this.state.stageWaveTarget,
       this.random,
@@ -1610,14 +1625,23 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         }
         if (baseHit.gameOver) {
           s.gameOver = true;
-          profile.completeRun(Math.max(1, s.wave), s.kills, {
-            stageId: this.stage.id,
-            stageCompleted: false,
-            starsEarned: 0,
-            bonusCoins: 0,
-            bonusXp: 0,
-            rewardMultiplier: this.stage.rewardMultiplier,
-          });
+          if (this.stage.endless) {
+            profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
+              challengeId: this.stage.challenge?.id,
+              challengePeriod: this.stage.challenge?.period,
+              challengeKey: this.stage.challengeKey,
+              rewardMultiplier: this.stage.rewardMultiplier,
+            });
+          } else {
+            profile.completeRun(Math.max(1, s.wave), s.kills, {
+              stageId: this.stage.id,
+              stageCompleted: false,
+              starsEarned: 0,
+              bonusCoins: 0,
+              bonusXp: 0,
+              rewardMultiplier: this.stage.rewardMultiplier,
+            });
+          }
           sfx("gameOver");
         }
         this.emit();
@@ -1627,6 +1651,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     const aliveZombies = s.zombies.some((z) => !z.dead);
 
     if (
+      !this.stage.endless &&
       !s.gameOver &&
       isStageWinReady(s.wave, s.stageWaveTarget, s.spawnQueue, aliveZombies)
     ) {
