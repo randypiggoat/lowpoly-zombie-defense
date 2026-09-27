@@ -1,3 +1,5 @@
+import { track } from "./analytics";
+
 export type RewardedPlacement =
   | "double-run-rewards"
   | "revive"
@@ -29,6 +31,21 @@ export type InterstitialDecisionInput = {
 };
 
 export const MIN_INTERSTITIAL_GAP_MS = 3 * 60 * 1000;
+
+type AdMobLike = {
+  prepareRewardVideoAd(options: { adId: string }): Promise<unknown>;
+  showRewardVideoAd(): Promise<{ amount?: number }>;
+  prepareInterstitial(options: { adId: string }): Promise<unknown>;
+  showInterstitial(): Promise<void>;
+};
+
+type RuntimeBridge = {
+  Capacitor?: {
+    Plugins?: { AdMob?: AdMobLike };
+  };
+};
+
+const runtime = globalThis as unknown as RuntimeBridge;
 
 export function canShowInterstitial({
   now,
@@ -71,6 +88,50 @@ export type ExternalMonetizationProvider = Partial<MonetizationProvider>;
 
 let externalProvider: ExternalMonetizationProvider | null = null;
 let lastInterstitialAt: number | null = null;
+
+export function installCapacitorAdMobProvider() {
+  const admob = runtime.Capacitor?.Plugins?.AdMob;
+  if (!admob) return false;
+
+  const rewardedAdId = import.meta.env.VITE_ADMOB_REWARDED_AD_ID as string | undefined;
+  const interstitialAdId = import.meta.env.VITE_ADMOB_INTERSTITIAL_AD_ID as string | undefined;
+
+  setMonetizationProvider({
+    canShowRewarded: () => Boolean(rewardedAdId),
+    showRewarded: async (placement) => {
+      if (!rewardedAdId) return false;
+      track("rewarded_ad_requested", { placement });
+      try {
+        await admob.prepareRewardVideoAd({ adId: rewardedAdId });
+        const reward = await admob.showRewardVideoAd();
+        const completed = Number(reward?.amount ?? 0) > 0;
+        track(completed ? "rewarded_ad_completed" : "rewarded_ad_failed", { placement });
+        return completed;
+      } catch {
+        track("rewarded_ad_failed", { placement });
+        return false;
+      }
+    },
+    canShowInterstitial: () => Boolean(interstitialAdId),
+    showInterstitial: async (reason) => {
+      if (!interstitialAdId) return false;
+      track("interstitial_requested", { reason });
+      try {
+        await admob.prepareInterstitial({ adId: interstitialAdId });
+        await admob.showInterstitial();
+        track("interstitial_shown", { reason });
+        return true;
+      } catch {
+        track("interstitial_failed", { reason });
+        return false;
+      }
+    },
+    canPurchase: () => false,
+    purchase: async () => false,
+  });
+
+  return true;
+}
 
 export function setMonetizationProvider(provider: ExternalMonetizationProvider | null) {
   externalProvider = provider;
