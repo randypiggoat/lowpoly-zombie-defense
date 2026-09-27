@@ -120,9 +120,31 @@ describe("enemy lifecycle", () => {
 
     expect(landed.y).toBe(0);
     expect(landed.vy).toBeCloseTo(1.38);
-    expect(landed.spin).toBeCloseTo(0.6);
+    expect(landed.spin).toBeCloseTo(0.8);
     expect(landed.vx).toBeCloseTo(2 * Math.exp(-0.6));
     expect(landed.vz).toBeCloseTo(4 * Math.exp(-0.6));
+
+    const resting = stepEnemyRagdoll(
+      {
+        fade: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 1,
+        vy: 1.5,
+        vz: -2,
+        tilt: 0,
+        spin: 2,
+        roll: 0,
+      },
+      0.1,
+    );
+
+    expect(resting.y).toBe(0);
+    expect(resting.vy).toBe(0);
+    expect(resting.spin).toBeCloseTo(2 * Math.exp(-0.8));
+    expect(resting.vx).toBeCloseTo(Math.exp(-0.6));
+    expect(resting.vz).toBeCloseTo(-2 * Math.exp(-0.6));
   });
 
   test("dead enemies despawn only after the existing fade threshold", () => {
