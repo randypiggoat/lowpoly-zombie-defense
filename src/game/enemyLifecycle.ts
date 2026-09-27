@@ -90,13 +90,14 @@ export function stepEnemyRagdoll(
   state: EnemyRagdollState,
   dt: number,
 ): EnemyRagdollState {
+  const nextVy = state.vy - 16 * dt;
   const next = {
     fade: state.fade + dt * 0.55,
     x: state.x + state.vx * dt,
-    y: state.y + state.vy * dt,
+    y: state.y + nextVy * dt,
     z: state.z + state.vz * dt,
     vx: state.vx,
-    vy: state.vy - 16 * dt,
+    vy: nextVy,
     vz: state.vz,
     tilt: state.tilt + state.spin * dt,
     spin: state.spin,
