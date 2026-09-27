@@ -1041,6 +1041,7 @@ reset() {
   this.stage = stage;
   this.nextId = 1;
   this.state = makeState(stage);
+  track("run_started", { stageId: stage.id, endless: false });
   this.emit();
 }
 
@@ -1049,6 +1050,7 @@ reset() {
   this.stage = { ...stage, challenge, challengeKey, endless: true };
   this.nextId = 1;
   this.state = makeState(this.stage);
+  track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
   this.emit();
 }
 
