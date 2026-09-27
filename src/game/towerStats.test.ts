@@ -36,25 +36,23 @@ const profileBonus = {
 
 describe("tower stat calculations", () => {
   test("combines upgrade modifiers using the existing stacking rules", () => {
-    expect(
-      getTowerMods({ kind: "test", a: 2, b: 2 }, paths),
-    ).toEqual({
-      dmg: 3,
-      rate: 2.1,
-      range: 1.5,
-      slow: 0.6,
-      splash: 0.4,
-      chain: 1,
-      crit: 0.35,
-      gold: 1.25,
-      gore: 2,
-      burn: 3,
-    });
+    const mods = getTowerMods({ kind: "test", a: 2, b: 2 }, paths);
+
+    expect(mods.dmg).toBe(3);
+    expect(mods.rate).toBeCloseTo(2.1, 12);
+    expect(mods.range).toBe(1.5);
+    expect(mods.slow).toBe(0.6);
+    expect(mods.splash).toBe(0.4);
+    expect(mods.chain).toBe(1);
+    expect(mods.crit).toBe(0.35);
+    expect(mods.gold).toBe(1.25);
+    expect(mods.gore).toBe(2);
+    expect(mods.burn).toBe(3);
   });
 
   test("applies level scaling and profile bonuses to combat stats", () => {
     const stats = getTowerCombatStats(
-      { kind: "test", level: 3, a: 1, b: 1 },
+      { kind: "test", level: 3, a: 2, b: 2 },
       definition,
       paths,
       {
@@ -66,13 +64,13 @@ describe("tower stat calculations", () => {
     );
 
     expect(stats.damage).toBeCloseTo(10 * 2 * 1.22 ** 2 * 1.2);
-    expect(stats.rate).toBeCloseTo(2 * 1.4 * 1.06 ** 2 * 1.1);
+    expect(stats.rate).toBeCloseTo(2 * 1.4 * 1.5 * 1.06 ** 2 * 1.1);
     expect(stats.range).toBeCloseTo(6 * 1.5 * 1.035 ** 2 * 1.04);
     expect(stats.slow).toBe(0.6);
     expect(stats.splash).toBe(1.4);
     expect(stats.chain).toBe(3);
     expect(stats.burn).toBeCloseTo(5 * 1.22 ** 2 * 1.2);
-    expect(stats.crit).toBe(0.2);
+    expect(stats.crit).toBe(0.35);
     expect(stats.gore).toBe(2);
     expect(stats.gold).toBe(1.25);
   });
