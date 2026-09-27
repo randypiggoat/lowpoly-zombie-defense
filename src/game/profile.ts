@@ -1,3 +1,4 @@
+import { TOWER_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
 
@@ -206,6 +207,7 @@ export type PlayerProfile = {
   dailyChallengeBestScore: number;
   weeklyChallengeKey: string | null;
   weeklyChallengeBestScore: number;
+  equippedTowerCosmetics: Record<string, string>;
 };
 
 export type StageProgress = {
@@ -315,6 +317,7 @@ function blank(): PlayerProfile {
     dailyChallengeBestScore: 0,
     weeklyChallengeKey: null,
     weeklyChallengeBestScore: 0,
+    equippedTowerCosmetics: {},
   };
 }
 
@@ -537,6 +540,13 @@ function load(): PlayerProfile {
       dailyChallengeBestScore: Math.max(0, Number(parsed.dailyChallengeBestScore) || 0),
       weeklyChallengeKey: normalizeDate(parsed.weeklyChallengeKey),
       weeklyChallengeBestScore: Math.max(0, Number(parsed.weeklyChallengeBestScore) || 0),
+      equippedTowerCosmetics: isRecord(parsed.equippedTowerCosmetics)
+        ? Object.fromEntries(
+            Object.entries(parsed.equippedTowerCosmetics).filter(
+              ([kind, cosmetic]) => typeof kind === "string" && typeof cosmetic === "string",
+            ),
+          )
+        : {},
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -684,6 +694,34 @@ class ProfileStore {
 
   private syncAchievementProgress() {
     syncAchievements(this.profile, dateKey());
+  }
+
+  private syncCosmeticUnlocks() {
+    for (const cosmetic of TOWER_COSMETICS) {
+      if (!cosmetic.unlock(this.profile)) continue;
+      if (cosmetic.id === "default") continue;
+    }
+  }
+
+  unlockedCosmetics() {
+    return TOWER_COSMETICS.filter((cosmetic) => cosmetic.unlock(this.profile));
+  }
+
+  equipTowerCosmetic(kind: string, cosmeticId: string) {
+    const cosmetic = TOWER_COSMETICS.find(
+      (entry) =>
+        entry.id === cosmeticId &&
+        (entry.kind === "all" || entry.towerKind === kind) &&
+        entry.unlock(this.profile),
+    );
+    if (!cosmetic) return false;
+    this.profile.equippedTowerCosmetics[kind] = cosmetic.id;
+    this.save();
+    return true;
+  }
+
+  equippedTowerCosmetic(kind: string) {
+    return this.profile.equippedTowerCosmetics[kind] ?? "default";
   }
 
   recordZombieKill(kind: number) {
