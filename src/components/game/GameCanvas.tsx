@@ -96,6 +96,7 @@ export function GameCanvas() {
   const [activeChallenge, setActiveChallenge] = useState<EndlessChallenge | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
+  const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const activeStage = getStageById(activeStageId);
 
   const stages = STAGE_DEFS.map((stage) => {
@@ -159,7 +160,14 @@ export function GameCanvas() {
 
   useEffect(() => {
     setCanvasReady(true);
-    installCapacitorAdMobProvider();
+    void import("@/game/monetization")
+      .then(({ installCapacitorAdMobProvider, isRewardedAvailable }) => {
+        installCapacitorAdMobProvider();
+        setRewardedAvailable(isRewardedAvailable());
+      })
+      .catch(() => {
+        setRewardedAvailable(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -174,11 +182,15 @@ export function GameCanvas() {
     if (screen !== "results" || !state.gameOver || !lastReward) return;
     if (player.adsRemoved || player.gamesPlayed < 2) return;
 
-    void showInterstitial("run-complete", {
-      now: Date.now(),
-      inCombat: false,
-      adsRemoved: player.adsRemoved,
-    });
+    void import("@/game/monetization")
+      .then(({ showInterstitial }) =>
+        showInterstitial("run-complete", {
+          now: Date.now(),
+          inCombat: false,
+          adsRemoved: player.adsRemoved,
+        }),
+      )
+      .catch(() => false);
   }, [lastReward, player.adsRemoved, player.gamesPlayed, screen, state.gameOver]);
 
   useEffect(() => {
@@ -609,10 +621,11 @@ export function GameCanvas() {
             )}
             {lastReward &&
               !player.adsRemoved &&
-              isRewardedAvailable() &&
+              rewardedAvailable &&
               profile.canClaimLastRunRewardBoost && (
                 <ScreenButton
                   onClick={async () => {
+                    const { showRewarded } = await import("@/game/monetization");
                     const earned = await showRewarded("double-run-rewards");
                     if (earned) profile.claimLastRunRewardBoost();
                   }}
