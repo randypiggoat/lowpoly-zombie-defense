@@ -9,6 +9,7 @@ import { getTowerCombatStats } from "./towerStats";
 import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import { applyProjectileStatusEffects } from "./projectileEffects";
+import { stepEnemyRagdoll, stepLivingEnemy, shouldDespawnEnemy } from "./enemyLifecycle";
 import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
@@ -1397,43 +1398,64 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     // zombies
     for (const z of s.zombies) {
       if (z.flash > 0) z.flash = Math.max(0, z.flash - dt * 4);
+
       if (z.dead) {
-        // ragdoll
-        z.fade += dt * 0.55;
-        z.vy -= 16 * dt;
-        z.y += z.vy * dt;
-        z.x += z.vx * dt;
-        z.z += z.vz * dt;
-        z.tilt += z.spin * dt;
-        z.roll += z.spin * 0.6 * dt;
-        if (z.y <= 0) {
-          z.y = 0;
-          if (z.vy < -0.4) {
-            z.vy = -z.vy * 0.3;
-            z.spin *= 0.4;
-          } else {
-            z.vy = 0;
-            z.spin *= Math.exp(-8 * dt);
-          }
-          z.vx *= Math.exp(-6 * dt);
-          z.vz *= Math.exp(-6 * dt);
-        }
+        const ragdoll = stepEnemyRagdoll(
+          {
+            fade: z.fade,
+            x: z.x,
+            y: z.y,
+            z: z.z,
+            vx: z.vx,
+            vy: z.vy,
+            vz: z.vz,
+            tilt: z.tilt,
+            spin: z.spin,
+            roll: z.roll,
+          },
+          dt,
+        );
+        z.fade = ragdoll.fade;
+        z.x = ragdoll.x;
+        z.y = ragdoll.y;
+        z.z = ragdoll.z;
+        z.vx = ragdoll.vx;
+        z.vy = ragdoll.vy;
+        z.vz = ragdoll.vz;
+        z.tilt = ragdoll.tilt;
+        z.spin = ragdoll.spin;
+        z.roll = ragdoll.roll;
         continue;
       }
-      z.wobble += dt * (4 + z.speed * 2);
-      if (z.burnTime > 0 && z.burn > 0) {
-        z.burnTime -= dt;
-        this.damage(z, z.burn * dt, z.x, z.z, 1);
+
+      const lifecycle = stepLivingEnemy({
+        dist: z.dist,
+        speed: z.speed,
+        slow: z.slow,
+        burn: z.burn,
+        burnTime: z.burnTime,
+        wobble: z.wobble,
+        dt,
+        pathLength: PATH_LENGTH,
+      });
+
+      z.wobble = lifecycle.wobble;
+      z.burnTime = lifecycle.burnTime;
+
+      if (lifecycle.burnDamage > 0) {
+        this.damage(z, lifecycle.burnDamage, z.x, z.z, 1);
         if (z.dead) continue;
-        if (z.burnTime <= 0) z.burn = 0;
       }
-      z.dist += z.speed * dt * (1 - Math.min(0.85, z.slow));
-      z.slow = 0;
+
+      z.burn = lifecycle.burn;
+      z.dist = lifecycle.dist;
+      z.slow = lifecycle.slow;
 
       const p = pointAt(z.dist);
       z.x = p.x;
       z.z = p.z;
-      if (z.dist >= PATH_LENGTH) {
+
+      if (lifecycle.reachedBase) {
         z.dead = true;
         z.fade = 1.4;
         const baseHit = resolveBaseHit(s.baseHp, z.kind);
@@ -1615,7 +1637,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     // cleanup
     if (s.zombies.length > 0) {
-      s.zombies = s.zombies.filter((z) => !(z.dead && z.fade > 1.6));
+      s.zombies = s.zombies.filter((z) => !shouldDespawnEnemy(z.dead, z.fade));
     }
     if (s.bullets.length > 0) {
       s.bullets = s.bullets.filter((b) => b.alive);
