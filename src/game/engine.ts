@@ -4,6 +4,7 @@
 import { sfx } from "./audio";
 import { evaluateStageObjectives, type StageDefinition } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
+import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
@@ -1226,6 +1227,7 @@ reset() {
   }
 
   /** Shared damage application — used by bullets, splash, chains and burning. */
+  /** Shared damage application — used by bullets, splash, chains and burning. */
   private damage(
     z: Zombie,
     dmg: number,
@@ -1236,55 +1238,56 @@ reset() {
   ) {
     const s = this.state;
     if (z.dead) return;
-    z.hp -= dmg;
-const popupValue = Math.max(1, Math.round(dmg));
-const crit = dmg >= z.maxHp * 0.35;
 
-if (s.damagePopups.length < 80) {
-  s.damagePopups.push({
-    id: this.nextId++,
-    x: z.x + (this.random() - 0.5) * 0.45,
-    y: 1.35 + this.random() * 0.35,
-    z: z.z + (this.random() - 0.5) * 0.45,
-    value: popupValue,
-    life: 0,
-    crit,
-    gold: 0,
-  });
-}
-    if (z.hp > 0) {
+    const result = resolveDamage(z.hp, z.maxHp, dmg, goreBase, goldMult);
+    z.hp = result.nextHp;
+
+    if (s.damagePopups.length < 80) {
+      s.damagePopups.push({
+        id: this.nextId++,
+        x: z.x + (this.random() - 0.5) * 0.45,
+        y: 1.35 + this.random() * 0.35,
+        z: z.z + (this.random() - 0.5) * 0.45,
+        value: result.popupValue,
+        life: 0,
+        crit: result.crit,
+        gold: 0,
+      });
+    }
+
+    if (!result.killed) {
       z.flash = 1;
       if (dmg >= 0.5) sfx("hit");
       return;
     }
+
     z.dead = true;
     z.fade = 0;
     s.kills += 1;
-    const killGold = Math.round((4 + Math.floor(z.maxHp / 12)) * goldMult);
-s.gold += killGold;
+    s.gold += result.killGold;
 
-if (s.damagePopups.length < 80) {
-  s.damagePopups.push({
-    id: this.nextId++,
-    x: z.x,
-    y: 1.65,
-    z: z.z,
-    value: 0,
-    life: 0,
-    crit: true,
-    gold: killGold,
-  });
-}
+    if (s.damagePopups.length < 80) {
+      s.damagePopups.push({
+        id: this.nextId++,
+        x: z.x,
+        y: 1.65,
+        z: z.z,
+        value: 0,
+        life: 0,
+        crit: true,
+        gold: result.killGold,
+      });
+    }
+
     profile.recordZombieKill(z.kind);
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
-    const overkill = Math.min(3, -z.hp / Math.max(1, z.maxHp) + 1);
-    const force = goreBase * (0.8 + overkill * 0.6);
+    const force = result.force;
     z.vx = Math.sin(away) * 2.2 * force;
     z.vz = Math.cos(away) * 2.2 * force;
     z.vy = 2.5 + this.random() * 2 * force;
     z.spin = (this.random() - 0.5) * 9 * force;
-    const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
-    if (explode) {
+
+    if (result.explode) {
       z.gibbed = true;
       this.spawnGibs(z, 8, Math.min(2.2, force));
       sfx("gib");
@@ -1292,6 +1295,7 @@ if (s.damagePopups.length < 80) {
       this.spawnGibs(z, 3, 0.8);
       sfx("death");
     }
+
     this.emit();
   }
 
