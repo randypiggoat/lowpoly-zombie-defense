@@ -85,6 +85,32 @@ function ScreenCard({ children }: { children: ReactNode }) {
   );
 }
 
+const STORE_PRODUCTS: Array<{
+  id: PurchaseProduct;
+  name: string;
+  description: string;
+  price: string;
+}> = [
+  {
+    id: "remove-ads",
+    name: "Remove Ads",
+    description: "Removes transition ads while keeping optional rewarded ads.",
+    price: "Store price",
+  },
+  {
+    id: "supporter-pack",
+    name: "Supporter Pack",
+    description: "A cosmetic support bundle for players who want to back Rotwood.",
+    price: "Store price",
+  },
+  {
+    id: "cosmetic-pack",
+    name: "Cosmetic Pack",
+    description: "A themed tower skin bundle. Cosmetic only.",
+    price: "Store price",
+  },
+];
+
 export function GameCanvas() {
   const state = useGameSnapshot();
   const { player, lastReward } = useProfileSnapshot();
@@ -572,14 +598,46 @@ export function GameCanvas() {
               ← BACK
             </ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
-              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Shop</h2>
-              <p className="mt-1 text-sm text-panel-muted">
-                Use earned currency for progression upgrades.
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Optional support</p>
+              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Rotwood Shop</h2>
+              <p className="mt-1 text-xs text-panel-muted">
+                Core gameplay stays playable without spending. Mobile store pricing appears when native billing is connected.
               </p>
               <div className="mt-3 rounded-xl bg-black/25 p-3">
                 <p className="text-sm text-panel-foreground">Coins: {player.coins}</p>
                 <p className="text-sm text-panel-foreground">Gems: {player.gems}</p>
+                <p className="mt-1 text-[10px] text-panel-muted">
+                  Ads: {player.adsRemoved ? "Removed" : "Enabled"}
+                </p>
               </div>
+            </div>
+            <div className="mt-3 space-y-2">
+              {STORE_PRODUCTS.map((product) => {
+                const available = isPurchaseAvailable(product.id);
+                return (
+                  <div key={product.id} className="rounded-2xl bg-panel/95 p-3 shadow-panel">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-display text-lg tracking-wide text-panel-foreground">{product.name}</p>
+                        <p className="mt-1 text-xs text-panel-muted">{product.description}</p>
+                      </div>
+                      <span className="shrink-0 text-xs text-accent">{product.price}</span>
+                    </div>
+                    <ScreenButton
+                      onClick={async () => {
+                        const purchased = await purchase(product.id);
+                        if (purchased && product.id === "remove-ads") {
+                          profile.setAdsRemoved(true);
+                        }
+                      }}
+                      variant="secondary"
+                      disabled={!available}
+                    >
+                      {available ? "PURCHASE" : "MOBILE STORE REQUIRED"}
+                    </ScreenButton>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
