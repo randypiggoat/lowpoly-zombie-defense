@@ -9,6 +9,27 @@ describe("wave spawning rules", () => {
     expect(waveIntensityBand(100, 6)).toBe(7);
   });
 
+  test("keeps every intensity-band boundary stable", () => {
+    const expected = new Map([
+      [1, 1],
+      [3, 1],
+      [4, 2],
+      [6, 2],
+      [7, 3],
+      [9, 3],
+      [10, 4],
+      [11, 5],
+      [15, 5],
+      [16, 6],
+      [19, 6],
+      [20, 7],
+    ]);
+
+    for (const [wave, band] of expected) {
+      expect(waveIntensityBand(wave, 20)).toBe(band);
+    }
+  });
+
   test("returns the existing spawn pacing for an intensity band", () => {
     expect(getWaveSpawnPlan(1, 6)).toEqual({
       band: 1,
