@@ -30,6 +30,7 @@ function profile(overrides: Partial<PlayerProfile> = {}): PlayerProfile {
     dailyChallengeBestScore: 0,
     weeklyChallengeKey: null,
     weeklyChallengeBestScore: 0,
+    equippedTowerCosmetics: {},
     ...overrides,
   };
 }
