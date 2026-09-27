@@ -1434,7 +1434,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (z.dist >= PATH_LENGTH) {
         z.dead = true;
         z.fade = 1.4;
-        const baseHit = resolveBaseHit(s.baseHp, s.baseMaxHp, z.kind);
+        const baseHit = resolveBaseHit(s.baseHp, z.kind);
         s.baseHp = baseHit.nextHealth;
         s.flash = 1;
         sfx("baseHit");
