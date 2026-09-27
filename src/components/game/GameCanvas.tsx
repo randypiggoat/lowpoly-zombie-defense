@@ -18,6 +18,12 @@ import {
   type PrimaryScreen,
 } from "@/game/navigation";
 import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, profile } from "@/game/profile";
+import {
+  installCapacitorAdMobProvider,
+  isRewardedAvailable,
+  showInterstitial,
+  showRewarded,
+} from "@/game/monetization";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -151,6 +157,7 @@ export function GameCanvas() {
 
   useEffect(() => {
     setCanvasReady(true);
+    installCapacitorAdMobProvider();
   }, []);
 
   useEffect(() => {
@@ -160,6 +167,17 @@ export function GameCanvas() {
       setScreen("results");
     }
   }, [screen, state.gameOver]);
+
+  useEffect(() => {
+    if (screen !== "results" || !state.gameOver || !lastReward) return;
+    if (player.adsRemoved || player.gamesPlayed < 2) return;
+
+    void showInterstitial("run-complete", {
+      now: Date.now(),
+      inCombat: false,
+      adsRemoved: player.adsRemoved,
+    });
+  }, [lastReward, player.adsRemoved, player.gamesPlayed, screen, state.gameOver]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -491,6 +509,17 @@ export function GameCanvas() {
               <p className="mt-3 text-center font-display text-xl tracking-wide text-accent">
                 NEW RECORD!
               </p>
+            )}
+            {lastReward && !player.adsRemoved && isRewardedAvailable() && profile.canClaimLastRunRewardBoost && (
+              <ScreenButton
+                onClick={async () => {
+                  const earned = await showRewarded("double-run-rewards");
+                  if (earned) profile.claimLastRunRewardBoost();
+                }}
+                variant="secondary"
+              >
+                DOUBLE REWARDS · WATCH AD
+              </ScreenButton>
             )}
             {lastReward?.stageCompleted && (
               <div className="mt-3 space-y-1 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
