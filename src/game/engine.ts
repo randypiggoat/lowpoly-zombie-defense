@@ -27,6 +27,9 @@ import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
+import { getCombatFeedback } from "./combatFeel";
+import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
+import { track } from "./analytics";
 
 export type Vec2 = { x: number; z: number };
 
@@ -905,6 +908,11 @@ damagePopups: DamagePopup[];
 waveMessage: string;
 waveMessageLife: number;
 waveMessageType: "start" | "complete" | "boss" | "";
+  runModifierOffer: RunModifierDefinition[];
+  activeRunModifiers: RunModifierId[];
+  killStreak: number;
+  killStreakTimer: number;
+  screenShake: number;
 towers: Tower[];
   gameOver: boolean;
   stageWon: boolean;
@@ -975,7 +983,12 @@ damagePopups: [],
 waveMessage: "",
 waveMessageLife: 0,
 waveMessageType: "",
-towers: [],
+    runModifierOffer: [],
+    activeRunModifiers: [],
+    killStreak: 0,
+    killStreakTimer: 0,
+    screenShake: 0,
+    towers: [],
     gameOver: false,
     stageWon: false,
     flash: 0,
@@ -1013,6 +1026,44 @@ reset() {
   this.state = makeState(stage);
   this.emit();
 }
+
+  chooseRunModifier(id: RunModifierId): boolean {
+    const state = this.state;
+    const chosen = state.runModifierOffer.find((entry) => entry.id === id);
+    if (!chosen) return false;
+    state.activeRunModifiers = [...state.activeRunModifiers, id];
+    state.runModifierOffer = [];
+    state.waveMessage = chosen.name.toUpperCase() + " ACTIVE";
+    state.waveMessageLife = 1.4;
+    state.waveMessageType = "complete";
+    track("modifier_chosen", { modifier: id, wave: state.wave });
+    const plan = getWaveSpawnPlan(state.wave, state.stageWaveTarget);
+    const queueMult =
+      Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
+      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
+    const bossWave = this.stage.boss.enabled && this.stage.boss.wave === state.wave;
+    if (shouldOfferRunModifier(s.wave)) {
+      s.runModifierOffer = createRunModifierOffer(this.random, s.activeRunModifiers);
+      if (s.runModifierOffer.length > 0) {
+        s.waveMessage = "CHOOSE YOUR POWER";
+        s.waveMessageLife = 999;
+        s.waveMessageType = "complete";
+        profile.recordWaveReached(s.wave);
+        sfx("wave");
+        this.emit();
+        return;
+      }
+    }
+
+    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const queue = Math.floor((4 + state.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
+    state.spawnQueue = Math.min(64, Math.max(1, queue));
+    state.spawnTimer = 0;
+    state.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
 
   towerAtSpot(spot: number) {
     return this.state.towers.find((t) => t.spot === spot) ?? null;
@@ -1059,6 +1110,7 @@ reset() {
     });
     s.towersPlaced += 1;
     profile.recordTowerBuilt(kind);
+    track("tower_built", { kind });
     sfx("build");
     this.emit();
     return true;
@@ -1080,6 +1132,7 @@ reset() {
     s.gold -= cost;
     t.level += 1;
     profile.recordTowerUpgrade(t.kind);
+    track("tower_upgraded", { kind: t.kind, level: t.level });
     sfx("upgrade");
     this.emit();
     return true;
@@ -1264,14 +1317,31 @@ reset() {
 
     if (!result.killed) {
       z.flash = 1;
-      if (dmg >= 0.5) sfx("hit");
+      const feedback = getCombatFeedback({
+        killed: false,
+        crit: result.crit,
+        exploded: false,
+        killStreak: s.killStreak,
+      });
+      s.screenShake = Math.min(1.5, s.screenShake + feedback.shake);
+      if (dmg >= 0.5) sfx(feedback.hitSound);
       return;
     }
 
     z.dead = true;
     z.fade = 0;
     s.kills += 1;
-    s.gold += result.killGold;
+    s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
+    s.killStreakTimer = 2.25;
+    const goldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
+    s.gold += Math.round(result.killGold * goldMultiplier);
+    const feedback = getCombatFeedback({
+      killed: true,
+      crit: result.crit,
+      exploded: result.explode,
+      killStreak: s.killStreak,
+    });
+    s.screenShake = Math.min(1.8, s.screenShake + feedback.shake);
 
     if (s.damagePopups.length < 80) {
       s.damagePopups.push({
@@ -1300,7 +1370,7 @@ reset() {
       sfx("gib");
     } else {
       this.spawnGibs(z, 3, 0.8);
-      sfx("death");
+      sfx(feedback.hitSound);
     }
 
     this.emit();
@@ -1355,6 +1425,12 @@ reset() {
   private step(dt: number) {
     const s = this.state;
     if (s.gameOver) return;
+    if (s.runModifierOffer.length > 0) return;
+    if (s.killStreakTimer > 0) {
+      s.killStreakTimer = Math.max(0, s.killStreakTimer - dt);
+      if (s.killStreakTimer === 0) s.killStreak = 0;
+    }
+    s.screenShake = Math.max(0, s.screenShake - dt * 6);
     if (s.waveMessageLife > 0) {
       s.waveMessageLife -= dt;
       if (s.waveMessageLife <= 0) {
@@ -1550,16 +1626,17 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
     }
     // towers
+    const runEffects = getRunModifierEffects(s.activeRunModifiers);
     for (const t of s.towers) {
       const cooldown = advanceTowerCooldown(t.cooldown, dt);
       t.cooldown = cooldown.cooldown;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
 
-      const best = selectTowerTarget(s.zombies, t, towerRange(t), t.targetMode);
+      const best = selectTowerTarget(s.zombies, t, towerRange(t) * runEffects.rangeMultiplier, t.targetMode);
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (cooldown.ready) {
-          const rate = towerRate(t);
+          const rate = towerRate(t) * runEffects.rateMultiplier;
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < towerCrit(t);
@@ -1572,14 +1649,14 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               tx: best.x,
               tz: best.z,
               speed: BULLET_SPEED[t.kind],
-              damage: towerDamage(t) * (crit ? 2.5 : 1),
+              damage: towerDamage(t) * runEffects.damageMultiplier * (crit ? 2.5 : 1),
               target: best.id,
               kind: t.kind,
-              splash: towerSplash(t),
+              splash: towerSplash(t) * runEffects.splashMultiplier,
               chain: towerChain(t),
-              slow: towerSlow(t),
+              slow: towerSlow(t) * runEffects.slowMultiplier,
               burn: towerBurn(t),
-              gold: towerGold(t),
+              gold: towerGold(t) * runEffects.goldMultiplier,
               crit,
               level: t.level,
             }),
