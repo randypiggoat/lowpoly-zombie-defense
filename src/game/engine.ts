@@ -1042,19 +1042,6 @@ reset() {
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
     const bossWave = this.stage.boss.enabled && this.stage.boss.wave === state.wave;
-    if (shouldOfferRunModifier(s.wave)) {
-      s.runModifierOffer = createRunModifierOffer(this.random, s.activeRunModifiers);
-      if (s.runModifierOffer.length > 0) {
-        s.waveMessage = "CHOOSE YOUR POWER";
-        s.waveMessageLife = 999;
-        s.waveMessageType = "complete";
-        profile.recordWaveReached(s.wave);
-        sfx("wave");
-        this.emit();
-        return;
-      }
-    }
-
     const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
     const queue = Math.floor((4 + state.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
     state.spawnQueue = Math.min(64, Math.max(1, queue));
