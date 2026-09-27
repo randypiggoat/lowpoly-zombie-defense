@@ -6,6 +6,7 @@ import { evaluateStageObjectives, type StageDefinition } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
+import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
@@ -1433,11 +1434,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (z.dist >= PATH_LENGTH) {
         z.dead = true;
         z.fade = 1.4;
-        s.baseHp -= z.kind === 2 ? 3 : 1;
+        const baseHit = resolveBaseHit(s.baseHp, s.baseMaxHp, z.kind);
+        s.baseHp = baseHit.nextHealth;
         s.flash = 1;
         sfx("baseHit");
-        if (s.baseHp <= 0) {
-          s.baseHp = 0;
+        if (baseHit.gameOver) {
           s.gameOver = true;
           profile.completeRun(Math.max(1, s.wave), s.kills, {
             stageId: this.stage.id,
@@ -1457,9 +1458,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     if (
       !s.gameOver &&
-      s.wave >= s.stageWaveTarget &&
-      s.spawnQueue === 0 &&
-      !aliveZombies
+      isStageWinReady(s.wave, s.stageWaveTarget, s.spawnQueue, aliveZombies)
     ) {
       s.gameOver = true;
       s.stageWon = true;
