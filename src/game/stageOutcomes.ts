@@ -11,7 +11,6 @@ export type BaseHitResult = {
 
 export function resolveBaseHit(
   baseHealth: number,
-  baseMaxHealth: number,
   kind: StageEnemyKind,
 ): BaseHitResult {
   const nextHealth = Math.max(0, baseHealth - baseDamageForEnemy(kind));
