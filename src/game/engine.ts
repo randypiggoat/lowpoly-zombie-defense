@@ -96,6 +96,8 @@ export type Zombie = {
   slow: number;
   burn: number;
   burnTime: number;
+  healTimer?: number;
+  healFlash?: number;
   // ragdoll
   vx: number;
   vy: number;
