@@ -106,7 +106,7 @@ export function createEndlessStage(challenge: EndlessChallenge): StageDefinition
     difficulty: "Hard",
     startingCoins: 240,
     startingBaseHealth: challenge.startingBaseHealth ?? 20,
-    waveCount: 9999,
+    waveCount: 50,
     gameplay: {
       ...base.gameplay,
       waveDifficultyMultiplier: 1.05,
