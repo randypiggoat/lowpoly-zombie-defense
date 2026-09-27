@@ -235,6 +235,7 @@ export function HUD({
   onPause,
   showMetaSections = false,
   showGameOverOverlay = true,
+  rewardedAvailable = false,
 }: {
   state: GameState;
   selection: Selection;
@@ -242,6 +243,7 @@ export function HUD({
   onPause?: () => void;
   showMetaSections?: boolean;
   showGameOverOverlay?: boolean;
+  rewardedAvailable?: boolean;
 }) {
   const { player, lastReward, levelUpNotice } = useProfileSnapshot();
   const [activeLevel, setActiveLevel] = useState<number | null>(null);
@@ -292,6 +294,31 @@ export function HUD({
                 </button>
               ))}
             </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => game.rerollRunModifier("free")}
+                disabled={state.modifierRerollsUsed >= 1}
+                className="min-h-10 rounded-xl bg-panel px-2 py-2 font-display text-xs tracking-wide text-panel-foreground disabled:opacity-40"
+              >
+                FREE REROLL
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { showRewarded } = await import("@/game/monetization");
+                  const earned = await showRewarded("modifier-reroll");
+                  if (earned) game.rerollRunModifier("rewarded");
+                }}
+                disabled={!rewardedAvailable || state.rewardedRerollsUsed >= 1}
+                className="min-h-10 rounded-xl bg-accent px-2 py-2 font-display text-xs tracking-wide text-accent-foreground disabled:opacity-40"
+              >
+                WATCH AD · REROLL
+              </button>
+            </div>
+            <p className="mt-2 text-center text-[9px] uppercase tracking-[0.16em] text-panel-muted">
+              One free reroll + one optional rewarded reroll per run
+            </p>
           </div>
         </div>
       )}
