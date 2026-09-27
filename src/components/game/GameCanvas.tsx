@@ -123,6 +123,7 @@ export function GameCanvas() {
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
+  const [storeProviderAvailable, setStoreProviderAvailable] = useState(false);
   const activeStage = getStageById(activeStageId);
 
   const stages = STAGE_DEFS.map((stage) => {
@@ -190,9 +191,11 @@ export function GameCanvas() {
       .then(({ installCapacitorAdMobProvider, isRewardedAvailable }) => {
         installCapacitorAdMobProvider();
         setRewardedAvailable(isRewardedAvailable());
+        setStoreProviderAvailable(isPurchaseAvailable("remove-ads"));
       })
       .catch(() => {
         setRewardedAvailable(false);
+      setStoreProviderAvailable(false);
       });
   }, []);
 
@@ -613,7 +616,7 @@ export function GameCanvas() {
             </div>
             <div className="mt-3 space-y-2">
               {STORE_PRODUCTS.map((product) => {
-                const available = isPurchaseAvailable(product.id);
+                const available = storeProviderAvailable;
                 return (
                   <div key={product.id} className="rounded-2xl bg-panel/95 p-3 shadow-panel">
                     <div className="flex items-start justify-between gap-3">
@@ -625,6 +628,7 @@ export function GameCanvas() {
                     </div>
                     <ScreenButton
                       onClick={async () => {
+                        const { purchase } = await import("@/game/monetization");
                         const purchased = await purchase(product.id);
                         if (purchased && product.id === "remove-ads") {
                           profile.setAdsRemoved(true);
@@ -633,7 +637,7 @@ export function GameCanvas() {
                       variant="secondary"
                       disabled={!available}
                     >
-                      {available ? "PURCHASE" : "MOBILE STORE REQUIRED"}
+                      {available && storeProviderAvailable ? "PURCHASE" : "MOBILE STORE REQUIRED"}
                     </ScreenButton>
                   </div>
                 );
