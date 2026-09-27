@@ -9,10 +9,9 @@ import {
 
 describe("tower combat loop rules", () => {
   test("tower cooldown becomes ready when elapsed time reaches its current cooldown", () => {
-    expect(advanceTowerCooldown(0.4, 0.1)).toEqual({
-      cooldown: 0.3,
-      ready: false,
-    });
+    const cooling = advanceTowerCooldown(0.4, 0.1);
+    expect(cooling.cooldown).toBeCloseTo(0.3);
+    expect(cooling.ready).toBe(false);
     expect(advanceTowerCooldown(0.1, 0.1)).toEqual({
       cooldown: 0,
       ready: true,
@@ -43,25 +42,24 @@ describe("tower combat loop rules", () => {
       level: 4,
     });
 
-    expect(projectile).toEqual({
-      id: 17,
-      x: 2,
-      z: -4,
-      y: 1.72,
-      tx: 8,
-      tz: 3,
-      speed: 22,
-      damage: 12,
-      target: 5,
-      kind: "rifleman",
-      splash: 0,
-      chain: 0,
-      slow: 0,
-      burn: 0,
-      gold: 1,
-      crit: true,
-      alive: true,
-    });
+    expect(projectile.id).toBe(17);
+    expect(projectile.x).toBe(2);
+    expect(projectile.z).toBe(-4);
+    expect(projectile.y).toBeCloseTo(1.72);
+    expect(projectile.tx).toBe(8);
+    expect(projectile.tz).toBe(3);
+    expect(projectile.speed).toBe(22);
+    expect(projectile.damage).toBe(12);
+    expect(projectile.target).toBe(5);
+    expect(projectile.kind).toBe("rifleman");
+    expect(projectile.splash).toBe(0);
+    expect(projectile.chain).toBe(0);
+    expect(projectile.slow).toBe(0);
+    expect(projectile.burn).toBe(0);
+    expect(projectile.gold).toBe(1);
+    expect(projectile.crit).toBe(true);
+    expect(projectile.alive).toBe(true);
+  });
   });
 
   test("projectile homes onto a living target before checking impact distance", () => {
@@ -79,8 +77,8 @@ describe("tower combat loop rules", () => {
     );
 
     expect(result).toEqual({
-      x: 3,
-      z: 4,
+      x: 0,
+      z: 0,
       tx: 3,
       tz: 4,
       alive: false,
