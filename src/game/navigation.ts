@@ -215,7 +215,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     },
     boss: { enabled: false, wave: null, kind: null, count: 0 },
     rewardMultiplier: 1.15,
-    specialRules: ["Mixed packs: synchronized runner and brute pressure lanes"],
+    specialRules: ["Mixed packs: synchronized runner and brute pressure lanes", "Swarm alerts: fast low-health packs test splash coverage"],
     rewards: {
       completionCoins: 115,
       completionXp: 165,
@@ -262,7 +262,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     },
     boss: { enabled: true, wave: 9, kind: 2, count: 1 },
     rewardMultiplier: 1.25,
-    specialRules: ["Armored patrols: brute frequency rises through mid-stage waves"],
+    specialRules: ["Armored patrols: brute frequency rises through mid-stage waves", "Special threats: splitters, bombers, guardians, and healers appear"],
     rewards: {
       completionCoins: 140,
       completionXp: 200,
@@ -309,7 +309,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     },
     boss: { enabled: true, wave: 10, kind: 2, count: 3 },
     rewardMultiplier: 1.4,
-    specialRules: ["Final push: sustained mixed swarms before a major brute boss wave"],
+    specialRules: ["Final push: sustained mixed swarms before a major brute boss wave", "Counterplay gauntlet: every special enemy type can appear before the bosses"],
     rewards: {
       completionCoins: 170,
       completionXp: 240,
