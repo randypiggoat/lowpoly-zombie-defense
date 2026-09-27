@@ -17,7 +17,14 @@ import {
   stageUnlockRequirementText,
   type PrimaryScreen,
 } from "@/game/navigation";
-import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, profile } from "@/game/profile";
+import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, dateKey, profile } from "@/game/profile";
+import {
+  ENDLESS_CHALLENGES,
+  getDailyChallenge,
+  getWeeklyChallenge,
+  getWeekKey,
+  type EndlessChallenge,
+} from "@/game/endless";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -86,6 +93,7 @@ export function GameCanvas() {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
+  const [activeChallenge, setActiveChallenge] = useState<EndlessChallenge | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
   const activeStage = getStageById(activeStageId);
@@ -185,7 +193,16 @@ export function GameCanvas() {
   }, [closeSettings, overlay, screen, state.gameOver]);
 
   const paused = screen !== "gameplay" || overlay !== null;
-  const resultLabel = state.stageWon ? "STAGE COMPLETE" : "GAME OVER";
+  const resultLabel = state.endlessMode
+    ? "SIEGE OVER"
+    : state.stageWon
+      ? "STAGE COMPLETE"
+      : "GAME OVER";
+
+  const todayKey = dateKey();
+  const weekKey = getWeekKey();
+  const dailyChallenge = getDailyChallenge(todayKey);
+  const weeklyChallenge = getWeeklyChallenge(weekKey);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
@@ -238,6 +255,9 @@ export function GameCanvas() {
             </p>
             <div className="mt-4 space-y-2">
               <ScreenButton onClick={() => setScreen("stage-select")}>PLAY</ScreenButton>
+              <ScreenButton onClick={() => setScreen("endless-select")} variant="secondary">
+                ENDLESS SIEGE
+              </ScreenButton>
               <ScreenButton onClick={() => setScreen("towers")} variant="secondary">
                 TOWERS
               </ScreenButton>
@@ -255,6 +275,72 @@ export function GameCanvas() {
               </ScreenButton>
             </div>
           </ScreenCard>
+        </div>
+      )}
+
+      {screen === "endless-select" && (
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/65 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md">
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
+              ← BACK
+            </ScreenButton>
+            <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Long-tail mode</p>
+              <h2 className="font-display text-2xl tracking-wide">Endless Siege</h2>
+              <p className="mt-1 text-xs text-panel-muted">
+                Survive as many waves as possible. Every 10 waves brings a boss.
+              </p>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {[
+                ENDLESS_CHALLENGES.find((entry) => entry.id === "free-siege")!,
+                dailyChallenge,
+                weeklyChallenge,
+              ].map((challenge) => {
+                const isDaily = challenge.period === "daily";
+                const isWeekly = challenge.period === "weekly";
+                const best = isDaily
+                  ? player.dailyChallengeDate === todayKey
+                    ? player.dailyChallengeBestScore
+                    : 0
+                  : isWeekly
+                    ? player.weeklyChallengeKey === weekKey
+                      ? player.weeklyChallengeBestScore
+                      : 0
+                    : player.endlessBestScore;
+                return (
+                  <div key={challenge.id} className="rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-accent">
+                          {isDaily ? "Today" : isWeekly ? "This week" : "Unlimited"}
+                        </p>
+                        <h3 className="font-display text-xl tracking-wide">{challenge.name}</h3>
+                        <p className="mt-1 text-xs text-panel-muted">{challenge.description}</p>
+                      </div>
+                      <p className="rounded-full bg-black/30 px-2 py-1 text-[10px] text-panel-muted">
+                        Best {best.toLocaleString()}
+                      </p>
+                    </div>
+                    <ScreenButton
+                      onClick={() => {
+                        resetGameplayState();
+                        setActiveChallenge(challenge);
+                        game.startEndless(
+                          challenge,
+                          isDaily ? todayKey : isWeekly ? weekKey : todayKey,
+                        );
+                        setScreen("gameplay");
+                      }}
+                    >
+                      PLAY
+                    </ScreenButton>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
@@ -468,6 +554,14 @@ export function GameCanvas() {
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
               <p>Wave Reached</p>
               <p className="text-right">{state.wave}</p>
+              {state.endlessMode && (
+                <>
+                  <p>Score</p>
+                  <p className="text-right">{(lastReward && "score" in lastReward ? lastReward.score : 0).toLocaleString()}</p>
+                  <p>Best Siege Score</p>
+                  <p className="text-right">{player.endlessBestScore.toLocaleString()}</p>
+                </>
+              )}
               <p>Zombies Killed</p>
               <p className="text-right">{state.kills}</p>
               <p>Coins Earned</p>
