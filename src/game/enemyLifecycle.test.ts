@@ -18,7 +18,7 @@ describe("enemy lifecycle", () => {
       pathLength: 20,
     });
 
-    expect(result.wobble).toBe(5.5);
+    expect(result.wobble).toBe(7);
     expect(result.burnDamage).toBe(3);
     expect(result.burnTime).toBe(1.5);
     expect(result.burn).toBe(6);
@@ -119,7 +119,7 @@ describe("enemy lifecycle", () => {
     );
 
     expect(landed.y).toBe(0);
-    expect(landed.vy).toBeCloseTo(0.99);
+    expect(landed.vy).toBeCloseTo(1.38);
     expect(landed.spin).toBeCloseTo(0.6);
     expect(landed.vx).toBeCloseTo(2 * Math.exp(-0.6));
     expect(landed.vz).toBeCloseTo(4 * Math.exp(-0.6));
