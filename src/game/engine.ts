@@ -1066,9 +1066,13 @@ reset() {
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
-    const bossWave = this.stage.boss.enabled && this.stage.boss.wave === state.wave;
+    const endlessBossWave =
+      Boolean(this.stage.endless) && state.wave >= 10 && state.wave % 10 === 0;
+    const bossWave =
+      endlessBossWave ||
+      (this.stage.boss.enabled && this.stage.boss.wave === state.wave);
     const bossCount = endlessBossWave
-      ? 1 + Math.floor(s.wave / 30)
+      ? 1 + Math.floor(state.wave / 30)
       : bossWave
         ? Math.max(0, this.stage.boss.count)
         : 0;
