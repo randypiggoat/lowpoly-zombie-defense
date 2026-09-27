@@ -4,6 +4,7 @@
 import { sfx } from "./audio";
 import { evaluateStageObjectives, type StageDefinition, type StageEnemyKind } from "./navigation";
 import { profile } from "./profile";
+import type { RandomSource } from "./random";
 
 export type Vec2 = { x: number; z: number };
 
@@ -953,7 +954,6 @@ type StageRunConfig = Pick<
   | "objectives"
 >;
 
-let nextId = 1;
 
 const DEFAULT_STAGE: StageRunConfig = {
   id: 1,
@@ -1011,6 +1011,13 @@ towers: [],
 }
 
 export class Game {
+  private readonly random: RandomSource;
+  private nextId = 1;
+
+  constructor(random: RandomSource = Math.random) {
+    this.random = random;
+  }
+
   state: GameState = makeState(DEFAULT_STAGE);
   private stage: StageRunConfig = DEFAULT_STAGE;
   private listeners = new Set<() => void>();
@@ -1022,17 +1029,18 @@ export class Game {
   private emit() {
     this.listeners.forEach((l) => l());
   }
+reset() {
+  this.nextId = 1;
+  this.state = makeState(this.stage);
+  this.emit();
+}
 
-  reset() {
-    this.state = makeState(this.stage);
-    this.emit();
-  }
-
-  startStage(stage: StageRunConfig) {
-    this.stage = stage;
-    this.state = makeState(stage);
-    this.emit();
-  }
+ startStage(stage: StageRunConfig) {
+  this.stage = stage;
+  this.nextId = 1;
+  this.state = makeState(stage);
+  this.emit();
+}
 
   towerAtSpot(spot: number) {
     return this.state.towers.find((t) => t.spot === spot) ?? null;
@@ -1064,7 +1072,7 @@ export class Game {
     }
     s.gold -= cost;
     s.towers.push({
-      id: nextId++,
+      id: this.nextId++,
       kind,
       spot,
       x: pad.x,
@@ -1231,7 +1239,7 @@ export class Game {
       pool.push({ kind, weight: Math.max(0.05, baseWeight * wavePressure) });
     }
     const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
-    let pick = Math.random() * total;
+    let pick = this.random() * total;
     for (const entry of pool) {
       pick -= entry.weight;
       if (pick <= 0) return entry.kind;
@@ -1279,8 +1287,8 @@ export class Game {
     const speedPressure = 1 + progress * 0.14;
     const speed = (kind === 2 ? 0.92 : kind === 1 ? 2.18 : 1.36) * speedMult * speedPressure;
     s.zombies.push({
-      id: nextId++,
-      dist: -Math.random() * 2,
+      id: this.nextId++,
+      dist: -this.random() * 2,
       hp,
       maxHp: hp,
       speed,
@@ -1288,7 +1296,7 @@ export class Game {
       x: PATH[0]!.x,
       y: 0,
       z: PATH[0]!.z,
-      wobble: Math.random() * 10,
+      wobble: this.random() * 10,
       dead: false,
       fade: 0,
       flash: 0,
@@ -1322,10 +1330,10 @@ const crit = dmg >= z.maxHp * 0.35;
 
 if (s.damagePopups.length < 80) {
   s.damagePopups.push({
-    id: nextId++,
-    x: z.x + (Math.random() - 0.5) * 0.45,
-    y: 1.35 + Math.random() * 0.35,
-    z: z.z + (Math.random() - 0.5) * 0.45,
+    id: this.nextId++,
+    x: z.x + (this.random() - 0.5) * 0.45,
+    y: 1.35 + this.random() * 0.35,
+    z: z.z + (this.random() - 0.5) * 0.45,
     value: popupValue,
     life: 0,
     crit,
@@ -1345,7 +1353,7 @@ s.gold += killGold;
 
 if (s.damagePopups.length < 80) {
   s.damagePopups.push({
-    id: nextId++,
+    id: this.nextId++,
     x: z.x,
     y: 1.65,
     z: z.z,
@@ -1361,8 +1369,8 @@ if (s.damagePopups.length < 80) {
     const force = goreBase * (0.8 + overkill * 0.6);
     z.vx = Math.sin(away) * 2.2 * force;
     z.vz = Math.cos(away) * 2.2 * force;
-    z.vy = 2.5 + Math.random() * 2 * force;
-    z.spin = (Math.random() - 0.5) * 9 * force;
+    z.vy = 2.5 + this.random() * 2 * force;
+    z.spin = (this.random() - 0.5) * 9 * force;
     const explode = force > 1.9 || -z.hp > z.maxHp * 0.6;
     if (explode) {
       z.gibbed = true;
@@ -1375,25 +1383,27 @@ if (s.damagePopups.length < 80) {
     this.emit();
   }
 
-  private spawnGibs(z: Zombie, count: number, force: number) {
+    private spawnGibs(z: Zombie, count: number, force: number) {
     const s = this.state;
     if (s.gibs.length > 160) return;
+
     for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = (1.5 + Math.random() * 3) * force;
+      const a = this.random() * Math.PI * 2;
+      const sp = (1.5 + this.random() * 3) * force;
+
       s.gibs.push({
-        id: nextId++,
+        id: this.nextId++,
         x: z.x,
-        y: 0.6 + Math.random() * 0.9,
+        y: 0.6 + this.random() * 0.9,
         z: z.z,
         vx: Math.cos(a) * sp,
-        vy: 2.5 + Math.random() * 3.5 * force,
+        vy: 2.5 + this.random() * 3.5 * force,
         vz: Math.sin(a) * sp,
-        rx: Math.random() * 3,
-        ry: Math.random() * 3,
-        spin: (Math.random() - 0.5) * 14,
+        rx: this.random() * 3,
+        ry: this.random() * 3,
+        spin: (this.random() - 0.5) * 14,
         life: 0,
-        size: 0.12 + Math.random() * 0.16,
+        size: 0.12 + this.random() * 0.16,
         tint: i % 3,
       });
     }
@@ -1633,9 +1643,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (t.cooldown <= 0) {
           t.cooldown = 1 / towerRate(t);
           t.recoil = 1;
-          const crit = Math.random() < towerCrit(t);
+          const crit = this.random() < towerCrit(t);
           s.bullets.push({
-            id: nextId++,
+            id: this.nextId++,
             x: t.x,
             z: t.z,
             y: 1.6 + t.level * 0.03,
