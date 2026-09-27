@@ -4,6 +4,7 @@
 import { sfx } from "./audio";
 import { evaluateStageObjectives, type StageDefinition } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
+import { getTowerCombatStats } from "./towerStats";
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
 import type { RandomSource } from "./random";
@@ -784,49 +785,13 @@ export function tierCost(t: Tower, path: "a" | "b") {
   return TOWER_PATHS[t.kind][path].tiers[mine]!.cost;
 }
 
-function mods(t: Tower): Required<Mods> {
-  const out = {
-    dmg: 1,
-    rate: 1,
-    range: 1,
-    slow: 0,
-    splash: 0,
-    chain: 0,
-    crit: 0,
-    gold: 1,
-    gore: 1,
-    burn: 0,
-  };
-  const apply = (p: "a" | "b", n: number) => {
-    const tiers = TOWER_PATHS[t.kind][p].tiers;
-    for (let i = 0; i < n; i++) {
-      const m = tiers[i]!.mods;
-      if (m.dmg) out.dmg *= m.dmg;
-      if (m.rate) out.rate *= m.rate;
-      if (m.range) out.range *= m.range;
-      if (m.slow) out.slow = Math.max(out.slow, m.slow);
-      if (m.splash) out.splash += m.splash;
-      if (m.chain) out.chain += m.chain;
-      if (m.crit) out.crit = Math.max(out.crit, m.crit);
-      if (m.gold) out.gold *= m.gold;
-      if (m.gore) out.gore = Math.max(out.gore, m.gore);
-      if (m.burn) out.burn = Math.max(out.burn, m.burn);
-    }
-  };
-  apply("a", t.a);
-  apply("b", t.b);
-  return out;
-}
-
-/** Flat level bonuses bought with the Upgrade button. */
-function levelDmg(t: Tower) {
-  return Math.pow(1.22, t.level - 1);
-}
-function levelRate(t: Tower) {
-  return Math.pow(1.06, t.level - 1);
-}
-function levelRange(t: Tower) {
-  return Math.pow(1.035, t.level - 1);
+function towerCombatStats(t: Tower) {
+  return getTowerCombatStats(
+    t,
+    TOWER_INFO[t.kind],
+    TOWER_PATHS[t.kind],
+    towerProfileBonus(t.kind),
+  );
 }
 
 /** Total tiers bought across both paths (used for visuals). */
@@ -837,38 +802,34 @@ export function towerLevel(t: Tower) {
   return t.level;
 }
 export function towerDamage(t: Tower) {
-  return TOWER_INFO[t.kind].damage * mods(t).dmg * levelDmg(t) * towerProfileBonus(t.kind).damage;
+  return towerCombatStats(t).damage;
 }
 export function towerRange(t: Tower) {
-  return TOWER_INFO[t.kind].range * mods(t).range * levelRange(t) * towerProfileBonus(t.kind).range;
+  return towerCombatStats(t).range;
 }
 export function towerRate(t: Tower) {
-  return TOWER_INFO[t.kind].rate * mods(t).rate * levelRate(t) * towerProfileBonus(t.kind).rate;
+  return towerCombatStats(t).rate;
 }
 export function towerSlow(t: Tower) {
-  return Math.max(TOWER_INFO[t.kind].slow ?? 0, mods(t).slow);
+  return towerCombatStats(t).slow;
 }
 export function towerSplash(t: Tower) {
-  return Math.max(0, (TOWER_INFO[t.kind].splash ?? 0) + mods(t).splash);
+  return towerCombatStats(t).splash;
 }
 export function towerChain(t: Tower) {
-  return (TOWER_INFO[t.kind].chain ?? 0) + mods(t).chain;
+  return towerCombatStats(t).chain;
 }
 export function towerBurn(t: Tower) {
-  return (
-    Math.max(TOWER_INFO[t.kind].burn ?? 0, mods(t).burn) *
-    levelDmg(t) *
-    towerProfileBonus(t.kind).damage
-  );
+  return towerCombatStats(t).burn;
 }
 export function towerCrit(t: Tower) {
-  return mods(t).crit;
+  return towerCombatStats(t).crit;
 }
 export function towerGore(t: Tower) {
-  return mods(t).gore;
+  return towerCombatStats(t).gore;
 }
 export function towerGold(t: Tower) {
-  return mods(t).gold;
+  return towerCombatStats(t).gold;
 }
 export function towerSellValue(t: Tower) {
   let spent = TOWER_INFO[t.kind].cost;
