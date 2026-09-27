@@ -2,6 +2,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { cosmeticForTower } from "@/game/collection";
+import { profile } from "@/game/profile";
 import {
   BUILD_SPOTS,
   PATH,
@@ -439,7 +441,7 @@ function WeaponAssembly({
   );
 }
 
-function TowerBody({ kind, accent, level }: { kind: Tower["kind"]; accent: string; level: number }) {
+function TowerBody({ kind, accent, level, bodyColor }: { kind: Tower["kind"]; accent: string; level: number; bodyColor: string }) {
   const height = 0.78 + level * 0.1;
   const isHeavy = kind === "shotgunner" || kind === "rocket" || kind === "flamethrower";
   const isTech = kind === "tesla" || kind === "laser" || kind === "freezer";
@@ -447,7 +449,7 @@ function TowerBody({ kind, accent, level }: { kind: Tower["kind"]; accent: strin
     <>
       <mesh position={[0, 0.25, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[isHeavy ? 1.48 : 1.32, 1.6, 0.5, kind === "laser" ? 8 : 6]} />
-        <meshStandardMaterial color={isTech ? "#66777b" : "#8b8478"} flatShading />
+        <meshStandardMaterial color={bodyColor || (isTech ? "#66777b" : "#8b8478")} flatShading />
       </mesh>
       <mesh position={[0, 0.88, 0]} castShadow>
         {kind === "sniper" ? (
@@ -459,7 +461,7 @@ function TowerBody({ kind, accent, level }: { kind: Tower["kind"]; accent: strin
         ) : (
           <cylinderGeometry args={[isHeavy ? 1 : 0.82, isHeavy ? 1.18 : 1.04, height, 6]} />
         )}
-        <meshStandardMaterial color={isTech ? "#d1e0db" : "#d6cdbc"} flatShading />
+        <meshStandardMaterial color={bodyColor || (isTech ? "#d1e0db" : "#d6cdbc")} flatShading />
       </mesh>
       {kind === "tesla" && (
         <mesh position={[0, 1.28, 0]} rotation-x={Math.PI / 2}>
@@ -496,7 +498,12 @@ function TowerMesh({
   const turret = useRef<THREE.Group>(null);
   const barrel = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
-  const accent = TOWER_INFO[tower.kind].accent;
+  const equippedCosmetic = cosmeticForTower(
+    tower.kind,
+    profile.equippedTowerCosmetic(tower.kind),
+  );
+  const accent = equippedCosmetic?.accent || TOWER_INFO[tower.kind].accent;
+  const bodyColor = equippedCosmetic?.body || "";
   const level = towerLevel(tower);
 
   useFrame(({ clock }, dt) => {
@@ -531,7 +538,7 @@ function TowerMesh({
           <meshBasicMaterial color={accent} transparent opacity={0.35} side={THREE.DoubleSide} />
         </mesh>
       )}
-      <TowerBody kind={tower.kind} accent={accent} level={level} />
+      <TowerBody kind={tower.kind} accent={accent} level={level} bodyColor={bodyColor} />
       <group ref={turret} position={[0, 1.55 + level * 0.12, 0]}>
         <mesh castShadow rotation-y={tower.kind === "laser" ? Math.PI / 4 : 0}>
           {tower.kind === "tesla" ? (
