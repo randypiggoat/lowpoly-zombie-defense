@@ -916,6 +916,12 @@ waveMessageType: "start" | "complete" | "boss" | "";
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
+  modifierRerollsUsed: number;
+  rewardedRerollsUsed: number;
+  defeatOffer: boolean;
+  defeatOfferTime: number;
+  revivesUsed: number;
+  baseShieldTimer: number;
   endlessMode: boolean;
   challengeId: string | null;
   challengeName: string | null;
@@ -1000,6 +1006,12 @@ waveMessageType: "",
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
+    modifierRerollsUsed: 0,
+    rewardedRerollsUsed: 0,
+    defeatOffer: false,
+    defeatOfferTime: 0,
+    revivesUsed: 0,
+    baseShieldTimer: 0,
     endlessMode: Boolean(stage.endless),
     challengeId: stage.challenge?.id ?? null,
     challengeName: stage.challenge?.name ?? null,
@@ -1051,6 +1063,108 @@ reset() {
   this.state = makeState(this.stage);
   this.emit();
 }
+
+  rerollRunModifier(source: "free" | "rewarded" = "free"): boolean {
+    const state = this.state;
+    if (state.runModifierOffer.length === 0) return false;
+
+    if (source === "free") {
+      if (state.modifierRerollsUsed >= 1) return false;
+      state.modifierRerollsUsed += 1;
+    } else {
+      if (state.rewardedRerollsUsed >= 1) return false;
+      state.rewardedRerollsUsed += 1;
+    }
+
+    state.runModifierOffer = createRunModifierOffer(this.random, state.activeRunModifiers);
+    track("modifier_rerolled", { source, wave: state.wave });
+    sfx("wave");
+    this.emit();
+    return state.runModifierOffer.length > 0;
+  }
+
+  beginDefeatOffer() {
+    const state = this.state;
+    if (state.gameOver || state.defeatOffer) return false;
+    state.defeatOffer = true;
+    state.defeatOfferTime = 10;
+    state.waveMessage = "LAST STAND";
+    state.waveMessageLife = 10;
+    state.waveMessageType = "boss";
+    sfx("gameOver");
+    this.emit();
+    return true;
+  }
+
+  finalizeDefeat() {
+    const state = this.state;
+    if (state.gameOver || !state.defeatOffer) return false;
+    state.defeatOffer = false;
+    state.defeatOfferTime = 0;
+    state.gameOver = true;
+
+    if (this.stage.endless) {
+      const reward = profile.completeEndlessRun(Math.max(1, state.wave), state.kills, {
+        challengeId: this.stage.challenge?.id,
+        challengePeriod: this.stage.challenge?.period,
+        challengeKey: this.stage.challengeKey,
+        rewardMultiplier: this.stage.rewardMultiplier,
+      });
+      track("run_finished", {
+        wave: state.wave,
+        kills: state.kills,
+        stageId: state.stageId,
+        endless: true,
+        newRecord: reward.newRecord,
+      });
+    } else {
+      const reward = profile.completeRun(Math.max(1, state.wave), state.kills, {
+        stageId: this.stage.id,
+        stageCompleted: false,
+        starsEarned: 0,
+        bonusCoins: 0,
+        bonusXp: 0,
+        rewardMultiplier: this.stage.rewardMultiplier,
+      });
+      track("run_finished", {
+        wave: state.wave,
+        kills: state.kills,
+        stageId: state.stageId,
+        endless: false,
+        newRecord: reward.newRecord,
+      });
+    }
+
+    sfx("gameOver");
+    this.emit();
+    return true;
+  }
+
+  reviveRun() {
+    const state = this.state;
+    if (!state.defeatOffer || state.revivesUsed >= 1) return false;
+
+    state.revivesUsed += 1;
+    state.defeatOffer = false;
+    state.defeatOfferTime = 0;
+    state.baseHp = Math.max(1, Math.ceil(state.baseMaxHp * 0.4));
+    state.baseShieldTimer = 3;
+    state.waveMessage = "SECOND CHANCE";
+    state.waveMessageLife = 2;
+    state.waveMessageType = "complete";
+
+    for (const zombie of state.zombies) {
+      if (!zombie.dead && zombie.dist >= PATH_LENGTH - 5) {
+        zombie.dead = true;
+        zombie.fade = 0;
+      }
+    }
+    state.bullets = [];
+    sfx("upgrade");
+    track("revive_used", { wave: state.wave });
+    this.emit();
+    return true;
+  }
 
   chooseRunModifier(id: RunModifierId): boolean {
     const state = this.state;
@@ -1463,6 +1577,12 @@ reset() {
   /** Frame-rate independent entry point: runs fixed sim steps for the elapsed time. */
   tick(dtRaw: number) {
     if (this.state.gameOver) return;
+    if (this.state.defeatOffer) {
+      this.state.defeatOfferTime = Math.max(0, this.state.defeatOfferTime - Math.min(Math.max(dtRaw, 0), 0.5));
+      if (this.state.defeatOfferTime <= 0) this.finalizeDefeat();
+      else this.emit();
+      return;
+    }
     // Cap catch-up so a long tab stall can't fast-forward the whole run.
     this.accumulator += Math.min(Math.max(dtRaw, 0), 0.5);
     const STEP = 1 / 60;
@@ -1482,8 +1602,9 @@ reset() {
 
   private step(dt: number) {
     const s = this.state;
-    if (s.gameOver) return;
+    if (s.gameOver || s.defeatOffer) return;
     if (s.runModifierOffer.length > 0) return;
+    s.baseShieldTimer = Math.max(0, s.baseShieldTimer - dt);
     if (s.killStreakTimer > 0) {
       s.killStreakTimer = Math.max(0, s.killStreakTimer - dt);
       if (s.killStreakTimer === 0) s.killStreak = 0;
@@ -1633,25 +1754,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           sfx("baseHit");
         }
         if (baseHit.gameOver) {
-          s.gameOver = true;
-          if (this.stage.endless) {
-            profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
-              challengeId: this.stage.challenge?.id,
-              challengePeriod: this.stage.challenge?.period,
-              challengeKey: this.stage.challengeKey,
-              rewardMultiplier: this.stage.rewardMultiplier,
-            });
-          } else {
-            profile.completeRun(Math.max(1, s.wave), s.kills, {
-              stageId: this.stage.id,
-              stageCompleted: false,
-              starsEarned: 0,
-              bonusCoins: 0,
-              bonusXp: 0,
-              rewardMultiplier: this.stage.rewardMultiplier,
-            });
-          }
-          sfx("gameOver");
+          this.beginDefeatOffer();
+          return;
         }
         this.emit();
       }
@@ -1681,6 +1785,13 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         bonusStars: this.stage.rewards.completionStars,
         firstCompletionBonus: this.stage.rewards.firstCompletionBonus,
         rewardMultiplier: this.stage.rewardMultiplier,
+      });
+      track("run_finished", {
+        wave: s.wave,
+        kills: s.kills,
+        stageId: s.stageId,
+        endless: false,
+        newRecord: profile.lastReward?.newRecord ?? false,
       });
       sfx("wave");
       this.emit();
