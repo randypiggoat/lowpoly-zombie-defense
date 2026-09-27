@@ -11,7 +11,9 @@ export type AnalyticsEventName =
   | "interstitial_requested"
   | "interstitial_shown"
   | "interstitial_failed"
-  | "iap_purchase";
+  | "iap_purchase"
+  | "modifier_rerolled"
+  | "revive_used";
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName;
