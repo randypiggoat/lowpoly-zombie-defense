@@ -87,7 +87,27 @@ export function purchaseLabel(product: PurchaseProduct) {
 export type ExternalMonetizationProvider = Partial<MonetizationProvider>;
 
 let externalProvider: ExternalMonetizationProvider | null = null;
-let lastInterstitialAt: number | null = null;
+const LAST_INTERSTITIAL_KEY = "rotwood.monetization.lastInterstitial.v1";
+let lastInterstitialAt: number | null = readLastInterstitialAt();
+
+function readLastInterstitialAt() {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const value = Number(localStorage.getItem(LAST_INTERSTITIAL_KEY));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastInterstitialAt(value: number) {
+  lastInterstitialAt = value;
+  try {
+    localStorage.setItem(LAST_INTERSTITIAL_KEY, String(value));
+  } catch {
+    /* session-only fallback */
+  }
+}
 
 export function installCapacitorAdMobProvider() {
   const admob = runtime.Capacitor?.Plugins?.AdMob;
@@ -159,12 +179,17 @@ export async function showInterstitial(
 ) {
   if (!isInterstitialAvailable(input)) return false;
   const shown = await externalProvider!.showInterstitial!(reason);
-  if (shown) lastInterstitialAt = input.now;
+  if (shown) writeLastInterstitialAt(input.now);
   return shown;
 }
 
 export function resetInterstitialTimer() {
   lastInterstitialAt = null;
+  try {
+    localStorage.removeItem(LAST_INTERSTITIAL_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function isPurchaseAvailable(product: PurchaseProduct) {
