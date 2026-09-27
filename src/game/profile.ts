@@ -1,3 +1,5 @@
+import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
+import { TOWER_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
 
@@ -206,6 +208,10 @@ export type PlayerProfile = {
   dailyChallengeBestScore: number;
   weeklyChallengeKey: string | null;
   weeklyChallengeBestScore: number;
+  equippedTowerCosmetics: Record<string, string>;
+  seasonalEventCycleKey: string;
+  seasonalEventProgress: number;
+  seasonalEventClaims: string[];
 };
 
 export type StageProgress = {
@@ -315,6 +321,10 @@ function blank(): PlayerProfile {
     dailyChallengeBestScore: 0,
     weeklyChallengeKey: null,
     weeklyChallengeBestScore: 0,
+    equippedTowerCosmetics: {},
+    seasonalEventCycleKey: getSeasonalEventCycleKey(),
+    seasonalEventProgress: 0,
+    seasonalEventClaims: [],
   };
 }
 
@@ -537,6 +547,17 @@ function load(): PlayerProfile {
       dailyChallengeBestScore: Math.max(0, Number(parsed.dailyChallengeBestScore) || 0),
       weeklyChallengeKey: normalizeDate(parsed.weeklyChallengeKey),
       weeklyChallengeBestScore: Math.max(0, Number(parsed.weeklyChallengeBestScore) || 0),
+      equippedTowerCosmetics: isRecord(parsed.equippedTowerCosmetics)
+        ? Object.fromEntries(
+            Object.entries(parsed.equippedTowerCosmetics).filter(
+              ([kind, cosmetic]) => typeof kind === "string" && typeof cosmetic === "string",
+            ),
+          )
+        : {},
+      seasonalEventCycleKey:
+        normalizeDate(parsed.seasonalEventCycleKey) ?? getSeasonalEventCycleKey(),
+      seasonalEventProgress: Math.max(0, Number(parsed.seasonalEventProgress) || 0),
+      seasonalEventClaims: normalizeStringArray(parsed.seasonalEventClaims),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -616,6 +637,22 @@ class ProfileStore {
     this.listeners.forEach((l) => l());
   }
 
+  private refreshSeasonalEventState() {
+    const cycleKey = getSeasonalEventCycleKey();
+    if (this.profile.seasonalEventCycleKey !== cycleKey) {
+      this.profile.seasonalEventCycleKey = cycleKey;
+      this.profile.seasonalEventProgress = 0;
+      this.profile.seasonalEventClaims = [];
+      return true;
+    }
+    return false;
+  }
+
+  private addSeasonalEventKillProgress(amount = 1) {
+    this.refreshSeasonalEventState();
+    this.profile.seasonalEventProgress += Math.max(0, amount);
+  }
+
   private save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(this.data));
@@ -692,7 +729,29 @@ class ProfileStore {
     syncAchievements(this.profile, dateKey());
   }
 
+  unlockedCosmetics() {
+    return TOWER_COSMETICS.filter((cosmetic) => cosmetic.unlock(this.profile));
+  }
+
+  equipTowerCosmetic(kind: string, cosmeticId: string) {
+    const cosmetic = TOWER_COSMETICS.find(
+      (entry) =>
+        entry.id === cosmeticId &&
+        (entry.kind === "all" || entry.towerKind === kind) &&
+        entry.unlock(this.profile),
+    );
+    if (!cosmetic) return false;
+    this.profile.equippedTowerCosmetics[kind] = cosmetic.id;
+    this.save();
+    return true;
+  }
+
+  equippedTowerCosmetic(kind: string) {
+    return this.profile.equippedTowerCosmetics[kind] ?? "default";
+  }
+
   recordZombieKill(kind: number) {
+    this.addSeasonalEventKillProgress();
     this.refreshRetentionState();
     const p = this.profile;
     const xp =
@@ -971,6 +1030,21 @@ class ProfileStore {
     if (p.coins < cost) return false;
     p.coins -= cost;
     p.unlockedTowers.push(kind);
+    this.save();
+    return true;
+  }
+
+  claimSeasonalMilestone(id: string) {
+    this.refreshRetentionState();
+    const event = getSeasonalEvent();
+    this.refreshSeasonalEventState();
+    const milestone = event.milestones.find((entry) => entry.id === id);
+    if (!milestone || this.profile.seasonalEventClaims.includes(id)) return false;
+    if (this.profile.seasonalEventProgress < milestone.target) return false;
+    this.profile.seasonalEventClaims.push(id);
+    if (milestone.reward.coins) this.profile.coins += milestone.reward.coins;
+    if (milestone.reward.gems) this.profile.gems += milestone.reward.gems;
+    if (milestone.reward.xp) this.awardXp(milestone.reward.xp);
     this.save();
     return true;
   }
