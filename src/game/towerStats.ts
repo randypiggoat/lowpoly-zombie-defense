@@ -1,0 +1,88 @@
+import type { Mods, Tower, TowerDef, TowerKind, TowerPathTiers } from "./towerStatsTypes";
+
+export type TowerProfileBonus = {
+  level: number;
+  damage: number;
+  rate: number;
+  range: number;
+};
+
+export type TowerCombatStats = {
+  damage: number;
+  rate: number;
+  range: number;
+  slow: number;
+  splash: number;
+  chain: number;
+  burn: number;
+  crit: number;
+  gore: number;
+  gold: number;
+};
+
+export function getTowerMods(
+  tower: Pick<Tower, "kind" | "a" | "b">,
+  paths: TowerPathTiers,
+): Required<Mods> {
+  const out: Required<Mods> = {
+    dmg: 1,
+    rate: 1,
+    range: 1,
+    slow: 0,
+    splash: 0,
+    chain: 0,
+    crit: 0,
+    gold: 1,
+    gore: 1,
+    burn: 0,
+  };
+
+  const apply = (path: "a" | "b", count: number) => {
+    const tiers = paths[path].tiers;
+    for (let i = 0; i < count; i++) {
+      const mods = tiers[i]!.mods;
+      if (mods.dmg) out.dmg *= mods.dmg;
+      if (mods.rate) out.rate *= mods.rate;
+      if (mods.range) out.range *= mods.range;
+      if (mods.slow) out.slow = Math.max(out.slow, mods.slow);
+      if (mods.splash) out.splash += mods.splash;
+      if (mods.chain) out.chain += mods.chain;
+      if (mods.crit) out.crit = Math.max(out.crit, mods.crit);
+      if (mods.gold) out.gold *= mods.gold;
+      if (mods.gore) out.gore = Math.max(out.gore, mods.gore);
+      if (mods.burn) out.burn = Math.max(out.burn, mods.burn);
+    }
+  };
+
+  apply("a", tower.a);
+  apply("b", tower.b);
+  return out;
+}
+
+export function getTowerCombatStats(
+  tower: Pick<Tower, "kind" | "level" | "a" | "b">,
+  definition: TowerDef,
+  paths: TowerPathTiers,
+  profileBonus: TowerProfileBonus,
+): TowerCombatStats {
+  const mods = getTowerMods(tower, paths);
+  const levelDmg = Math.pow(1.22, tower.level - 1);
+  const levelRate = Math.pow(1.06, tower.level - 1);
+  const levelRange = Math.pow(1.035, tower.level - 1);
+
+  return {
+    damage: definition.damage * mods.dmg * levelDmg * profileBonus.damage,
+    rate: definition.rate * mods.rate * levelRate * profileBonus.rate,
+    range: definition.range * mods.range * levelRange * profileBonus.range,
+    slow: Math.max(definition.slow ?? 0, mods.slow),
+    splash: Math.max(0, (definition.splash ?? 0) + mods.splash),
+    chain: (definition.chain ?? 0) + mods.chain,
+    burn:
+      Math.max(definition.burn ?? 0, mods.burn) *
+      levelDmg *
+      profileBonus.damage,
+    crit: mods.crit,
+    gore: mods.gore,
+    gold: mods.gold,
+  };
+}
