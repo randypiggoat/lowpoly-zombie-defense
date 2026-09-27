@@ -934,7 +934,11 @@ type StageRunConfig = Pick<
   | "specialRules"
   | "rewards"
   | "objectives"
->;
+> & {
+  endless?: boolean;
+  challenge?: EndlessChallenge;
+  challengeKey?: string;
+};
 
 
 const DEFAULT_STAGE: StageRunConfig = {
@@ -990,6 +994,11 @@ waveMessageType: "",
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
+    endlessMode: Boolean(stage.endless),
+    challengeId: stage.challenge?.id ?? null,
+    challengeName: stage.challenge?.name ?? null,
+    challengePeriod: stage.challenge?.period ?? null,
+    challengeKey: stage.challengeKey ?? null,
     towers: [],
     gameOver: false,
     stageWon: false,
@@ -1026,6 +1035,14 @@ reset() {
   this.stage = stage;
   this.nextId = 1;
   this.state = makeState(stage);
+  this.emit();
+}
+
+ startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+  const stage = createEndlessStage(challenge);
+  this.stage = { ...stage, challenge, challengeKey, endless: true };
+  this.nextId = 1;
+  this.state = makeState(this.stage);
   this.emit();
 }
 
