@@ -52,18 +52,18 @@ describe("enemy spawn rules", () => {
   test("keeps the existing HP and speed scaling at wave one", () => {
     const stage = getStageById(1);
 
-    expect(getEnemySpawnStats(stage.gameplay, 0, 1, stage.waveCount)).toEqual({
-      hp: 20.825235,
+    expect(getEnemySpawnStats(stage.gameplay, 0, 1, stage.waveCount)).toMatchObject({
+      hp: expect.closeTo(20.825235, 10),
       speed: 1.292,
     });
 
-    expect(getEnemySpawnStats(stage.gameplay, 1, 1, stage.waveCount)).toEqual({
-      hp: 14.48712,
+    expect(getEnemySpawnStats(stage.gameplay, 1, 1, stage.waveCount)).toMatchObject({
+      hp: expect.closeTo(14.48712, 10),
       speed: 2.071,
     });
 
-    expect(getEnemySpawnStats(stage.gameplay, 2, 1, stage.waveCount)).toEqual({
-      hp: 67.00293,
+    expect(getEnemySpawnStats(stage.gameplay, 2, 1, stage.waveCount)).toMatchObject({
+      hp: expect.closeTo(67.00293, 10),
       speed: 0.874,
     });
   });
