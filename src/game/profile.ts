@@ -195,6 +195,8 @@ export type PlayerProfile = {
   loginCycleDay: number;
   lastLoginClaimDate: string | null;
   lastLoginRewardDayClaimed: number | null;
+  /** Date on which the optional rewarded-ad daily bonus was claimed. */
+  dailyRewardedBonusDate: string | null;
   /** Persistent per-tower-kind upgrade data, expandable later. */
   towerUpgrades: Record<string, TowerUpgradeProfile>;
   /** Tower kinds unlocked ahead of their level gate. */
@@ -312,6 +314,7 @@ function blank(): PlayerProfile {
     loginCycleDay: 1,
     lastLoginClaimDate: null,
     lastLoginRewardDayClaimed: null,
+    dailyRewardedBonusDate: null,
     towerUpgrades: {},
     unlockedTowers: [],
     achievements: {},
@@ -1091,6 +1094,20 @@ class ProfileStore {
     p.lastLoginClaimDate = today;
     p.lastLoginRewardDayClaimed = claimedDay;
     p.loginCycleDay = claimedDay >= DAILY_LOGIN_REWARDS.length ? 1 : claimedDay + 1;
+    this.save();
+    return true;
+  }
+
+  get canClaimDailyRewardedBonus() {
+    return this.profile.dailyRewardedBonusDate !== dateKey();
+  }
+
+  claimDailyRewardedBonus(): boolean {
+    const today = dateKey();
+    if (this.profile.dailyRewardedBonusDate === today) return false;
+    this.profile.coins += 150;
+    this.profile.gems += 1;
+    this.profile.dailyRewardedBonusDate = today;
     this.save();
     return true;
   }
