@@ -16,4 +16,10 @@ describe("stage themes", () => {
   test("endless uses its own theme regardless of campaign stage", () => {
     expect(getStageTheme(5, true).name).toBe("Endless Siege");
   });
+
+  test("boss trials use a dedicated high-contrast arena theme", () => {
+    const theme = getStageTheme(5, false, true);
+    expect(theme.name).toBe("Boss Trial Arena");
+    expect(theme.night).toBe(true);
+  });
 });
