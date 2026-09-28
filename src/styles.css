@@ -456,3 +456,272 @@
     padding-right: 0.8rem !important;
   }
 }
+
+/* Rotwood Unified UI System v2
+   One material, type scale, spacing rhythm, and motion curve across every screen. */
+@layer components {
+  .rotwood-app {
+    --rw-ink: oklch(0.12 0.022 252);
+    --rw-panel: oklch(0.235 0.03 253 / 0.97);
+    --rw-panel-raised: oklch(0.30 0.035 253 / 0.98);
+    --rw-panel-inset: oklch(0.145 0.022 252 / 0.82);
+    --rw-line: oklch(0.95 0.02 90 / 0.12);
+    --rw-line-strong: oklch(0.82 0.12 80 / 0.42);
+    --rw-text: oklch(0.97 0.012 90);
+    --rw-muted: oklch(0.77 0.025 248);
+    --rw-gold: oklch(0.82 0.15 80);
+    --rw-danger: oklch(0.68 0.19 25);
+    --rw-radius-sm: 0.55rem;
+    --rw-radius-md: 0.85rem;
+    --rw-radius-lg: 1.1rem;
+    --rw-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    color: var(--rw-text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.4;
+    font-optical-sizing: auto;
+  }
+
+  /* Reusable surfaces: all screens use the same stacked metal + inset language. */
+  .rotwood-app .rotwood-card,
+  .rotwood-app .rotwood-shell,
+  .rotwood-app [class*="bg-panel/"] {
+    border: 1px solid var(--rw-line) !important;
+    border-radius: var(--rw-radius-lg) !important;
+    background:
+      linear-gradient(180deg, oklch(0.29 0.034 253 / 0.98), oklch(0.19 0.026 252 / 0.985)) !important;
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.055),
+      inset 0 -1px 0 oklch(0 0 0 / 0.25),
+      0 9px 22px oklch(0.02 0.01 250 / 0.22) !important;
+  }
+
+  .rotwood-app .rotwood-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--rw-radius-md) !important;
+  }
+
+  .rotwood-app .rotwood-card-highlight {
+    border-color: var(--rw-line-strong) !important;
+    background:
+      radial-gradient(ellipse at 0% 0%, oklch(0.82 0.15 80 / 0.11), transparent 55%),
+      linear-gradient(180deg, oklch(0.30 0.035 253 / 0.99), oklch(0.19 0.026 252 / 0.99)) !important;
+  }
+
+  .rotwood-app .rotwood-card-highlight::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--rw-gold);
+    opacity: 0.8;
+  }
+
+  .rotwood-app .rotwood-card > :where(*),
+  .rotwood-app .rotwood-shell > :where(*) {
+    position: relative;
+  }
+
+  /* Type system: display face only for short labels, Barlow for all reading. */
+  .rotwood-app .rotwood-display,
+  .rotwood-app h1,
+  .rotwood-app h2,
+  .rotwood-app h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.035em;
+    line-height: 1.04;
+    text-wrap: balance;
+  }
+
+  .rotwood-app p,
+  .rotwood-app label,
+  .rotwood-app input,
+  .rotwood-app button,
+  .rotwood-app select,
+  .rotwood-app textarea {
+    font-family: var(--font-sans);
+  }
+
+  .rotwood-app p {
+    text-wrap: pretty;
+  }
+
+  .rotwood-app :where(.text-\[8px\], .text-\[9px\]) {
+    font-size: 0.6875rem !important;
+    line-height: 1.3 !important;
+    letter-spacing: 0.045em;
+  }
+
+  .rotwood-app :where(.text-\[10px\]) {
+    font-size: 0.75rem !important;
+    line-height: 1.35 !important;
+  }
+
+  /* One button grammar: gold action, steel secondary, quiet tertiary. */
+  .rotwood-app button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .rotwood-app button:focus-visible,
+  .rotwood-app [role="button"]:focus-visible,
+  .rotwood-app input:focus-visible,
+  .rotwood-app select:focus-visible {
+    outline: 3px solid var(--rw-gold) !important;
+    outline-offset: 3px;
+  }
+
+  .rotwood-app button:disabled {
+    cursor: not-allowed;
+    filter: saturate(0.45);
+  }
+
+  .rotwood-app .rotwood-button,
+  .rotwood-app .rotwood-hud-button,
+  .rotwood-app button[class*="bg-accent"] {
+    min-height: 44px;
+    border-radius: var(--rw-radius-sm);
+    font-weight: 800;
+    letter-spacing: 0.045em;
+    transition:
+      transform 120ms var(--rw-ease),
+      filter 120ms var(--rw-ease),
+      box-shadow 120ms var(--rw-ease),
+      border-color 120ms var(--rw-ease);
+  }
+
+  .rotwood-app .rotwood-button-primary,
+  .rotwood-app button[class*="bg-accent"] {
+    border: 1px solid oklch(0.96 0.08 85 / 0.42);
+    background: linear-gradient(180deg, oklch(0.87 0.16 84), oklch(0.72 0.13 70)) !important;
+    color: oklch(0.22 0.03 60) !important;
+    box-shadow:
+      inset 0 1px 0 oklch(1 0.02 90 / 0.45),
+      0 3px 0 oklch(0.39 0.075 65),
+      0 6px 12px oklch(0.02 0.01 250 / 0.18) !important;
+  }
+
+  .rotwood-app .rotwood-button-secondary,
+  .rotwood-app .rotwood-hud-button:not([class*="bg-accent"]) {
+    border: 1px solid var(--rw-line) !important;
+    background: linear-gradient(180deg, oklch(0.32 0.035 253), oklch(0.20 0.025 252)) !important;
+    color: var(--rw-text) !important;
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 3px 0 oklch(0.09 0.018 252) !important;
+  }
+
+  .rotwood-app button:active:not(:disabled) {
+    transform: translateY(1px) scale(0.985);
+    filter: brightness(1.04);
+  }
+
+  /* Every list row/card has a common border, density, and active state. */
+  .rotwood-app .rotwood-menu-tile,
+  .rotwood-app [class*="rounded-lg"][class*="bg-black/"],
+  .rotwood-app [class*="rounded-xl"][class*="bg-black/"] {
+    border: 1px solid var(--rw-line);
+    border-radius: var(--rw-radius-md);
+    background: linear-gradient(180deg, oklch(0.22 0.028 252 / 0.94), oklch(0.15 0.022 252 / 0.97));
+    transition: border-color 140ms var(--rw-ease), background 140ms var(--rw-ease), transform 120ms var(--rw-ease);
+  }
+
+  .rotwood-app .rotwood-menu-tile {
+    min-height: 64px;
+  }
+
+  .rotwood-app .rotwood-menu-tile:hover {
+    border-color: var(--rw-line-strong);
+    background: linear-gradient(180deg, oklch(0.27 0.035 252 / 0.98), oklch(0.18 0.025 252 / 0.99));
+  }
+
+  .rotwood-app .rotwood-currency {
+    display: flex;
+    min-width: max-content;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--rw-line);
+    border-radius: var(--rw-radius-sm);
+    background: var(--rw-panel-inset);
+    padding: 0.4rem 0.55rem;
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.04);
+  }
+
+  /* Input and choice consistency for settings, store, upgrades, and trials. */
+  .rotwood-app input:not([type="checkbox"]):not([type="radio"]),
+  .rotwood-app select,
+  .rotwood-app textarea {
+    min-height: 44px;
+    border: 1px solid var(--rw-line) !important;
+    border-radius: var(--rw-radius-sm) !important;
+    background: var(--rw-panel-inset) !important;
+    color: var(--rw-text) !important;
+  }
+
+  .rotwood-app input::placeholder,
+  .rotwood-app textarea::placeholder {
+    color: var(--rw-muted);
+  }
+
+  /* One modal frame regardless of the screen that opened it. */
+  .rotwood-app .rotwood-modal {
+    background: oklch(0.035 0.01 250 / 0.78) !important;
+    backdrop-filter: blur(8px);
+  }
+
+  .rotwood-app .rotwood-modal > div,
+  .rotwood-app [class*="fixed"][class*="inset-0"][class*="z-50"] > div {
+    border: 1px solid var(--rw-line) !important;
+    border-radius: var(--rw-radius-lg) !important;
+    background: linear-gradient(180deg, oklch(0.29 0.034 253 / 0.99), oklch(0.17 0.024 252 / 0.995)) !important;
+    box-shadow: 0 24px 64px oklch(0 0 0 / 0.5), inset 0 1px 0 oklch(1 0 0 / 0.06) !important;
+  }
+
+  /* Standardize all transient feedback and overlay entry timing. */
+  .rotwood-app .rotwood-toast,
+  .rotwood-app .rotwood-wave-message,
+  .rotwood-app .rotwood-modal,
+  .rotwood-app > [class~="z-30"],
+  .rotwood-app > [class~="z-40"],
+  .rotwood-app > [class~="z-50"] {
+    animation-duration: 220ms;
+    animation-timing-function: var(--rw-ease);
+  }
+
+  .rotwood-app :where(button, a, [role="button"]) {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Landscape and small phones: prevent the visual system from crushing content. */
+  @media (max-width: 380px) {
+    .rotwood-app {
+      font-size: 13px;
+    }
+    .rotwood-app .rotwood-shell {
+      padding: 0.7rem !important;
+    }
+    .rotwood-app .rotwood-menu-tile {
+      min-height: 58px;
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 520px) {
+    .rotwood-app > [class~="z-30"] {
+      align-items: flex-start;
+    }
+    .rotwood-app .rotwood-shell {
+      max-height: calc(100dvh - 1rem) !important;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotwood-app *,
+  .rotwood-app *::before,
+  .rotwood-app *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
