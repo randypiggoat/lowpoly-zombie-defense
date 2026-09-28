@@ -837,6 +837,21 @@ export function GameCanvas() {
                 NEW RECORD!
               </p>
             )}
+            {!state.stageWon &&
+              !state.reviveUsed &&
+              state.baseHp <= 0 &&
+              rewardedAvailable && (
+                <ScreenButton
+                  onClick={async () => {
+                    const { showRewarded } = await import("@/game/monetization");
+                    const earned = await showRewarded("revive");
+                    if (earned && game.reviveRun()) setScreen("gameplay");
+                  }}
+                  variant="secondary"
+                >
+                  SECOND CHANCE · WATCH AD
+                </ScreenButton>
+              )}
             {lastReward &&
               !player.adsRemoved &&
               rewardedAvailable &&
