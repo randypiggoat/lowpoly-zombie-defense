@@ -24,6 +24,7 @@ import {
   DAILY_LOGIN_REWARDS,
   DAILY_MISSION_DEFS,
   dateKey,
+  xpForLevel,
   profile,
 } from "@/game/profile";
 import { TOWER_COSMETICS } from "@/game/collection";
@@ -251,6 +252,7 @@ export function GameCanvas() {
     stages.find((stage) => !stage.locked) ??
     stages[stages.length - 1]!;
   const isFirstRun = player.gamesPlayed === 0;
+  const xpPercent = Math.max(0, Math.min(100, (player.xp / Math.max(1, xpForLevel(player.level))) * 100));
   const todayKey = dateKey();
   const dailyLoginReward =
     DAILY_LOGIN_REWARDS.find((entry) => entry.day === player.loginCycleDay) ??
