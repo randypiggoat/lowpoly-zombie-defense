@@ -967,6 +967,31 @@ export function GameCanvas() {
                 NEW RECORD!
               </p>
             )}
+            {(state.perfectWaves > 0 || state.streakBonusGold > 0 || state.bossBonusGold > 0) && (
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/25 p-3">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Run bonuses</p>
+                <div className="mt-1.5 space-y-1 text-xs text-panel-foreground">
+                  {state.perfectWaves > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Perfect Waves · {state.perfectWaves}</span>
+                      <span className="font-display text-accent">+{state.perfectWaveBonusGold}G</span>
+                    </div>
+                  )}
+                  {state.streakBonusGold > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Kill Chain Bonus</span>
+                      <span className="font-display text-accent">+{state.streakBonusGold}G</span>
+                    </div>
+                  )}
+                  {state.bossBonusGold > 0 && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Boss Defeats · {state.bossesDefeated}</span>
+                      <span className="font-display text-accent">+{state.bossBonusGold}G</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {!state.stageWon &&
               !state.reviveUsed &&
               state.baseHp <= 0 &&
