@@ -1549,6 +1549,7 @@ reset() {
     s.bossBonusGold += reward.bossBonusGold;
     s.gold += reward.totalGold;
     const earnedGold = reward.totalGold;
+    sfx("coin");
     if (isKillStreakMilestone(s.killStreak)) {
       track("kill_streak_milestone", {
         streak: s.killStreak,
@@ -1565,7 +1566,7 @@ reset() {
 
     if (z.boss) {
       s.bossesDefeated += 1;
-      s.waveMessage = `BOSS DOWN! +${earnedGold}G`;
+      s.waveMessage = `BOSS DOWN! +${earnedGold} SCRAP`;
       s.waveMessageLife = 1.8;
       s.waveMessageType = "complete";
       track("boss_defeated", {
@@ -1979,10 +1980,21 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (perfectBonus > 0) {
           s.perfectWaves += 1;
           s.perfectWaveBonusGold += perfectBonus;
+          s.damagePopups.push({
+            id: this.nextId++,
+            x: -4,
+            y: 4.1,
+            z: 13.4,
+            value: 0,
+            life: 0,
+            crit: false,
+            gold: perfectBonus,
+          });
+          sfx("coin");
           track("perfect_wave", { wave: s.wave, bonusGold: perfectBonus });
         }
         s.waveMessage =
-          perfectBonus > 0 ? `PERFECT WAVE! +${perfectBonus}G` : "WAVE COMPLETE!";
+          perfectBonus > 0 ? `PERFECT WAVE! +${perfectBonus} SCRAP` : "WAVE COMPLETE!";
         s.waveMessageLife = Math.max(1.5, s.waveTimer);
         s.waveMessageType = "complete";
         sfx("wave");
