@@ -332,6 +332,10 @@
   .rotwood-hud .rotwood-stat-number {
     text-shadow: 0 2px 0 oklch(0 0 0 / 0.38);
   }
+
+  .rotwood-scrap-gain {
+    animation: rotwood-scrap-gain 720ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  }
 }
 
 .rotwood-app[data-reduced-motion="true"] .rotwood-app,
@@ -724,4 +728,12 @@
     scroll-behavior: auto !important;
     transition-duration: 1ms !important;
   }
+}
+
+
+@keyframes rotwood-scrap-gain {
+  0% { opacity: 0; transform: translateY(4px) scale(0.82); }
+  22% { opacity: 1; transform: translateY(-1px) scale(1.08); }
+  55% { opacity: 1; transform: translateY(-3px) scale(1); }
+  100% { opacity: 0; transform: translateY(-14px) scale(0.96); }
 }
