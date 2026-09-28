@@ -97,7 +97,8 @@ export type SfxName =
   | "streak"
   | "gameOver"
   | "bigHit"
-  | "coin";
+  | "coin"
+  | "uiClick";
 
 let lastShot = 0;
 let lastCoin = -Infinity;
@@ -186,6 +187,9 @@ export function sfx(name: SfxName) {
       return;
     case "bigHit":
       tone({ freq: 920, to: 240, dur: 0.11, type: "triangle", gain: 0.1 });
+      return;
+    case "uiClick":
+      tone({ freq: 420, to: 300, dur: 0.045, type: "triangle", gain: 0.04 });
       return;
     case "coin": {
       const now = c.currentTime;
