@@ -1,4 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Coins } from "lucide-react";
 import {
   MAX_PROFILE_TOWER_UPGRADE,
   MAX_TOWER_LEVEL,
@@ -233,7 +234,7 @@ function PathColumn({ tower, path, gold }: { tower: Tower; path: "a" | "b"; gold
             disabled={!affordable}
             className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
           >
-            {locked ? "Path locked" : `${cost} gold`}
+            {locked ? "Path locked" : `${cost} scrap`}
           </button>
         </>
       ) : (
@@ -266,6 +267,9 @@ export function HUD({
 }) {
   const { player, lastReward, levelUpNotice } = useProfileSnapshot();
   const [activeLevel, setActiveLevel] = useState<number | null>(null);
+  const [recentScrapGain, setRecentScrapGain] = useState(0);
+  const previousGold = useRef(Math.floor(state.gold));
+  const scrapGainTimer = useRef<number | null>(null);
   const tower =
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
   const spot = selection?.kind === "spot" ? selection.index : null;
@@ -299,6 +303,28 @@ export function HUD({
       sfx("streak");
     }
   }, [state.killStreak]);
+
+  useEffect(() => {
+    const currentGold = Math.floor(state.gold);
+    const delta = currentGold - previousGold.current;
+    previousGold.current = currentGold;
+    if (delta > 0) {
+      setRecentScrapGain((current) => current + delta);
+      if (scrapGainTimer.current !== null) {
+        window.clearTimeout(scrapGainTimer.current);
+      }
+      scrapGainTimer.current = window.setTimeout(() => {
+        setRecentScrapGain(0);
+        scrapGainTimer.current = null;
+      }, 720);
+    }
+    return () => {
+      if (scrapGainTimer.current !== null) {
+        window.clearTimeout(scrapGainTimer.current);
+        scrapGainTimer.current = null;
+      }
+    };
+  }, [state.gold]);
 
   useEffect(() => {
     profile.refreshRetentionState();
@@ -353,7 +379,7 @@ export function HUD({
         <div className="rotwood-toast pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
           <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
-            +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% GOLD · KEEP IT GOING
+            +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% SCRAP · KEEP IT GOING
           </p>
         </div>
       )}
@@ -419,7 +445,7 @@ export function HUD({
 
       <div className="space-y-1.5">
         <div className="flex items-start gap-1.5">
-          <Stat label="Coins" value={`${Math.floor(state.gold)}`} tone="gold" />
+          <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" />
           <Stat label="Wave" value={`${state.wave || 1}`} />
           <Stat
             label="Base"
@@ -447,6 +473,12 @@ export function HUD({
             </button>
           </div>
         </div>
+        {recentScrapGain > 0 && !state.gameOver && (
+          <div className="rotwood-scrap-gain pointer-events-none absolute left-3 top-[4.15rem] inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-black/55 px-2.5 py-1 text-xs font-black text-accent shadow-panel backdrop-blur">
+            <Coins size={14} aria-hidden="true" />
+            <span>+{recentScrapGain} SCRAP</span>
+          </div>
+        )}
         <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>
@@ -718,7 +750,7 @@ export function HUD({
                 }}
                 className="shrink-0 rounded-md bg-black/25 px-2 py-1 text-[10px] text-panel-muted"
               >
-                Sell · {towerSellValue(tower)}g
+                Sell · {towerSellValue(tower)} scrap
               </button>
               <button
                 onClick={() => onSelect(null)}
@@ -787,7 +819,7 @@ export function HUD({
             >
               {tower.level >= MAX_TOWER_LEVEL
                 ? "Level maxed"
-                : `Upgrade to Lv ${tower.level + 1} · ${levelCost}g`}
+                : `Upgrade to Lv ${tower.level + 1} · ${levelCost} scrap`}
             </button>
             <div className="mt-1.5 grid grid-cols-2 gap-1">
               <PathColumn tower={tower} path="a" gold={state.gold} />
@@ -814,7 +846,7 @@ export function HUD({
                 >
                   {towerMetaLevel >= MAX_PROFILE_TOWER_UPGRADE
                     ? "Mastery maxed"
-                    : `${towerMetaCost} coins`}
+                    : `${towerMetaCost} credits`}
                 </button>
               </div>
             </div>
@@ -836,7 +868,7 @@ export function HUD({
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Repair base +5
-            <span className="block text-[10px] text-panel-muted">30g</span>
+            <span className="block text-[10px] text-panel-muted">30 scrap</span>
           </button>
         </div>
       </div>
