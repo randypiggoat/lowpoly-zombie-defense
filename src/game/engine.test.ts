@@ -5,6 +5,7 @@ import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
 import { getStageById, type StageEnemyKind } from "./navigation";
 import { createSeededRandom } from "./random";
+import { getWeeklyBossTrial } from "./bossTrials";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
   const pad = BUILD_SPOTS[0]!;
@@ -53,6 +54,22 @@ describe("Game simulation", () => {
     expect(game.state.gameOver).toBe(false);
     expect(game.state.stageWon).toBe(false);
     expect(game.state.towers).toHaveLength(0);
+  });
+
+  test("starts a weekly boss trial with its own identity and no random powers", () => {
+    const game = new Game(createSeededRandom(42));
+    const trial = getWeeklyBossTrial("2026-W40");
+
+    game.startBossTrial(trial, "2026-W40");
+
+    expect(game.state.bossTrial).toBe(true);
+    expect(game.state.bossTrialId).toBe(trial.id);
+    expect(game.state.bossTrialBossKind).toBe(trial.bossKind);
+    expect(game.state.bossTrialKey).toBe("2026-W40");
+
+    game.tick(1);
+    expect(game.state.wave).toBe(1);
+    expect(game.state.runModifierOffer).toHaveLength(0);
   });
 
   test("starts the first wave after the initial delay", () => {
