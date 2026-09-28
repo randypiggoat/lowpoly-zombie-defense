@@ -1493,7 +1493,8 @@ reset() {
     this.accumulator += realDt * this.state.simulationSpeed;
     const STEP = 1 / 60;
     let steps = 0;
-    while (this.accumulator >= STEP && steps < 30) {
+    const maxSteps = this.state.simulationSpeed === 2 ? 60 : 30;
+    while (this.accumulator >= STEP && steps < maxSteps) {
       this.accumulator -= STEP;
       steps++;
       this.step(STEP);
