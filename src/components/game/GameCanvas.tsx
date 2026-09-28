@@ -292,6 +292,7 @@ export function GameCanvas() {
             onSelect={setSelection}
             onPause={() => setOverlay("pause")}
             rewardedAvailable={rewardedAvailable}
+            waveThreatPreview={waveThreatPreview}
             showMetaSections={false}
             showGameOverOverlay={false}
           />
