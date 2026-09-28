@@ -80,15 +80,16 @@ type ScreenButtonProps = {
   onClick: () => void;
   variant?: "primary" | "secondary";
   disabled?: boolean;
+  className?: string;
 };
 
-function ScreenButton({ children, onClick, variant = "primary", disabled }: ScreenButtonProps) {
+function ScreenButton({ children, onClick, variant = "primary", disabled, className = "" }: ScreenButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rotwood-button rotwood-button-${variant} w-full text-sm`}
+      className={`rotwood-button rotwood-button-${variant} w-full text-sm ${className}`}
     >
       {children}
     </button>
@@ -132,6 +133,18 @@ function ScreenCard({ children }: { children: ReactNode }) {
     <div className="rotwood-shell max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto p-4">
       {children}
     </div>
+  );
+}
+
+function ShieldMark({ size = 24 }: { size?: number }) {
+  return (
+    <span
+      className="grid place-items-center rounded-[28%] border-2 border-current"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      <span className="h-[42%] w-[42%] rounded-full border border-current" />
+    </span>
   );
 }
 
