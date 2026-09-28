@@ -28,6 +28,7 @@ import { profile } from "./profile";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
+import { killStreakGoldMultiplier } from "./combatRewards";
 import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
@@ -1383,8 +1384,10 @@ reset() {
     s.kills += 1;
     s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
     s.killStreakTimer = 2.25;
-    const goldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
-    s.gold += Math.round(result.killGold * goldMultiplier);
+    const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
+    const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
+    const earnedGold = Math.round(result.killGold * runGoldMultiplier * streakGoldMultiplier);
+    s.gold += earnedGold;
     const feedback = getCombatFeedback({
       killed: true,
       crit: result.crit,
@@ -1402,7 +1405,7 @@ reset() {
         value: 0,
         life: 0,
         crit: true,
-        gold: result.killGold,
+        gold: earnedGold,
       });
     }
 
