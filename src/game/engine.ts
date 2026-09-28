@@ -905,6 +905,8 @@ export type GameState = {
   spawnTimer: number;
   kills: number;
   waveDamageTaken: number;
+  maxKillStreak: number;
+  uniqueTowerKinds: string[];
   towersPlaced: number;
   income: number;
   incomeLevel: number;
@@ -990,6 +992,8 @@ function makeState(stage: StageRunConfig): GameState {
     spawnTimer: 0,
     kills: 0,
     waveDamageTaken: 0,
+    maxKillStreak: 0,
+    uniqueTowerKinds: [],
     towersPlaced: 0,
     income: 0,
     incomeLevel: 1,
@@ -1136,6 +1140,7 @@ reset() {
       recoil: 0,
     });
     s.towersPlaced += 1;
+    if (!s.uniqueTowerKinds.includes(kind)) s.uniqueTowerKinds.push(kind);
     profile.recordTowerBuilt(kind);
     track("tower_built", { kind });
     sfx("build");
@@ -1388,6 +1393,7 @@ reset() {
     z.fade = 0;
     s.kills += 1;
     s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
+    s.maxKillStreak = Math.max(s.maxKillStreak, s.killStreak);
     s.killStreakTimer = 2.25;
     const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
@@ -1688,6 +1694,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         baseHealth: s.baseHp,
         baseMaxHealth: s.baseMaxHp,
         towersPlaced: s.towersPlaced,
+        maxKillStreak: s.maxKillStreak,
+        uniqueTowerKinds: s.uniqueTowerKinds.length,
       }).stars;
       const finalPerfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
       profile.completeRun(Math.max(1, s.wave), s.kills, {
