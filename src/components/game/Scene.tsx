@@ -997,7 +997,7 @@ function Bullets() {
 
 /* ---------------- scene root ---------------- */
 
-function CameraRig() {
+function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   const { camera, size } = useThree();
   const basePosition = useRef(new THREE.Vector3());
   const baseTarget = useRef(new THREE.Vector3());
@@ -1013,7 +1013,7 @@ function CameraRig() {
   }, [camera, size.width, size.height]);
 
   useFrame(({ clock }) => {
-    const shake = Math.min(1, game.state.screenShake);
+    const shake = reducedMotion ? 0 : Math.min(1, game.state.screenShake);
     if (shake <= 0.001) {
       camera.position.lerp(basePosition.current, 0.35);
       camera.lookAt(baseTarget.current);
@@ -1046,6 +1046,7 @@ export function Scene({
   onSelectTower,
   onSelectSpot,
   paused = false,
+  reducedMotion = false,
 }: {
   stageId: number;
   endlessMode?: boolean;
@@ -1054,6 +1055,7 @@ export function Scene({
   onSelectTower: (id: number) => void;
   onSelectSpot: (i: number) => void;
   paused?: boolean;
+  reducedMotion?: boolean;
 }) {
   const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
   const theme = useMemo(() => getStageTheme(stageId, endlessMode), [stageId, endlessMode]);
@@ -1074,7 +1076,7 @@ export function Scene({
         shadow-camera-top={26}
         shadow-camera-bottom={-26}
       />
-      <CameraRig />
+      <CameraRig reducedMotion={reducedMotion} />
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} />

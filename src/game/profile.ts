@@ -214,6 +214,8 @@ export type PlayerProfile = {
   seasonalEventCycleKey: string;
   seasonalEventProgress: number;
   seasonalEventClaims: string[];
+  /** Whether the player prefers reduced motion effects. */
+  reducedMotion: boolean;
   /** Whether the player has purchased the permanent ad-removal entitlement. */
   adsRemoved: boolean;
 };
@@ -331,6 +333,7 @@ function blank(): PlayerProfile {
     seasonalEventProgress: 0,
     seasonalEventClaims: [],
     adsRemoved: false,
+    reducedMotion: false,
   };
 }
 
@@ -564,6 +567,7 @@ function load(): PlayerProfile {
         normalizeDate(parsed.seasonalEventCycleKey) ?? getSeasonalEventCycleKey(),
       seasonalEventProgress: Math.max(0, Number(parsed.seasonalEventProgress) || 0),
       seasonalEventClaims: normalizeStringArray(parsed.seasonalEventClaims),
+      reducedMotion: Boolean(parsed.reducedMotion),
     };
     const today = dateKey();
     ensureDailyMissionState(merged, today);
@@ -1126,6 +1130,11 @@ class ProfileStore {
 
   setAdsRemoved(value: boolean) {
     this.profile.adsRemoved = value;
+    this.save();
+  }
+
+  setReducedMotion(value: boolean) {
+    this.profile.reducedMotion = value;
     this.save();
   }
 
