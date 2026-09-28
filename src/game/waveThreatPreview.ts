@@ -42,8 +42,14 @@ export function getWaveThreatPreview(
     .sort((a, b) => b.score - a.score || a.kind - b.kind)
     .slice(0, 3);
 
+  const rankedThreats = ranked.map(({ kind }) => enemyThreatLabel(kind));
+  const bossThreat =
+    isBossWave && stage.boss.kind !== null
+      ? [enemyThreatLabel(stage.boss.kind)]
+      : [];
+
   return {
     boss: isBossWave,
-    threats: ranked.map(({ kind }) => enemyThreatLabel(kind)),
+    threats: [...new Set([...bossThreat, ...rankedThreats])].slice(0, 3),
   };
 }
