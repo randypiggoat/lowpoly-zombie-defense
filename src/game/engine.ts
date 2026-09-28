@@ -30,6 +30,7 @@ import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "./combatRewards";
 import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
+import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
 
@@ -1798,7 +1799,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           z.slow = z.kind === 5 ? status.slow * 0.45 : status.slow;
           z.burn = status.burn;
           z.burnTime = status.burnTime;
-          this.damage(z, dmg, b.x, b.z, goreBase, b.gold);
+          const counterplayMultiplier = towerEnemyDamageMultiplier(b.kind, z.kind);
+          this.damage(z, dmg * counterplayMultiplier, b.x, b.z, goreBase, b.gold);
         };
 
         hit(target, b.damage);
