@@ -30,6 +30,8 @@ function profile(overrides: Partial<PlayerProfile> = {}): PlayerProfile {
     dailyChallengeBestScore: 0,
     weeklyChallengeKey: null,
     weeklyChallengeBestScore: 0,
+    bossTrialWeekKey: null,
+    bossTrialBestScore: 0,
     equippedTowerCosmetics: {},
     seasonalEventCycleKey: "E0",
     seasonalEventProgress: 100,

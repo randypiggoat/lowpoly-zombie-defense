@@ -7,6 +7,7 @@ import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
 import { profile } from "@/game/profile";
+import { TowerModel } from "./TowerModel";
 import {
   BUILD_SPOTS,
   PATH,
@@ -285,235 +286,6 @@ function BuildPads({
 
 /* ---------------- towers ---------------- */
 
-function WeaponAssembly({
-  kind,
-  level,
-  accent,
-}: {
-  kind: Tower["kind"];
-  level: number;
-  accent: string;
-}) {
-  const length = 1.3 + Math.min(level, 8) * 0.08;
-
-  if (kind === "shotgunner") {
-    return (
-      <>
-        {[-0.2, 0.2].map((x) => (
-          <group key={x} position={[x, 0.05, 0]}>
-            <mesh castShadow>
-              <boxGeometry args={[0.2, 0.26, length * 0.88]} />
-              <meshStandardMaterial color="#4a3d38" flatShading />
-            </mesh>
-            <mesh position={[0, 0, length * 0.44]} rotation-x={Math.PI / 2} castShadow>
-              <cylinderGeometry args={[0.14, 0.2, 0.15, 6]} />
-              <meshStandardMaterial color={accent} flatShading />
-            </mesh>
-          </group>
-        ))}
-        <mesh position={[0, -0.12, -0.22]} castShadow>
-          <boxGeometry args={[0.72, 0.18, 0.62]} />
-          <meshStandardMaterial color={accent} flatShading />
-        </mesh>
-      </>
-    );
-  }
-
-  if (kind === "sniper") {
-    return (
-      <>
-        <mesh position={[0, 0.04, 0.32]} castShadow>
-          <boxGeometry args={[0.14, 0.16, length * 1.65]} />
-          <meshStandardMaterial color="#35443b" flatShading />
-        </mesh>
-        <mesh position={[0, 0.19, 0.15]} rotation-z={Math.PI / 2} castShadow>
-          <cylinderGeometry args={[0.11, 0.11, 0.5, 8]} />
-          <meshStandardMaterial color={accent} flatShading />
-        </mesh>
-        <mesh position={[0, -0.1, -0.45]} castShadow>
-          <boxGeometry args={[0.38, 0.28, 0.58]} />
-          <meshStandardMaterial color={accent} flatShading />
-        </mesh>
-      </>
-    );
-  }
-
-  if (kind === "flamethrower") {
-    return (
-      <>
-        <mesh position={[0, 0.02, 0]} castShadow>
-          <boxGeometry args={[0.48, 0.28, length * 0.78]} />
-          <meshStandardMaterial color="#5a443a" flatShading />
-        </mesh>
-        <mesh position={[0, 0.02, length * 0.4]} rotation-x={Math.PI / 2} castShadow>
-          <coneGeometry args={[0.34, 0.48, 6]} />
-          <meshStandardMaterial
-            color={accent}
-            emissive={accent}
-            emissiveIntensity={0.35}
-            flatShading
-          />
-        </mesh>
-        {[-0.42, 0.42].map((x) => (
-          <mesh key={x} position={[x, -0.12, -0.22]} castShadow>
-            <cylinderGeometry args={[0.19, 0.19, 0.7, 6]} />
-            <meshStandardMaterial color={accent} flatShading />
-          </mesh>
-        ))}
-      </>
-    );
-  }
-
-  if (kind === "freezer") {
-    return (
-      <>
-        <mesh position={[0, 0.02, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.34, length * 0.72]} />
-          <meshStandardMaterial color="#466878" flatShading />
-        </mesh>
-        <mesh position={[0, 0.02, length * 0.35]} rotation-x={Math.PI / 2} castShadow>
-          <cylinderGeometry args={[0.28, 0.18, 0.45, 6]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.2} flatShading />
-        </mesh>
-        <mesh position={[0, 0.38, -0.3]} castShadow>
-          <cylinderGeometry args={[0.24, 0.24, 0.62, 6]} />
-          <meshStandardMaterial color="#a9e4f1" flatShading />
-        </mesh>
-      </>
-    );
-  }
-
-  if (kind === "tesla") {
-    return (
-      <>
-        <mesh position={[0, 0.08, 0]} castShadow>
-          <cylinderGeometry args={[0.13, 0.23, 1.05, 6]} />
-          <meshStandardMaterial color="#51475d" flatShading />
-        </mesh>
-        {[0.22, 0.42, 0.62].map((y) => (
-          <mesh key={y} position={[0, y, 0]} rotation-x={Math.PI / 2}>
-            <torusGeometry args={[0.25 + y * 0.08, 0.055, 4, 8]} />
-            <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.45} flatShading />
-          </mesh>
-        ))}
-        <mesh position={[0, 0.92, 0]}>
-          <icosahedronGeometry args={[0.34, 0]} />
-          <meshStandardMaterial
-            color={accent}
-            emissive={accent}
-            emissiveIntensity={0.8}
-            flatShading
-          />
-        </mesh>
-      </>
-    );
-  }
-
-  if (kind === "rocket") {
-    return (
-      <>
-        <mesh position={[0, -0.06, -0.1]} castShadow>
-          <boxGeometry args={[0.95, 0.25, 0.72]} />
-          <meshStandardMaterial color="#5b4141" flatShading />
-        </mesh>
-        {[-0.34, 0.34].map((x) => (
-          <mesh key={x} position={[x, 0.2, 0.28]} rotation-x={Math.PI / 2} castShadow>
-            <cylinderGeometry args={[0.2, 0.24, 1.15, 6]} />
-            <meshStandardMaterial color={accent} flatShading />
-          </mesh>
-        ))}
-      </>
-    );
-  }
-
-  if (kind === "laser") {
-    return (
-      <>
-        <mesh position={[0, 0.02, 0]} castShadow>
-          <octahedronGeometry args={[0.56, 0]} />
-          <meshStandardMaterial color="#385a58" flatShading />
-        </mesh>
-        <mesh position={[0, 0.02, 0.58]} castShadow>
-          <boxGeometry args={[0.2, 0.2, length * 0.75]} />
-          <meshStandardMaterial color="#364b4d" flatShading />
-        </mesh>
-        <mesh position={[0, 0.02, length * 0.48]} rotation-x={Math.PI / 2} castShadow>
-          <cylinderGeometry args={[0.32, 0.2, 0.16, 10]} />
-          <meshStandardMaterial
-            color={accent}
-            emissive={accent}
-            emissiveIntensity={0.45}
-            flatShading
-          />
-        </mesh>
-      </>
-    );
-  }
-
-  // Rifleman: compact receiver, one recognizable long rifle and a top sight.
-  return (
-    <>
-      <mesh position={[0, 0.03, 0]} castShadow>
-        <boxGeometry args={[0.34, 0.3, 0.72]} />
-        <meshStandardMaterial color={accent} flatShading />
-      </mesh>
-      <mesh position={[0, 0.03, 0.72]} castShadow>
-        <boxGeometry args={[0.16, 0.16, length]} />
-        <meshStandardMaterial color="#41464b" flatShading />
-      </mesh>
-      <mesh position={[0, 0.25, 0.12]} castShadow>
-        <boxGeometry args={[0.12, 0.12, 0.3]} />
-        <meshStandardMaterial color="#f4d675" flatShading />
-      </mesh>
-    </>
-  );
-}
-
-function TowerBody({ kind, accent, level, bodyColor }: { kind: Tower["kind"]; accent: string; level: number; bodyColor: string }) {
-  const height = 0.78 + level * 0.1;
-  const isHeavy = kind === "shotgunner" || kind === "rocket" || kind === "flamethrower";
-  const isTech = kind === "tesla" || kind === "laser" || kind === "freezer";
-  return (
-    <>
-      <mesh position={[0, 0.25, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[isHeavy ? 1.48 : 1.32, 1.6, 0.5, kind === "laser" ? 8 : 6]} />
-        <meshStandardMaterial color={bodyColor || (isTech ? "#66777b" : "#8b8478")} flatShading />
-      </mesh>
-      <mesh position={[0, 0.88, 0]} castShadow>
-        {kind === "sniper" ? (
-          <boxGeometry args={[0.78, height, 0.78]} />
-        ) : kind === "tesla" ? (
-          <cylinderGeometry args={[0.58, 0.9, height, 6]} />
-        ) : kind === "laser" ? (
-          <octahedronGeometry args={[0.88, 0]} />
-        ) : (
-          <cylinderGeometry args={[isHeavy ? 1 : 0.82, isHeavy ? 1.18 : 1.04, height, 6]} />
-        )}
-        <meshStandardMaterial color={bodyColor || (isTech ? "#d1e0db" : "#d6cdbc")} flatShading />
-      </mesh>
-      {kind === "tesla" && (
-        <mesh position={[0, 1.28, 0]} rotation-x={Math.PI / 2}>
-          <torusGeometry args={[0.72, 0.1, 4, 8]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.35} flatShading />
-        </mesh>
-      )}
-      {kind === "flamethrower" &&
-        [-0.72, 0.72].map((x) => (
-          <mesh key={x} position={[x, 0.82, -0.18]} castShadow>
-            <cylinderGeometry args={[0.18, 0.18, 0.72, 6]} />
-            <meshStandardMaterial color={accent} flatShading />
-          </mesh>
-        ))}
-      {kind === "freezer" && (
-        <mesh position={[0, 0.88, -0.62]} castShadow>
-          <dodecahedronGeometry args={[0.38, 0]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.18} flatShading />
-        </mesh>
-      )}
-    </>
-  );
-}
-
 function TowerMesh({
   tower,
   selected,
@@ -524,7 +296,6 @@ function TowerMesh({
   onSelect: (id: number) => void;
 }) {
   const turret = useRef<THREE.Group>(null);
-  const barrel = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
   const equippedCosmetic = cosmeticForTower(
     tower.kind,
@@ -543,12 +314,8 @@ function TowerMesh({
       while (diff < -Math.PI) diff += Math.PI * 2;
       turret.current.rotation.y = cur + diff * (1 - Math.exp(-10 * dt));
     }
-    if (barrel.current) {
-      barrel.current.position.z = 0.95 - tower.recoil * 0.22;
-    }
     if (ring.current) {
-      const s = 1 + Math.sin(clock.elapsedTime * 2) * 0.02;
-      ring.current.scale.setScalar(s);
+      ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025);
     }
   });
 
@@ -566,52 +333,25 @@ function TowerMesh({
           <meshBasicMaterial color={accent} transparent opacity={0.35} side={THREE.DoubleSide} />
         </mesh>
       )}
-      <TowerBody kind={tower.kind} accent={accent} level={level} bodyColor={bodyColor} />
-      <group ref={turret} position={[0, 1.55 + level * 0.12, 0]}>
-        <mesh castShadow rotation-y={tower.kind === "laser" ? Math.PI / 4 : 0}>
-          {tower.kind === "tesla" ? (
-            <cylinderGeometry args={[0.58, 0.75, 0.62, 6]} />
-          ) : tower.kind === "sniper" ? (
-            <boxGeometry args={[0.75, 0.46, 1.22]} />
-          ) : tower.kind === "rocket" ? (
-            <boxGeometry args={[1.3, 0.52, 0.92]} />
-          ) : tower.kind === "laser" ? (
-            <octahedronGeometry args={[0.72, 0]} />
-          ) : (
-            <boxGeometry args={[tower.kind === "shotgunner" ? 1.3 : 1.05, 0.6, 1.05]} />
-          )}
-          <meshStandardMaterial color={accent} flatShading />
-        </mesh>
-        <group ref={barrel} position={[0, 0.05, 0.95]}>
-          <WeaponAssembly kind={tower.kind} level={level} accent={accent} />
-        </group>
+      <group ref={turret} position={[0, 1.18 + level * 0.1, 0]}>
+        <TowerModel tower={tower} accent={accent} level={level} bodyColor={bodyColor} />
       </group>
-      {/* path pips: left = path A, right = path B */}
       {Array.from({ length: tower.a }, (_, i) => (
         <mesh key={`a${i}`} position={[-0.75, 0.5 + i * 0.24, 1.15]}>
           <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial
-            color={accent}
-            emissive={accent}
-            emissiveIntensity={0.5}
-            flatShading
-          />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} flatShading />
         </mesh>
       ))}
       {Array.from({ length: tower.b }, (_, i) => (
         <mesh key={`b${i}`} position={[0.75, 0.5 + i * 0.24, 1.15]}>
           <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial
-            color="#f4ead6"
-            emissive="#f4ead6"
-            emissiveIntensity={0.35}
-            flatShading
-          />
+          <meshStandardMaterial color="#f4ead6" emissive="#f4ead6" emissiveIntensity={0.35} flatShading />
         </mesh>
       ))}
     </group>
   );
 }
+
 
 /* ---------------- pooled zombies, gibs & bullets ---------------- */
 
@@ -621,6 +361,7 @@ function Zombies() {
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
+  const lastBoss = useRef<boolean[]>([]);
 
   useFrame(() => {
     const list = game.state.zombies;
@@ -634,6 +375,38 @@ function Zombies() {
       }
       g.visible = true;
       const look = ZOMBIE_LOOKS[z.kind];
+      const bossChanged = lastBoss.current[i] !== z.boss;
+      if (bossChanged || z.boss) {
+        const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
+        const bossCrown = g.getObjectByName("boss-crown") as THREE.Group | undefined;
+        const bossCore = g.getObjectByName("boss-core") as THREE.Mesh | undefined;
+        const now = performance.now();
+        if (bossChanged) {
+          if (bossAura) bossAura.visible = z.boss;
+          if (bossCrown) bossCrown.visible = z.boss;
+          if (bossCore) bossCore.visible = z.boss;
+          lastBoss.current[i] = z.boss;
+        }
+        if (z.boss) {
+          if (bossAura) {
+            bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
+            const pulse = 1 + Math.sin(now * 0.006 + i) * (z.bossEnraged ? 0.12 : 0.055);
+            bossAura.scale.setScalar(pulse);
+          }
+          if (bossCrown) {
+            bossCrown.rotation.y += z.bossEnraged ? 0.026 : 0.012;
+            bossCrown.position.y = 1.95 + Math.sin(now * 0.004 + i) * 0.025;
+          }
+          if (bossCore) {
+            const material = bossCore.material as THREE.MeshStandardMaterial;
+            const bossColor = z.bossEnraged ? "#ff6b4a" : "#e9b44c";
+            material.color.set(bossColor);
+            material.emissive.set(z.bossEnraged ? "#ff4f36" : "#e9b44c");
+            material.emissiveIntensity = z.bossEnraged ? 1.25 : 0.85;
+            bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01) * 0.12 : 1);
+          }
+        }
+      }
       const scale =
         z.kind === 2
           ? 1.24
@@ -724,12 +497,12 @@ function Zombies() {
         g.position.set(z.x, 0.1 + z.y, z.z);
         g.rotation.x = -1.4 - z.tilt;
         g.rotation.z = z.roll;
-        g.scale.setScalar(scale * (1 - f * 0.35));
+        g.scale.setScalar(scale * (z.boss ? 1.16 : 1) * (1 - f * 0.35));
       } else {
         g.position.set(z.x, 0.1 + Math.abs(Math.sin(z.wobble)) * 0.14, z.z);
         g.rotation.x = 0;
         g.rotation.z = Math.sin(z.wobble) * 0.16;
-        g.scale.setScalar(scale);
+        g.scale.setScalar(scale * (z.boss ? 1.16 : 1));
         const nextPoint = pointAt(z.dist + 0.6);
         g.rotation.y = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
       }
@@ -790,6 +563,25 @@ function Zombies() {
           <mesh name="head" position={[0, 1.62, 0]} castShadow>
             <boxGeometry args={[0.46, 0.46, 0.46]} />
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
+          </mesh>
+
+          <group name="boss-aura" visible={false} position={[0, 1.1, 0]}>
+            <mesh rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.72, 0.07, 5, 12]} />
+              <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.75} transparent opacity={0.62} flatShading />
+            </mesh>
+          </group>
+          <group name="boss-crown" visible={false} position={[0, 1.95, 0]}>
+            {[-0.34, -0.11, 0.11, 0.34].map((x) => (
+              <mesh key={x} position={[x, 0, 0]}>
+                <coneGeometry args={[0.11, 0.38, 4]} />
+                <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.45} flatShading />
+              </mesh>
+            ))}
+          </group>
+          <mesh name="boss-core" visible={false} position={[0, 1.94, 0.18]}>
+            <icosahedronGeometry args={[0.14, 0]} />
+            <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.85} flatShading />
           </mesh>
           <mesh name="hp-background" position={[0, 2.3, 0.02]} visible={false}>
             <planeGeometry args={[0.9, 0.09]} />
@@ -1042,6 +834,7 @@ function Simulation({ paused }: { paused: boolean }) {
 export function Scene({
   stageId,
   endlessMode = false,
+  bossTrial = false,
   towers,
   selection,
   onSelectTower,
@@ -1051,6 +844,7 @@ export function Scene({
 }: {
   stageId: number;
   endlessMode?: boolean;
+  bossTrial?: boolean;
   towers: Tower[];
   selection: Selection;
   onSelectTower: (id: number) => void;
@@ -1061,7 +855,7 @@ export function Scene({
   const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
   const { size } = useThree();
   const renderQuality = useMemo(() => getSceneRenderQuality(size.width), [size.width]);
-  const theme = useMemo(() => getStageTheme(stageId, endlessMode), [stageId, endlessMode]);
+  const theme = useMemo(() => getStageTheme(stageId, endlessMode, bossTrial), [stageId, endlessMode, bossTrial]);
   return (
     <>
       <color attach="background" args={[theme.sky]} />

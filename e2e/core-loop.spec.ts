@@ -33,3 +33,15 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });
+
+
+test("weekly boss trials have a distinct entry screen", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Boss Trials" }).click();
+
+  await expect(page.getByText("Boss Trials", { exact: true })).toBeVisible();
+  await expect(page.getByText("Weekly rotation", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ENTER TRIAL" })).toBeVisible();
+  await expect(page.getByText(/This week/)).toBeVisible();
+});

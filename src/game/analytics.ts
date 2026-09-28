@@ -14,6 +14,8 @@ export type AnalyticsEventName =
   | "revive_used"
   | "boss_defeated"
   | "boss_enraged"
+  | "boss_trial_started"
+  | "boss_trial_completed"
   | "daily_mission_claimed"
   | "rewarded_ad_requested"
   | "rewarded_ad_completed"
