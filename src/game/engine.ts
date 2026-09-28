@@ -921,6 +921,7 @@ waveMessageType: "start" | "complete" | "boss" | "";
   runModifierOffer: RunModifierDefinition[];
   activeRunModifiers: RunModifierId[];
   runModifierRerollUsed: boolean;
+  reviveUsed: boolean;
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
@@ -1010,6 +1011,7 @@ waveMessageType: "",
     runModifierOffer: [],
     activeRunModifiers: [],
     runModifierRerollUsed: false,
+    reviveUsed: false,
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
@@ -1066,6 +1068,25 @@ reset() {
   track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
   this.emit();
 }
+
+  reviveRun(): boolean {
+    const state = this.state;
+    if (!state.gameOver || state.stageWon || state.reviveUsed || state.baseHp > 0) return false;
+
+    state.reviveUsed = true;
+    state.gameOver = false;
+    state.baseHp = Math.max(1, Math.ceil(state.baseMaxHp * 0.5));
+    state.killStreak = 0;
+    state.killStreakTimer = 0;
+    state.waveMessage = "SECOND CHANCE!";
+    state.waveMessageLife = 2;
+    state.waveMessageType = "complete";
+    state.flash = 0;
+    track("revive_used", { wave: state.wave });
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
 
   rerollRunModifierOffer(): boolean {
     const state = this.state;
