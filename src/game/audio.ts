@@ -92,9 +92,12 @@ export type SfxName =
   | "wave"
   | "streak"
   | "gameOver"
-  | "bigHit";
+  | "bigHit"
+  | "coin";
 
 let lastShot = 0;
+let lastCoin = -Infinity;
+let coinCombo = 0;
 
 export function sfx(name: SfxName) {
   const c = ensure();
@@ -163,5 +166,15 @@ export function sfx(name: SfxName) {
     case "bigHit":
       tone({ freq: 920, to: 240, dur: 0.11, type: "triangle", gain: 0.1 });
       return;
+    case "coin": {
+      const now = c.currentTime;
+      if (now - lastCoin < 0.045) return;
+      coinCombo = now - lastCoin < 0.32 ? Math.min(8, coinCombo + 1) : 0;
+      lastCoin = now;
+      const freq = 760 + coinCombo * 68;
+      tone({ freq, to: freq * 1.18, dur: 0.07, type: "triangle", gain: 0.075 });
+      tone({ freq: freq * 1.5, dur: 0.055, type: "sine", gain: 0.045, delay: 0.035 });
+      return;
+    }
   }
 }
