@@ -2,6 +2,7 @@ export type AnalyticsEventName =
   | "run_started"
   | "run_finished"
   | "menu_quick_play"
+  | "simulation_speed_changed"
   | "daily_rewarded_bonus_claimed"
   | "tower_built"
   | "tower_upgraded"
