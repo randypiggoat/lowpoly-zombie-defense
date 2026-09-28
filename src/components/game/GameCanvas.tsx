@@ -736,6 +736,8 @@ export function GameCanvas() {
                   baseHealth: state.baseHp,
                   baseMaxHealth: state.baseMaxHp,
                   towersPlaced: state.towersPlaced,
+                  maxKillStreak: state.maxKillStreak,
+                  uniqueTowerKinds: state.uniqueTowerKinds.length,
                 }).results.map((result, index) => (
                   <p key={result.objective.id}>
                     {index + 1 === 1 ? "⭐" : index + 1 === 2 ? "⭐⭐" : "⭐⭐⭐"}{" "}
