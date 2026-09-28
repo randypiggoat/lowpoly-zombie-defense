@@ -1887,8 +1887,6 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             });
           } else if (this.stage.endless) {
             profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
-
-            profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
               challengeId: this.stage.challenge?.id,
               challengePeriod: this.stage.challenge?.period,
               challengeKey: this.stage.challengeKey,
