@@ -920,6 +920,7 @@ waveMessageLife: number;
 waveMessageType: "start" | "complete" | "boss" | "";
   runModifierOffer: RunModifierDefinition[];
   activeRunModifiers: RunModifierId[];
+  runModifierRerollUsed: boolean;
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
@@ -1008,6 +1009,7 @@ waveMessageLife: 0,
 waveMessageType: "",
     runModifierOffer: [],
     activeRunModifiers: [],
+    runModifierRerollUsed: false,
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
@@ -1064,6 +1066,23 @@ reset() {
   track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
   this.emit();
 }
+
+  rerollRunModifierOffer(): boolean {
+    const state = this.state;
+    if (state.runModifierOffer.length === 0 || state.runModifierRerollUsed) return false;
+    const excluded = [
+      ...state.activeRunModifiers,
+      ...state.runModifierOffer.map((entry) => entry.id),
+    ];
+    const offer = createRunModifierOffer(this.random, excluded);
+    if (offer.length === 0) return false;
+    state.runModifierOffer = offer;
+    state.runModifierRerollUsed = true;
+    track("modifier_rerolled", { wave: state.wave });
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
 
   chooseRunModifier(id: RunModifierId): boolean {
     const state = this.state;
