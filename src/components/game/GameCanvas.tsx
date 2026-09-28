@@ -1,4 +1,5 @@
 import { Canvas } from "@react-three/fiber";
+import { ChevronRight } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -86,7 +87,7 @@ function ScreenButton({ children, onClick, variant = "primary", disabled }: Scre
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full rounded-2xl px-4 py-3 text-base font-semibold tracking-wide transition active:scale-[0.98] disabled:opacity-40"
+      className={`rotwood-button rotwood-button-${variant} w-full text-sm`}
       style={{
         background: variant === "primary" ? "rgba(233,180,76,0.96)" : "rgba(29,36,48,0.9)",
         color: variant === "primary" ? "#20150a" : "#f2efe9",
@@ -112,10 +113,10 @@ function MenuTile({
     <button
       type="button"
       onClick={onClick}
-      className="min-h-[64px] rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-left transition active:scale-[0.98] hover:border-accent/40"
+      className="rotwood-menu-tile group min-h-[68px] w-full px-3 py-2.5 text-left"
     >
       <span className="flex items-center justify-between gap-2">
-        <span className="truncate font-display text-sm tracking-wide text-panel-foreground">{title}</span>
+        <span className="min-w-0 flex-1 truncate font-display text-sm tracking-wide text-panel-foreground">{title}</span>
         {badge ? (
           <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-semibold text-accent-foreground">
             {badge}
@@ -131,7 +132,7 @@ function MenuTile({
 
 function ScreenCard({ children }: { children: ReactNode }) {
   return (
-    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel backdrop-blur">
+    <div className="rotwood-shell max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto p-4">
       {children}
     </div>
   );
@@ -338,7 +339,7 @@ export function GameCanvas() {
   }).length;
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
+    <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
       {canvasReady && (
         <Canvas
           shadows
