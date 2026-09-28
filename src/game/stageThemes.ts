@@ -112,8 +112,6 @@ const THEMES: Record<number, StageTheme> = {
     lightIntensity: 1.15,
     night: true,
   },
-};
-
   1000: {
     id: 1000,
     name: "Boss Trial Arena",
@@ -130,8 +128,10 @@ const THEMES: Record<number, StageTheme> = {
     lightIntensity: 1.05,
     night: true,
   },
+};
+
 export function getStageTheme(stageId: number, endlessMode = false, bossTrial = false): StageTheme {
-  if (bossTrial) return THEMES[1000]!
+  if (bossTrial) return THEMES[1000]!;
   if (endlessMode) return THEMES[999]!;
   return THEMES[stageId] ?? THEMES[1]!;
 }
