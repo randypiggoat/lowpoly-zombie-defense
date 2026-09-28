@@ -1100,6 +1100,7 @@ reset() {
   const stage = createEndlessStage(challenge);
   this.stage = { ...stage, challenge, challengeKey, endless: true };
   this.nextId = 1;
+  this.resetTransientState();
   this.state = makeState(this.stage);
   track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
   this.emit();
@@ -1109,6 +1110,7 @@ reset() {
     const stage = createBossTrialStage(trial);
     this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
     this.nextId = 1;
+    this.resetTransientState();
     this.state = makeState(this.stage);
     track("boss_trial_started", {
       trial: trial.id,
@@ -1394,9 +1396,9 @@ reset() {
     forcedKind?: StageEnemyKind,
     startDist?: number,
     isBoss = false,
-  ) {
+  ): Zombie | null {
     const s = this.state;
-    if (s.zombies.length >= 60) return;
+    if (s.zombies.length >= 60) return null;
     const w = s.wave;
     const bossConfig = this.stage.endless
       ? {
@@ -1435,7 +1437,7 @@ reset() {
       speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
     }
 
-    s.zombies.push({
+    const spawned: Zombie = {
       id: this.nextId++,
       dist: startDist ?? -this.random() * 2,
       hp,
@@ -1463,7 +1465,9 @@ reset() {
       spin: 0,
       roll: 0,
       gibbed: false,
-    });
+    };
+    s.zombies.push(spawned);
+    return spawned;
   }
 
   /** Shared damage application — used by bullets, splash, chains and burning. */
@@ -1597,8 +1601,8 @@ reset() {
         ? Math.max(2, Math.floor(trialTraits.bossSplitCount))
         : 2;
       for (let i = 0; i < splitCount; i++) {
-        this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12), false);
-        const child = s.zombies[s.zombies.length - 1]!;
+        const child = this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12), false);
+        if (!child) break;
         child.hp *= z.boss && trialTraits?.bossSplitHpMultiplier
           ? Math.max(0.2, trialTraits.bossSplitHpMultiplier)
           : 0.45;
