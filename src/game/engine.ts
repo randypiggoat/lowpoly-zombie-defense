@@ -1350,12 +1350,20 @@ reset() {
     fromZ: number,
     goreBase: number,
     goldMult = 1,
+    crit = false,
   ) {
     const s = this.state;
     if (z.dead) return;
 
     const incomingDamage = z.kind === 5 ? dmg * 0.68 : dmg;
-    const result = resolveDamage(z.hp, z.maxHp, incomingDamage, goreBase, goldMult);
+    const result = resolveDamage(
+      z.hp,
+      z.maxHp,
+      incomingDamage,
+      goreBase,
+      goldMult,
+      crit,
+    );
     z.hp = result.nextHp;
 
     if (s.damagePopups.length < 80) {
@@ -1812,7 +1820,15 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           z.burn = status.burn;
           z.burnTime = status.burnTime;
           const counterplayMultiplier = towerEnemyDamageMultiplier(b.kind, z.kind);
-          this.damage(z, dmg * counterplayMultiplier, b.x, b.z, goreBase, b.gold);
+          this.damage(
+            z,
+            dmg * counterplayMultiplier,
+            b.x,
+            b.z,
+            goreBase,
+            b.gold,
+            z.id === target.id ? b.crit : false,
+          );
         };
 
         hit(target, b.damage);
