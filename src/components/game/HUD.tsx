@@ -41,6 +41,7 @@ import {
 import type { Selection } from "./Scene";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
 import { sfx } from "@/game/audio";
+import { towerCounterplayLabels } from "@/game/towerCounterplay";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -107,6 +108,11 @@ function towerSpecialSummary(tower: Tower) {
   if (towerSlow(tower) > 0) parts.push(`${Math.round(towerSlow(tower) * 100)}% slow`);
   if (towerCrit(tower) > 0) parts.push(`${Math.round(towerCrit(tower) * 100)}% crit`);
   return parts.join(" · ") || "Single-target fire";
+}
+
+function counterplaySummary(kind: TowerKind) {
+  const labels = towerCounterplayLabels(kind);
+  return labels.length > 0 ? labels.join(" · ") : "General-purpose tower";
 }
 
 function Stat({
@@ -542,6 +548,9 @@ export function HUD({
                     <span className="mt-1 block truncate text-[9px] text-panel-muted">
                       {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG
                     </span>
+                    <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
+                      {counterplaySummary(k)}
+                    </span>
                     <button
                       onClick={() => {
                         if (game.build(spot, k)) onSelect(null);
@@ -620,6 +629,9 @@ export function HUD({
               </button>
             </div>
             <p className="truncate text-[10px] text-panel-muted">{towerSpecialSummary(tower)}</p>
+            <p className="mt-0.5 truncate text-[9px] font-semibold text-accent">
+              {counterplaySummary(tower.kind)}
+            </p>
             <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
               {[
                 ["Damage", towerDamage(tower).toFixed(0)],
