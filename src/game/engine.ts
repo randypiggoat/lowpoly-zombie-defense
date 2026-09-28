@@ -1082,17 +1082,26 @@ export class Game {
   private emit() {
     this.listeners.forEach((l) => l());
   }
-reset() {
-  this.nextId = 1;
-  this.state = makeState(this.stage);
-  this.emit();
-}
+  private resetTransientState() {
+    this.accumulator = 0;
+    this.salvageFeedbackBuffer = 0;
+    this.salvageFeedbackTimer = 0;
+    this.waveEndNotified = false;
+  }
 
- startStage(stage: StageRunConfig) {
-  this.stage = stage;
-  this.nextId = 1;
-  this.state = makeState(stage);
-  track("run_started", { stageId: stage.id, endless: false });
+  reset() {
+    this.nextId = 1;
+    this.resetTransientState();
+    this.state = makeState(this.stage);
+    this.emit();
+  }
+
+  startStage(stage: StageRunConfig) {
+    this.stage = stage;
+    this.nextId = 1;
+    this.resetTransientState();
+    this.state = makeState(stage);
+    track("run_started", { stageId: stage.id, endless: false });
   this.emit();
 }
 
