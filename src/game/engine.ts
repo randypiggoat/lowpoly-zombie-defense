@@ -1712,6 +1712,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         this.waveEndNotified = true;
         const perfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
         s.gold += perfectBonus;
+        if (perfectBonus > 0) {
+          track("perfect_wave", { wave: s.wave, bonusGold: perfectBonus });
+        }
         s.waveMessage =
           perfectBonus > 0 ? `PERFECT WAVE! +${perfectBonus}G` : "WAVE COMPLETE!";
         s.waveMessageLife = Math.max(1.5, s.waveTimer);
