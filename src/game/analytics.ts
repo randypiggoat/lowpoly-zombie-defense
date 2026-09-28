@@ -10,6 +10,7 @@ export type AnalyticsEventName =
   | "perfect_wave"
   | "modifier_chosen"
   | "modifier_rerolled"
+  | "revive_used"
   | "daily_mission_claimed"
   | "rewarded_ad_requested"
   | "rewarded_ad_completed"
