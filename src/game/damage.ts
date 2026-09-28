@@ -15,17 +15,18 @@ export function resolveDamage(
   damage: number,
   goreBase: number,
   goldMult = 1,
+  crit = false,
 ): DamageResolution {
   const nextHp = hp - damage;
   const popupValue = Math.max(1, Math.round(damage));
-  const crit = damage >= maxHp * 0.35;
+  const isCrit = crit;
   const killed = nextHp <= 0;
 
   if (!killed) {
     return {
       nextHp,
       popupValue,
-      crit,
+      crit: isCrit,
       killed: false,
       killGold: 0,
       overkill: 0,
@@ -42,7 +43,7 @@ export function resolveDamage(
   return {
     nextHp,
     popupValue,
-    crit,
+    crit: isCrit,
     killed: true,
     killGold,
     overkill,
