@@ -25,6 +25,7 @@ import {
 } from "./towerActions";
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
+import { createBossTrialStage, type BossTrialDefinition } from "./bossTrials";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
@@ -942,6 +943,12 @@ waveMessageType: "start" | "complete" | "boss" | "";
   challengeName: string | null;
   challengePeriod: "free" | "daily" | "weekly" | null;
   challengeKey: string | null;
+  bossTrial: boolean;
+  bossTrialId: string | null;
+  bossTrialName: string | null;
+  bossTrialKey: string | null;
+  bossTrialBossKind: StageEnemyKind | null;
+  bossTrialScore: number;
 towers: Tower[];
   gameOver: boolean;
   stageWon: boolean;
@@ -965,6 +972,9 @@ type StageRunConfig = Pick<
   endless?: boolean;
   challenge?: EndlessChallenge;
   challengeKey?: string;
+  bossTrial?: BossTrialDefinition;
+  bossTrialKey?: string;
+  allowRunModifiers?: boolean;
 };
 
 
@@ -992,6 +1002,7 @@ const DEFAULT_STAGE: StageRunConfig = {
     firstCompletionBonus: { coins: 0, xp: 0, stars: 0 },
   },
   objectives: [],
+  allowRunModifiers: true,
 };
 
 function makeState(stage: StageRunConfig): GameState {
@@ -1039,6 +1050,12 @@ waveMessageType: "",
     challengeName: stage.challenge?.name ?? null,
     challengePeriod: stage.challenge?.period ?? null,
     challengeKey: stage.challengeKey ?? null,
+    bossTrial: Boolean(stage.bossTrial),
+    bossTrialId: stage.bossTrial?.id ?? null,
+    bossTrialName: stage.bossTrial?.variant?.name ?? stage.bossTrial?.title ?? null,
+    bossTrialKey: stage.bossTrialKey ?? null,
+    bossTrialBossKind: stage.bossTrial?.bossKind ?? null,
+    bossTrialScore: 0,
     towers: [],
     gameOver: false,
     stageWon: false,
@@ -1087,6 +1104,19 @@ reset() {
   track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
   this.emit();
 }
+
+  startBossTrial(trial: BossTrialDefinition, weekKey: string) {
+    const stage = createBossTrialStage(trial);
+    this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey };
+    this.nextId = 1;
+    this.state = makeState(this.stage);
+    track("boss_trial_started", {
+      trial: trial.id,
+      bossKind: trial.bossKind,
+      weekKey,
+    });
+    this.emit();
+  }
 
   reviveRun(): boolean {
     const state = this.state;
@@ -1332,7 +1362,7 @@ reset() {
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
 
-    if (shouldOfferRunModifier(s.wave)) {
+    if (this.stage.allowRunModifiers !== false && shouldOfferRunModifier(s.wave)) {
       s.runModifierOffer = createRunModifierOffer(this.random, s.activeRunModifiers);
       if (s.runModifierOffer.length > 0) {
         s.waveMessage = "CHOOSE YOUR POWER";
@@ -1393,12 +1423,18 @@ reset() {
             this.state.stageWaveTarget,
             this.random,
           ));
-    const { hp, speed } = getEnemySpawnStats(
+    let { hp, speed } = getEnemySpawnStats(
       this.stage.gameplay,
       kind,
       w,
       this.state.stageWaveTarget,
     );
+    if (isBoss && this.stage.bossTrial) {
+      const traits = this.stage.bossTrial.variant?.traits ?? {};
+      hp *= Math.max(0.5, traits.bossHealthMultiplier ?? 1);
+      speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
+    }
+
     s.zombies.push({
       id: this.nextId++,
       dist: startDist ?? -this.random() * 2,
@@ -1444,7 +1480,20 @@ reset() {
     const s = this.state;
     if (z.dead) return;
 
-    const incomingDamage = z.kind === 5 ? dmg * 0.68 : dmg;
+    const guardianAura = this.stage.bossTrial && !z.boss && this.stage.bossTrial.variant?.traits.bossAuraDamageReduction
+      ? s.zombies.some(
+          (other) =>
+            other.boss &&
+            other.kind === 5 &&
+            !other.dead &&
+            other.id !== z.id &&
+            Math.hypot(other.x - z.x, other.z - z.z) <= 4.2,
+        )
+        ? Math.max(0, 1 - this.stage.bossTrial.variant.traits.bossAuraDamageReduction)
+        : 1
+      : 1;
+    const incomingDamage =
+      (z.kind === 5 ? dmg * 0.68 : dmg) * guardianAura;
     const result = resolveDamage(
       z.hp,
       z.maxHp,
@@ -1543,10 +1592,16 @@ reset() {
     profile.recordZombieKill(z.kind);
 
     if (z.kind === 3) {
-      for (let i = 0; i < 2; i++) {
+      const trialTraits = this.stage.bossTrial?.variant?.traits;
+      const splitCount = z.boss && trialTraits?.bossSplitCount
+        ? Math.max(2, Math.floor(trialTraits.bossSplitCount))
+        : 2;
+      for (let i = 0; i < splitCount; i++) {
         this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12), false);
         const child = s.zombies[s.zombies.length - 1]!;
-        child.hp *= 0.45;
+        child.hp *= z.boss && trialTraits?.bossSplitHpMultiplier
+          ? Math.max(0.2, trialTraits.bossSplitHpMultiplier)
+          : 0.45;
         child.maxHp = child.hp;
       }
     }
@@ -1713,7 +1768,13 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (z.healFlash) z.healFlash = Math.max(0, z.healFlash - dt * 4);
 
       if (
-        shouldBossEnrage(z.boss, z.hp, z.maxHp, z.bossEnraged)
+        shouldBossEnrage(
+          z.boss,
+          z.hp,
+          z.maxHp,
+          z.bossEnraged,
+          this.stage.bossTrial?.variant?.traits.bossEnrageHpRatio,
+        )
       ) {
         z.bossEnraged = true;
         s.bossEnragedCount += 1;
@@ -1727,30 +1788,30 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
 
       if (z.kind === 6) {
+        const bossHeal = z.boss && this.stage.bossTrial ? this.stage.bossTrial.variant?.traits : undefined;
+        const healInterval = 0.9 * (bossHeal?.bossHealIntervalMultiplier ?? 1);
+        const healAmount = 0.08 * (bossHeal?.bossHealAmountMultiplier ?? 1);
+        const targetCount = Math.max(1, Math.floor(bossHeal?.bossHealTargetCount ?? 1));
         z.healTimer = (z.healTimer ?? 0) + dt;
-        if (z.healTimer >= 0.9) {
+        if (z.healTimer >= healInterval) {
           z.healTimer = 0;
-          let target: Zombie | null = null;
-          let missing = 0;
-          for (const other of s.zombies) {
-            if (other.dead || other.id === z.id) continue;
-            if (Math.hypot(other.x - z.x, other.z - z.z) > 4.6) continue;
-            const otherMissing = other.maxHp - other.hp;
-            if (otherMissing > missing) {
-              target = other;
-              missing = otherMissing;
+          const targets = s.zombies
+            .filter((other) => !other.dead && other.id !== z.id && Math.hypot(other.x - z.x, other.z - z.z) <= 4.6)
+            .sort((a, b) => (b.maxHp - b.hp) - (a.maxHp - a.hp))
+            .slice(0, targetCount);
+          for (const target of targets) {
+            const missing = target.maxHp - target.hp;
+            if (missing > 0) {
+              target.hp = Math.min(target.maxHp, target.hp + target.maxHp * healAmount);
+              target.healFlash = 1;
             }
-          }
-          if (target && missing > 0) {
-            target.hp = Math.min(target.maxHp, target.hp + target.maxHp * 0.08);
-            target.healFlash = 1;
           }
         }
       }
 
       const lifecycle = stepLivingEnemy({
         dist: z.dist,
-        speed: z.speed * bossSpeedMultiplier(z.boss, z.bossEnraged),
+        speed: z.speed * bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier),
         slow: z.slow,
         burn: z.burn,
         burnTime: z.burnTime,
@@ -1779,8 +1840,15 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         z.dead = true;
         z.fade = 1.4;
         const baseHit = resolveBaseHit(s.baseHp, z.kind);
-        s.waveDamageTaken += s.baseHp - baseHit.nextHealth;
-        s.baseHp = baseHit.nextHealth;
+        const rawDamage = s.baseHp - baseHit.nextHealth;
+        const bossBaseDamageMultiplier =
+          z.boss && this.stage.bossTrial
+            ? Math.max(1, this.stage.bossTrial.variant?.traits.bossBaseDamageMultiplier ?? 1)
+            : 1;
+        const adjustedDamage = Math.ceil(rawDamage * bossBaseDamageMultiplier);
+        const nextHealth = Math.max(0, s.baseHp - adjustedDamage);
+        s.waveDamageTaken += adjustedDamage;
+        s.baseHp = nextHealth;
         s.flash = 1;
         if (z.kind === 4) {
           s.screenShake = Math.min(1.8, s.screenShake + 0.9);
@@ -1788,9 +1856,37 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         } else {
           sfx("baseHit");
         }
-        if (baseHit.gameOver) {
+        if (nextHealth <= 0) {
           s.gameOver = true;
-          if (this.stage.endless) {
+          if (this.stage.bossTrial) {
+            const trialScore = Math.max(
+              0,
+              Math.round(
+                s.wave * 120 +
+                  s.kills * 10 +
+                  s.bossesDefeated * 900 +
+                  s.baseHp * 30 +
+                  s.maxKillStreak * 6 +
+                  (s.bossesDefeated > 0 ? 1000 : 0),
+              ),
+            );
+            s.bossTrialScore = trialScore;
+            profile.completeBossTrial(
+              Math.max(1, s.wave),
+              s.kills,
+              trialScore,
+              this.stage.bossTrialKey ?? new Date().toISOString().slice(0, 10),
+              false,
+            );
+            track("boss_trial_completed", {
+              trial: this.stage.bossTrial.id,
+              weekKey: this.stage.bossTrialKey ?? "",
+              score: trialScore,
+              cleared: false,
+            });
+          } else if (this.stage.endless) {
+            profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
+
             profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
               challengeId: this.stage.challenge?.id,
               challengePeriod: this.stage.challenge?.period,
@@ -1831,6 +1927,33 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         uniqueTowerKinds: s.uniqueTowerKinds.length,
       }).stars;
       const finalPerfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
+      if (this.stage.bossTrial) {
+        const trialScore = Math.max(
+          0,
+          Math.round(
+            s.wave * 120 +
+              s.kills * 10 +
+              s.bossesDefeated * 900 +
+              s.baseHp * 30 +
+              s.maxKillStreak * 6 +
+              1000,
+          ),
+        );
+        s.bossTrialScore = trialScore;
+        profile.completeBossTrial(
+          Math.max(1, s.wave),
+          s.kills,
+          trialScore,
+          this.stage.bossTrialKey ?? new Date().toISOString().slice(0, 10),
+          true,
+        );
+        track("boss_trial_completed", {
+          trial: this.stage.bossTrial.id,
+          weekKey: this.stage.bossTrialKey ?? "",
+          score: trialScore,
+          cleared: true,
+        });
+      } else
       profile.completeRun(Math.max(1, s.wave), s.kills, {
         stageId: this.stage.id,
         stageCompleted: true,
