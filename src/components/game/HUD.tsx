@@ -41,7 +41,7 @@ import {
 import type { Selection } from "./Scene";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
 import { sfx } from "@/game/audio";
-import { towerCounterplayLabels } from "@/game/towerCounterplay";
+import { bestTowerCounterplayMatch, towerCounterplayLabels } from "@/game/towerCounterplay";
 import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
@@ -614,6 +614,9 @@ export function HUD({
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
                 const canBuild = unlocked && state.gold >= info.cost;
+                const matchup = waveThreatPreview
+                  ? bestTowerCounterplayMatch(k, waveThreatPreview.enemyKinds)
+                  : null;
                 const unlockAffordable =
                   !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
@@ -641,6 +644,29 @@ export function HUD({
                     <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
                       {counterplaySummary(k)}
                     </span>
+                    {matchup && (
+                      <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
+                        GOOD MATCH · {waveThreatPreview?.threats.find((threat) =>
+                          threat.toLowerCase().startsWith(
+                            matchup.enemyKind === 0
+                              ? "walker"
+                              : matchup.enemyKind === 1
+                                ? "runner"
+                                : matchup.enemyKind === 2
+                                  ? "brute"
+                                  : matchup.enemyKind === 3
+                                    ? "splitter"
+                                    : matchup.enemyKind === 4
+                                      ? "bomber"
+                                      : matchup.enemyKind === 5
+                                        ? "guardian"
+                                        : matchup.enemyKind === 6
+                                          ? "healer"
+                                          : "swarm",
+                          ),
+                        ) ?? "THREAT"} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                      </span>
+                    )}
                     <button
                       onClick={() => {
                         if (game.build(spot, k)) onSelect(null);
