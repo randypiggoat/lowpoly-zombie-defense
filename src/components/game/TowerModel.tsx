@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import type { Tower } from "@/game/engine";
 
@@ -336,7 +336,7 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
     </>
   );
 
-  let model: React.ReactNode;
+  let model: ReactNode;
   switch (tower.kind) {
     case "shotgunner":
       model = renderShotgunner();
