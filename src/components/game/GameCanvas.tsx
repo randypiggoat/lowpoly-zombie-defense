@@ -243,7 +243,6 @@ export function GameCanvas() {
       ? player.weeklyChallengeBestScore
       : player.endlessBestScore;
 
-  const todayKey = dateKey();
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
   const weeklyChallenge = getWeeklyChallenge(weekKey);
