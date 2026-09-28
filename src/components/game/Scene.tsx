@@ -832,45 +832,93 @@ function DamagePopup({
     gold: number;
   };
 }) {
+  const group = useRef<THREE.Group>(null);
+  const coin = useRef<THREE.Mesh>(null);
   const text = useRef<THREE.Object3D & {
     text?: string;
     material?: THREE.Material & { opacity?: number; transparent?: boolean };
   }>(null);
 
-  useFrame(() => {
-    const object = text.current;
-    if (!object) return;
+  useFrame(({ clock }) => {
+    const root = group.current;
+    if (!root) return;
 
-    object.position.set(popup.x, popup.y, popup.z);
+    const life = popup.life;
+    const intro = Math.min(1, life / 0.09);
+    const fade = Math.max(0, 1 - life / 0.9);
+    const bob = Math.sin(clock.elapsedTime * 12 + popup.id) * 0.035;
 
-    const age = popup.life / 0.9;
-    const fade = Math.max(0, 1 - age);
+    root.position.set(
+      popup.x,
+      popup.y + Math.min(0.75, life * 1.45) + bob,
+      popup.z,
+    );
 
-    object.scale.setScalar(popup.gold > 0 ? 1.55 : popup.crit ? 1.35 : 1);
-    object.text = popup.gold > 0 ? `+${popup.gold}` : `${popup.value}`;
-
-    const material = object.material;
-    if (material) {
-      material.transparent = true;
-      material.opacity = fade;
+    if (popup.gold > 0) {
+      const coinScale = life < 0.12 ? 0.55 + intro * 0.7 : 1.05 - Math.min(0.2, life * 0.16);
+      if (coin.current) {
+        coin.current.rotation.y += 0.18;
+        coin.current.rotation.z = Math.sin(clock.elapsedTime * 8 + popup.id) * 0.08;
+        coin.current.scale.setScalar(coinScale);
+      }
+      if (text.current) {
+        text.current.position.set(0, 0.02, 0.02);
+        text.current.scale.setScalar(0.82 + intro * 0.28);
+        text.current.text = `+${popup.gold} SCRAP`;
+        const material = text.current.material;
+        if (material) {
+          material.transparent = true;
+          material.opacity = fade;
+        }
+      }
+    } else if (text.current) {
+      text.current.scale.setScalar(popup.crit ? 1.35 : 1);
+      text.current.text = `${popup.value}`;
+      const material = text.current.material;
+      if (material) {
+        material.transparent = true;
+        material.opacity = fade;
+      }
     }
   });
 
   return (
-    <Text
-      ref={(el) => {
-        text.current = el as typeof text.current;
-      }}
-      fontSize={0.42}
-      color={popup.gold > 0 ? "#ffd86b" : popup.crit ? "#fff3c4" : "#ffffff"}
-      outlineColor="#111111"
-      outlineWidth={0.045}
-      anchorX="center"
-      anchorY="middle"
-      depthOffset={-2}
-    >
-      0
-    </Text>
+    <group ref={group}>
+      {popup.gold > 0 && (
+        <>
+          <mesh ref={coin} position={[0, 0.04, 0]} castShadow>
+            <cylinderGeometry args={[0.22, 0.22, 0.09, 12]} />
+            <meshStandardMaterial
+              color="#e9b44c"
+              emissive="#e9b44c"
+              emissiveIntensity={0.5}
+              metalness={0.3}
+              roughness={0.38}
+              flatShading
+            />
+          </mesh>
+          <mesh position={[0, 0.095, 0]} rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[0.08, 0.13, 10]} />
+            <meshBasicMaterial color="#fff0ae" transparent opacity={0.75} />
+          </mesh>
+        </>
+      )}
+      <Text
+        ref={(el) => {
+          text.current = el as typeof text.current;
+        }}
+        position={popup.gold > 0 ? [0, -0.32, 0] : [0, 0, 0]}
+        fontSize={popup.gold > 0 ? 0.25 : 0.42}
+        color={popup.gold > 0 ? "#ffd86b" : popup.crit ? "#fff3c4" : "#ffffff"}
+        outlineColor="#111111"
+        outlineWidth={0.045}
+        anchorX="center"
+        anchorY="middle"
+        depthOffset={-2}
+      >
+        0
+      </Text>
+    </group>
   );
 }
 function Bullets() {
