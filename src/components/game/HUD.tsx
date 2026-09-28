@@ -242,6 +242,7 @@ export function HUD({
   selection,
   onSelect,
   onPause,
+  rewardedAvailable = false,
   showMetaSections = false,
   showGameOverOverlay = true,
 }: {
@@ -249,6 +250,7 @@ export function HUD({
   selection: Selection;
   onSelect: (s: Selection) => void;
   onPause?: () => void;
+  rewardedAvailable?: boolean;
   showMetaSections?: boolean;
   showGameOverOverlay?: boolean;
 }) {
@@ -307,6 +309,19 @@ export function HUD({
                 </button>
               ))}
             </div>
+            {!state.runModifierRerollUsed && rewardedAvailable && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const { showRewarded } = await import("@/game/monetization");
+                  const earned = await showRewarded("modifier-reroll");
+                  if (earned) game.rerollRunModifierOffer();
+                }}
+                className="mt-2 min-h-10 w-full rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 font-display text-sm tracking-wide text-accent transition active:scale-[0.98]"
+              >
+                REROLL ONCE · WATCH AD
+              </button>
+            )}
           </div>
         </div>
       )}
