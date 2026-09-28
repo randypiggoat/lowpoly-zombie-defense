@@ -834,6 +834,7 @@ function DamagePopup({
 }) {
   const group = useRef<THREE.Group>(null);
   const coin = useRef<THREE.Mesh>(null);
+  const impact = useRef<THREE.Mesh>(null);
   const text = useRef<THREE.Object3D & {
     text?: string;
     material?: THREE.Material & { opacity?: number; transparent?: boolean };
@@ -853,6 +854,15 @@ function DamagePopup({
       popup.y + Math.min(0.75, life * 1.45) + bob,
       popup.z,
     );
+
+    if (impact.current) {
+      const impactAge = Math.min(1, life / 0.18);
+      impact.current.scale.setScalar(0.55 + impactAge * 0.9);
+      const impactMaterial = impact.current.material as THREE.MeshBasicMaterial;
+      impactMaterial.opacity = Math.max(0, 1 - impactAge);
+      impactMaterial.transparent = true;
+      impact.current.visible = popup.gold <= 0;
+    }
 
     if (popup.gold > 0) {
       const coinScale = life < 0.12 ? 0.55 + intro * 0.7 : 1.05 - Math.min(0.2, life * 0.16);
@@ -884,6 +894,17 @@ function DamagePopup({
 
   return (
     <group ref={group}>
+      {popup.gold <= 0 && (
+        <mesh ref={impact} rotation-x={-Math.PI / 2} position={[0, -0.05, 0]}>
+          <ringGeometry args={[0.12, 0.18, 8]} />
+          <meshBasicMaterial
+            color={popup.crit ? "#fff3c4" : "#ffffff"}
+            transparent
+            opacity={0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
       {popup.gold > 0 && (
         <>
           <mesh ref={coin} position={[0, 0.04, 0]} castShadow>
@@ -923,6 +944,7 @@ function DamagePopup({
 }
 function Bullets() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const trailMeshes = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(() => {
     const list = game.state.bullets;
     for (let i = 0; i < MAX_BULLETS; i++) {
@@ -937,6 +959,19 @@ function Bullets() {
       m.position.set(b.x, b.y, b.z);
       m.lookAt(b.tx, b.y, b.tz);
       const c = TOWER_INFO[b.kind].accent;
+      const distance = Math.max(0.1, Math.hypot(b.tx - b.x, b.tz - b.z));
+      const trail = trailMeshes.current[i];
+      if (trail) {
+        trail.visible = true;
+        trail.position.set(b.x, b.y, b.z);
+        trail.lookAt(b.tx, b.y, b.tz);
+        trail.scale.set(
+          0.45,
+          0.45,
+          Math.min(1.4, 0.22 + distance * 0.08),
+        );
+        (trail.material as THREE.MeshBasicMaterial).color.set(c);
+      }
       (m.material as THREE.MeshBasicMaterial).color.set(b.crit ? "#fff3c4" : c);
       const critScale = b.crit ? 1.5 : 1;
       if (b.kind === "shotgunner")
@@ -954,10 +989,19 @@ function Bullets() {
   return (
     <group>
       {Array.from({ length: MAX_BULLETS }, (_, i) => (
-        <mesh key={i} ref={(el) => void (meshes.current[i] = el)} visible={false}>
-          <icosahedronGeometry args={[0.14, 0]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+        <group key={i}>
+          <mesh ref={(el) => void (meshes.current[i] = el)} visible={false}>
+            <icosahedronGeometry args={[0.14, 0]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh
+            ref={(el) => void (trailMeshes.current[i] = el)}
+            visible={false}
+          >
+            <cylinderGeometry args={[0.045, 0.12, 0.7, 5]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.22} />
+          </mesh>
+        </group>
       ))}
     </group>
   );
