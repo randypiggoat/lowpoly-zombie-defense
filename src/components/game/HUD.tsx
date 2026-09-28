@@ -46,6 +46,7 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
+import { enemyThreatLabel } from "@/game/enemyPresentation";
 import { getBossHealthSummary } from "@/game/bossHealth";
 
 function useProfileSnapshot() {
@@ -646,25 +647,7 @@ export function HUD({
                     </span>
                     {matchup && (
                       <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                        GOOD MATCH · {waveThreatPreview?.threats.find((threat) =>
-                          threat.toLowerCase().startsWith(
-                            matchup.enemyKind === 0
-                              ? "walker"
-                              : matchup.enemyKind === 1
-                                ? "runner"
-                                : matchup.enemyKind === 2
-                                  ? "brute"
-                                  : matchup.enemyKind === 3
-                                    ? "splitter"
-                                    : matchup.enemyKind === 4
-                                      ? "bomber"
-                                      : matchup.enemyKind === 5
-                                        ? "guardian"
-                                        : matchup.enemyKind === 6
-                                          ? "healer"
-                                          : "swarm",
-                          ),
-                        ) ?? "THREAT"} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                        GOOD MATCH · enemyThreatLabel(matchup.enemyKind) · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
                       </span>
                     )}
                     <button
