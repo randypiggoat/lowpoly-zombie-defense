@@ -46,6 +46,7 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
+import { getBossHealthSummary } from "@/game/bossHealth";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -275,6 +276,7 @@ export function HUD({
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
   const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
+  const bossHealth = getBossHealthSummary(state.zombies);
   const firstSessionTip = getFirstSessionTip(
     player.gamesPlayed,
     state.wave,
@@ -393,6 +395,25 @@ export function HUD({
             </p>
           </div>
         )}
+
+      {bossHealth && !state.gameOver && (
+        <div className="pointer-events-none absolute left-1/2 top-[30%] w-[min(88vw,24rem)] -translate-x-1/2 rounded-xl border border-accent/30 bg-black/60 px-3 py-2 text-center shadow-panel backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-display text-xs tracking-[0.16em] text-accent">
+              {bossHealth.count > 1 ? `BOSS x${bossHealth.count}` : "BOSS"}
+            </p>
+            <p className="text-[9px] tabular-nums text-panel-muted">
+              {Math.ceil(bossHealth.currentHp).toLocaleString()} / {Math.ceil(bossHealth.maxHp).toLocaleString()}
+            </p>
+          </div>
+          <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-black/45">
+            <div
+              className="h-full rounded-full bg-accent transition-[width]"
+              style={{ width: `${bossHealth.ratio * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <div className="flex items-start gap-1.5">
