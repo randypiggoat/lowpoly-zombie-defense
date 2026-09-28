@@ -28,7 +28,7 @@ import { profile } from "./profile";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
-import { killStreakGoldMultiplier } from "./combatRewards";
+import { isKillStreakMilestone, killStreakGoldMultiplier } from "./combatRewards";
 import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
@@ -1388,6 +1388,12 @@ reset() {
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
     const earnedGold = Math.round(result.killGold * runGoldMultiplier * streakGoldMultiplier);
     s.gold += earnedGold;
+    if (isKillStreakMilestone(s.killStreak)) {
+      track("kill_streak_milestone", {
+        streak: s.killStreak,
+        goldMultiplier: streakGoldMultiplier,
+      });
+    }
     const feedback = getCombatFeedback({
       killed: true,
       crit: result.crit,
