@@ -185,10 +185,6 @@ export function GameCanvas() {
     const progress = player.achievements[achievement.id];
     return Boolean(progress?.completed && !progress.claimed);
   }).length;
-  const readyEventCount = seasonalEvent.milestones.filter((milestone) => {
-    const progress = Math.min(milestone.target, player.seasonalEventProgress);
-    return progress >= milestone.target && !player.seasonalEventClaims.includes(milestone.id);
-  }).length;
 
   const resetGameplayState = () => {
     profile.clearReward();
@@ -310,6 +306,10 @@ export function GameCanvas() {
   const seasonalEvent = getSeasonalEvent();
   const seasonalCycleKey = getSeasonalEventCycleKey();
   const seasonalEventEnd = getSeasonalEventEnd();
+  const readyEventCount = seasonalEvent.milestones.filter((milestone) => {
+    const progress = Math.min(milestone.target, player.seasonalEventProgress);
+    return progress >= milestone.target && !player.seasonalEventClaims.includes(milestone.id);
+  }).length;
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
