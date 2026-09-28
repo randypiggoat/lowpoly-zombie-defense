@@ -44,7 +44,6 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const secondary = bodyColor ? "#d8d2c5" : "#b5b0a3";
   const dark = "#384047";
   const deep = "#252c31";
-  const height = 0.92 + Math.min(level, 8) * 0.08;
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -379,7 +378,6 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <ringGeometry args={[0.72, 0.84, 8]} />
         <meshBasicMaterial color={accent} transparent opacity={0.24} side={THREE.DoubleSide} />
       </mesh>
-      <Core color={tower.kind === "tesla" || tower.kind === "laser" || tower.kind === "freezer" ? accent : dark} size={0.01} />
     </group>
   );
 }
