@@ -210,6 +210,8 @@ export type PlayerProfile = {
   dailyChallengeBestScore: number;
   weeklyChallengeKey: string | null;
   weeklyChallengeBestScore: number;
+  bossTrialWeekKey: string | null;
+  bossTrialBestScore: number;
   equippedTowerCosmetics: Record<string, string>;
   seasonalEventCycleKey: string;
   seasonalEventProgress: number;
@@ -328,6 +330,8 @@ function blank(): PlayerProfile {
     dailyChallengeBestScore: 0,
     weeklyChallengeKey: null,
     weeklyChallengeBestScore: 0,
+    bossTrialWeekKey: null,
+    bossTrialBestScore: 0,
     equippedTowerCosmetics: {},
     seasonalEventCycleKey: getSeasonalEventCycleKey(),
     seasonalEventProgress: 0,
@@ -556,6 +560,8 @@ function load(): PlayerProfile {
       dailyChallengeBestScore: Math.max(0, Number(parsed.dailyChallengeBestScore) || 0),
       weeklyChallengeKey: normalizeDate(parsed.weeklyChallengeKey),
       weeklyChallengeBestScore: Math.max(0, Number(parsed.weeklyChallengeBestScore) || 0),
+      bossTrialWeekKey: normalizeDate(parsed.bossTrialWeekKey),
+      bossTrialBestScore: Math.max(0, Number(parsed.bossTrialBestScore) || 0),
       equippedTowerCosmetics: isRecord(parsed.equippedTowerCosmetics)
         ? Object.fromEntries(
             Object.entries(parsed.equippedTowerCosmetics).filter(
@@ -776,6 +782,59 @@ class ProfileStore {
     this.syncAchievementProgress();
     this.save();
     return { xp, coins, ...result };
+  }
+
+  completeBossTrial(
+    wave: number,
+    kills: number,
+    score: number,
+    weekKey: string,
+    completed: boolean,
+  ): RunReward & { score: number; bestScore: number } {
+    this.refreshRetentionState();
+    const p = this.profile;
+    if (p.bossTrialWeekKey !== weekKey) {
+      p.bossTrialWeekKey = weekKey;
+      p.bossTrialBestScore = 0;
+    }
+
+    const normalizedWave = Math.max(1, Math.floor(wave));
+    const normalizedScore = Math.max(0, Math.floor(score));
+    const newRecord = normalizedScore > p.bossTrialBestScore;
+    const baseXp = Math.round((45 + normalizedWave * 20 + Math.floor(kills / 2)) * (completed ? 1.15 : 0.8));
+    const baseCoins = Math.round((55 + normalizedWave * 8 + Math.floor(kills / 3)) * (completed ? 1.2 : 0.8));
+    const gems = completed ? 4 : Math.floor(normalizedWave / 4);
+
+    p.coins += baseCoins;
+    p.gems += gems;
+    p.gamesPlayed += 1;
+    if (newRecord) p.bossTrialBestScore = normalizedScore;
+
+    const result = this.awardXp(baseXp);
+    this.updateDailyMission("gameCompleted", 1);
+    this.syncAchievementProgress();
+
+    const reward: RunReward & { score: number; bestScore: number } = {
+      wave: normalizedWave,
+      kills: Math.max(0, kills),
+      xp: baseXp,
+      coins: baseCoins,
+      gems: gems + result.levelsGained,
+      leveledTo: result.leveledTo,
+      newRecord,
+      stageId: null,
+      stageCompleted: completed,
+      starsEarned: 0,
+      firstCompletionBonusApplied: false,
+      bestStars: 0,
+      previousBestWave: 0,
+      previousBestStars: 0,
+      score: normalizedScore,
+      bestScore: p.bossTrialBestScore,
+    };
+    this.lastReward = reward;
+    this.save();
+    return reward;
   }
 
   completeEndlessRun(
