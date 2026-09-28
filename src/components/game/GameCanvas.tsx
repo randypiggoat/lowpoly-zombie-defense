@@ -18,7 +18,13 @@ import {
   stageUnlockRequirementText,
   type PrimaryScreen,
 } from "@/game/navigation";
-import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, dateKey, profile } from "@/game/profile";
+import {
+  ACHIEVEMENT_DEFS,
+  DAILY_LOGIN_REWARDS,
+  DAILY_MISSION_DEFS,
+  dateKey,
+  profile,
+} from "@/game/profile";
 import { TOWER_COSMETICS } from "@/game/collection";
 import {
   createEndlessStage,
@@ -173,6 +179,10 @@ export function GameCanvas() {
     stages[stages.length - 1]!;
   const isFirstRun = player.gamesPlayed === 0;
   const todayKey = dateKey();
+  const dailyLoginReward =
+    DAILY_LOGIN_REWARDS.find((entry) => entry.day === player.loginCycleDay) ??
+    DAILY_LOGIN_REWARDS[0]!;
+  const dailyLoginAvailable = player.lastLoginClaimDate !== todayKey;
   const dailyBonusAvailable =
     !player.adsRemoved && rewardedAvailable && profile.canClaimDailyRewardedBonus;
   const nextStageId = getNextStageId(activeStageId);
@@ -392,6 +402,38 @@ export function GameCanvas() {
                       ? "Replay your strongest unlocked stage and chase more stars."
                       : "Pick up where you left off and push the next stage."}
                 </p>
+              </div>
+
+              <div className="rounded-xl border border-accent/20 bg-black/25 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-display text-sm tracking-wide text-panel-foreground">
+                      DAILY SUPPLY DROP · DAY {player.loginCycleDay}/7
+                    </p>
+                    <p className="text-[10px] text-panel-muted">
+                      {dailyLoginReward.title} · {dailyLoginReward.reward.label}
+                    </p>
+                  </div>
+                  {dailyLoginAvailable ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!profile.claimDailyLoginReward()) return;
+                        track("daily_login_claimed", {
+                          day: dailyLoginReward.day,
+                          reward: dailyLoginReward.reward.label,
+                        });
+                      }}
+                      className="shrink-0 rounded-xl bg-accent px-3 py-2 font-display text-[11px] tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                    >
+                      CLAIM
+                    </button>
+                  ) : (
+                    <span className="shrink-0 rounded-xl bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-panel-muted">
+                      CLAIMED
+                    </span>
+                  )}
+                </div>
               </div>
 
               {player.adsRemoved ? null : (
