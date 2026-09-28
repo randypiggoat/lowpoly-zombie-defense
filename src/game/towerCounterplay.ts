@@ -51,3 +51,15 @@ export function towerEnemyDamageMultiplier(
 export function towerCounterplayLabels(towerKind: TowerKind) {
   return [...(TOWER_COUNTERPLAY[towerKind] ?? [])].map((entry) => entry.label);
 }
+
+export function bestTowerCounterplayMatch(
+  towerKind: TowerKind,
+  enemyKinds: readonly StageEnemyKind[],
+) {
+  const rules = TOWER_COUNTERPLAY[towerKind] ?? [];
+  return (
+    rules
+      .filter((rule) => enemyKinds.includes(rule.enemyKind))
+      .sort((a, b) => b.damageMultiplier - a.damageMultiplier)[0] ?? null
+  );
+}
