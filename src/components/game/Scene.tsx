@@ -861,7 +861,7 @@ function DamagePopup({
       const impactMaterial = impact.current.material as THREE.MeshBasicMaterial;
       impactMaterial.opacity = Math.max(0, 1 - impactAge);
       impactMaterial.transparent = true;
-      impact.current.visible = popup.gold <= 0;
+      impact.current.visible = popup.gold <= 0 && life < 0.2;
     }
 
     if (popup.gold > 0) {
@@ -953,6 +953,8 @@ function Bullets() {
       const b = list[i];
       if (!b) {
         m.visible = false;
+        const trail = trailMeshes.current[i];
+        if (trail) trail.visible = false;
         continue;
       }
       m.visible = true;
@@ -997,6 +999,7 @@ function Bullets() {
           <mesh
             ref={(el) => void (trailMeshes.current[i] = el)}
             visible={false}
+            rotation-x={Math.PI / 2}
           >
             <cylinderGeometry args={[0.045, 0.12, 0.7, 5]} />
             <meshBasicMaterial color="#ffffff" transparent opacity={0.22} />
