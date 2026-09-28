@@ -26,6 +26,15 @@ const MAX_GIBS = 160;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
 
+const BOSS_SIGNATURE_COLORS: Record<number, string> = {
+  2: "#ef7d43",
+  3: "#f0c75e",
+  4: "#ff8b45",
+  5: "#70d6e3",
+  6: "#d98adf",
+  7: "#9ce06d",
+};
+
 const ZOMBIE_LOOKS = [
   { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
   { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
@@ -380,11 +389,25 @@ function Zombies() {
         const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
         const bossCrown = g.getObjectByName("boss-crown") as THREE.Group | undefined;
         const bossCore = g.getObjectByName("boss-core") as THREE.Mesh | undefined;
+        const bossSignature = g.getObjectByName("boss-signature") as THREE.Group | undefined;
+        const bruteMark = g.getObjectByName("boss-mark-brute") as THREE.Group | undefined;
+        const splitterMark = g.getObjectByName("boss-mark-splitter") as THREE.Group | undefined;
+        const bomberMark = g.getObjectByName("boss-mark-bomber") as THREE.Group | undefined;
+        const guardianMark = g.getObjectByName("boss-mark-guardian") as THREE.Group | undefined;
+        const healerMark = g.getObjectByName("boss-mark-healer") as THREE.Group | undefined;
+        const swarmMark = g.getObjectByName("boss-mark-swarm") as THREE.Group | undefined;
         const now = performance.now();
         if (bossChanged) {
           if (bossAura) bossAura.visible = z.boss;
           if (bossCrown) bossCrown.visible = z.boss;
           if (bossCore) bossCore.visible = z.boss;
+          if (bossSignature) bossSignature.visible = z.boss;
+          if (bruteMark) bruteMark.visible = z.boss && z.kind === 2;
+          if (splitterMark) splitterMark.visible = z.boss && z.kind === 3;
+          if (bomberMark) bomberMark.visible = z.boss && z.kind === 4;
+          if (guardianMark) guardianMark.visible = z.boss && z.kind === 5;
+          if (healerMark) healerMark.visible = z.boss && z.kind === 6;
+          if (swarmMark) swarmMark.visible = z.boss && z.kind === 7;
           lastBoss.current[i] = z.boss;
         }
         if (z.boss) {
@@ -397,11 +420,31 @@ function Zombies() {
             bossCrown.rotation.y += z.bossEnraged ? 0.026 : 0.012;
             bossCrown.position.y = 1.95 + Math.sin(now * 0.004 + i) * 0.025;
           }
+          if (bossSignature) {
+            bossSignature.rotation.y += 0.01 + z.kind * 0.0015;
+            bossSignature.scale.setScalar(1 + Math.sin(now * 0.004 + i) * 0.03);
+          }
+          if (bruteMark) bruteMark.rotation.z = Math.sin(now * 0.004 + i) * 0.16;
+          if (splitterMark) splitterMark.rotation.y += 0.035;
+          if (bomberMark) {
+            bomberMark.rotation.z += 0.026;
+            bomberMark.scale.setScalar(1 + Math.sin(now * 0.009 + i) * 0.09);
+          }
+          if (guardianMark) guardianMark.rotation.y += 0.022;
+          if (healerMark) {
+            healerMark.rotation.z += 0.018;
+            healerMark.scale.setScalar(1 + Math.sin(now * 0.006 + i) * 0.05);
+          }
+          if (swarmMark) {
+            swarmMark.rotation.y += 0.05;
+            swarmMark.rotation.x = Math.sin(now * 0.005 + i) * 0.18;
+          }
           if (bossCore) {
             const material = bossCore.material as THREE.MeshStandardMaterial;
-            const bossColor = z.bossEnraged ? "#ff6b4a" : "#e9b44c";
+            const baseBossColor = BOSS_SIGNATURE_COLORS[z.kind] ?? "#e9b44c";
+            const bossColor = z.bossEnraged ? "#ff6b4a" : baseBossColor;
             material.color.set(bossColor);
-            material.emissive.set(z.bossEnraged ? "#ff4f36" : "#e9b44c");
+            material.emissive.set(z.bossEnraged ? "#ff4f36" : baseBossColor);
             material.emissiveIntensity = z.bossEnraged ? 1.25 : 0.85;
             bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01) * 0.12 : 1);
           }
@@ -578,6 +621,64 @@ function Zombies() {
                 <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.45} flatShading />
               </mesh>
             ))}
+          </group>
+          <group name="boss-signature" visible={false}>
+            <group name="boss-mark-brute" position={[0, 1.52, 0]}>
+              <mesh position={[-0.44, 0.1, 0]} rotation-z={-0.22} castShadow>
+                <coneGeometry args={[0.2, 0.62, 5]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[2]} emissive={BOSS_SIGNATURE_COLORS[2]} emissiveIntensity={0.5} flatShading />
+              </mesh>
+              <mesh position={[0.44, 0.1, 0]} rotation-z={0.22} castShadow>
+                <coneGeometry args={[0.2, 0.62, 5]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[2]} emissive={BOSS_SIGNATURE_COLORS[2]} emissiveIntensity={0.5} flatShading />
+              </mesh>
+            </group>
+            <group name="boss-mark-splitter" position={[0, 1.15, 0]}>
+              <mesh rotation-x={Math.PI / 2}>
+                <torusGeometry args={[0.56, 0.065, 5, 8]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[3]} emissive={BOSS_SIGNATURE_COLORS[3]} emissiveIntensity={0.9} flatShading />
+              </mesh>
+              <mesh position={[0, 0, 0.58]}>
+                <octahedronGeometry args={[0.15, 0]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[3]} emissive={BOSS_SIGNATURE_COLORS[3]} emissiveIntensity={0.7} flatShading />
+              </mesh>
+            </group>
+            <group name="boss-mark-bomber" position={[0, 1.25, -0.45]}>
+              {[0, 1, 2].map((index) => (
+                <mesh key={index} position={[Math.cos(index * Math.PI * 2 / 3) * 0.28, Math.sin(index * Math.PI * 2 / 3) * 0.28, 0]}>
+                  <dodecahedronGeometry args={[0.16, 0]} />
+                  <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[4]} emissive={BOSS_SIGNATURE_COLORS[4]} emissiveIntensity={0.55} flatShading />
+                </mesh>
+              ))}
+            </group>
+            <group name="boss-mark-guardian" position={[0, 1.05, 0]}>
+              <mesh rotation-x={Math.PI / 2}>
+                <torusGeometry args={[0.92, 0.1, 6, 12]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[5]} emissive={BOSS_SIGNATURE_COLORS[5]} emissiveIntensity={0.7} transparent opacity={0.72} flatShading />
+              </mesh>
+              <mesh position={[0, 0, 0.78]} rotation-x={Math.PI / 2}>
+                <circleGeometry args={[0.26, 6]} />
+                <meshBasicMaterial color={BOSS_SIGNATURE_COLORS[5]} transparent opacity={0.42} />
+              </mesh>
+            </group>
+            <group name="boss-mark-healer" position={[0, 1.7, 0]}>
+              <mesh rotation-z={Math.PI / 4}>
+                <boxGeometry args={[0.15, 0.8, 0.1]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[6]} emissive={BOSS_SIGNATURE_COLORS[6]} emissiveIntensity={0.65} flatShading />
+              </mesh>
+              <mesh rotation-z={-Math.PI / 4}>
+                <boxGeometry args={[0.15, 0.8, 0.1]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[6]} emissive={BOSS_SIGNATURE_COLORS[6]} emissiveIntensity={0.65} flatShading />
+              </mesh>
+            </group>
+            <group name="boss-mark-swarm" position={[0, 1.55, 0]}>
+              {[-1, 0, 1].map((x) => (
+                <mesh key={x} position={[x * 0.32, Math.abs(x) * 0.08, 0]} rotation-z={x * 0.28}>
+                  <tetrahedronGeometry args={[0.16, 0]} />
+                  <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[7]} emissive={BOSS_SIGNATURE_COLORS[7]} emissiveIntensity={0.7} flatShading />
+                </mesh>
+              ))}
+            </group>
           </group>
           <mesh name="boss-core" visible={false} position={[0, 1.94, 0.18]}>
             <icosahedronGeometry args={[0.14, 0]} />
