@@ -34,6 +34,11 @@ import {
   getWeekKey,
   type EndlessChallenge,
 } from "@/game/endless";
+import {
+  BOSS_TRIAL_ROSTER,
+  getWeeklyBossTrial,
+  type BossTrialDefinition,
+} from "@/game/bossTrials";
 import { getSeasonalEvent, getSeasonalEventCycleKey, getSeasonalEventEnd } from "@/game/liveOps";
 import { track } from "@/game/analytics";
 import { isPurchaseAvailable, purchase } from "@/game/monetization";
@@ -145,6 +150,7 @@ export function GameCanvas() {
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
   const [activeChallenge, setActiveChallenge] = useState<EndlessChallenge | null>(null);
+  const [activeBossTrial, setActiveBossTrial] = useState<BossTrialDefinition | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
@@ -298,11 +304,15 @@ export function GameCanvas() {
   }, [closeSettings, overlay, screen, state.gameOver]);
 
   const paused = screen !== "gameplay" || overlay !== null;
-  const resultLabel = state.endlessMode
-    ? "SIEGE OVER"
-    : state.stageWon
-      ? "STAGE COMPLETE"
-      : "GAME OVER";
+  const resultLabel = state.bossTrial
+    ? state.stageWon
+      ? "TRIAL CLEARED"
+      : "TRIAL FAILED"
+    : state.endlessMode
+      ? "SIEGE OVER"
+      : state.stageWon
+        ? "STAGE COMPLETE"
+        : "GAME OVER";
 
   const endlessBestDisplay = state.challengePeriod === "daily"
     ? player.dailyChallengeBestScore
@@ -313,6 +323,7 @@ export function GameCanvas() {
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
   const weeklyChallenge = getWeeklyChallenge(weekKey);
+  const weeklyBossTrial = getWeeklyBossTrial(weekKey);
   const seasonalEvent = getSeasonalEvent();
   const seasonalCycleKey = getSeasonalEventCycleKey();
   const seasonalEventEnd = getSeasonalEventEnd();
@@ -343,6 +354,7 @@ export function GameCanvas() {
             endlessMode={state.endlessMode}
             paused={paused}
             reducedMotion={player.reducedMotion}
+            bossTrial={state.bossTrial}
             towers={state.towers}
             selection={selection}
             onSelectTower={(id) => setSelection({ kind: "tower", id })}
@@ -479,6 +491,11 @@ export function GameCanvas() {
                     subtitle="Push your best wave with free, daily, and weekly challenges."
                     onClick={() => setScreen("endless-select")}
                   />
+                  <MenuTile
+                    title="Boss Trials"
+                    subtitle="One hard boss variant rotates every week."
+                    onClick={() => setScreen("boss-trial-select")}
+                  />
                 </div>
               </div>
 
@@ -580,6 +597,91 @@ export function GameCanvas() {
                     >
                       PLAY
                     </ScreenButton>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === "boss-trial-select" && (
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md">
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
+              ← BACK
+            </ScreenButton>
+            <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Weekly rotation</p>
+              <h2 className="font-display text-2xl tracking-wide">Boss Trials</h2>
+              <p className="mt-1 text-xs text-panel-muted">
+                One elite boss gets a dedicated eight-wave hard encounter each week. Every boss has its own rule set.
+              </p>
+              <div className="mt-2 rounded-xl bg-black/30 px-3 py-2">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">This week</p>
+                <p className="font-display text-lg text-accent">
+                  {weeklyBossTrial.bossName} · {weeklyBossTrial.title}
+                </p>
+                <p className="text-xs text-panel-muted">
+                  {weeklyBossTrial.variant?.name} · {weeklyBossTrial.variant?.description}
+                </p>
+                <p className="mt-1 text-[10px] text-panel-muted">
+                  Best score: {player.bossTrialWeekKey === weekKey ? player.bossTrialBestScore.toLocaleString() : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {BOSS_TRIAL_ROSTER.map((trial) => {
+                const active = trial.id === weeklyBossTrial.id;
+                return (
+                  <div
+                    key={trial.id}
+                    className={
+                      "rounded-2xl border bg-panel/95 p-3 shadow-panel " +
+                      (active ? "border-accent/45" : "border-white/10 opacity-75")
+                    }
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.2em] text-accent">
+                          {active ? "ACTIVE THIS WEEK" : "WEEKLY ROTATION"}
+                        </p>
+                        <h3 className="font-display text-xl tracking-wide text-panel-foreground">
+                          {trial.bossName} · {trial.title}
+                        </h3>
+                        <p className="mt-1 text-xs text-panel-muted">{trial.description}</p>
+                      </div>
+                      <span className="rounded-full bg-black/30 px-2 py-1 text-[10px] text-panel-muted">
+                        {trial.variants.length} variants
+                      </span>
+                    </div>
+                    {active && (
+                      <>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {[
+                            trial.variant?.name ?? trial.title,
+                            "8 WAVES",
+                            "NO RANDOM POWERS",
+                            "HARD",
+                          ].map((label) => (
+                            <span key={label} className="rounded-full bg-accent/10 px-2 py-1 text-[9px] uppercase tracking-wider text-accent">
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                        <ScreenButton
+                          onClick={() => {
+                            resetGameplayState();
+                            setActiveBossTrial(weeklyBossTrial);
+                            game.startBossTrial(weeklyBossTrial, weekKey);
+                            setScreen("gameplay");
+                          }}
+                        >
+                          ENTER TRIAL
+                        </ScreenButton>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -958,9 +1060,14 @@ export function GameCanvas() {
             >
               {resultLabel}
             </h2>
-            {state.endlessMode && activeChallenge && (
+            {state.bossTrial && activeBossTrial ? (
+              <div className="mt-1 text-center">
+                <p className="text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p>
+                <p className="text-[9px] uppercase tracking-[0.18em] text-accent">Weekly Boss Trial</p>
+              </div>
+            ) : state.endlessMode && activeChallenge ? (
               <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
-            )}
+            ) : null}
             <div className="mt-3 grid grid-cols-3 gap-1.5">
               <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
                 <p className="font-display text-lg text-panel-foreground">{state.kills}</p>
@@ -984,6 +1091,18 @@ export function GameCanvas() {
                   <p className="text-right">{(lastReward && "score" in lastReward ? lastReward.score : 0).toLocaleString()}</p>
                   <p>Best Challenge Score</p>
                   <p className="text-right">{endlessBestDisplay.toLocaleString()}</p>
+                </>
+              )}
+              {state.bossTrial && (
+                <>
+                  <p>Trial Score</p>
+                  <p className="text-right">{state.bossTrialScore.toLocaleString()}</p>
+                  <p>Best This Week</p>
+                  <p className="text-right">
+                    {(player.bossTrialWeekKey === weekKey ? player.bossTrialBestScore : 0).toLocaleString()}
+                  </p>
+                  <p>Boss Phases Triggered</p>
+                  <p className="text-right">{state.bossEnragedCount}</p>
                 </>
               )}
 
@@ -1093,6 +1212,16 @@ export function GameCanvas() {
                 </ScreenButton>
               ) : state.stageWon ? (
                 <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton>
+              ) : state.bossTrial && activeBossTrial ? (
+                <ScreenButton
+                  onClick={() => {
+                    resetGameplayState();
+                    game.startBossTrial(activeBossTrial, weekKey);
+                    setScreen("gameplay");
+                  }}
+                >
+                  RETRY TRIAL
+                </ScreenButton>
               ) : state.endlessMode && activeChallenge ? (
                 <ScreenButton
                   onClick={() => {
@@ -1114,8 +1243,11 @@ export function GameCanvas() {
                   REPLAY STAGE
                 </ScreenButton>
               )}
-              <ScreenButton onClick={leaveToStageSelect} variant="secondary">
-                STAGE SELECT
+              <ScreenButton
+                onClick={() => state.bossTrial ? setScreen("boss-trial-select") : setScreen("stage-select")}
+                variant="secondary"
+              >
+                {state.bossTrial ? "BOSS TRIALS" : "STAGE SELECT"}
               </ScreenButton>
               <ScreenButton onClick={leaveToMainMenu} variant="secondary">
                 MAIN MENU
