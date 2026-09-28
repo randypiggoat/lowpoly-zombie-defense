@@ -65,7 +65,7 @@
   --color-panel-muted: var(--panel-muted);
   --color-accent2: var(--accent2);
   --color-danger: var(--danger);
-  --font-display: "Bebas Neue", system-ui, sans-serif;
+  --font-display: "Barlow Condensed", system-ui, sans-serif;
   --font-sans: "Barlow", system-ui, sans-serif;
   --shadow-panel: 0 8px 24px -8px oklch(0.2 0.03 250 / 0.55);
 }
@@ -539,8 +539,8 @@
   .rotwood-app h2,
   .rotwood-app h3 {
     font-family: var(--font-display);
-    font-weight: 400;
-    letter-spacing: 0.035em;
+    font-weight: 800;
+    letter-spacing: 0.045em;
     line-height: 1.04;
     text-wrap: balance;
   }
@@ -828,5 +828,16 @@
 
   .rotwood-app .rotwood-card-highlight::before {
     box-shadow: 0 0 18px oklch(0.82 0.15 80 / 0.18);
+  }
+}
+
+@layer components {
+  .rotwood-app .rotwood-display,
+  .rotwood-app h1,
+  .rotwood-app h2,
+  .rotwood-app h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.045em;
   }
 }
