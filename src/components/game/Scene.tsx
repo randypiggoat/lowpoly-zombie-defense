@@ -423,20 +423,22 @@ function Zombies() {
         const swarmMark = g.getObjectByName("boss-mark-swarm") as THREE.Group | undefined;
         const now = performance.now();
         if (bossChanged) {
-          if (bossAura) bossAura.visible = z.boss;
-          if (bossCrown) bossCrown.visible = z.boss;
-          if (bossCore) bossCore.visible = z.boss;
-          if (bossSignature) bossSignature.visible = z.boss;
           lastBoss.current[i] = z.boss;
         }
+        // These groups are pooled and can be reused for a different enemy.
+        // Set visibility every frame so a former boss cannot leak a signature
+        // onto a normal zombie when the pool slot is recycled.
+        if (bossAura) bossAura.visible = z.boss;
+        if (bossCrown) bossCrown.visible = z.boss;
+        if (bossCore) bossCore.visible = z.boss;
+        if (bossSignature) bossSignature.visible = z.boss;
+        if (bruteMark) bruteMark.visible = z.boss && z.kind === 2;
+        if (splitterMark) splitterMark.visible = z.boss && z.kind === 3;
+        if (bomberMark) bomberMark.visible = z.boss && z.kind === 4;
+        if (guardianMark) guardianMark.visible = z.boss && z.kind === 5;
+        if (healerMark) healerMark.visible = z.boss && z.kind === 6;
+        if (swarmMark) swarmMark.visible = z.boss && z.kind === 7;
         if (z.boss) {
-          if (bossSignature) bossSignature.visible = true;
-          if (bruteMark) bruteMark.visible = z.kind === 2;
-          if (splitterMark) splitterMark.visible = z.kind === 3;
-          if (bomberMark) bomberMark.visible = z.kind === 4;
-          if (guardianMark) guardianMark.visible = z.kind === 5;
-          if (healerMark) healerMark.visible = z.kind === 6;
-          if (swarmMark) swarmMark.visible = z.kind === 7;
           if (bossAura) {
             bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
             const pulse = 1 + Math.sin(now * 0.006 + i) * (z.bossEnraged ? 0.12 : 0.055);
