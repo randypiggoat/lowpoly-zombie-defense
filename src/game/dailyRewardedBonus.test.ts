@@ -8,13 +8,26 @@ describe("daily rewarded bonus", () => {
   });
 
   test("claiming the bonus records the current day and blocks another claim", () => {
-    const beforeCoins = profile.profile.coins;
-    const beforeGems = profile.profile.gems;
+    const previous = {
+      coins: profile.profile.coins,
+      gems: profile.profile.gems,
+      date: profile.profile.dailyRewardedBonusDate,
+    };
 
-    expect(profile.claimDailyRewardedBonus()).toBe(true);
-    expect(profile.profile.coins).toBe(beforeCoins + 150);
-    expect(profile.profile.gems).toBe(beforeGems + 1);
-    expect(profile.canClaimDailyRewardedBonus).toBe(false);
-    expect(profile.claimDailyRewardedBonus()).toBe(false);
+    try {
+      profile.profile.dailyRewardedBonusDate = null;
+      profile.profile.coins = 0;
+      profile.profile.gems = 0;
+
+      expect(profile.claimDailyRewardedBonus()).toBe(true);
+      expect(profile.profile.coins).toBe(150);
+      expect(profile.profile.gems).toBe(1);
+      expect(profile.canClaimDailyRewardedBonus).toBe(false);
+      expect(profile.claimDailyRewardedBonus()).toBe(false);
+    } finally {
+      profile.profile.coins = previous.coins;
+      profile.profile.gems = previous.gems;
+      profile.profile.dailyRewardedBonusDate = previous.date;
+    }
   });
 });
