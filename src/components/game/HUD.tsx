@@ -47,6 +47,8 @@ import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
 import { getBossHealthSummary } from "@/game/bossHealth";
+import { bestTowerCounterplayMatch } from "@/game/towerCounterplay";
+import { enemyThreatLabel } from "@/game/enemyPresentation";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -614,6 +616,9 @@ export function HUD({
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
                 const canBuild = unlocked && state.gold >= info.cost;
+                const matchup = waveThreatPreview
+                  ? bestTowerCounterplayMatch(k, waveThreatPreview.enemyKinds)
+                  : null;
                 const unlockAffordable =
                   !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
@@ -641,6 +646,11 @@ export function HUD({
                     <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
                       {counterplaySummary(k)}
                     </span>
+                    {matchup && (
+                      <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
+                        GOOD MATCH · enemyThreatLabel(matchup.enemyKind) · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                      </span>
+                    )}
                     <button
                       onClick={() => {
                         if (game.build(spot, k)) onSelect(null);
