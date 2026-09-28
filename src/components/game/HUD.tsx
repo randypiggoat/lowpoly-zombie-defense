@@ -44,6 +44,7 @@ import { sfx } from "@/game/audio";
 import { towerCounterplayLabels } from "@/game/towerCounterplay";
 import { track } from "@/game/analytics";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
+import { getBaseDangerLevel } from "@/game/baseDanger";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -271,6 +272,7 @@ export function HUD({
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
   const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
+  const baseDanger = getBaseDangerLevel(state.baseHp, state.baseMaxHp);
 
   useEffect(() => {
     if (!levelUpNotice) return;
@@ -293,6 +295,12 @@ export function HUD({
 
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
+      {baseDanger === "critical" && !state.gameOver && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 animate-pulse border-[10px] border-danger/25"
+        />
+      )}
       {state.runModifierOffer.length > 0 && (
         <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel">
@@ -384,7 +392,7 @@ export function HUD({
           <Stat
             label="Base"
             value={`${state.baseHp}/${state.baseMaxHp}`}
-            tone={state.baseHp <= 6 ? "danger" : undefined}
+            tone={baseDanger === "safe" ? undefined : "danger"}
           />
           <div className="pointer-events-auto ml-auto flex gap-1.5">
             <button
