@@ -291,6 +291,7 @@ export function GameCanvas() {
             selection={selection}
             onSelect={setSelection}
             onPause={() => setOverlay("pause")}
+            rewardedAvailable={rewardedAvailable}
             showMetaSections={false}
             showGameOverOverlay={false}
           />
