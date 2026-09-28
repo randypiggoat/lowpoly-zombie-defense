@@ -954,13 +954,28 @@ export function GameCanvas() {
               <div className="mt-2 space-y-2">
                 {DAILY_MISSION_DEFS.map((mission) => {
                   const progress = player.dailyMissionProgress[mission.id];
+                  const completed = Boolean(progress?.completed);
+                  const claimed = Boolean(progress?.claimed);
                   return (
                     <div key={mission.id} className="rounded-xl bg-black/25 px-3 py-2 text-sm">
-                      <p className="font-semibold text-panel-foreground">{mission.description}</p>
-                      <p className="text-xs text-panel-muted">
-                        Progress {Math.min(mission.target, progress?.progress ?? 0)}/
-                        {mission.target}
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-panel-foreground">{mission.description}</p>
+                          <p className="text-xs text-panel-muted">
+                            Progress {Math.min(mission.target, progress?.progress ?? 0)}/
+                            {mission.target} · Reward {mission.reward.label}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onPointerDown={() => sfx("uiClick")}
+                          onClick={() => profile.claimDailyMission(mission.id)}
+                          disabled={!completed || claimed}
+                          className="min-h-11 shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                        >
+                          {claimed ? "CLAIMED" : completed ? "CLAIM" : "IN PROGRESS"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -983,14 +998,29 @@ export function GameCanvas() {
               <div className="mt-2 space-y-2">
                 {ACHIEVEMENT_DEFS.map((achievement) => {
                   const progress = player.achievements[achievement.id];
+                  const completed = Boolean(progress?.completed);
+                  const claimed = Boolean(progress?.claimed);
                   return (
                     <div key={achievement.id} className="rounded-xl bg-black/25 px-3 py-2 text-sm">
-                      <p className="font-semibold text-panel-foreground">{achievement.title}</p>
-                      <p className="text-xs text-panel-muted">{achievement.description}</p>
-                      <p className="text-xs text-panel-muted">
-                        Progress {Math.min(achievement.target, progress?.progress ?? 0)}/
-                        {achievement.target}
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-panel-foreground">{achievement.title}</p>
+                          <p className="text-xs text-panel-muted">{achievement.description}</p>
+                          <p className="text-xs text-panel-muted">
+                            Progress {Math.min(achievement.target, progress?.progress ?? 0)}/
+                            {achievement.target} · Reward {achievement.reward.label}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onPointerDown={() => sfx("uiClick")}
+                          onClick={() => profile.claimAchievement(achievement.id)}
+                          disabled={!completed || claimed}
+                          className="min-h-11 shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                        >
+                          {claimed ? "CLAIMED" : completed ? "CLAIM" : "LOCKED"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
