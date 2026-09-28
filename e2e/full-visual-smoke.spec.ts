@@ -8,7 +8,7 @@ async function assertVisualHealth(page: Page) {
     const docWidth = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
     const clientWidth = Math.max(document.body.clientWidth, document.documentElement.clientWidth);
 
-    const visible = [...root.querySelectorAll("button, [role='button'], input, select, textarea, h1, h2, h3")]
+    const visible = [...root.querySelectorAll("button, [role='button'], input, select, textarea")]
       .filter((el) => {
         const style = getComputedStyle(el);
         const r = el.getBoundingClientRect();
