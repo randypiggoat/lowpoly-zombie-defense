@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  bestTowerCounterplayMatch,
   towerCounterplayLabels,
   towerEnemyDamageMultiplier,
 } from "./towerCounterplay";
@@ -21,5 +22,13 @@ describe("tower counterplay", () => {
       "Splitter +18% damage",
       "Swarm +22% damage",
     ]);
+  });
+
+  test("picks the strongest matchup against the visible threat set", () => {
+    expect(bestTowerCounterplayMatch("sniper", [2, 5])).toMatchObject({
+      enemyKind: 2,
+      damageMultiplier: 1.25,
+    });
+    expect(bestTowerCounterplayMatch("rifleman", [2, 5])).toBeNull();
   });
 });
