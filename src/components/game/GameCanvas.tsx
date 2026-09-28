@@ -268,6 +268,8 @@ export function GameCanvas() {
           onPointerMissed={() => setSelection(null)}
         >
           <Scene
+            stageId={state.stageId}
+            endlessMode={state.endlessMode}
             paused={paused}
             towers={state.towers}
             selection={selection}
