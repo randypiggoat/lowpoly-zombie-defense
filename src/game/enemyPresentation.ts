@@ -8,6 +8,26 @@ export function shouldShowEnemyHealthBar(
   return kind >= 2 && hp > 0 && maxHp > 0;
 }
 
+export type EnemyHealthBarPresentation = {
+  show: boolean;
+  widthMultiplier: number;
+};
+
+export function getEnemyHealthBarPresentation(
+  kind: StageEnemyKind,
+  hp: number,
+  maxHp: number,
+  boss = false,
+): EnemyHealthBarPresentation {
+  if (hp <= 0 || maxHp <= 0) {
+    return { show: false, widthMultiplier: 1 };
+  }
+  return {
+    show: kind >= 2 || boss,
+    widthMultiplier: boss ? 1.6 : 1,
+  };
+}
+
 export function enemyThreatLabel(kind: StageEnemyKind) {
   switch (kind) {
     case 2: return "BRUTE";

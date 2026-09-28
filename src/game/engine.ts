@@ -90,6 +90,7 @@ export type Zombie = {
   maxHp: number;
   speed: number;
   kind: StageEnemyKind; // walker, runner, brute, splitter, bomber, guardian, healer, swarm
+  boss: boolean;
   x: number;
   y: number;
   z: number;
@@ -922,6 +923,7 @@ waveMessageType: "start" | "complete" | "boss" | "";
   activeRunModifiers: RunModifierId[];
   runModifierRerollUsed: boolean;
   reviveUsed: boolean;
+  bossesRemaining: number;
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
@@ -1012,6 +1014,7 @@ waveMessageType: "",
     activeRunModifiers: [],
     runModifierRerollUsed: false,
     reviveUsed: false,
+    bossesRemaining: 0,
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
@@ -1129,6 +1132,7 @@ reset() {
       : bossWave
         ? Math.max(0, this.stage.boss.count)
         : 0;
+    state.bossesRemaining = bossCount;
     const queue = Math.floor((4 + state.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
     state.spawnQueue = Math.min(64, Math.max(1, queue));
     state.spawnTimer = 0;
@@ -1326,6 +1330,7 @@ reset() {
     }
 
     const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    s.bossesRemaining = bossCount;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
@@ -1339,7 +1344,11 @@ reset() {
     this.emit();
   }
 
-  private spawn(forcedKind?: StageEnemyKind, startDist?: number) {
+  private spawn(
+    forcedKind?: StageEnemyKind,
+    startDist?: number,
+    isBoss = false,
+  ) {
     const s = this.state;
     if (s.zombies.length >= 60) return;
     const w = s.wave;
@@ -1351,13 +1360,23 @@ reset() {
           count: 1 + Math.floor(w / 30),
         }
       : this.stage.boss;
-    const kind = forcedKind ?? chooseEnemyKind(
-      this.stage.enemyPool,
-      bossConfig,
-      w,
-      this.state.stageWaveTarget,
-      this.random,
-    );
+    const normalSpawnBossConfig = {
+      enabled: false,
+      wave: null,
+      kind: null,
+      count: 0,
+    } as const;
+    const kind =
+      forcedKind ??
+      (isBoss && bossConfig.kind !== null
+        ? bossConfig.kind
+        : chooseEnemyKind(
+            this.stage.enemyPool,
+            normalSpawnBossConfig,
+            w,
+            this.state.stageWaveTarget,
+            this.random,
+          ));
     const { hp, speed } = getEnemySpawnStats(
       this.stage.gameplay,
       kind,
@@ -1371,6 +1390,7 @@ reset() {
       maxHp: hp,
       speed,
       kind,
+      boss: isBoss,
       x: PATH[0]!.x,
       y: 0,
       z: PATH[0]!.z,
@@ -1485,7 +1505,7 @@ reset() {
 
     if (z.kind === 3) {
       for (let i = 0; i < 2; i++) {
-        this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12));
+        this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12), false);
         const child = s.zombies[s.zombies.length - 1]!;
         child.hp *= 0.45;
         child.maxHp = child.hp;
@@ -1604,8 +1624,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         const plan = getWaveSpawnPlan(s.wave, s.stageWaveTarget);
         const burst = Math.min(s.spawnQueue, plan.batchSize);
         for (let i = 0; i < burst; i++) {
-          this.spawn();
+          const spawningBoss =
+            s.bossesRemaining > 0 && s.spawnQueue <= s.bossesRemaining;
+          this.spawn(undefined, undefined, spawningBoss);
           s.spawnQueue -= 1;
+          if (spawningBoss) s.bossesRemaining -= 1;
         }
         const spawnIntervalMult = Math.max(0.6, this.stage.gameplay.spawnIntervalMultiplier);
         s.spawnTimer = Math.max(

@@ -3,7 +3,7 @@
 // @ts-expect-error Bun test globals are available when this file runs under Bun.
 import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
-import { getStageById } from "./navigation";
+import { getStageById, type StageEnemyKind } from "./navigation";
 import { createSeededRandom } from "./random";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
@@ -15,6 +15,7 @@ function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
     maxHp: 100,
     speed: 1,
     kind: 0,
+    boss: false,
     x: pad.x,
     y: 0,
     z: pad.z,
@@ -206,5 +207,32 @@ describe("second chance revive", () => {
     expect(game.state.baseHp).toBe(Math.ceil(game.state.baseMaxHp * 0.5));
     expect(game.state.reviveUsed).toBe(true);
     expect(game.reviveRun()).toBe(false);
+  });
+});
+
+
+describe("boss spawn identity", () => {
+  test("distinguishes true bosses from normal enemies of the same kind", () => {
+    const game = new Game();
+    game.startStage(getStageById(4));
+    game.state.wave = 9;
+
+    const spawn = (
+      game as unknown as {
+        spawn: (
+          forcedKind?: StageEnemyKind,
+          startDist?: number,
+          isBoss?: boolean,
+        ) => void;
+      }
+    ).spawn.bind(game);
+
+    spawn(2, 0, false);
+    spawn(2, 0, true);
+
+    expect(game.state.zombies[0]?.kind).toBe(2);
+    expect(game.state.zombies[0]?.boss).toBe(false);
+    expect(game.state.zombies[1]?.kind).toBe(2);
+    expect(game.state.zombies[1]?.boss).toBe(true);
   });
 });

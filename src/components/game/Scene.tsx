@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
-import { shouldShowEnemyHealthBar } from "@/game/enemyPresentation";
+import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { profile } from "@/game/profile";
 import {
   BUILD_SPOTS,
@@ -758,14 +758,18 @@ function Zombies() {
       }
       const hpBackground = g.getObjectByName("hp-background") as THREE.Mesh | undefined;
       const hpFill = g.getObjectByName("hp-fill") as THREE.Mesh | undefined;
-      const showHealth = shouldShowEnemyHealthBar(z.kind, z.hp, z.maxHp) && !z.dead;
+      const healthBar = getEnemyHealthBarPresentation(z.kind, z.hp, z.maxHp, z.boss);
+      const showHealth = healthBar.show && !z.dead;
       if (hpBackground && hpFill) {
         hpBackground.visible = showHealth;
         hpFill.visible = showHealth;
         if (showHealth) {
           const ratio = Math.max(0.04, Math.min(1, z.hp / Math.max(1, z.maxHp)));
-          hpFill.scale.x = ratio;
-          hpFill.position.x = (ratio - 1) * 0.45;
+          hpBackground.scale.x = healthBar.widthMultiplier;
+          hpFill.scale.x = ratio * healthBar.widthMultiplier;
+          hpFill.position.x = (ratio - 1) * 0.45 * healthBar.widthMultiplier;
+          const material = hpFill.material as THREE.MeshBasicMaterial;
+          material.color.set(z.boss ? "#e9b44c" : "#e24b4b");
         }
       }
 
