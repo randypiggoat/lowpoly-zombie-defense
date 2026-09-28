@@ -170,3 +170,196 @@
     font-family: var(--font-display);
   }
 }
+
+/* Rotwood UI polish — layered on top of the existing HUD/screens */
+@layer components {
+  .rotwood-app > [class~="z-30"] {
+    background:
+      radial-gradient(circle at 50% 5%, oklch(0.95 0.06 90 / 0.08), transparent 34%),
+      linear-gradient(180deg, oklch(0.06 0.02 250 / 0.58), oklch(0.04 0.015 250 / 0.84));
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    animation: rotwood-fade-in 160ms ease-out both;
+  }
+
+  .rotwood-app > [class~="z-40"],
+  .rotwood-app > [class~="z-50"] {
+    animation: rotwood-fade-in 140ms ease-out both;
+  }
+
+  .rotwood-shell {
+    border: 1px solid oklch(0.98 0.02 90 / 0.13) !important;
+    background:
+      linear-gradient(180deg, oklch(0.31 0.035 255 / 0.97), oklch(0.20 0.025 250 / 0.98)) !important;
+    border-radius: 1.15rem !important;
+    box-shadow:
+      0 20px 44px oklch(0.02 0.01 250 / 0.38),
+      inset 0 1px 0 oklch(1 0 0 / 0.07),
+      inset 0 -1px 0 oklch(0 0 0 / 0.32) !important;
+  }
+
+  .rotwood-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      linear-gradient(90deg, oklch(1 0 0 / 0.03) 1px, transparent 1px),
+      linear-gradient(oklch(1 0 0 / 0.018) 1px, transparent 1px);
+    background-size: 16px 16px;
+    mask-image: linear-gradient(to bottom, black, transparent 80%);
+  }
+
+  .rotwood-button {
+    min-height: 44px !important;
+    border: 1px solid oklch(1 0 0 / 0.1);
+    border-radius: 0.85rem !important;
+    font-family: var(--font-sans);
+    font-weight: 800 !important;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    transition:
+      transform 110ms ease,
+      filter 110ms ease,
+      box-shadow 110ms ease,
+      background-color 110ms ease;
+  }
+
+  .rotwood-button-primary {
+    background: linear-gradient(180deg, oklch(0.86 0.16 84), oklch(0.73 0.13 70)) !important;
+    color: oklch(0.24 0.03 60) !important;
+    box-shadow: 0 6px 0 oklch(0.36 0.07 65 / 0.82), 0 10px 18px oklch(0.02 0.01 250 / 0.22);
+  }
+
+  .rotwood-button-secondary {
+    background: linear-gradient(180deg, oklch(0.29 0.035 253), oklch(0.18 0.025 252)) !important;
+    color: var(--panel-foreground) !important;
+    box-shadow: 0 4px 0 oklch(0.08 0.02 250 / 0.82), inset 0 1px 0 oklch(1 0 0 / 0.05);
+  }
+
+  .rotwood-button:active:not(:disabled) {
+    transform: translateY(1px) scale(0.985);
+  }
+
+  .rotwood-menu-tile {
+    position: relative;
+    border: 1px solid oklch(1 0 0 / 0.09);
+    border-radius: 0.85rem;
+    background:
+      linear-gradient(180deg, oklch(0.23 0.03 252 / 0.82), oklch(0.15 0.023 250 / 0.84));
+    transition:
+      transform 110ms ease,
+      border-color 110ms ease,
+      filter 110ms ease,
+      background 110ms ease;
+  }
+
+  .rotwood-menu-tile::after {
+    content: "›";
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: oklch(0.78 0.03 250);
+    font-size: 1.15rem;
+    line-height: 1;
+    transition: transform 110ms ease;
+  }
+
+  .rotwood-menu-tile:hover {
+    border-color: oklch(0.82 0.15 80 / 0.28);
+    filter: brightness(1.03);
+  }
+
+  .rotwood-menu-tile:active {
+    transform: scale(0.985);
+  }
+
+  .rotwood-app .rotwood-menu-tile > span {
+    padding-right: 0.7rem;
+  }
+
+  .rotwood-app .font-display {
+    text-rendering: geometricPrecision;
+  }
+
+  .rotwood-app [class*="text-[8px]"],
+  .rotwood-app [class*="text-[9px]"] {
+    font-size: 0.625rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .rotwood-app [class*="text-[10px]"] {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .rotwood-hud {
+    --hud-gap: 0.4rem;
+  }
+
+  .rotwood-hud [class*="bg-panel/"] {
+    background:
+      linear-gradient(180deg, oklch(0.25 0.032 252 / 0.93), oklch(0.15 0.023 250 / 0.96)) !important;
+    border-color: oklch(1 0 0 / 0.1) !important;
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.05),
+      0 8px 18px oklch(0.02 0.01 250 / 0.25) !important;
+  }
+
+  .rotwood-hud [class*="bg-accent"] {
+    box-shadow: 0 5px 0 oklch(0.36 0.07 65 / 0.58);
+  }
+
+  .rotwood-hud button {
+    min-height: 44px;
+    transition: transform 100ms ease, filter 100ms ease, border-color 100ms ease;
+  }
+
+  .rotwood-hud button:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+
+  .rotwood-hud .rotwood-selected {
+    animation: rotwood-pop-in 180ms cubic-bezier(0.22, 1.18, 0.36, 1) both;
+  }
+
+  .rotwood-hud .rotwood-stat {
+    min-width: 4.55rem;
+  }
+
+  .rotwood-hud .rotwood-stat-number {
+    text-shadow: 0 2px 0 oklch(0 0 0 / 0.38);
+  }
+}
+
+.rotwood-app[data-reduced-motion="true"] .rotwood-app,
+.rotwood-app[data-reduced-motion="true"] .rotwood-app *,
+.rotwood-app[data-reduced-motion="true"] > [class~="z-30"],
+.rotwood-app[data-reduced-motion="true"] > [class~="z-40"],
+.rotwood-app[data-reduced-motion="true"] > [class~="z-50"] {
+  animation-duration: 1ms !important;
+  transition-duration: 1ms !important;
+}
+
+@keyframes rotwood-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rotwood-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotwood-app > [class~="z-30"],
+  .rotwood-app > [class~="z-40"],
+  .rotwood-app > [class~="z-50"],
+  .rotwood-menu-tile,
+  .rotwood-button {
+    animation: none !important;
+    transition: none !important;
+  }
+}
