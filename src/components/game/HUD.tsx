@@ -889,7 +889,7 @@ export function HUD({
               <div className="grid grid-cols-3 gap-2">
                 {[
                   ["XP", `+${lastReward.xp}`],
-                  ["Coins", `+${lastReward.coins}`],
+                  ["Credits", `+${lastReward.coins}`],
                   ["Gems", `+${lastReward.gems}`],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-lg bg-black/25 py-1.5">
