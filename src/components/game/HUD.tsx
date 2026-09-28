@@ -247,6 +247,7 @@ export function HUD({
   onPause,
   rewardedAvailable = false,
   waveThreatPreview = null,
+  reducedMotion = false,
   showMetaSections = false,
   showGameOverOverlay = true,
 }: {
@@ -256,6 +257,7 @@ export function HUD({
   onPause?: () => void;
   rewardedAvailable?: boolean;
   waveThreatPreview?: WaveThreatPreview | null;
+  reducedMotion?: boolean;
   showMetaSections?: boolean;
   showGameOverOverlay?: boolean;
 }) {
@@ -302,7 +304,7 @@ export function HUD({
 
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
-      {baseDanger === "critical" && !state.gameOver && (
+      {baseDanger === "critical" && !reducedMotion && !state.gameOver && (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 animate-pulse border-[10px] border-danger/25"
