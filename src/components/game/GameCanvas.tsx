@@ -27,6 +27,7 @@ import {
   type EndlessChallenge,
 } from "@/game/endless";
 import { getSeasonalEvent, getSeasonalEventCycleKey, getSeasonalEventEnd } from "@/game/liveOps";
+import { track } from "@/game/analytics";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -120,6 +121,13 @@ export function GameCanvas() {
       stars,
     };
   });
+
+  const recommendedStage =
+    stages.find((stage) => !stage.completed && !stage.locked) ??
+    stages.find((stage) => !stage.locked) ??
+    stages[stages.length - 1]!;
+  const isFirstRun = player.gamesPlayed === 0;
+  const todayKey = dateKey();
 
   const resetGameplayState = () => {
     profile.clearReward();
@@ -235,7 +243,6 @@ export function GameCanvas() {
       ? player.weeklyChallengeBestScore
       : player.endlessBestScore;
 
-  const todayKey = dateKey();
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
   const weeklyChallenge = getWeeklyChallenge(weekKey);
@@ -261,6 +268,8 @@ export function GameCanvas() {
           onPointerMissed={() => setSelection(null)}
         >
           <Scene
+            stageId={state.stageId}
+            endlessMode={state.endlessMode}
             paused={paused}
             towers={state.towers}
             selection={selection}
@@ -293,7 +302,36 @@ export function GameCanvas() {
               Low-poly zombie tower defense
             </p>
             <div className="mt-4 space-y-2">
-              <ScreenButton onClick={() => setScreen("stage-select")}>PLAY</ScreenButton>
+              <ScreenButton
+                onClick={() => {
+                  resetGameplayState();
+                  setActiveStageId(recommendedStage.id);
+                  if (isFirstRun) {
+                    track("menu_quick_play", { stageId: recommendedStage.id });
+                  }
+                  game.startStage(recommendedStage);
+                  setScreen("gameplay");
+                }}
+              >
+                {isFirstRun ? "DEFEND NOW" : "CONTINUE · STAGE " + recommendedStage.stageNumber}
+              </ScreenButton>
+              <div className="rounded-xl bg-black/25 px-3 py-2 text-center">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
+                  {isFirstRun
+                    ? "Start the first defense immediately"
+                    : recommendedStage.name + " · Best wave " + recommendedStage.bestWave}
+                </p>
+                <p className="mt-0.5 text-xs text-panel-foreground">
+                  {isFirstRun
+                    ? "Build your first tower, then survive the first wave."
+                    : recommendedStage.completed
+                      ? "Replay your strongest unlocked stage and chase more stars."
+                      : "Pick up where you left off and push the next stage."}
+                </p>
+              </div>
+              <ScreenButton onClick={() => setScreen("stage-select")} variant="secondary">
+                CAMPAIGN
+              </ScreenButton>
               <ScreenButton onClick={() => setScreen("endless-select")} variant="secondary">
                 ENDLESS SIEGE
               </ScreenButton>
@@ -318,6 +356,22 @@ export function GameCanvas() {
               <ScreenButton onClick={() => openSettings("main-menu")} variant="secondary">
                 SETTINGS
               </ScreenButton>
+              <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
+                <div className="rounded-lg bg-black/20 px-2 py-1.5">
+                  <p className="font-display text-sm text-panel-foreground">Lv {player.level}</p>
+                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Player</p>
+                </div>
+                <div className="rounded-lg bg-black/20 px-2 py-1.5">
+                  <p className="font-display text-sm text-panel-foreground">{player.highestWave}</p>
+                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Wave</p>
+                </div>
+                <div className="rounded-lg bg-black/20 px-2 py-1.5">
+                  <p className="font-display text-sm text-panel-foreground">
+                    {player.dailyChallengeDate === todayKey ? player.dailyChallengeBestScore : 0}
+                  </p>
+                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Today</p>
+                </div>
+              </div>
             </div>
           </ScreenCard>
         </div>

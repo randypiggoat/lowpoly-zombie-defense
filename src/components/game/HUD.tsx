@@ -39,6 +39,9 @@ import {
   type PlayerProfile,
 } from "@/game/profile";
 import type { Selection } from "./Scene";
+import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
+import { sfx } from "@/game/audio";
+import { towerCounterplayLabels } from "@/game/towerCounterplay";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -105,6 +108,11 @@ function towerSpecialSummary(tower: Tower) {
   if (towerSlow(tower) > 0) parts.push(`${Math.round(towerSlow(tower) * 100)}% slow`);
   if (towerCrit(tower) > 0) parts.push(`${Math.round(towerCrit(tower) * 100)}% crit`);
   return parts.join(" · ") || "Single-target fire";
+}
+
+function counterplaySummary(kind: TowerKind) {
+  const labels = towerCounterplayLabels(kind);
+  return labels.length > 0 ? labels.join(" · ") : "General-purpose tower";
 }
 
 function Stat({
@@ -266,6 +274,12 @@ export function HUD({
   }, [levelUpNotice]);
 
   useEffect(() => {
+    if (state.killStreak > 0 && isKillStreakMilestone(state.killStreak)) {
+      sfx("streak");
+    }
+  }, [state.killStreak]);
+
+  useEffect(() => {
     profile.refreshRetentionState();
     const interval = window.setInterval(() => profile.refreshRetentionState(), 60_000);
     return () => window.clearInterval(interval);
@@ -298,7 +312,9 @@ export function HUD({
       {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
         <div className="pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
           <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">Keep the chain going</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
+            +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% GOLD · KEEP IT GOING
+          </p>
         </div>
       )}
       {activeLevel !== null && !state.gameOver && (
@@ -532,6 +548,9 @@ export function HUD({
                     <span className="mt-1 block truncate text-[9px] text-panel-muted">
                       {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG
                     </span>
+                    <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
+                      {counterplaySummary(k)}
+                    </span>
                     <button
                       onClick={() => {
                         if (game.build(spot, k)) onSelect(null);
@@ -610,6 +629,9 @@ export function HUD({
               </button>
             </div>
             <p className="truncate text-[10px] text-panel-muted">{towerSpecialSummary(tower)}</p>
+            <p className="mt-0.5 truncate text-[9px] font-semibold text-accent">
+              {counterplaySummary(tower.kind)}
+            </p>
             <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
               {[
                 ["Damage", towerDamage(tower).toFixed(0)],

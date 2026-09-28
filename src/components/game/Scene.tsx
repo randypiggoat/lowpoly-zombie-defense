@@ -3,6 +3,7 @@ import { Text } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
+import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { profile } from "@/game/profile";
 import {
   BUILD_SPOTS,
@@ -37,7 +38,7 @@ export type Selection = { kind: "tower"; id: number } | { kind: "spot"; index: n
 
 /* ---------------- ground, path, props ---------------- */
 
-function Ground() {
+function Ground({ theme }: { theme: StageTheme }) {
   const segments = useMemo(() => {
     const out: { x: number; z: number; rot: number; len: number }[] = [];
     for (let i = 1; i < PATH.length; i++) {
@@ -68,7 +69,7 @@ function Ground() {
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial color="#5e8a52" flatShading />
+        <meshStandardMaterial color={theme.ground} flatShading />
       </mesh>
       {facets.map(({ a, r, i }) => (
         <mesh
@@ -78,14 +79,39 @@ function Ground() {
           receiveShadow
         >
           <circleGeometry args={[2.2 + (i % 4) * 0.9, 5]} />
-          <meshStandardMaterial color={i % 2 ? "#688f56" : "#547e4b"} flatShading />
+          <meshStandardMaterial color={i % 2 ? theme.groundAlt : theme.ground} flatShading />
         </mesh>
       ))}
       {segments.map((s, i) => (
-        <mesh key={i} position={[s.x, 0.07, s.z]} rotation-y={s.rot} receiveShadow>
-          <boxGeometry args={[2.6, 0.14, s.len]} />
-          <meshStandardMaterial color="#a58a63" flatShading />
-        </mesh>
+        <group key={i}>
+          <mesh position={[s.x, 0.07, s.z]} rotation-y={s.rot} receiveShadow>
+            <boxGeometry args={[2.6, 0.14, s.len]} />
+            <meshStandardMaterial color={theme.path} flatShading />
+          </mesh>
+          <mesh position={[s.x, 0.15, s.z]} rotation-y={s.rot}>
+            <boxGeometry args={[0.18, 0.025, s.len * 0.82]} />
+            <meshStandardMaterial color={theme.pathEdge} transparent opacity={0.72} flatShading />
+          </mesh>
+          {Array.from({ length: Math.max(1, Math.floor(s.len / 4)) }, (_, markerIndex) => {
+            const directionX = Math.sin(s.rot);
+            const directionZ = Math.cos(s.rot);
+            const offset = (markerIndex + 0.5) * 4 - s.len * 0.5;
+            return (
+              <mesh
+                key={markerIndex}
+                position={[
+                  s.x + directionX * offset,
+                  0.17,
+                  s.z + directionZ * offset,
+                ]}
+                rotation-y={s.rot}
+              >
+                <boxGeometry args={[0.32, 0.025, 1.15]} />
+                <meshStandardMaterial color={theme.marker} flatShading />
+              </mesh>
+            );
+          })}
+        </group>
       ))}
     </group>
   );
@@ -987,12 +1013,16 @@ function Simulation({ paused }: { paused: boolean }) {
 }
 
 export function Scene({
+  stageId,
+  endlessMode = false,
   towers,
   selection,
   onSelectTower,
   onSelectSpot,
   paused = false,
 }: {
+  stageId: number;
+  endlessMode?: boolean;
   towers: Tower[];
   selection: Selection;
   onSelectTower: (id: number) => void;
@@ -1000,14 +1030,16 @@ export function Scene({
   paused?: boolean;
 }) {
   const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
+  const theme = useMemo(() => getStageTheme(stageId, endlessMode), [stageId, endlessMode]);
   return (
     <>
-      <color attach="background" args={["#8fc4d8"]} />
-      <fog attach="fog" args={["#8fc4d8", 46, 95]} />
-      <hemisphereLight args={["#bfe3f2", "#5e8a52", 0.85]} />
+      <color attach="background" args={[theme.sky]} />
+      <fog attach="fog" args={[theme.fog, theme.night ? 34 : 46, theme.night ? 82 : 95]} />
+      <hemisphereLight args={[theme.hemiSky, theme.hemiGround, theme.night ? 0.72 : 0.85]} />
       <directionalLight
+        color={theme.light}
         position={[12, 18, 8]}
-        intensity={1.5}
+        intensity={theme.lightIntensity}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -1019,7 +1051,7 @@ export function Scene({
       <CameraRig />
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
-        <Ground />
+        <Ground theme={theme} />
         <Scenery />
         <Base />
         <BuildPads occupied={occupied} selection={selection} onSelectSpot={onSelectSpot} />

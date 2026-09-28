@@ -10,4 +10,13 @@ describe("analytics", () => {
       payload: { stageId: 1 },
     });
   });
+
+  test("accepts kill streak milestone events", () => {
+    clearAnalytics();
+    track("kill_streak_milestone", { streak: 10, goldMultiplier: 1.2 });
+    expect(getAnalyticsSnapshot().at(-1)).toMatchObject({
+      name: "kill_streak_milestone",
+      payload: { streak: 10, goldMultiplier: 1.2 },
+    });
+  });
 });

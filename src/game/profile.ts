@@ -212,6 +212,8 @@ export type PlayerProfile = {
   seasonalEventCycleKey: string;
   seasonalEventProgress: number;
   seasonalEventClaims: string[];
+  /** Whether the player has purchased the permanent ad-removal entitlement. */
+  adsRemoved: boolean;
 };
 
 export type StageProgress = {
@@ -325,6 +327,7 @@ function blank(): PlayerProfile {
     seasonalEventCycleKey: getSeasonalEventCycleKey(),
     seasonalEventProgress: 0,
     seasonalEventClaims: [],
+    adsRemoved: false,
   };
 }
 
