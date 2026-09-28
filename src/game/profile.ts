@@ -62,7 +62,7 @@ export const DAILY_MISSION_DEFS: DailyMissionDefinition[] = [
     description: "Kill 100 zombies",
     target: 100,
     event: "zombieKill",
-    reward: { label: "150 coins", coins: 150 },
+    reward: { label: "150 credits", coins: 150 },
   },
   {
     id: "daily-wave-15",
@@ -88,7 +88,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Kill your first zombie.",
     target: 1,
     metric: "totalKills",
-    reward: { label: "50 coins", coins: 50 },
+    reward: { label: "50 credits", coins: 50 },
   },
   {
     id: "zombie-hunter",
@@ -112,7 +112,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Reach Wave 10 in any run.",
     target: 10,
     metric: "highestWave",
-    reward: { label: "150 coins", coins: 150 },
+    reward: { label: "150 credits", coins: 150 },
   },
   {
     id: "wave-25",
@@ -144,7 +144,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Upgrade any tower once.",
     target: 1,
     metric: "towerUpgradeActions",
-    reward: { label: "100 coins", coins: 100 },
+    reward: { label: "100 credits", coins: 100 },
   },
   {
     id: "starter-towers",
@@ -157,21 +157,21 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
 ];
 
 export const DAILY_LOGIN_REWARDS: DailyLoginRewardDefinition[] = [
-  { day: 1, title: "Coins", reward: { label: "120 coins", coins: 120 } },
-  { day: 2, title: "Coins", reward: { label: "180 coins", coins: 180 } },
+  { day: 1, title: "Credits", reward: { label: "120 credits", coins: 120 } },
+  { day: 2, title: "Credits", reward: { label: "180 credits", coins: 180 } },
   { day: 3, title: "Gems", reward: { label: "6 gems", gems: 6 } },
   { day: 4, title: "XP Boost", reward: { label: "220 XP", xp: 220 } },
   {
     day: 5,
     title: "Rare Reward",
-    reward: { label: "Rare cache · 260 coins + 4 gems", coins: 260, gems: 4 },
+    reward: { label: "Rare cache · 260 credits + 4 gems", coins: 260, gems: 4 },
   },
   { day: 6, title: "Gems", reward: { label: "10 gems", gems: 10 } },
   {
     day: 7,
     title: "Special Reward",
     reward: {
-      label: "Special cache · 400 coins + 12 gems + 320 XP",
+      label: "Special cache · 400 credits + 12 gems + 320 XP",
       coins: 400,
       gems: 12,
       xp: 320,
