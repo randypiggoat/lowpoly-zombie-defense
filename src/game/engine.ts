@@ -33,6 +33,7 @@ import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, 
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { perfectWaveGoldBonus } from "./waveRewards";
 import { bossKillGoldMultiplier } from "./bossRewards";
+import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
 
@@ -925,6 +926,11 @@ waveMessageType: "start" | "complete" | "boss" | "";
   runModifierRerollUsed: boolean;
   reviveUsed: boolean;
   bossesRemaining: number;
+  perfectWaves: number;
+  perfectWaveBonusGold: number;
+  streakBonusGold: number;
+  bossBonusGold: number;
+  bossesDefeated: number;
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
@@ -1016,6 +1022,11 @@ waveMessageType: "",
     runModifierRerollUsed: false,
     reviveUsed: false,
     bossesRemaining: 0,
+    perfectWaves: 0,
+    perfectWaveBonusGold: 0,
+    streakBonusGold: 0,
+    bossBonusGold: 0,
+    bossesDefeated: 0,
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
@@ -1474,10 +1485,16 @@ reset() {
     const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
     const bossGoldMultiplier = bossKillGoldMultiplier(z.boss);
-    const earnedGold = Math.round(
-      result.killGold * runGoldMultiplier * streakGoldMultiplier * bossGoldMultiplier,
+    const reward = calculateKillReward(
+      result.killGold,
+      runGoldMultiplier,
+      streakGoldMultiplier,
+      bossGoldMultiplier,
     );
-    s.gold += earnedGold;
+    s.streakBonusGold += reward.streakBonusGold;
+    s.bossBonusGold += reward.bossBonusGold;
+    s.gold += reward.totalGold;
+    const earnedGold = reward.totalGold;
     if (isKillStreakMilestone(s.killStreak)) {
       track("kill_streak_milestone", {
         streak: s.killStreak,
@@ -1493,6 +1510,7 @@ reset() {
     s.screenShake = Math.min(1.8, s.screenShake + feedback.shake + (z.boss ? 0.8 : 0));
 
     if (z.boss) {
+      s.bossesDefeated += 1;
       s.waveMessage = `BOSS DOWN! +${earnedGold}G`;
       s.waveMessageLife = 1.8;
       s.waveMessageType = "complete";
@@ -1817,6 +1835,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         const perfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
         s.gold += perfectBonus;
         if (perfectBonus > 0) {
+          s.perfectWaves += 1;
+          s.perfectWaveBonusGold += perfectBonus;
           track("perfect_wave", { wave: s.wave, bonusGold: perfectBonus });
         }
         s.waveMessage =
