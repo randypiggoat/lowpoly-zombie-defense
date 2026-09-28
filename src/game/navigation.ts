@@ -61,21 +61,33 @@ export type StageGameplayConfig = {
 
 export type StageObjectiveDefinition =
   | {
-      id: "complete-stage";
+      id: string;
       label: string;
       type: "complete-stage";
     }
   | {
-      id: "base-health-50";
+      id: string;
       label: string;
       type: "min-base-health-percent";
       minPercent: number;
     }
   | {
-      id: "max-5-towers";
+      id: string;
       label: string;
       type: "max-towers-placed";
       maxTowers: number;
+    }
+  | {
+      id: string;
+      label: string;
+      type: "min-kill-streak";
+      minStreak: number;
+    }
+  | {
+      id: string;
+      label: string;
+      type: "min-tower-kinds";
+      minKinds: number;
     };
 
 export type StageDefinition = {
@@ -181,16 +193,16 @@ export const STAGE_DEFS: StageDefinition[] = [
     objectives: [
       { id: "complete-stage", label: "Complete the stage", type: "complete-stage" },
       {
-        id: "base-health-50",
-        label: "Finish with at least 50% base health",
+        id: "base-health-60",
+        label: "Finish with at least 60% base health",
         type: "min-base-health-percent",
-        minPercent: 50,
+        minPercent: 60,
       },
       {
-        id: "max-5-towers",
-        label: "Complete with no more than 5 towers placed",
-        type: "max-towers-placed",
-        maxTowers: 5,
+        id: "kill-streak-5",
+        label: "Finish with at least a 5-kill streak",
+        type: "min-kill-streak",
+        minStreak: 5,
       },
     ],
     placeholder: false,
@@ -228,16 +240,16 @@ export const STAGE_DEFS: StageDefinition[] = [
     objectives: [
       { id: "complete-stage", label: "Complete the stage", type: "complete-stage" },
       {
-        id: "base-health-50",
-        label: "Finish with at least 50% base health",
-        type: "min-base-health-percent",
-        minPercent: 50,
+        id: "tower-kinds-4",
+        label: "Finish with at least 4 tower types built",
+        type: "min-tower-kinds",
+        minKinds: 4,
       },
       {
-        id: "max-5-towers",
-        label: "Complete with no more than 5 towers placed",
+        id: "max-6-towers",
+        label: "Complete with no more than 6 towers placed",
         type: "max-towers-placed",
-        maxTowers: 5,
+        maxTowers: 6,
       },
     ],
     placeholder: false,
@@ -281,10 +293,10 @@ export const STAGE_DEFS: StageDefinition[] = [
         minPercent: 50,
       },
       {
-        id: "max-5-towers",
-        label: "Complete with no more than 5 towers placed",
-        type: "max-towers-placed",
-        maxTowers: 5,
+        id: "kill-streak-10",
+        label: "Finish with at least a 10-kill streak",
+        type: "min-kill-streak",
+        minStreak: 10,
       },
     ],
     placeholder: false,
@@ -322,16 +334,16 @@ export const STAGE_DEFS: StageDefinition[] = [
     objectives: [
       { id: "complete-stage", label: "Complete the stage", type: "complete-stage" },
       {
-        id: "base-health-50",
-        label: "Finish with at least 50% base health",
-        type: "min-base-health-percent",
-        minPercent: 50,
+        id: "tower-kinds-5",
+        label: "Finish with at least 5 tower types built",
+        type: "min-tower-kinds",
+        minKinds: 5,
       },
       {
-        id: "max-5-towers",
-        label: "Complete with no more than 5 towers placed",
+        id: "max-7-towers",
+        label: "Complete with no more than 7 towers placed",
         type: "max-towers-placed",
-        maxTowers: 5,
+        maxTowers: 7,
       },
     ],
     placeholder: false,
@@ -358,6 +370,8 @@ export type StageObjectiveContext = {
   baseHealth: number;
   baseMaxHealth: number;
   towersPlaced: number;
+  maxKillStreak: number;
+  uniqueTowerKinds: number;
 };
 
 export type StageObjectiveResult = {
@@ -382,6 +396,16 @@ export function evaluateStageObjectives(
         return {
           objective,
           passed: context.stageCompleted && context.towersPlaced <= objective.maxTowers,
+        };
+      case "min-kill-streak":
+        return {
+          objective,
+          passed: context.stageCompleted && context.maxKillStreak >= objective.minStreak,
+        };
+      case "min-tower-kinds":
+        return {
+          objective,
+          passed: context.stageCompleted && context.uniqueTowerKinds >= objective.minKinds,
         };
     }
   });
