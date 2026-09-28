@@ -128,6 +128,8 @@ export function GameCanvas() {
     stages[stages.length - 1]!;
   const isFirstRun = player.gamesPlayed === 0;
   const todayKey = dateKey();
+  const dailyBonusAvailable =
+    !player.adsRemoved && rewardedAvailable && profile.canClaimDailyRewardedBonus;
 
   const resetGameplayState = () => {
     profile.clearReward();
@@ -329,6 +331,42 @@ export function GameCanvas() {
                       : "Pick up where you left off and push the next stage."}
                 </p>
               </div>
+              {player.adsRemoved ? null : (
+                <div className="rounded-xl border border-white/10 bg-black/25 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-display text-sm tracking-wide text-panel-foreground">
+                        DAILY BONUS
+                      </p>
+                      <p className="text-[10px] text-panel-muted">
+                        Optional ad · +150 coins +1 gem
+                      </p>
+                    </div>
+                    {dailyBonusAvailable ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const { showRewarded } = await import("@/game/monetization");
+                          const earned = await showRewarded("daily-bonus");
+                          if (earned && profile.claimDailyRewardedBonus()) {
+                            track("daily_rewarded_bonus_claimed", {
+                              coins: 150,
+                              gems: 1,
+                            });
+                          }
+                        }}
+                        className="shrink-0 rounded-xl bg-accent px-3 py-2 font-display text-[11px] tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                      >
+                        WATCH AD
+                      </button>
+                    ) : (
+                      <span className="shrink-0 rounded-xl bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-panel-muted">
+                        {profile.canClaimDailyRewardedBonus ? "AD UNAVAILABLE" : "CLAIMED"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               <ScreenButton onClick={() => setScreen("stage-select")} variant="secondary">
                 CAMPAIGN
               </ScreenButton>
