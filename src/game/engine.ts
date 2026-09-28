@@ -32,6 +32,7 @@ import { isKillStreakMilestone, killStreakGoldMultiplier } from "./combatRewards
 import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { perfectWaveGoldBonus } from "./waveRewards";
+import { bossKillGoldMultiplier } from "./bossRewards";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
 
@@ -1472,7 +1473,10 @@ reset() {
     s.killStreakTimer = 2.25;
     const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
-    const earnedGold = Math.round(result.killGold * runGoldMultiplier * streakGoldMultiplier);
+    const bossGoldMultiplier = bossKillGoldMultiplier(z.boss);
+    const earnedGold = Math.round(
+      result.killGold * runGoldMultiplier * streakGoldMultiplier * bossGoldMultiplier,
+    );
     s.gold += earnedGold;
     if (isKillStreakMilestone(s.killStreak)) {
       track("kill_streak_milestone", {
@@ -1486,7 +1490,19 @@ reset() {
       exploded: result.explode,
       killStreak: s.killStreak,
     });
-    s.screenShake = Math.min(1.8, s.screenShake + feedback.shake);
+    s.screenShake = Math.min(1.8, s.screenShake + feedback.shake + (z.boss ? 0.8 : 0));
+
+    if (z.boss) {
+      s.waveMessage = `BOSS DOWN! +${earnedGold}G`;
+      s.waveMessageLife = 1.8;
+      s.waveMessageType = "complete";
+      track("boss_defeated", {
+        wave: s.wave,
+        kind: z.kind,
+        gold: earnedGold,
+      });
+      sfx("bigHit");
+    }
 
     if (s.damagePopups.length < 80) {
       s.damagePopups.push({
