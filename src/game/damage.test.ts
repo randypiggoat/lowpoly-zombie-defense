@@ -15,12 +15,19 @@ describe("damage resolution", () => {
     });
   });
 
-  test("marks a large hit as a crit without requiring a kill", () => {
+  test("keeps a large non-crit hit non-critical", () => {
     const result = resolveDamage(100, 100, 35, 1);
+
+    expect(result.crit).toBe(false);
+    expect(result.killed).toBe(false);
+    expect(result.nextHp).toBe(65);
+  });
+
+  test("preserves an explicitly rolled critical hit", () => {
+    const result = resolveDamage(100, 100, 20, 1, 1, true);
 
     expect(result.crit).toBe(true);
     expect(result.killed).toBe(false);
-    expect(result.nextHp).toBe(65);
   });
 
   test("calculates kill gold and knockback force on a normal kill", () => {
