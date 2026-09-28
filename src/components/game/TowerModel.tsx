@@ -38,6 +38,8 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const signature = useRef<THREE.Group>(null);
   const muzzle = useRef<THREE.Mesh>(null);
   const core = useRef<THREE.Mesh>(null);
+  const identityCore = useRef<THREE.Mesh>(null);
+  const identityHalo = useRef<THREE.Mesh>(null);
   const idleSeed = tower.id * 0.71;
 
   const primary = bodyColor || "#6d7477";
@@ -62,6 +64,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       core.current.scale.setScalar(pulse);
       const material = core.current.material as THREE.MeshStandardMaterial;
       material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8;
+    }
+    if (identityCore.current) {
+      const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08;
+      identityCore.current.scale.setScalar(pulse);
+      const material = identityCore.current.material as THREE.MeshStandardMaterial;
+      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.55;
+    }
+    if (identityHalo.current) {
+      identityHalo.current.rotation.z = t * 0.5 + idleSeed;
+      identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04);
     }
     if (muzzle.current) {
       muzzle.current.visible = tower.recoil > 0.12;
@@ -366,18 +378,46 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   return (
     <group ref={rig} position={[0, 0, 0]} scale={1 + Math.min(level - 1, 8) * 0.025}>
       {model}
-      <mesh position={[0, 0.48, -0.62]} castShadow>
-        <boxGeometry args={[0.42, 0.12, 0.22]} />
-        <AccentMaterial color={accent} glow={0.18} />
-      </mesh>
+      <group position={[0, 0.48, -0.62]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.42, 0.12, 0.22]} />
+          <AccentMaterial color={accent} glow={0.18} />
+        </mesh>
+        <mesh position={[0, 0.02, -0.07]} rotation-x={Math.PI / 2}>
+          <ringGeometry args={[0.14, 0.19, 6]} />
+          <meshBasicMaterial color={accent} transparent opacity={0.42} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
       <mesh position={[0, 0.11, 0]} receiveShadow>
         <cylinderGeometry args={[0.9, 1.05, 0.18, 8]} />
-        <meshStandardMaterial color="#4b5052" flatShading roughness={0.82} />
+        <meshStandardMaterial color="#343a3e" flatShading roughness={0.82} metalness={0.12} />
       </mesh>
-      <mesh position={[0, 0.22, 0]} rotation-x={Math.PI / 2}>
-        <ringGeometry args={[0.72, 0.84, 8]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.24} side={THREE.DoubleSide} />
+      <mesh ref={identityHalo} position={[0, 0.24, 0]} rotation-x={Math.PI / 2}>
+        <ringGeometry args={[0.68, 0.84, 8]} />
+        <meshBasicMaterial color={accent} transparent opacity={0.22} side={THREE.DoubleSide} />
       </mesh>
+      <mesh ref={identityCore} position={[0, 0.31, -0.08]}>
+        <icosahedronGeometry args={[0.16, 0]} />
+        <AccentMaterial color={accent} glow={0.9} />
+      </mesh>
+      {level >= 3 && (
+        <>
+          <mesh position={[-0.62, 0.3, -0.05]} rotation-z={0.18} castShadow>
+            <boxGeometry args={[0.12, 0.34, 0.16]} />
+            <AccentMaterial color={accent} glow={0.28} />
+          </mesh>
+          <mesh position={[0.62, 0.3, -0.05]} rotation-z={-0.18} castShadow>
+            <boxGeometry args={[0.12, 0.34, 0.16]} />
+            <AccentMaterial color={accent} glow={0.28} />
+          </mesh>
+        </>
+      )}
+      {level >= 5 && (
+        <mesh position={[0, 0.46, 0]} rotation-x={Math.PI / 2}>
+          <torusGeometry args={[0.38, 0.035, 5, 10]} />
+          <AccentMaterial color={accent} glow={0.48} />
+        </mesh>
+      )}
     </group>
   );
 }
