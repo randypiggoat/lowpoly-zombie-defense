@@ -1673,6 +1673,8 @@ reset() {
   }
 
   private accumulator = 0;
+  private salvageFeedbackBuffer = 0;
+  private salvageFeedbackTimer = 0;
 
   private step(dt: number) {
     const s = this.state;
@@ -1704,12 +1706,30 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 }
 
 
-    // idle income
+    // Passive salvage feeds the same reward language as combat gold.
+    this.salvageFeedbackTimer = Math.max(0, this.salvageFeedbackTimer - dt);
     s.income += incomePerSecond(s.incomeLevel) * dt;
     if (s.income >= 1) {
       const whole = Math.floor(s.income);
       s.gold += whole;
       s.income -= whole;
+      this.salvageFeedbackBuffer += whole;
+    }
+    if (this.salvageFeedbackBuffer > 0 && this.salvageFeedbackTimer <= 0 && s.damagePopups.length < 80) {
+      const amount = this.salvageFeedbackBuffer;
+      this.salvageFeedbackBuffer = 0;
+      this.salvageFeedbackTimer = 0.8;
+      s.damagePopups.push({
+        id: this.nextId++,
+        x: -4,
+        y: 4.25,
+        z: 13.4,
+        value: 0,
+        life: 0,
+        crit: false,
+        gold: amount,
+      });
+      sfx("coin");
     }
 
     // waves
