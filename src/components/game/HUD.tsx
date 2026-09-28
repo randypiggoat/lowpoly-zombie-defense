@@ -39,7 +39,8 @@ import {
   type PlayerProfile,
 } from "@/game/profile";
 import type { Selection } from "./Scene";
-import { killStreakGoldMultiplier } from "@/game/combatRewards";
+import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
+import { sfx } from "@/game/audio";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -265,6 +266,12 @@ export function HUD({
     const timeout = window.setTimeout(() => setActiveLevel(null), 2200);
     return () => window.clearTimeout(timeout);
   }, [levelUpNotice]);
+
+  useEffect(() => {
+    if (state.killStreak > 0 && isKillStreakMilestone(state.killStreak)) {
+      sfx("streak");
+    }
+  }, [state.killStreak]);
 
   useEffect(() => {
     profile.refreshRetentionState();
