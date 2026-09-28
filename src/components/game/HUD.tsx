@@ -132,9 +132,9 @@ function Stat({
   tone?: "gold" | "danger" | undefined;
 }) {
   return (
-    <div className="flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
+    <div className="rotwood-stat flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
       <span
-        className="font-display text-base leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
+        className="rotwood-stat-number font-display text-lg leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
         data-tone={tone}
       >
         {value}
@@ -187,7 +187,7 @@ function ClaimButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg bg-accent px-3 py-2 text-[11px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+      className="rotwood-hud-button rounded-lg bg-accent px-3 py-2 text-xs font-extrabold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
     >
       {children}
     </button>
@@ -307,7 +307,7 @@ export function HUD({
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
+    <div className="rotwood-hud pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
       {baseDanger === "critical" && !reducedMotion && !state.gameOver && (
         <div
           aria-hidden="true"
@@ -315,8 +315,8 @@ export function HUD({
         />
       )}
       {state.runModifierOffer.length > 0 && (
-        <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel">
+        <div className="rotwood-modal pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
+          <div className="rotwood-shell w-full max-w-md p-4">
             <p className="text-center text-[10px] uppercase tracking-[0.24em] text-accent">Wave {state.wave} reward</p>
             <h2 className="mt-1 text-center font-display text-3xl tracking-wide text-panel-foreground">Choose Your Power</h2>
             <p className="mt-1 text-center text-xs text-panel-muted">This choice lasts for the rest of the run.</p>
@@ -350,7 +350,7 @@ export function HUD({
         </div>
       )}
       {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
-        <div className="pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
+        <div className="rotwood-toast pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
           <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
             +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% GOLD · KEEP IT GOING
@@ -358,7 +358,7 @@ export function HUD({
         </div>
       )}
       {activeLevel !== null && !state.gameOver && (
-        <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-2xl bg-accent px-4 py-2 text-center shadow-panel">
+        <div className="rotwood-toast absolute left-1/2 top-4 -translate-x-1/2 rounded-xl bg-accent px-4 py-2 text-center shadow-panel">
           <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
           <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
         </div>
@@ -366,7 +366,7 @@ export function HUD({
       
             {state.waveMessage && !state.gameOver && (
         <div
-          className="pointer-events-none absolute left-1/2 top-[18%] -translate-x-1/2 text-center"
+          className="rotwood-wave-message pointer-events-none absolute left-1/2 top-[18%] -translate-x-1/2 text-center"
           style={{
             opacity: Math.min(1, state.waveMessageLife),
           }}
