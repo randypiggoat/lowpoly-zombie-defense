@@ -1487,9 +1487,10 @@ reset() {
   tick(dtRaw: number) {
     if (this.state.gameOver) return;
     // Speed-up affects the simulation clock, not the renderer/UI clock.
-    const scaledDt = dtRaw * this.state.simulationSpeed;
-    // Cap catch-up so a long tab stall can't fast-forward the whole run.
-    this.accumulator += Math.min(Math.max(scaledDt, 0), 0.5);
+    // Cap real elapsed time first so a stalled tab cannot create a huge catch-up burst,
+    // then apply the player's selected simulation speed.
+    const realDt = Math.min(Math.max(dtRaw, 0), 0.5);
+    this.accumulator += realDt * this.state.simulationSpeed;
     const STEP = 1 / 60;
     let steps = 0;
     while (this.accumulator >= STEP && steps < 30) {
