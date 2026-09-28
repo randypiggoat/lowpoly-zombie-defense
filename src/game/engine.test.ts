@@ -143,3 +143,51 @@ describe("combat hit semantics", () => {
     expect(result.crit).toBe(true);
   });
 });
+
+
+describe("simulation speed", () => {
+  test("defaults to 1x and toggles to 2x", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+
+    expect(game.state.simulationSpeed).toBe(1);
+    game.setSimulationSpeed(2);
+    expect(game.state.simulationSpeed).toBe(2);
+    game.setSimulationSpeed(1);
+    expect(game.state.simulationSpeed).toBe(1);
+  });
+
+  test("2x advances the simulation clock twice as fast", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+    game.setSimulationSpeed(2);
+
+    game.tick(0.5);
+
+    expect(game.state.wave).toBe(1);
+  });
+});
+
+
+describe("run modifier reroll", () => {
+  test("allows one reroll and excludes the current offer", () => {
+    const game = new Game(createSeededRandom(2026));
+    game.startStage(getStageById(1));
+    game.state.wave = 3;
+    game.state.runModifierOffer = [
+      { id: "overcharged", name: "Overcharged", description: "", effects: { rateMultiplier: 1.3 } },
+      { id: "bounty", name: "Blood Money", description: "", effects: { goldMultiplier: 1.35 } },
+      { id: "demolition", name: "Demolition", description: "", effects: { splashMultiplier: 1.4 } },
+    ];
+    
+    expect(game.rerollRunModifierOffer()).toBe(true);
+    expect(game.state.runModifierRerollUsed).toBe(true);
+    expect(
+      game.state.runModifierOffer.every(
+        (modifier) =>
+          !["overcharged", "bounty", "demolition"].includes(modifier.id),
+      ),
+    ).toBe(true);
+    expect(game.rerollRunModifierOffer()).toBe(false);
+  });
+});

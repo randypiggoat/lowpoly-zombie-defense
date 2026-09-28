@@ -901,10 +901,13 @@ export type GameState = {
   stageWaveTarget: number;
   wave: number;
   waveTimer: number;
+  simulationSpeed: 1 | 2;
   spawnQueue: number;
   spawnTimer: number;
   kills: number;
   waveDamageTaken: number;
+  maxKillStreak: number;
+  uniqueTowerKinds: string[];
   towersPlaced: number;
   income: number;
   incomeLevel: number;
@@ -917,6 +920,7 @@ waveMessageLife: number;
 waveMessageType: "start" | "complete" | "boss" | "";
   runModifierOffer: RunModifierDefinition[];
   activeRunModifiers: RunModifierId[];
+  runModifierRerollUsed: boolean;
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
@@ -986,10 +990,13 @@ function makeState(stage: StageRunConfig): GameState {
     stageWaveTarget: Math.max(1, stage.waveCount),
     wave: 0,
     waveTimer: 0.6,
+    simulationSpeed: 1,
     spawnQueue: 0,
     spawnTimer: 0,
     kills: 0,
     waveDamageTaken: 0,
+    maxKillStreak: 0,
+    uniqueTowerKinds: [],
     towersPlaced: 0,
     income: 0,
     incomeLevel: 1,
@@ -1002,6 +1009,7 @@ waveMessageLife: 0,
 waveMessageType: "",
     runModifierOffer: [],
     activeRunModifiers: [],
+    runModifierRerollUsed: false,
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
@@ -1059,6 +1067,23 @@ reset() {
   this.emit();
 }
 
+  rerollRunModifierOffer(): boolean {
+    const state = this.state;
+    if (state.runModifierOffer.length === 0 || state.runModifierRerollUsed) return false;
+    const excluded = [
+      ...state.activeRunModifiers,
+      ...state.runModifierOffer.map((entry) => entry.id),
+    ];
+    const offer = createRunModifierOffer(this.random, excluded);
+    if (offer.length === 0) return false;
+    state.runModifierOffer = offer;
+    state.runModifierRerollUsed = true;
+    track("modifier_rerolled", { wave: state.wave });
+    sfx("upgrade");
+    this.emit();
+    return true;
+  }
+
   chooseRunModifier(id: RunModifierId): boolean {
     const state = this.state;
     const chosen = state.runModifierOffer.find((entry) => entry.id === id);
@@ -1094,6 +1119,11 @@ reset() {
 
   towerAtSpot(spot: number) {
     return this.state.towers.find((t) => t.spot === spot) ?? null;
+  }
+
+  setSimulationSpeed(speed: 1 | 2) {
+    this.state.simulationSpeed = speed;
+    this.emit();
   }
 
   setTowerTargetMode(towerId: number, mode: TargetMode): boolean {
@@ -1136,6 +1166,7 @@ reset() {
       recoil: 0,
     });
     s.towersPlaced += 1;
+    if (!s.uniqueTowerKinds.includes(kind)) s.uniqueTowerKinds.push(kind);
     profile.recordTowerBuilt(kind);
     track("tower_built", { kind });
     sfx("build");
@@ -1396,6 +1427,7 @@ reset() {
     z.fade = 0;
     s.kills += 1;
     s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
+    s.maxKillStreak = Math.max(s.maxKillStreak, s.killStreak);
     s.killStreakTimer = 2.25;
     const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
@@ -1488,10 +1520,12 @@ reset() {
   tick(dtRaw: number) {
     if (this.state.gameOver) return;
     // Cap catch-up so a long tab stall can't fast-forward the whole run.
-    this.accumulator += Math.min(Math.max(dtRaw, 0), 0.5);
+    const realDt = Math.min(Math.max(dtRaw, 0), 0.5);
+    this.accumulator += realDt * this.state.simulationSpeed;
     const STEP = 1 / 60;
     let steps = 0;
-    while (this.accumulator >= STEP && steps < 30) {
+    const maxSteps = this.state.simulationSpeed === 2 ? 60 : 30;
+    while (this.accumulator >= STEP && steps < maxSteps) {
       this.accumulator -= STEP;
       steps++;
       this.step(STEP);
@@ -1696,6 +1730,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         baseHealth: s.baseHp,
         baseMaxHealth: s.baseMaxHp,
         towersPlaced: s.towersPlaced,
+        maxKillStreak: s.maxKillStreak,
+        uniqueTowerKinds: s.uniqueTowerKinds.length,
       }).stars;
       const finalPerfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
       profile.completeRun(Math.max(1, s.wave), s.kills, {

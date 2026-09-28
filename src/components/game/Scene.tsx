@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
+import { shouldShowEnemyHealthBar } from "@/game/enemyPresentation";
 import { profile } from "@/game/profile";
 import {
   BUILD_SPOTS,
@@ -755,6 +756,19 @@ function Zombies() {
           }
         });
       }
+      const hpBackground = g.getObjectByName("hp-background") as THREE.Mesh | undefined;
+      const hpFill = g.getObjectByName("hp-fill") as THREE.Mesh | undefined;
+      const showHealth = shouldShowEnemyHealthBar(z.kind, z.hp, z.maxHp) && !z.dead;
+      if (hpBackground && hpFill) {
+        hpBackground.visible = showHealth;
+        hpFill.visible = showHealth;
+        if (showHealth) {
+          const ratio = Math.max(0.04, Math.min(1, z.hp / Math.max(1, z.maxHp)));
+          hpFill.scale.x = ratio;
+          hpFill.position.x = (ratio - 1) * 0.45;
+        }
+      }
+
       const l = legs.current[i];
       if (l && !z.dead) l.rotation.x = Math.sin(z.wobble * 2) * 0.5;
     }
@@ -771,6 +785,14 @@ function Zombies() {
           <mesh name="head" position={[0, 1.62, 0]} castShadow>
             <boxGeometry args={[0.46, 0.46, 0.46]} />
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
+          </mesh>
+          <mesh name="hp-background" position={[0, 2.3, 0.02]} visible={false}>
+            <planeGeometry args={[0.9, 0.09]} />
+            <meshBasicMaterial color="#25191a" />
+          </mesh>
+          <mesh name="hp-fill" position={[0, 2.3, 0.025]} visible={false}>
+            <planeGeometry args={[0.9, 0.07]} />
+            <meshBasicMaterial color="#e24b4b" />
           </mesh>
           {/* arms reaching forward */}
           <mesh name="left-arm" position={[0.42, 1.15, 0.3]} rotation={[-1.2, 0, 0]} castShadow>

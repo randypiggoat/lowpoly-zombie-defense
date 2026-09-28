@@ -42,6 +42,7 @@ import type { Selection } from "./Scene";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
 import { sfx } from "@/game/audio";
 import { towerCounterplayLabels } from "@/game/towerCounterplay";
+import { track } from "@/game/analytics";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -241,6 +242,7 @@ export function HUD({
   selection,
   onSelect,
   onPause,
+  rewardedAvailable = false,
   showMetaSections = false,
   showGameOverOverlay = true,
 }: {
@@ -248,6 +250,7 @@ export function HUD({
   selection: Selection;
   onSelect: (s: Selection) => void;
   onPause?: () => void;
+  rewardedAvailable?: boolean;
   showMetaSections?: boolean;
   showGameOverOverlay?: boolean;
 }) {
@@ -306,6 +309,19 @@ export function HUD({
                 </button>
               ))}
             </div>
+            {!state.runModifierRerollUsed && rewardedAvailable && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const { showRewarded } = await import("@/game/monetization");
+                  const earned = await showRewarded("modifier-reroll");
+                  if (earned) game.rerollRunModifierOffer();
+                }}
+                className="mt-2 min-h-10 w-full rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 font-display text-sm tracking-wide text-accent transition active:scale-[0.98]"
+              >
+                REROLL ONCE · WATCH AD
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -354,12 +370,26 @@ export function HUD({
             value={`${state.baseHp}/${state.baseMaxHp}`}
             tone={state.baseHp <= 6 ? "danger" : undefined}
           />
-          <button
-            onClick={() => onPause?.()}
-            className="pointer-events-auto ml-auto min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur"
-          >
-            Pause
-          </button>
+          <div className="pointer-events-auto ml-auto flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                const nextSpeed = state.simulationSpeed === 1 ? 2 : 1;
+                game.setSimulationSpeed(nextSpeed);
+                track("simulation_speed_changed", { speed: nextSpeed });
+              }}
+              aria-label={state.simulationSpeed === 1 ? "Speed up gameplay" : "Return to normal speed"}
+              className="min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.97]"
+            >
+              {state.simulationSpeed}×
+            </button>
+            <button
+              onClick={() => onPause?.()}
+              className="min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur"
+            >
+              Pause
+            </button>
+          </div>
         </div>
         <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
           <span>Lv {player.level}</span>
