@@ -114,9 +114,10 @@ let lastCoin = -Infinity;
 let coinCombo = 0;
 
 export function sfx(name: SfxName) {
-  const c = ensure();
-  if (!c || muted) return;
-  switch (name) {
+  try {
+    const c = ensure();
+    if (!c || muted) return;
+    switch (name) {
     case "shootRifle":
     case "shootShotgun":
     case "shootSniper":
@@ -214,5 +215,8 @@ export function sfx(name: SfxName) {
       tone({ freq: freq * 1.5, dur: 0.055, type: "sine", gain: 0.045, delay: 0.035 });
       return;
     }
+    }
+  } catch {
+    // Sound is feedback only and must never block the action that caused it.
   }
 }
