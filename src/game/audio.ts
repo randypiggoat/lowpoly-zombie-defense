@@ -78,10 +78,14 @@ function noise(dur = 0.18, gain = 0.18, filterFreq = 900) {
 }
 
 export type SfxName =
-  | "shootGunner"
-  | "shootCannon"
-  | "shootFrost"
+  | "shootRifle"
+  | "shootShotgun"
+  | "shootSniper"
   | "shootTesla"
+  | "shootFlame"
+  | "shootFrost"
+  | "shootRocket"
+  | "shootLaser"
   | "hit"
   | "death"
   | "gib"
@@ -103,25 +107,42 @@ export function sfx(name: SfxName) {
   const c = ensure();
   if (!c || muted) return;
   switch (name) {
-    case "shootGunner":
-    case "shootFrost":
+    case "shootRifle":
+    case "shootShotgun":
+    case "shootSniper":
     case "shootTesla":
-    case "shootCannon": {
-      // throttle shot spam
+    case "shootFlame":
+    case "shootFrost":
+    case "shootRocket":
+    case "shootLaser": {
+      // Throttle dense weapon fire while keeping each weapon's timbre distinct.
       const now = c.currentTime;
       if (now - lastShot < 0.045) return;
       lastShot = now;
-      if (name === "shootGunner")
-        tone({ freq: 620, to: 260, dur: 0.06, type: "square", gain: 0.08 });
-      if (name === "shootCannon") {
-        tone({ freq: 160, to: 45, dur: 0.2, type: "sawtooth", gain: 0.16 });
-        noise(0.14, 0.1, 600);
-      }
-      if (name === "shootFrost")
-        tone({ freq: 1200, to: 700, dur: 0.1, type: "triangle", gain: 0.07 });
-      if (name === "shootTesla") {
-        tone({ freq: 900, to: 1800, dur: 0.08, type: "sawtooth", gain: 0.07 });
-        noise(0.07, 0.05, 3000);
+
+      if (name === "shootRifle") {
+        tone({ freq: 700, to: 310, dur: 0.045, type: "square", gain: 0.055 });
+      } else if (name === "shootShotgun") {
+        tone({ freq: 180, to: 62, dur: 0.13, type: "sawtooth", gain: 0.12 });
+        noise(0.09, 0.075, 760);
+      } else if (name === "shootSniper") {
+        tone({ freq: 105, to: 52, dur: 0.16, type: "sine", gain: 0.11 });
+        tone({ freq: 1700, to: 1050, dur: 0.075, type: "triangle", gain: 0.065, delay: 0.012 });
+      } else if (name === "shootTesla") {
+        tone({ freq: 820, to: 1780, dur: 0.085, type: "sawtooth", gain: 0.065 });
+        noise(0.075, 0.045, 3000);
+      } else if (name === "shootFlame") {
+        noise(0.12, 0.085, 1500);
+        tone({ freq: 150, to: 90, dur: 0.11, type: "triangle", gain: 0.045 });
+      } else if (name === "shootFrost") {
+        tone({ freq: 1350, to: 820, dur: 0.105, type: "triangle", gain: 0.06 });
+        tone({ freq: 2100, to: 1600, dur: 0.08, type: "sine", gain: 0.035, delay: 0.028 });
+      } else if (name === "shootRocket") {
+        tone({ freq: 125, to: 46, dur: 0.19, type: "sawtooth", gain: 0.115 });
+        noise(0.14, 0.08, 520);
+      } else if (name === "shootLaser") {
+        tone({ freq: 480, to: 1850, dur: 0.12, type: "triangle", gain: 0.05 });
+        tone({ freq: 1450, to: 620, dur: 0.09, type: "sine", gain: 0.03, delay: 0.02 });
       }
       return;
     }
