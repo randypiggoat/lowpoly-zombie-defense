@@ -338,7 +338,7 @@ export function GameCanvas() {
   }).length;
 
   return (
-    <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
+    <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
       {canvasReady && (
         <Canvas
           shadows
