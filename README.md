@@ -16,11 +16,29 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+The project uses **Bun** for installs and scripts.
+
+### Launch from GitHub
+
+To run the current gameplay branch locally:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+git clone https://github.com/randypiggoat/lowpoly-zombie-defense.git
+cd lowpoly-zombie-defense
+git checkout feat/ui-retention-polish
+bun install
+bun run dev
 ```
+
+Then open the local URL printed by Vite (usually `http://localhost:5173`).
+
+### Verify changes
+
+```sh
+bun run lint
+bun run test:unit
+bun run build
+bun run test:e2e
+```
+
+GitHub Actions runs the same quality gates on feature branches and pull requests.
