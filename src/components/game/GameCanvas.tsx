@@ -10,7 +10,7 @@ import {
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
 import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
-import { TOWER_INFO, TOWER_KINDS, game } from "@/game/engine";
+import { TOWER_INFO, TOWER_KINDS, game, type TowerKind } from "@/game/engine";
 import {
   STAGE_DEFS,
   evaluateStageObjectives,
@@ -396,6 +396,28 @@ export function GameCanvas() {
     : state.challengePeriod === "weekly"
       ? player.weeklyChallengeBestScore
       : player.endlessBestScore;
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("qa")) return;
+
+    type QaApi = {
+      buildTower: (spot: number, kind: TowerKind) => boolean;
+      getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[] };
+    };
+
+    const qaWindow = window as Window & { __ROTWOOD_QA__?: QaApi };
+    qaWindow.__ROTWOOD_QA__ = {
+      buildTower: (spot, kind) => game.build(spot, kind),
+      getCombatSnapshot: () => ({
+        towerCount: game.state.towers.length,
+        projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
+      }),
+    };
+
+    return () => {
+      delete qaWindow.__ROTWOOD_QA__;
+    };
+  }, []);
 
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
