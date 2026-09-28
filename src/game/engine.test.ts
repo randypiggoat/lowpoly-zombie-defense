@@ -16,6 +16,7 @@ function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
     speed: 1,
     kind: 0,
     boss: false,
+    bossEnraged: false,
     x: pad.x,
     y: 0,
     z: pad.z,
@@ -248,5 +249,36 @@ describe("reward highlight tracking", () => {
     expect(game.state.streakBonusGold).toBe(0);
     expect(game.state.bossBonusGold).toBe(0);
     expect(game.state.bossesDefeated).toBe(0);
+  });
+});
+
+
+describe("boss enrage integration", () => {
+  test("enrages a true boss once at half health and speeds it up", () => {
+    const game = new Game();
+    game.startStage(getStageById(4));
+    const spawn = (
+      game as unknown as {
+        spawn: (
+          forcedKind?: StageEnemyKind,
+          startDist?: number,
+          isBoss?: boolean,
+        ) => void;
+      }
+    ).spawn.bind(game);
+
+    spawn(2, 0, true);
+    const boss = game.state.zombies[0]!;
+    boss.hp = boss.maxHp * 0.5;
+
+    game.tick(1 / 60);
+
+    expect(boss.boss).toBe(true);
+    expect(boss.bossEnraged).toBe(true);
+    expect(game.state.bossEnragedCount).toBe(1);
+
+    const before = boss.dist;
+    game.tick(1 / 60);
+    expect(boss.dist).toBeGreaterThan(before);
   });
 });
