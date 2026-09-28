@@ -94,6 +94,7 @@ export type Zombie = {
   speed: number;
   kind: StageEnemyKind; // walker, runner, brute, splitter, bomber, guardian, healer, swarm
   boss: boolean;
+  bossEnraged: boolean;
   x: number;
   y: number;
   z: number;
@@ -1406,6 +1407,7 @@ reset() {
       speed,
       kind,
       boss: isBoss,
+      bossEnraged: false,
       x: PATH[0]!.x,
       y: 0,
       z: PATH[0]!.z,
