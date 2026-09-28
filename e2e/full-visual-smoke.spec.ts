@@ -15,13 +15,26 @@ async function assertVisualHealth(page: Page) {
         return style.visibility !== "hidden" && style.display !== "none" && r.width > 0 && r.height > 0;
       });
 
-    const outOfViewport = visible.filter((el) => {
-      const r = el.getBoundingClientRect();
-      return r.left < -2 || r.right > viewportWidth + 2 || r.top < -2 || r.bottom > viewportHeight + 2;
-    }).map((el) => ({
-      tag: el.tagName,
-      text: (el.textContent ?? "").trim().slice(0, 80),
-    }));
+    const isInsideScrollable = (el: Element) => {
+      let parent = el.parentElement;
+      while (parent && parent !== root) {
+        const style = getComputedStyle(parent);
+        if (/(auto|scroll)/.test(style.overflowY) || /(auto|scroll)/.test(style.overflow)) return true;
+        parent = parent.parentElement;
+      }
+      return false;
+    };
+
+    const outOfViewport = visible
+      .filter((el) => !isInsideScrollable(el))
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.left < -2 || r.right > viewportWidth + 2 || r.top < -2 || r.bottom > viewportHeight + 2;
+      })
+      .map((el) => ({
+        tag: el.tagName,
+        text: (el.textContent ?? "").trim().slice(0, 80),
+      }));
 
     return {
       rootWidth: rect.width,
