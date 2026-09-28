@@ -3,7 +3,7 @@
 // @ts-expect-error Bun test globals are available when this file runs under Bun.
 import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
-import { getStageById } from "./navigation";
+import { getStageById, type StageEnemyKind } from "./navigation";
 import { createSeededRandom } from "./random";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
@@ -15,6 +15,7 @@ function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
     maxHp: 100,
     speed: 1,
     kind: 0,
+    boss: false,
     x: pad.x,
     y: 0,
     z: pad.z,
