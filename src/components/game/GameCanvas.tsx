@@ -86,6 +86,38 @@ function ScreenButton({ children, onClick, variant = "primary", disabled }: Scre
   );
 }
 
+function MenuTile({
+  title,
+  subtitle,
+  badge,
+  onClick,
+}: {
+  title: string;
+  subtitle: string;
+  badge?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-[64px] rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-left transition active:scale-[0.98] hover:border-accent/40"
+    >
+      <span className="flex items-center justify-between gap-2">
+        <span className="truncate font-display text-sm tracking-wide text-panel-foreground">{title}</span>
+        {badge ? (
+          <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-semibold text-accent-foreground">
+            {badge}
+          </span>
+        ) : null}
+      </span>
+      <span className="mt-0.5 block line-clamp-2 text-[9px] leading-tight text-panel-muted">
+        {subtitle}
+      </span>
+    </button>
+  );
+}
+
 function ScreenCard({ children }: { children: ReactNode }) {
   return (
     <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel backdrop-blur">
@@ -145,6 +177,14 @@ export function GameCanvas() {
     !player.adsRemoved && rewardedAvailable && profile.canClaimDailyRewardedBonus;
   const nextStageId = getNextStageId(activeStageId);
   const nextStage = nextStageId === null ? null : getStageById(nextStageId);
+  const readyMissionCount = DAILY_MISSION_DEFS.filter((mission) => {
+    const progress = player.dailyMissionProgress[mission.id];
+    return Boolean(progress?.completed && !progress.claimed);
+  }).length;
+  const readyAchievementCount = ACHIEVEMENT_DEFS.filter((achievement) => {
+    const progress = player.achievements[achievement.id];
+    return Boolean(progress?.completed && !progress.claimed);
+  }).length;
 
   const resetGameplayState = () => {
     profile.clearReward();
@@ -266,6 +306,10 @@ export function GameCanvas() {
   const seasonalEvent = getSeasonalEvent();
   const seasonalCycleKey = getSeasonalEventCycleKey();
   const seasonalEventEnd = getSeasonalEventEnd();
+  const readyEventCount = seasonalEvent.milestones.filter((milestone) => {
+    const progress = Math.min(milestone.target, player.seasonalEventProgress);
+    return progress >= milestone.target && !player.seasonalEventClaims.includes(milestone.id);
+  }).length;
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
@@ -322,20 +366,19 @@ export function GameCanvas() {
             <p className="mt-1 text-center text-sm text-panel-muted">
               Low-poly zombie tower defense
             </p>
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-3">
               <ScreenButton
                 onClick={() => {
                   resetGameplayState();
                   setActiveStageId(recommendedStage.id);
-                  if (isFirstRun) {
-                    track("menu_quick_play", { stageId: recommendedStage.id });
-                  }
+                  if (isFirstRun) track("menu_quick_play", { stageId: recommendedStage.id });
                   game.startStage(recommendedStage);
                   setScreen("gameplay");
                 }}
               >
                 {isFirstRun ? "DEFEND NOW" : "CONTINUE · STAGE " + recommendedStage.stageNumber}
               </ScreenButton>
+
               <div className="rounded-xl bg-black/25 px-3 py-2 text-center">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
                   {isFirstRun
@@ -350,16 +393,13 @@ export function GameCanvas() {
                       : "Pick up where you left off and push the next stage."}
                 </p>
               </div>
+
               {player.adsRemoved ? null : (
                 <div className="rounded-xl border border-white/10 bg-black/25 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-display text-sm tracking-wide text-panel-foreground">
-                        DAILY BONUS
-                      </p>
-                      <p className="text-[10px] text-panel-muted">
-                        Optional ad · +150 coins +1 gem
-                      </p>
+                      <p className="font-display text-sm tracking-wide text-panel-foreground">DAILY BONUS</p>
+                      <p className="text-[10px] text-panel-muted">Optional ad · +150 coins +1 gem</p>
                     </div>
                     {dailyBonusAvailable ? (
                       <button
@@ -368,10 +408,7 @@ export function GameCanvas() {
                           const { showRewarded } = await import("@/game/monetization");
                           const earned = await showRewarded("daily-bonus");
                           if (earned && profile.claimDailyRewardedBonus()) {
-                            track("daily_rewarded_bonus_claimed", {
-                              coins: 150,
-                              gems: 1,
-                            });
+                            track("daily_rewarded_bonus_claimed", { coins: 150, gems: 1 });
                           }
                         }}
                         className="shrink-0 rounded-xl bg-accent px-3 py-2 font-display text-[11px] tracking-wide text-accent-foreground transition active:scale-[0.98]"
@@ -386,33 +423,42 @@ export function GameCanvas() {
                   </div>
                 </div>
               )}
-              <ScreenButton onClick={() => setScreen("stage-select")} variant="secondary">
-                CAMPAIGN
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("endless-select")} variant="secondary">
-                ENDLESS SIEGE
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("towers")} variant="secondary">
-                TOWERS
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("collection")} variant="secondary">
-                COLLECTION
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("events")} variant="secondary">
-                EVENTS
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("missions")} variant="secondary">
-                MISSIONS
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("achievements")} variant="secondary">
-                ACHIEVEMENTS
-              </ScreenButton>
-              <ScreenButton onClick={() => setScreen("shop")} variant="secondary">
-                SHOP
-              </ScreenButton>
-              <ScreenButton onClick={() => openSettings("main-menu")} variant="secondary">
-                SETTINGS
-              </ScreenButton>
+
+              <div>
+                <p className="mb-1.5 text-[9px] uppercase tracking-[0.22em] text-panel-muted">Modes</p>
+                <div className="space-y-1.5">
+                  <MenuTile
+                    title="Campaign"
+                    subtitle="Clear stages, earn stars, and unlock the next defense."
+                    onClick={() => setScreen("stage-select")}
+                  />
+                  <MenuTile
+                    title="Endless Siege"
+                    subtitle="Push your best wave with free, daily, and weekly challenges."
+                    onClick={() => setScreen("endless-select")}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[9px] uppercase tracking-[0.22em] text-panel-muted">Progress</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <MenuTile title="Towers" subtitle="Build roster & mastery" onClick={() => setScreen("towers")} />
+                  <MenuTile title="Collection" subtitle="Equip earned tower skins" onClick={() => setScreen("collection")} />
+                  <MenuTile title="Missions" subtitle="Daily objectives" badge={readyMissionCount ? String(readyMissionCount) : undefined} onClick={() => setScreen("missions")} />
+                  <MenuTile title="Achievements" subtitle="Long-term milestones" badge={readyAchievementCount ? String(readyAchievementCount) : undefined} onClick={() => setScreen("achievements")} />
+                  <MenuTile title="Events" subtitle="Limited-time rewards" badge={readyEventCount ? String(readyEventCount) : undefined} onClick={() => setScreen("events")} />
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[9px] uppercase tracking-[0.22em] text-panel-muted">Extras</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <MenuTile title="Shop" subtitle="Optional purchases" onClick={() => setScreen("shop")} />
+                  <MenuTile title="Settings" subtitle="Sound & accessibility" onClick={() => openSettings("main-menu")} />
+                </div>
+              </div>
+
               <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
                 <div className="rounded-lg bg-black/20 px-2 py-1.5">
                   <p className="font-display text-sm text-panel-foreground">Lv {player.level}</p>
