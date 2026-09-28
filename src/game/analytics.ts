@@ -3,6 +3,7 @@ export type AnalyticsEventName =
   | "run_finished"
   | "tower_built"
   | "tower_upgraded"
+  | "kill_streak_milestone"
   | "modifier_chosen"
   | "daily_mission_claimed"
   | "rewarded_ad_requested"
