@@ -30,6 +30,9 @@ import {
 } from "@/game/endless";
 import { getSeasonalEvent, getSeasonalEventCycleKey, getSeasonalEventEnd } from "@/game/liveOps";
 import { track } from "@/game/analytics";
+import { isPurchaseAvailable, purchase } from "@/game/monetization";
+import { STORE_CATALOG, storeItemStatus } from "@/game/storeCatalog";
+import type { PurchaseProduct } from "@/game/monetization";
 import { getWaveThreatPreview } from "@/game/waveThreatPreview";
 
 function useGameSnapshot() {
@@ -107,6 +110,7 @@ export function GameCanvas() {
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
+  const [purchasedProducts, setPurchasedProducts] = useState<Partial<Record<PurchaseProduct, boolean>>>({});
   const activeStage = getStageById(activeStageId);
   const gameplayStage =
     state.endlessMode && activeChallenge
@@ -737,14 +741,86 @@ export function GameCanvas() {
               ← BACK
             </ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
-              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Shop</h2>
-              <p className="mt-1 text-sm text-panel-muted">
-                Use earned currency for progression upgrades.
-              </p>
-              <div className="mt-3 rounded-xl bg-black/25 p-3">
-                <p className="text-sm text-panel-foreground">Coins: {player.coins}</p>
-                <p className="text-sm text-panel-foreground">Gems: {player.gems}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-accent">Optional extras</p>
+                  <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Shop</h2>
+                  <p className="mt-1 text-xs text-panel-muted">
+                    Progression comes from play. Purchases are optional quality-of-life, support, or cosmetics.
+                  </p>
+                </div>
+                <div className="shrink-0 rounded-xl bg-black/25 px-3 py-2 text-right">
+                  <p className="text-sm text-accent">{player.coins.toLocaleString()} COINS</p>
+                  <p className="text-xs text-panel-muted">{player.gems.toLocaleString()} GEMS</p>
+                </div>
               </div>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {STORE_CATALOG.map((item) => {
+                const owned =
+                  purchasedProducts[item.product] === true ||
+                  (item.product === "remove-ads" && player.adsRemoved);
+                const available = isPurchaseAvailable(item.product);
+                const status = storeItemStatus(available, owned);
+
+                return (
+                  <div
+                    key={item.product}
+                    className="rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-display text-lg tracking-wide text-panel-foreground">
+                          {item.title}
+                        </p>
+                        <p className="mt-0.5 text-xs text-panel-muted">{item.description}</p>
+                      </div>
+                      <span
+                        className={
+                          "shrink-0 rounded-lg px-2 py-1 text-[9px] font-semibold tracking-wider " +
+                          (owned
+                            ? "bg-accent/15 text-accent"
+                            : available
+                              ? "bg-accent text-accent-foreground"
+                              : "bg-black/25 text-panel-muted")
+                        }
+                      >
+                        {status}
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      {owned ? (
+                        <div className="rounded-xl bg-black/20 px-3 py-2 text-center text-[10px] uppercase tracking-wider text-accent">
+                          Already owned
+                        </div>
+                      ) : available ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const success = await purchase(item.product);
+                            if (!success) return;
+                            setPurchasedProducts((current) => ({
+                              ...current,
+                              [item.product]: true,
+                            }));
+                            if (item.product === "remove-ads") profile.setAdsRemoved(true);
+                            track("iap_purchase", { product: item.product });
+                          }}
+                          className="min-h-10 w-full rounded-xl bg-accent px-3 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                        >
+                          PURCHASE
+                        </button>
+                      ) : (
+                        <div className="rounded-xl bg-black/20 px-3 py-2 text-center text-[10px] leading-tight text-panel-muted">
+                          Purchase activates in the native mobile store build.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
