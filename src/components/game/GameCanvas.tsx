@@ -564,7 +564,7 @@ export function GameCanvas() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-panel-muted">Optional bonus</p>
-                      <p className="rotwood-display text-base text-panel-foreground">+150 COINS · +1 GEM</p>
+                      <p className="rotwood-display text-base text-panel-foreground">+150 CREDITS · +1 GEM</p>
                       <p className="text-[10px] text-panel-muted">One voluntary rewarded ad per day.</p>
                     </div>
                     <button
@@ -808,7 +808,7 @@ export function GameCanvas() {
                       {stage.rewards.completionXp} XP
                     </p>
                     <p>
-                      First Clear Bonus: +{stage.rewards.firstCompletionBonus.coins} coins · +
+                      First Clear Bonus: +{stage.rewards.firstCompletionBonus.coins} credits · +
                       {stage.rewards.firstCompletionBonus.xp} XP · +
                       {stage.rewards.firstCompletionBonus.stars}★
                     </p>
@@ -1013,7 +1013,7 @@ export function GameCanvas() {
                   </p>
                 </div>
                 <div className="shrink-0 rounded-xl bg-black/25 px-3 py-2 text-right">
-                  <p className="text-sm text-accent">{player.coins.toLocaleString()} COINS</p>
+                  <p className="text-sm text-accent">{player.coins.toLocaleString()} CREDITS</p>
                   <p className="text-xs text-panel-muted">{player.gems.toLocaleString()} GEMS</p>
                 </div>
               </div>
