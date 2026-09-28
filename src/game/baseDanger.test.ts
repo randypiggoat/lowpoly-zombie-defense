@@ -17,3 +17,5 @@ describe("base danger presentation", () => {
     expect(getBaseDangerLevel(0, 20)).toBe("critical");
     expect(getBaseDangerLevel(0, 0)).toBe("critical");
   });
+
+});
