@@ -2,6 +2,7 @@ export type PrimaryScreen =
   | "main-menu"
   | "stage-select"
   | "endless-select"
+  | "boss-trial-select"
   | "gameplay"
   | "results"
   | "towers"
