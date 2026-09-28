@@ -9,7 +9,7 @@ import {
 } from "react";
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
-import { isMuted, setMuted, unlockAudio } from "@/game/audio";
+import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
 import { TOWER_INFO, TOWER_KINDS, game } from "@/game/engine";
 import {
   STAGE_DEFS,
@@ -89,6 +89,7 @@ function ScreenButton({ children, onClick, variant = "primary", disabled, classN
     <button
       type="button"
       onClick={onClick}
+      onPointerDown={() => sfx("uiClick")}
       disabled={disabled}
       className={`rotwood-button rotwood-button-${variant} w-full text-sm ${className}`}
     >
@@ -112,6 +113,7 @@ function MenuTile({
     <button
       type="button"
       onClick={onClick}
+      onPointerDown={() => sfx("uiClick")}
       className="rotwood-menu-tile group min-h-[68px] w-full px-3 py-2.5 text-left"
     >
       <span className="flex items-center justify-between gap-2">
@@ -185,6 +187,7 @@ function HomeShortcut({
     <button
       type="button"
       onClick={onClick}
+      onPointerDown={() => sfx("uiClick")}
       className="rotwood-menu-tile min-h-[76px] w-full px-3 py-2.5 text-left"
     >
       <span className="flex items-center gap-2.5">
@@ -549,7 +552,7 @@ export function GameCanvas() {
                       if (!profile.claimDailyLoginReward()) return;
                       track("daily_login_claimed", { day: dailyLoginReward.day, reward: dailyLoginReward.reward.label });
                     }}
-                    className="rotwood-button rotwood-button-primary min-h-10 shrink-0 px-3 text-xs disabled:opacity-50"
+                    className="rotwood-button rotwood-button-primary min-h-11 shrink-0 px-3 text-xs disabled:opacity-50"
                   >
                     {dailyLoginAvailable ? "CLAIM" : "CLAIMED"}
                   </button>
@@ -577,7 +580,7 @@ export function GameCanvas() {
                           track("daily_rewarded_bonus_claimed", { coins: 150, gems: 1 });
                         }
                       }}
-                      className="rotwood-button rotwood-button-secondary min-h-10 shrink-0 px-3 text-[10px]"
+                      className="rotwood-button rotwood-button-secondary min-h-11 shrink-0 px-3 text-[10px]"
                     >
                       {dailyBonusAvailable ? "WATCH" : "DONE"}
                     </button>
@@ -859,7 +862,7 @@ export function GameCanvas() {
                         </div>
                         <p className="mt-2 text-[10px] text-panel-muted">{unlocked ? "Unlocked" : cosmetic.requirement}</p>
                         {targetKind !== "all" && (
-                          <button type="button" disabled={!unlocked} onClick={() => profile.equipTowerCosmetic(targetKind, cosmetic.id)} className="mt-2 min-h-9 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40">
+                          <button type="button" disabled={!unlocked} onClick={() => profile.equipTowerCosmetic(targetKind, cosmetic.id)} className="mt-2 min-h-11 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40">
                             {equipped ? "Equipped" : "Equip"}
                           </button>
                         )}
@@ -1071,7 +1074,7 @@ export function GameCanvas() {
                             if (item.product === "remove-ads") profile.setAdsRemoved(true);
                             track("iap_purchase", { product: item.product });
                           }}
-                          className="min-h-10 w-full rounded-xl bg-accent px-3 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                          className="min-h-11 w-full rounded-xl bg-accent px-3 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98]"
                         >
                           PURCHASE
                         </button>
