@@ -249,7 +249,7 @@ export function GameCanvas() {
     stages.find((stage) => !stage.locked) ??
     stages[0]!;
   const todayReward = DAILY_LOGIN_REWARDS.find((reward) => reward.day === player.loginCycleDay);
-  const claimedLoginToday = player.lastLoginClaimDate === new Date().toISOString().slice(0, 10);
+  const claimedLoginToday = player.lastLoginClaimDate === dateKey();
   const xpTarget = xpForLevel(player.level);
   const xpPercent = Math.min(100, (player.xp / Math.max(1, xpTarget)) * 100);
   const readyMissionCount = DAILY_MISSION_DEFS.filter((mission) => {
