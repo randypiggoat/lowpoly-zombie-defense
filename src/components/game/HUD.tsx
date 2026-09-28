@@ -76,13 +76,13 @@ function nextProgressionTarget(player: PlayerProfile) {
         label: `${info.name} unlock`,
         detail:
           info.coinUnlock > 0
-            ? `Reach Lv ${info.unlockLevel} or save ${info.coinUnlock} coins · ${xpLeft} XP to next level`
+            ? `Reach Lv ${info.unlockLevel} or save ${info.coinUnlock} credits · ${xpLeft} XP to next level`
             : `Reach Lv ${info.unlockLevel} · ${xpLeft} XP to next level`,
       };
     }
     return {
       label: `${info.name} early unlock`,
-      detail: `${Math.max(0, info.coinUnlock - player.coins)} more coins needed`,
+      detail: `${Math.max(0, info.coinUnlock - player.coins)} more credits needed`,
     };
   }
 
@@ -94,7 +94,7 @@ function nextProgressionTarget(player: PlayerProfile) {
   if (towerToUpgrade && towerProfileUpgradeLevel(towerToUpgrade) < MAX_PROFILE_TOWER_UPGRADE) {
     return {
       label: `${TOWER_INFO[towerToUpgrade].name} mastery`,
-      detail: `Upgrade to Lv ${towerProfileUpgradeLevel(towerToUpgrade) + 1} for ${towerProfileUpgradeCost(towerToUpgrade)} coins`,
+      detail: `Upgrade to Lv ${towerProfileUpgradeLevel(towerToUpgrade) + 1} for ${towerProfileUpgradeCost(towerToUpgrade)} credits`,
     };
   }
 
@@ -859,7 +859,7 @@ export function HUD({
             disabled={state.gold < incCost}
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
-            Income +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
+            Salvage +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
             <span className="block text-[10px] text-panel-muted">{incCost}g</span>
           </button>
           <button
