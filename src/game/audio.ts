@@ -101,6 +101,7 @@ export type SfxName =
   | "uiClick";
 
 let lastShot = 0;
+let lastImpact = -Infinity;
 let lastCoin = -Infinity;
 let coinCombo = 0;
 
@@ -147,9 +148,13 @@ export function sfx(name: SfxName) {
       }
       return;
     }
-    case "hit":
+    case "hit": {
+      const now = c.currentTime;
+      if (now - lastImpact < 0.025) return;
+      lastImpact = now;
       tone({ freq: 240, to: 150, dur: 0.05, type: "triangle", gain: 0.05 });
       return;
+    }
     case "death":
       noise(0.22, 0.14, 700);
       tone({ freq: 180, to: 60, dur: 0.18, type: "sawtooth", gain: 0.08 });
