@@ -143,3 +143,27 @@ describe("combat hit semantics", () => {
     expect(result.crit).toBe(true);
   });
 });
+
+
+describe("simulation speed", () => {
+  test("defaults to 1x and toggles to 2x", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+
+    expect(game.state.simulationSpeed).toBe(1);
+    game.setSimulationSpeed(2);
+    expect(game.state.simulationSpeed).toBe(2);
+    game.setSimulationSpeed(1);
+    expect(game.state.simulationSpeed).toBe(1);
+  });
+
+  test("2x advances the simulation clock twice as fast", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+    game.setSimulationSpeed(2);
+
+    game.tick(0.5);
+
+    expect(game.state.wave).toBe(1);
+  });
+});
