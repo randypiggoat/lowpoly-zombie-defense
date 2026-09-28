@@ -491,7 +491,7 @@ export function GameCanvas() {
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-0.5">
-                  <HomeCurrency icon={<Coins size={15} />} value={player.coins} label="Coins" />
+                  <HomeCurrency icon={<Coins size={15} />} value={player.coins} label="Credits" />
                   <HomeCurrency icon={<Gem size={15} />} value={player.gems} label="Gems" />
                   <HomeMetric label="Best Wave" value={player.highestWave} />
                 </div>
@@ -804,7 +804,7 @@ export function GameCanvas() {
                   </div>
                   <div className="mt-2 rounded-xl bg-black/20 px-3 py-2 text-xs text-panel-muted">
                     <p>
-                      Completion Reward: +{stage.rewards.completionCoins} coins · +
+                      Completion Reward: +{stage.rewards.completionCoins} credits · +
                       {stage.rewards.completionXp} XP
                     </p>
                     <p>
@@ -1177,7 +1177,7 @@ export function GameCanvas() {
                 </>
               )}
 
-              <p>Coins Earned</p>
+              <p>Credits Earned</p>
               <p className="text-right">{lastReward?.coins ?? 0}</p>
               <p>XP Earned</p>
               <p className="text-right">{lastReward?.xp ?? 0}</p>
@@ -1206,19 +1206,19 @@ export function GameCanvas() {
                   {state.perfectWaves > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <span>Perfect Waves · {state.perfectWaves}</span>
-                      <span className="font-display text-accent">+{state.perfectWaveBonusGold}G</span>
+                      <span className="font-display text-accent">+{state.perfectWaveBonusGold} SCRAP</span>
                     </div>
                   )}
                   {state.streakBonusGold > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <span>Kill Chain Bonus</span>
-                      <span className="font-display text-accent">+{state.streakBonusGold}G</span>
+                      <span className="font-display text-accent">+{state.streakBonusGold} SCRAP</span>
                     </div>
                   )}
                   {state.bossBonusGold > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <span>Boss Defeats · {state.bossesDefeated}</span>
-                      <span className="font-display text-accent">+{state.bossBonusGold}G</span>
+                      <span className="font-display text-accent">+{state.bossBonusGold} SCRAP</span>
                     </div>
                   )}
                 </div>
