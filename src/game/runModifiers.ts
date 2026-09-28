@@ -6,7 +6,13 @@ export type RunModifierId =
   | "demolition"
   | "deadeye"
   | "cryo-ammo"
-  | "hot-lead";
+  | "hot-lead"
+  | "longshot"
+  | "hot-chamber"
+  | "shrapnel"
+  | "cryo-reserve"
+  | "scavenger"
+  | "execution-order";
 
 export type RunModifierDefinition = {
   id: RunModifierId;
