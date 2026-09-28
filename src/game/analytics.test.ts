@@ -19,4 +19,13 @@ describe("analytics", () => {
       payload: { streak: 10, goldMultiplier: 1.2 },
     });
   });
+  test("records simulation speed changes", () => {
+    clearAnalytics();
+    track("simulation_speed_changed", { speed: 2 });
+    expect(getAnalyticsSnapshot().at(-1)).toMatchObject({
+      name: "simulation_speed_changed",
+      payload: { speed: 2 },
+    });
+  });
+
 });
