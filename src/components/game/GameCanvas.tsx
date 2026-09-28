@@ -284,6 +284,7 @@ export function GameCanvas() {
             stageId={state.stageId}
             endlessMode={state.endlessMode}
             paused={paused}
+            reducedMotion={player.reducedMotion}
             towers={state.towers}
             selection={selection}
             onSelectTower={(id) => setSelection({ kind: "tower", id })}
@@ -301,6 +302,7 @@ export function GameCanvas() {
             onPause={() => setOverlay("pause")}
             rewardedAvailable={rewardedAvailable}
             waveThreatPreview={waveThreatPreview}
+            reducedMotion={player.reducedMotion}
             showMetaSections={false}
             showGameOverOverlay={false}
           />
@@ -766,6 +768,12 @@ export function GameCanvas() {
                 variant="secondary"
               >
                 {muted ? "Sound: Off" : "Sound: On"}
+              </ScreenButton>
+              <ScreenButton
+                onClick={() => profile.setReducedMotion(!player.reducedMotion)}
+                variant="secondary"
+              >
+                Reduced Motion: {player.reducedMotion ? "On" : "Off"}
               </ScreenButton>
               <ScreenButton onClick={closeSettings} variant="secondary">
                 ← BACK
