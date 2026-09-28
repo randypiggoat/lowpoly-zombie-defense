@@ -84,13 +84,10 @@ type ScreenButtonProps = {
 function ScreenButton({ children, onClick, variant = "primary", disabled }: ScreenButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={`rotwood-button rotwood-button-${variant} w-full text-sm`}
-      style={{
-        background: variant === "primary" ? "rgba(233,180,76,0.96)" : "rgba(29,36,48,0.9)",
-        color: variant === "primary" ? "#20150a" : "#f2efe9",
-      }}
     >
       {children}
     </button>
