@@ -29,6 +29,42 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
   { id: "deadeye", name: "Deadeye", description: "+25% damage, −10% fire rate", effects: { damageMultiplier: 1.25, rateMultiplier: 0.9 } },
   { id: "cryo-ammo", name: "Cryo Ammo", description: "Slow effects are 35% stronger", effects: { slowMultiplier: 1.35 } },
   { id: "hot-lead", name: "Hot Lead", description: "+15% damage and +15% gold from kills", effects: { damageMultiplier: 1.15, goldMultiplier: 1.15 } },
+  {
+    id: "longshot",
+    name: "Longshot",
+    description: "+30% range, −18% fire rate",
+    effects: { rangeMultiplier: 1.3, rateMultiplier: 0.82 },
+  },
+  {
+    id: "hot-chamber",
+    name: "Hot Chamber",
+    description: "+35% fire rate, −8% range",
+    effects: { rateMultiplier: 1.35, rangeMultiplier: 0.92 },
+  },
+  {
+    id: "shrapnel",
+    name: "Shrapnel",
+    description: "+35% splash radius, −8% damage",
+    effects: { splashMultiplier: 1.35, damageMultiplier: 0.92 },
+  },
+  {
+    id: "cryo-reserve",
+    name: "Cryo Reserve",
+    description: "+30% slow strength, −8% fire rate",
+    effects: { slowMultiplier: 1.3, rateMultiplier: 0.92 },
+  },
+  {
+    id: "scavenger",
+    name: "Scavenger",
+    description: "+25% kill gold, −7% damage",
+    effects: { goldMultiplier: 1.25, damageMultiplier: 0.93 },
+  },
+  {
+    id: "execution-order",
+    name: "Execution Order",
+    description: "+22% damage, −10% range",
+    effects: { damageMultiplier: 1.22, rangeMultiplier: 0.9 },
+  },
 ];
 
 export type RunModifierEffects = {
