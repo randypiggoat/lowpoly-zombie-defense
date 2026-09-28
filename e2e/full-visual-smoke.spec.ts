@@ -71,6 +71,18 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
   await assertVisualHealth(page);
 
   await openAndCheck(page, "Settings", "Settings");
+  const soundButton = page.getByRole("button", { name: /^Sound: / });
+  await soundButton.click();
+  await expect(soundButton).toHaveText("Sound: Off");
+  await soundButton.click();
+  await expect(soundButton).toHaveText("Sound: On");
+
+  const motionButton = page.getByRole("button", { name: /^Reduced Motion: / });
+  await motionButton.click();
+  await expect(motionButton).toHaveText("Reduced Motion: On");
+  await motionButton.click();
+  await expect(motionButton).toHaveText("Reduced Motion: Off");
+
   await page.getByRole("button", { name: /BACK|CLOSE|← BACK/i }).first().click();
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
 
