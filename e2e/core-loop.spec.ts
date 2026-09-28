@@ -25,6 +25,8 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
     timeout: 10000,
   });
 
+  await expect(page.getByText("BUILD YOUR FIRST TOWER", { exact: true })).toBeVisible();
+
   await expect(page.locator("canvas")).toHaveCount(1);
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
