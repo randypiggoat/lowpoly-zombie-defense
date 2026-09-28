@@ -43,6 +43,8 @@ import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRe
 import { sfx } from "@/game/audio";
 import { towerCounterplayLabels } from "@/game/towerCounterplay";
 import { track } from "@/game/analytics";
+import type { WaveThreatPreview } from "@/game/waveThreatPreview";
+import { getBaseDangerLevel } from "@/game/baseDanger";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -243,6 +245,7 @@ export function HUD({
   onSelect,
   onPause,
   rewardedAvailable = false,
+  waveThreatPreview = null,
   showMetaSections = false,
   showGameOverOverlay = true,
 }: {
@@ -251,6 +254,7 @@ export function HUD({
   onSelect: (s: Selection) => void;
   onPause?: () => void;
   rewardedAvailable?: boolean;
+  waveThreatPreview?: WaveThreatPreview | null;
   showMetaSections?: boolean;
   showGameOverOverlay?: boolean;
 }) {
@@ -268,6 +272,7 @@ export function HUD({
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
   const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
+  const baseDanger = getBaseDangerLevel(state.baseHp, state.baseMaxHp);
 
   useEffect(() => {
     if (!levelUpNotice) return;
@@ -290,6 +295,12 @@ export function HUD({
 
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
+      {baseDanger === "critical" && !state.gameOver && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 animate-pulse border-[10px] border-danger/25"
+        />
+      )}
       {state.runModifierOffer.length > 0 && (
         <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel">
@@ -361,6 +372,19 @@ export function HUD({
         </div>
       )}
 
+      {waveThreatPreview &&
+        !state.gameOver &&
+        (state.waveMessageType === "start" || state.waveMessageType === "boss") && (
+          <div className="pointer-events-none absolute left-1/2 top-[23%] -translate-x-1/2 rounded-xl border border-white/10 bg-panel/75 px-3 py-1.5 text-center shadow-panel backdrop-blur">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">
+              {waveThreatPreview.boss ? "BOSS THREAT" : "THREATS THIS WAVE"}
+            </p>
+            <p className="mt-0.5 font-display text-xs tracking-wide text-panel-foreground">
+              {waveThreatPreview.threats.join(" · ")}
+            </p>
+          </div>
+        )}
+
       <div className="space-y-1.5">
         <div className="flex items-start gap-1.5">
           <Stat label="Coins" value={`${Math.floor(state.gold)}`} tone="gold" />
@@ -368,7 +392,7 @@ export function HUD({
           <Stat
             label="Base"
             value={`${state.baseHp}/${state.baseMaxHp}`}
-            tone={state.baseHp <= 6 ? "danger" : undefined}
+            tone={baseDanger === "safe" ? undefined : "danger"}
           />
           <div className="pointer-events-auto ml-auto flex gap-1.5">
             <button

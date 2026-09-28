@@ -191,3 +191,20 @@ describe("run modifier reroll", () => {
     expect(game.rerollRunModifierOffer()).toBe(false);
   });
 });
+
+
+describe("second chance revive", () => {
+  test("revives a defeated run once at half base health", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+    game.state.gameOver = true;
+    game.state.stageWon = false;
+    game.state.baseHp = 0;
+
+    expect(game.reviveRun()).toBe(true);
+    expect(game.state.gameOver).toBe(false);
+    expect(game.state.baseHp).toBe(Math.ceil(game.state.baseMaxHp * 0.5));
+    expect(game.state.reviveUsed).toBe(true);
+    expect(game.reviveRun()).toBe(false);
+  });
+});
