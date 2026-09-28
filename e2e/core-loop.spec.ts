@@ -20,7 +20,8 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   await expect(page.getByText("Progress", { exact: true })).toBeVisible();
   await expect(page.getByText("Last defense network", { exact: true })).toBeVisible();
   await expect(page.locator(".rotwood-shell")).toHaveCount(1);
-  await expect(page.getByText(/DAILY SUPPLY DROP · DAY 1\/7/)).toBeVisible();
+  await expect(page.getByText("Daily supply drop", { exact: true })).toBeVisible();
+  await expect(page.getByText(/DAY \d+\/7/)).toBeVisible();
   await expect(page.getByRole("button", { name: "CLAIM" })).toBeVisible();
 
   const playButton = page.getByRole("button", { name: "DEFEND NOW" });
