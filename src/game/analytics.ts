@@ -12,6 +12,7 @@ export type AnalyticsEventName =
   | "modifier_rerolled"
   | "revive_used"
   | "boss_defeated"
+  | "boss_enraged"
   | "daily_mission_claimed"
   | "rewarded_ad_requested"
   | "rewarded_ad_completed"
