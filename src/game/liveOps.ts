@@ -29,7 +29,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
     color: "#e24b4b",
     durationDays: 28,
     milestones: [
-      { id: "blood-250", target: 250, title: "First Harvest", reward: { label: "250 coins", coins: 250 } },
+      { id: "blood-250", target: 250, title: "First Harvest", reward: { label: "250 credits", coins: 250 } },
       { id: "blood-1000", target: 1000, title: "Red Tide", reward: { label: "12 gems", gems: 12 } },
       { id: "blood-2500", target: 2500, title: "Nightmare Block", reward: { label: "500 XP", xp: 500 } },
     ],
@@ -41,7 +41,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
     color: "#79c7e3",
     durationDays: 28,
     milestones: [
-      { id: "frost-250", target: 250, title: "First Frost", reward: { label: "250 coins", coins: 250 } },
+      { id: "frost-250", target: 250, title: "First Frost", reward: { label: "250 credits", coins: 250 } },
       { id: "frost-1000", target: 1000, title: "Deep Freeze", reward: { label: "12 gems", gems: 12 } },
       { id: "frost-2500", target: 2500, title: "Absolute Winter", reward: { label: "500 XP", xp: 500 } },
     ],
