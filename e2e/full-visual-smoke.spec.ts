@@ -92,7 +92,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
     ["Boss Trials", "Boss Trials"],
     ["Towers", "Towers"],
     ["Collection", "Tower Skins"],
-    ["Missions", "Daily Missions"],
+    ["Missions", "Missions"],
     ["Records", "Achievements"],
     ["Events", "Limited event"],
     ["Market", "Shop"],
