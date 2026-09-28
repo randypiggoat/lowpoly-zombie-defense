@@ -947,6 +947,28 @@ function DamagePopup({
 function Bullets() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
   const trailMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const lastKind = useRef<string[]>([]);
+  const geometries = useMemo(() => {
+    const rocket = new THREE.ConeGeometry(0.14, 0.5, 6);
+    rocket.rotateX(Math.PI / 2);
+    const laser = new THREE.BoxGeometry(0.09, 0.09, 0.5);
+    const sniper = new THREE.BoxGeometry(0.06, 0.06, 0.62);
+    return {
+      rifleman: new THREE.IcosahedronGeometry(0.14, 0),
+      shotgunner: new THREE.OctahedronGeometry(0.16, 0),
+      sniper,
+      tesla: new THREE.DodecahedronGeometry(0.15, 0),
+      flamethrower: new THREE.TetrahedronGeometry(0.18, 0),
+      freezer: new THREE.OctahedronGeometry(0.18, 0),
+      rocket,
+      laser,
+    } as const;
+  }, []);
+  useEffect(() => {
+    return () => {
+      Object.values(geometries).forEach((geometry) => geometry.dispose());
+    };
+  }, [geometries]);
   useFrame(() => {
     const list = game.state.bullets;
     for (let i = 0; i < MAX_BULLETS; i++) {
@@ -962,6 +984,10 @@ function Bullets() {
       m.visible = true;
       m.position.set(b.x, b.y, b.z);
       m.lookAt(b.tx, b.y, b.tz);
+      if (lastKind.current[i] !== b.kind) {
+        lastKind.current[i] = b.kind;
+        m.geometry = geometries[b.kind];
+      }
       const c = TOWER_INFO[b.kind].accent;
       const distance = Math.max(0.1, Math.hypot(b.tx - b.x, b.tz - b.z));
       const trail = trailMeshes.current[i];
@@ -969,25 +995,60 @@ function Bullets() {
         trail.visible = true;
         trail.position.set(b.x, b.y, b.z);
         trail.lookAt(b.tx, b.y, b.tz);
+        const trailWidth =
+          b.kind === "laser"
+            ? 0.32
+            : b.kind === "rocket"
+              ? 0.52
+              : b.kind === "shotgunner"
+                ? 0.28
+                : b.kind === "flamethrower"
+                  ? 0.4
+                  : 0.45;
         trail.scale.set(
-          0.45,
-          0.45,
-          Math.min(1.4, 0.22 + distance * 0.08),
+          trailWidth,
+          trailWidth,
+          Math.min(
+            b.kind === "sniper" || b.kind === "laser" ? 1.8 : 1.4,
+            0.18 + distance * 0.085,
+          ),
         );
-        (trail.material as THREE.MeshBasicMaterial).color.set(c);
+        const trailMaterial = trail.material as THREE.MeshBasicMaterial;
+        trailMaterial.color.set(c);
+        trailMaterial.opacity =
+          b.kind === "laser"
+            ? 0.38
+            : b.kind === "flamethrower"
+              ? 0.32
+              : 0.22;
       }
       (m.material as THREE.MeshBasicMaterial).color.set(b.crit ? "#fff3c4" : c);
       const critScale = b.crit ? 1.5 : 1;
-      if (b.kind === "shotgunner")
-        m.scale.set(0.28 * critScale, 0.28 * critScale, 0.28 * critScale);
-      else if (b.kind === "rocket")
-        m.scale.set(0.34 * critScale, 0.34 * critScale, 0.8 * critScale);
-      else if (b.kind === "laser")
-        m.scale.set(0.18 * critScale, 0.18 * critScale, 1.15 * critScale);
-      else if (b.kind === "tesla") m.scale.set(0.22 * critScale, 0.22 * critScale, 0.6 * critScale);
-      else if (b.kind === "flamethrower")
-        m.scale.set(0.3 * critScale, 0.16 * critScale, 0.5 * critScale);
-      else m.scale.setScalar(critScale);
+      switch (b.kind) {
+        case "shotgunner":
+          m.scale.setScalar(1.45 * critScale);
+          break;
+        case "sniper":
+          m.scale.set(1.1 * critScale, 1.1 * critScale, 1.35 * critScale);
+          break;
+        case "rocket":
+          m.scale.set(1.35 * critScale, 1.35 * critScale, 1.25 * critScale);
+          break;
+        case "laser":
+          m.scale.set(1.15 * critScale, 1.15 * critScale, 1.5 * critScale);
+          break;
+        case "tesla":
+          m.scale.setScalar(1.35 * critScale);
+          break;
+        case "flamethrower":
+          m.scale.set(1.45 * critScale, 1.05 * critScale, 1.75 * critScale);
+          break;
+        case "freezer":
+          m.scale.setScalar(1.35 * critScale);
+          break;
+        default:
+          m.scale.setScalar(critScale);
+      }
     }
   });
   return (
