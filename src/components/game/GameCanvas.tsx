@@ -131,7 +131,7 @@ function MenuTile({
 
 function ScreenCard({ children }: { children: ReactNode }) {
   return (
-    <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel backdrop-blur">
+    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel backdrop-blur">
       {children}
     </div>
   );
@@ -246,15 +246,20 @@ export function GameCanvas() {
   }, [settingsBackScreen]);
 
   useEffect(() => {
+    let active = true;
     setCanvasReady(true);
     void import("@/game/monetization")
       .then(({ installCapacitorAdMobProvider, isRewardedAvailable }) => {
+        if (!active) return;
         installCapacitorAdMobProvider();
         setRewardedAvailable(isRewardedAvailable());
       })
       .catch(() => {
-        setRewardedAvailable(false);
+        if (active) setRewardedAvailable(false);
       });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
