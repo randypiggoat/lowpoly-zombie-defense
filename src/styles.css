@@ -363,3 +363,37 @@
     transition: none !important;
   }
 }
+
+.rotwood-app[data-screen="main-menu"] .rotwood-shell {
+  box-shadow:
+    0 24px 56px oklch(0.02 0.01 250 / 0.46),
+    inset 0 1px 0 oklch(1 0 0 / 0.08),
+    inset 0 -1px 0 oklch(0 0 0 / 0.34) !important;
+}
+
+.rotwood-app[data-screen="main-menu"] .rotwood-shell > h1 {
+  text-shadow: 0 3px 0 oklch(0 0 0 / 0.35);
+}
+
+.rotwood-app[data-screen="main-menu"] .rotwood-shell > p {
+  color: oklch(0.82 0.03 245);
+}
+
+.rotwood-app[data-screen="results"] .rotwood-shell,
+.rotwood-app[data-screen="boss-trial-select"] .rotwood-shell {
+  animation: rotwood-pop-in 320ms cubic-bezier(0.2, 1.2, 0.32, 1) both;
+}
+
+.rotwood-hud .rotwood-toast {
+  animation: rotwood-toast-in 300ms cubic-bezier(0.22, 1.18, 0.36, 1) both;
+}
+
+.rotwood-hud .rotwood-wave-message > div {
+  animation: rotwood-wave-in 280ms cubic-bezier(0.2, 1.2, 0.32, 1) both;
+}
+
+@keyframes rotwood-wave-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  70% { opacity: 1; transform: translateY(-2px) scale(1.04); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
