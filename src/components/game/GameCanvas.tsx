@@ -316,7 +316,7 @@ export function GameCanvas() {
       {canvasReady && (
         <Canvas
           shadows
-          dpr={[1, 2]}
+          dpr={[1, 1.5]}
           gl={{
             antialias: false,
             powerPreference: "high-performance",
