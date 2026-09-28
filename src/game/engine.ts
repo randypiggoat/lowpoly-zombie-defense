@@ -901,6 +901,7 @@ export type GameState = {
   stageWaveTarget: number;
   wave: number;
   waveTimer: number;
+  simulationSpeed: 1 | 2;
   spawnQueue: number;
   spawnTimer: number;
   kills: number;
@@ -986,6 +987,7 @@ function makeState(stage: StageRunConfig): GameState {
     stageWaveTarget: Math.max(1, stage.waveCount),
     wave: 0,
     waveTimer: 0.6,
+    simulationSpeed: 1,
     spawnQueue: 0,
     spawnTimer: 0,
     kills: 0,
@@ -1094,6 +1096,11 @@ reset() {
 
   towerAtSpot(spot: number) {
     return this.state.towers.find((t) => t.spot === spot) ?? null;
+  }
+
+  setSimulationSpeed(speed: 1 | 2) {
+    this.state.simulationSpeed = speed;
+    this.emit();
   }
 
   setTowerTargetMode(towerId: number, mode: TargetMode): boolean {
@@ -1479,8 +1486,10 @@ reset() {
   /** Frame-rate independent entry point: runs fixed sim steps for the elapsed time. */
   tick(dtRaw: number) {
     if (this.state.gameOver) return;
+    // Speed-up affects the simulation clock, not the renderer/UI clock.
+    const scaledDt = dtRaw * this.state.simulationSpeed;
     // Cap catch-up so a long tab stall can't fast-forward the whole run.
-    this.accumulator += Math.min(Math.max(dtRaw, 0), 0.5);
+    this.accumulator += Math.min(Math.max(scaledDt, 0), 0.5);
     const STEP = 1 / 60;
     let steps = 0;
     while (this.accumulator >= STEP && steps < 30) {
