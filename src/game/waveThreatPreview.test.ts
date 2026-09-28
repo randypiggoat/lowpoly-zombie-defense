@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { getWaveThreatPreview } from "./waveThreatPreview";
 import { getStageById } from "./navigation";
+import { ENDLESS_CHALLENGES, createEndlessStage } from "./endless";
 
 describe("wave threat preview", () => {
   test("returns the most relevant threats from the stage pool", () => {
@@ -10,14 +11,15 @@ describe("wave threat preview", () => {
   });
 
   test("flags scheduled campaign bosses", () => {
-    const preview = getWaveThreatPreview(getStageById(4), 5);
+    const preview = getWaveThreatPreview(getStageById(4), 9);
     expect(preview.boss).toBe(true);
-    expect(preview.threats).toContain("BRUTE");
+    expect(preview.threats[0]).toBe("BRUTE");
   });
 
   test("flags recurring endless boss waves", () => {
-    const preview = getWaveThreatPreview(getStageById(5), 10);
-    // Campaign stage 5 is not Endless; only an Endless stage id (999) uses recurring boss cadence.
+    const endless = createEndlessStage(ENDLESS_CHALLENGES[0]!);
+    const preview = getWaveThreatPreview(endless, 20);
     expect(preview.boss).toBe(true);
+    expect(preview.threats[0]).toBe("BRUTE");
   });
 });
