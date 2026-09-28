@@ -67,7 +67,8 @@ describe("Game simulation", () => {
     expect(game.state.bossTrialBossKind).toBe(trial.bossKind);
     expect(game.state.bossTrialKey).toBe("2026-W40");
 
-    game.tick(1);
+    game.tick(0.7);
+    game.tick(0.7);
     expect(game.state.wave).toBe(1);
     expect(game.state.runModifierOffer).toHaveLength(0);
   });
