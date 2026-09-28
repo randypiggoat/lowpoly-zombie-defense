@@ -48,6 +48,7 @@ import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { bestTowerCounterplayMatch } from "@/game/towerCounterplay";
+import { enemyThreatLabel } from "@/game/enemyPresentation";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -647,7 +648,7 @@ export function HUD({
                     </span>
                     {matchup && (
                       <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                        GOOD MATCH · {matchup.enemyKind === 0 ? "WALKER" : matchup.enemyKind === 1 ? "RUNNER" : matchup.enemyKind === 2 ? "BRUTE" : matchup.enemyKind === 3 ? "SPLITTER" : matchup.enemyKind === 4 ? "BOMBER" : matchup.enemyKind === 5 ? "GUARDIAN" : matchup.enemyKind === 6 ? "HEALER" : "SWARM"} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                        GOOD MATCH · enemyThreatLabel(matchup.enemyKind) · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
                       </span>
                     )}
                     <button
