@@ -39,6 +39,7 @@ import {
   type PlayerProfile,
 } from "@/game/profile";
 import type { Selection } from "./Scene";
+import { killStreakGoldMultiplier } from "@/game/combatRewards";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -298,7 +299,9 @@ export function HUD({
       {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
         <div className="pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
           <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">Keep the chain going</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
+            +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% GOLD · KEEP IT GOING
+          </p>
         </div>
       )}
       {activeLevel !== null && !state.gameOver && (
