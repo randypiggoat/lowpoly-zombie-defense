@@ -21,11 +21,9 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
 
   await playButton.click();
 
-  await expect(page.getByText("Wave", { exact: true })).toBeVisible({
-    timeout: 10000,
-  });
-
   await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await expect(page.getByText("BUILD YOUR FIRST TOWER", { exact: true })).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });

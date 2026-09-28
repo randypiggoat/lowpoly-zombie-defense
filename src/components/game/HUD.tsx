@@ -43,6 +43,7 @@ import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRe
 import { sfx } from "@/game/audio";
 import { towerCounterplayLabels } from "@/game/towerCounterplay";
 import { track } from "@/game/analytics";
+import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
 
@@ -272,6 +273,12 @@ export function HUD({
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
   const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
+  const firstSessionTip = getFirstSessionTip(
+    player.gamesPlayed,
+    state.wave,
+    state.towers.length,
+    state.towers.filter((tower) => tower.level > 1).length,
+  );
   const baseDanger = getBaseDangerLevel(state.baseHp, state.baseMaxHp);
 
   useEffect(() => {
@@ -419,6 +426,12 @@ export function HUD({
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>
         </div>
+        {firstSessionTip && (
+          <div className="pointer-events-none max-w-sm rounded-xl border border-accent/20 bg-panel/80 px-3 py-2 shadow-panel backdrop-blur">
+            <p className="font-display text-xs tracking-wide text-accent">{firstSessionTip.title}</p>
+            <p className="mt-0.5 text-[10px] leading-tight text-panel-muted">{firstSessionTip.body}</p>
+          </div>
+        )}
       </div>
 
       <div className="pointer-events-auto max-h-[56dvh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
