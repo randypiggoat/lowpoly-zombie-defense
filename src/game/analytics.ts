@@ -4,6 +4,7 @@ export type AnalyticsEventName =
   | "menu_quick_play"
   | "simulation_speed_changed"
   | "daily_rewarded_bonus_claimed"
+  | "daily_login_claimed"
   | "tower_built"
   | "tower_upgraded"
   | "kill_streak_milestone"
