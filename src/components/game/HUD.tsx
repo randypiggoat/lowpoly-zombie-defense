@@ -117,9 +117,9 @@ function Stat({
   tone?: "gold" | "danger" | undefined;
 }) {
   return (
-    <div className="flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
+    <div className="rotwood-hud-panel rotwood-stat flex min-w-[4.4rem] flex-col items-center rounded-lg px-2 py-1 shadow-panel backdrop-blur">
       <span
-        className="font-display text-base leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
+        className="rotwood-stat-number font-display text-lg leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
         data-tone={tone}
       >
         {value}
@@ -172,7 +172,7 @@ function ClaimButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg bg-accent px-3 py-2 text-[11px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+      className="rotwood-hud-button rounded-lg bg-accent px-3 py-2 text-xs font-extrabold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
     >
       {children}
     </button>
@@ -272,9 +272,9 @@ export function HUD({
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
+    <div className="rotwood-hud pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
       {activeLevel !== null && !state.gameOver && (
-        <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-2xl bg-accent px-4 py-2 text-center shadow-panel">
+        <div className="rotwood-toast absolute left-1/2 top-4 -translate-x-1/2 rounded-xl border border-black/10 bg-accent px-4 py-2 text-center shadow-panel">
           <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
           <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
         </div>
@@ -312,12 +312,12 @@ export function HUD({
           />
           <button
             onClick={() => onPause?.()}
-            className="pointer-events-auto ml-auto min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur"
+            className="rotwood-hud-button pointer-events-auto ml-auto min-h-11 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur"
           >
             Pause
           </button>
         </div>
-        <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
+        <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-black/35 px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-panel-muted shadow-panel backdrop-blur">
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>
         </div>
@@ -462,7 +462,7 @@ export function HUD({
         )}
 
         {spot !== null && (
-          <div className="rounded-xl bg-panel/95 p-2 shadow-panel backdrop-blur">
+          <div className="rotwood-hud-panel rotwood-selected rounded-xl p-2 shadow-panel backdrop-blur">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <h2 className="truncate font-display text-base tracking-wide text-panel-foreground">
                 Build a tower
@@ -671,11 +671,11 @@ export function HUD({
           </div>
         )}
 
-        <div className="flex gap-1.5">
+        <div className="rotwood-hud-actions flex gap-1.5">
           <button
             onClick={() => game.upgradeIncome()}
             disabled={state.gold < incCost}
-            className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
+            className="rotwood-hud-button flex-1 rounded-lg px-2.5 py-2 text-xs font-extrabold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Income +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
             <span className="block text-[10px] text-panel-muted">{incCost}g</span>
@@ -692,13 +692,13 @@ export function HUD({
       </div>
 
       {showGameOverOverlay && state.gameOver && (
-        <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 p-6 backdrop-blur">
+        <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 p-6 backdrop-blur rotwood-screen">
           <h2 className="font-display text-5xl tracking-wide text-danger">Overrun</h2>
           <p className="text-sm text-panel-muted">
             Wave reached {state.wave} · Zombies killed {state.kills}
           </p>
           {lastReward && (
-            <div className="w-full max-w-xs rounded-2xl bg-panel/90 p-3 text-center shadow-panel">
+            <div className="rotwood-hud-panel w-full max-w-xs rounded-2xl p-3 text-center shadow-panel">
               {lastReward.leveledTo !== null && (
                 <p className="mb-2 rounded-lg bg-accent px-3 py-1.5 font-display text-lg tracking-wide text-accent-foreground">
                   Level up! You reached level {lastReward.leveledTo}
