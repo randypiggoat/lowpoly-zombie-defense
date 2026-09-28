@@ -25,4 +25,12 @@ describe("run modifiers", () => {
     expect(new Set(offer.map((entry) => entry.id)).size).toBe(3);
     expect(offer.some((entry) => entry.id === "overcharged")).toBe(false);
   });
+
+  test("expanded pool keeps three choices available after several active modifiers", () => {
+    const active = ["overcharged", "bounty", "demolition", "deadeye"] as const;
+    const offer = createRunModifierOffer(() => 0.42, [...active]);
+    expect(offer).toHaveLength(3);
+    expect(new Set(offer.map((entry) => entry.id)).size).toBe(3);
+    expect(offer.every((entry) => !active.includes(entry.id as typeof active[number]))).toBe(true);
+  });
 });
