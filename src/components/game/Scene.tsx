@@ -198,9 +198,16 @@ function Scenery({ count = 46 }: { count?: number }) {
 
 function Base() {
   const flagRef = useRef<THREE.Mesh>(null);
+  const beaconRef = useRef<THREE.Group>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (flagRef.current) {
       flagRef.current.rotation.z = Math.sin(clock.elapsedTime * 3) * 0.12;
+    }
+    if (beaconRef.current) beaconRef.current.rotation.y = clock.elapsedTime * 0.6;
+    if (coreRef.current) {
+      const pulse = 1 + Math.sin(clock.elapsedTime * 4) * 0.1;
+      coreRef.current.scale.setScalar(pulse);
     }
   });
   return (
@@ -220,6 +227,24 @@ function Base() {
       <mesh ref={flagRef} position={[0, 4.9, 0]} castShadow>
         <boxGeometry args={[0.9, 0.55, 0.08]} />
         <meshStandardMaterial color="#e9b44c" flatShading />
+      </mesh>
+      <group ref={beaconRef} position={[0, 3.78, 0]}>
+        <mesh rotation-x={Math.PI / 2}>
+          <torusGeometry args={[0.52, 0.06, 5, 10]} />
+          <meshStandardMaterial color="#79c7e3" emissive="#79c7e3" emissiveIntensity={0.45} transparent opacity={0.72} flatShading />
+        </mesh>
+        <mesh ref={coreRef} position={[0, 0, 0]}>
+          <icosahedronGeometry args={[0.18, 0]} />
+          <meshStandardMaterial color="#79c7e3" emissive="#79c7e3" emissiveIntensity={1.1} flatShading />
+        </mesh>
+        <mesh position={[0, 0.18, 0]}>
+          <coneGeometry args={[0.12, 0.42, 5]} />
+          <meshStandardMaterial color="#cfeff4" flatShading />
+        </mesh>
+      </group>
+      <mesh position={[0, 0.74, 1.58]} rotation-z={Math.PI / 2}>
+        <boxGeometry args={[0.12, 0.08, 1.5]} />
+        <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.18} flatShading />
       </mesh>
     </group>
   );
@@ -402,15 +427,16 @@ function Zombies() {
           if (bossCrown) bossCrown.visible = z.boss;
           if (bossCore) bossCore.visible = z.boss;
           if (bossSignature) bossSignature.visible = z.boss;
-          if (bruteMark) bruteMark.visible = z.boss && z.kind === 2;
-          if (splitterMark) splitterMark.visible = z.boss && z.kind === 3;
-          if (bomberMark) bomberMark.visible = z.boss && z.kind === 4;
-          if (guardianMark) guardianMark.visible = z.boss && z.kind === 5;
-          if (healerMark) healerMark.visible = z.boss && z.kind === 6;
-          if (swarmMark) swarmMark.visible = z.boss && z.kind === 7;
           lastBoss.current[i] = z.boss;
         }
         if (z.boss) {
+          if (bossSignature) bossSignature.visible = true;
+          if (bruteMark) bruteMark.visible = z.kind === 2;
+          if (splitterMark) splitterMark.visible = z.kind === 3;
+          if (bomberMark) bomberMark.visible = z.kind === 4;
+          if (guardianMark) guardianMark.visible = z.kind === 5;
+          if (healerMark) healerMark.visible = z.kind === 6;
+          if (swarmMark) swarmMark.visible = z.kind === 7;
           if (bossAura) {
             bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
             const pulse = 1 + Math.sin(now * 0.006 + i) * (z.bossEnraged ? 0.12 : 0.055);
