@@ -66,7 +66,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
 
-  await page.goto("/");
+  await page.goto("/?qa=1");
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   await assertVisualHealth(page);
 
@@ -101,8 +101,30 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
     return r.width > 0 && r.height > 0;
   })).toBe(true);
 
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(900);
   await assertVisualHealth(page);
+
+  // Exercise a real 3D combat path: build a Rifleman through the game API
+  // exposed only in Vite dev mode with ?qa=1, then verify a projectile is emitted.
+  const built = await page.evaluate(() => {
+    const qa = (window as Window & {
+      __ROTWOOD_QA__?: {
+        buildTower: (spot: number, kind: "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser") => boolean;
+        getCombatSnapshot: () => { towerCount: number; projectileKinds: Array<"rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser"> };
+      };
+    }).__ROTWOOD_QA__;
+    return qa?.buildTower(0, "rifleman") ?? false;
+  });
+  expect(built).toBe(true);
+  await expect.poll(async () => page.evaluate(() => {
+    const qa = (window as Window & {
+      __ROTWOOD_QA__?: {
+        getCombatSnapshot: () => { towerCount: number; projectileKinds: string[] };
+      };
+    }).__ROTWOOD_QA__;
+    const snapshot = qa?.getCombatSnapshot();
+    return snapshot ? snapshot.towerCount > 0 && snapshot.projectileKinds.includes("rifleman") : false;
+  }), { timeout: 10000 }).toBe(true);
 
   await page.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByText("PAUSED", { exact: true })).toBeVisible();
