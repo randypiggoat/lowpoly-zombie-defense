@@ -90,6 +90,7 @@ export type SfxName =
   | "deny"
   | "baseHit"
   | "wave"
+  | "streak"
   | "gameOver"
   | "bigHit";
 
@@ -151,6 +152,10 @@ export function sfx(name: SfxName) {
     case "wave":
       tone({ freq: 300, dur: 0.18, type: "triangle", gain: 0.12 });
       tone({ freq: 400, dur: 0.22, type: "triangle", gain: 0.12, delay: 0.16 });
+      return;
+    case "streak":
+      tone({ freq: 620, to: 880, dur: 0.09, type: "triangle", gain: 0.1 });
+      tone({ freq: 930, to: 1240, dur: 0.12, type: "triangle", gain: 0.09, delay: 0.08 });
       return;
     case "gameOver":
       tone({ freq: 400, to: 80, dur: 0.9, type: "sawtooth", gain: 0.18 });
