@@ -351,16 +351,16 @@ export const BULLET_SPEED: Record<TowerKind, number> = {
 /** Which existing shot sound each tower reuses. */
 export const SHOOT_SFX: Record<
   TowerKind,
-  "shootGunner" | "shootCannon" | "shootFrost" | "shootTesla"
+  "shootRifle" | "shootShotgun" | "shootSniper" | "shootTesla" | "shootFlame" | "shootFrost" | "shootRocket" | "shootLaser"
 > = {
-  rifleman: "shootGunner",
-  shotgunner: "shootCannon",
-  sniper: "shootCannon",
+  rifleman: "shootRifle",
+  shotgunner: "shootShotgun",
+  sniper: "shootSniper",
   tesla: "shootTesla",
-  flamethrower: "shootFrost",
+  flamethrower: "shootFlame",
   freezer: "shootFrost",
-  rocket: "shootCannon",
-  laser: "shootTesla",
+  rocket: "shootRocket",
+  laser: "shootLaser",
 };
 
 /** How violently kills from each tower come apart. */
@@ -1466,7 +1466,6 @@ reset() {
     });
   }
 
-  /** Shared damage application — used by bullets, splash, chains and burning. */
   /** Shared damage application — used by bullets, splash, chains and burning. */
   private damage(
     z: Zombie,
