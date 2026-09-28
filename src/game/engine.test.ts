@@ -236,3 +236,17 @@ describe("boss spawn identity", () => {
     expect(game.state.zombies[1]?.boss).toBe(true);
   });
 });
+
+
+describe("reward highlight tracking", () => {
+  test("starts new runs with zero bonus highlights", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+
+    expect(game.state.perfectWaves).toBe(0);
+    expect(game.state.perfectWaveBonusGold).toBe(0);
+    expect(game.state.streakBonusGold).toBe(0);
+    expect(game.state.bossBonusGold).toBe(0);
+    expect(game.state.bossesDefeated).toBe(0);
+  });
+});
