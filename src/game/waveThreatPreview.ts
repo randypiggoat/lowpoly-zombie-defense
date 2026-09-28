@@ -4,6 +4,7 @@ import { enemyThreatLabel } from "./enemyPresentation";
 export type WaveThreatPreview = {
   boss: boolean;
   threats: string[];
+  enemyKinds: StageEnemyKind[];
 };
 
 function baseWeight(stage: StageDefinition, kind: StageEnemyKind) {
@@ -48,8 +49,16 @@ export function getWaveThreatPreview(
       ? [enemyThreatLabel(stage.boss.kind)]
       : [];
 
+  const threatKinds = [
+    ...new Set([
+      ...(isBossWave && stage.boss.kind !== null ? [stage.boss.kind] : []),
+      ...ranked.map(({ kind }) => kind),
+    ]),
+  ].slice(0, 3);
+
   return {
     boss: isBossWave,
     threats: [...new Set([...bossThreat, ...rankedThreats])].slice(0, 3),
+    enemyKinds: threatKinds,
   };
 }
