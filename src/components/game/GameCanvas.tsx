@@ -21,6 +21,7 @@ import {
 import { ACHIEVEMENT_DEFS, DAILY_MISSION_DEFS, dateKey, profile } from "@/game/profile";
 import { TOWER_COSMETICS } from "@/game/collection";
 import {
+  createEndlessStage,
   ENDLESS_CHALLENGES,
   getDailyChallenge,
   getWeeklyChallenge,
@@ -29,6 +30,7 @@ import {
 } from "@/game/endless";
 import { getSeasonalEvent, getSeasonalEventCycleKey, getSeasonalEventEnd } from "@/game/liveOps";
 import { track } from "@/game/analytics";
+import { getWaveThreatPreview } from "@/game/waveThreatPreview";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -106,6 +108,12 @@ export function GameCanvas() {
   const [canvasReady, setCanvasReady] = useState(false);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const activeStage = getStageById(activeStageId);
+  const gameplayStage =
+    state.endlessMode && activeChallenge
+      ? createEndlessStage(activeChallenge)
+      : activeStage;
+  const waveThreatPreview =
+    state.wave > 0 ? getWaveThreatPreview(gameplayStage, state.wave) : null;
 
   const stages = STAGE_DEFS.map((stage) => {
     const progress = player.stageProgress[String(stage.id)];
