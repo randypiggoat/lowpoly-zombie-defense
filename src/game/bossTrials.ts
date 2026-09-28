@@ -344,7 +344,11 @@ export function getBossTrialVariant(trial: BossTrialDefinition, weekKey: string)
 }
 
 export function getWeeklyBossTrial(weekKey: string): BossTrialDefinition {
-  const baseIndex = hashString(`boss:${weekKey}`) % BOSS_TRIAL_ROSTER.length;
+  const weekMatch = /^(\d{4})-W(\d+)$/.exec(weekKey);
+  const rotationIndex = weekMatch
+    ? Number(weekMatch[1]) * 53 + Number(weekMatch[2])
+    : hashString(`boss:${weekKey}`);
+  const baseIndex = Math.abs(rotationIndex) % BOSS_TRIAL_ROSTER.length;
   const base = BOSS_TRIAL_ROSTER[baseIndex]!;
   const variant = getBossTrialVariant(base, weekKey);
   return { ...base, variant };
