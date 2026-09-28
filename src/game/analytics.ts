@@ -9,6 +9,7 @@ export type AnalyticsEventName =
   | "kill_streak_milestone"
   | "perfect_wave"
   | "modifier_chosen"
+  | "modifier_rerolled"
   | "daily_mission_claimed"
   | "rewarded_ad_requested"
   | "rewarded_ad_completed"
