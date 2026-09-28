@@ -1107,7 +1107,7 @@ reset() {
 
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
     const stage = createBossTrialStage(trial);
-    this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey };
+    this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
     this.nextId = 1;
     this.state = makeState(this.stage);
     track("boss_trial_started", {
