@@ -13,6 +13,7 @@ import { TOWER_INFO, TOWER_KINDS, game } from "@/game/engine";
 import {
   STAGE_DEFS,
   evaluateStageObjectives,
+  getNextStageId,
   getStageById,
   stageUnlockRequirementText,
   type PrimaryScreen,
@@ -130,6 +131,8 @@ export function GameCanvas() {
   const todayKey = dateKey();
   const dailyBonusAvailable =
     !player.adsRemoved && rewardedAvailable && profile.canClaimDailyRewardedBonus;
+  const nextStageId = getNextStageId(activeStageId);
+  const nextStage = nextStageId === null ? null : getStageById(nextStageId);
 
   const resetGameplayState = () => {
     profile.clearReward();
@@ -765,13 +768,32 @@ export function GameCanvas() {
       {screen === "results" && (
         <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/70 p-3">
           <ScreenCard>
-            <h2 className="text-center font-display text-3xl tracking-wide text-danger">
+            <h2
+              className={
+                "text-center font-display text-3xl tracking-wide " +
+                (state.stageWon ? "text-accent" : state.endlessMode ? "text-accent" : "text-danger")
+              }
+            >
               {resultLabel}
             </h2>
             {state.endlessMode && activeChallenge && (
               <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
             )}
-            <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
+                <p className="font-display text-lg text-panel-foreground">{state.kills}</p>
+                <p className="text-[8px] uppercase tracking-wider text-panel-muted">Kills</p>
+              </div>
+              <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
+                <p className="font-display text-lg text-panel-foreground">{state.maxKillStreak}</p>
+                <p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Streak</p>
+              </div>
+              <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
+                <p className="font-display text-lg text-panel-foreground">{state.uniqueTowerKinds.length}</p>
+                <p className="text-[8px] uppercase tracking-wider text-panel-muted">Tower Types</p>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
               <p>Wave Reached</p>
               <p className="text-right">{state.wave}</p>
               {state.endlessMode && (
@@ -782,8 +804,7 @@ export function GameCanvas() {
                   <p className="text-right">{endlessBestDisplay.toLocaleString()}</p>
                 </>
               )}
-              <p>Zombies Killed</p>
-              <p className="text-right">{state.kills}</p>
+
               <p>Coins Earned</p>
               <p className="text-right">{lastReward?.coins ?? 0}</p>
               <p>XP Earned</p>
@@ -828,6 +849,8 @@ export function GameCanvas() {
                   baseHealth: state.baseHp,
                   baseMaxHealth: state.baseMaxHp,
                   towersPlaced: state.towersPlaced,
+                  maxKillStreak: state.maxKillStreak,
+                  uniqueTowerKinds: state.uniqueTowerKinds.length,
                 }).results.map((result, index) => (
                   <p key={result.objective.id}>
                     {index + 1 === 1 ? "⭐" : index + 1 === 2 ? "⭐⭐" : "⭐⭐⭐"}{" "}
@@ -842,9 +865,13 @@ export function GameCanvas() {
               </div>
             )}
             <div className="mt-4 space-y-2">
-              {state.stageWon ? (
-                <ScreenButton onClick={leaveToStageSelect}>CONTINUE</ScreenButton>
-) : state.endlessMode && activeChallenge ? (
+              {state.stageWon && nextStage ? (
+                <ScreenButton onClick={() => startStage(nextStage.id)}>
+                  NEXT STAGE · {nextStage.name}
+                </ScreenButton>
+              ) : state.stageWon ? (
+                <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton>
+              ) : state.endlessMode && activeChallenge ? (
                 <ScreenButton
                   onClick={() => {
                     resetGameplayState();
@@ -862,7 +889,7 @@ export function GameCanvas() {
               )}
               {state.stageWon && (
                 <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">
-                  REPLAY
+                  REPLAY STAGE
                 </ScreenButton>
               )}
               <ScreenButton onClick={leaveToStageSelect} variant="secondary">
