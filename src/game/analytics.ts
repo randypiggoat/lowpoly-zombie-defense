@@ -1,6 +1,7 @@
 export type AnalyticsEventName =
   | "run_started"
   | "run_finished"
+  | "menu_quick_play"
   | "tower_built"
   | "tower_upgraded"
   | "kill_streak_milestone"
