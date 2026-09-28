@@ -8,14 +8,22 @@ let muted = false;
 function ensure(): Ctx {
   if (typeof window === "undefined") return null;
   if (!ctx) {
-    const AC =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return null;
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0.5;
-    master.connect(ctx.destination);
+    try {
+      const AC =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(ctx.destination);
+    } catch {
+      // Some embedded/mobile browsers can reject audio-context creation.
+      // Audio failure must never make an otherwise valid tap fail.
+      ctx = null;
+      master = null;
+      return null;
+    }
   }
   return ctx;
 }
