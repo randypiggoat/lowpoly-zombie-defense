@@ -380,8 +380,9 @@ export function GameCanvas() {
       )}
 
       {screen === "main-menu" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-3">
-          <ScreenCard>
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/55 p-3">
+          <div className="flex min-h-full items-center justify-center">
+            <ScreenCard>
             <h1 className="text-center font-display text-3xl tracking-wide text-panel-foreground">
               Rotwood Defense
             </h1>
@@ -536,6 +537,7 @@ export function GameCanvas() {
               </div>
             </div>
           </ScreenCard>
+          </div>
         </div>
       )}
 
