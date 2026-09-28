@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
+import { getSceneRenderQuality } from "@/game/renderQuality";
 import { profile } from "@/game/profile";
 import {
   BUILD_SPOTS,
@@ -146,13 +147,13 @@ function Rock({ position, scale = 1 }: { position: [number, number, number]; sca
   );
 }
 
-function Scenery() {
+function Scenery({ count = 46 }: { count?: number }) {
   const items = useMemo(() => {
     const trees: [number, number, number][] = [];
     const rocks: [number, number, number][] = [];
     let seed = 7;
     const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-    for (let i = 0; i < 46; i++) {
+    for (let i = 0; i < count; i++) {
       const x = (rnd() - 0.5) * 56;
       const z = (rnd() - 0.5) * 60 - 4;
       let ok = true;
@@ -169,7 +170,7 @@ function Scenery() {
       else rocks.push([x, 0.4, z]);
     }
     return { trees, rocks };
-  }, []);
+  }, [count]);
 
   return (
     <group>
@@ -1058,6 +1059,8 @@ export function Scene({
   reducedMotion?: boolean;
 }) {
   const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
+  const { size } = useThree();
+  const renderQuality = useMemo(() => getSceneRenderQuality(size.width), [size.width]);
   const theme = useMemo(() => getStageTheme(stageId, endlessMode), [stageId, endlessMode]);
   return (
     <>
@@ -1069,8 +1072,8 @@ export function Scene({
         position={[12, 18, 8]}
         intensity={theme.lightIntensity}
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={renderQuality.shadowMapSize}
+        shadow-mapSize-height={renderQuality.shadowMapSize}
         shadow-camera-left={-26}
         shadow-camera-right={26}
         shadow-camera-top={26}
@@ -1080,7 +1083,7 @@ export function Scene({
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} />
-        <Scenery />
+        <Scenery count={renderQuality.sceneryCount} />
         <Base />
         <BuildPads occupied={occupied} selection={selection} onSelectSpot={onSelectSpot} />
         {towers.map((t) => (
