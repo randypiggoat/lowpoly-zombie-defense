@@ -790,6 +790,7 @@ class ProfileStore {
     score: number,
     weekKey: string,
     completed: boolean,
+    rewardMultiplier = 1,
   ): RunReward & { score: number; bestScore: number } {
     this.refreshRetentionState();
     const p = this.profile;
@@ -801,8 +802,9 @@ class ProfileStore {
     const normalizedWave = Math.max(1, Math.floor(wave));
     const normalizedScore = Math.max(0, Math.floor(score));
     const newRecord = normalizedScore > p.bossTrialBestScore;
-    const baseXp = Math.round((45 + normalizedWave * 20 + Math.floor(kills / 2)) * (completed ? 1.15 : 0.8));
-    const baseCoins = Math.round((55 + normalizedWave * 8 + Math.floor(kills / 3)) * (completed ? 1.2 : 0.8));
+    const rewardScale = Math.max(1, rewardMultiplier);
+    const baseXp = Math.round((45 + normalizedWave * 20 + Math.floor(kills / 2)) * rewardScale * (completed ? 1.15 : 0.8));
+    const baseCoins = Math.round((55 + normalizedWave * 8 + Math.floor(kills / 3)) * rewardScale * (completed ? 1.2 : 0.8));
     const gems = completed ? 4 : Math.floor(normalizedWave / 4);
 
     p.coins += baseCoins;
