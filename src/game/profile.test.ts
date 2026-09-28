@@ -32,17 +32,31 @@ describe("accessibility preferences", () => {
 
 describe("daily login rewards", () => {
   test("claims the current seven-day reward once", () => {
+    const originalCoins = profile.profile.coins;
+    const originalGems = profile.profile.gems;
+    const originalXp = profile.profile.xp;
+    const originalLevel = profile.profile.level;
     const originalClaimDate = profile.profile.lastLoginClaimDate;
+    const originalClaimedDay = profile.profile.lastLoginRewardDayClaimed;
     const originalCycleDay = profile.profile.loginCycleDay;
+
+    profile.profile.coins = originalCoins;
     profile.profile.lastLoginClaimDate = null;
+    profile.profile.lastLoginRewardDayClaimed = null;
     profile.profile.loginCycleDay = 1;
 
-    const beforeCoins = profile.profile.coins;
-    expect(profile.claimDailyLoginReward()).toBe(true);
-    expect(profile.profile.coins).toBe(beforeCoins + 120);
-    expect(profile.claimDailyLoginReward()).toBe(false);
-
-    profile.profile.lastLoginClaimDate = originalClaimDate;
-    profile.profile.loginCycleDay = originalCycleDay;
+    try {
+      expect(profile.claimDailyLoginReward()).toBe(true);
+      expect(profile.profile.coins).toBe(originalCoins + 120);
+      expect(profile.claimDailyLoginReward()).toBe(false);
+    } finally {
+      profile.profile.coins = originalCoins;
+      profile.profile.gems = originalGems;
+      profile.profile.xp = originalXp;
+      profile.profile.level = originalLevel;
+      profile.profile.lastLoginClaimDate = originalClaimDate;
+      profile.profile.lastLoginRewardDayClaimed = originalClaimedDay;
+      profile.profile.loginCycleDay = originalCycleDay;
+    }
   });
 });
