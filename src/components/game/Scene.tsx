@@ -361,9 +361,7 @@ function Zombies() {
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
-  const bossAuras = useRef<(THREE.Group | null)[]>([]);
-  const bossCrowns = useRef<(THREE.Group | null)[]>([]);
-  const bossCores = useRef<(THREE.Mesh | null)[]>([]);
+  const lastBoss = useRef<boolean[]>([]);
 
   useFrame(() => {
     const list = game.state.zombies;
@@ -377,34 +375,36 @@ function Zombies() {
       }
       g.visible = true;
       const look = ZOMBIE_LOOKS[z.kind];
-      const bossAura = bossAuras.current[i];
-      const bossCrown = bossCrowns.current[i];
-      const bossCore = bossCores.current[i];
-      const now = performance.now();
-      if (bossAura) {
-        bossAura.visible = z.boss;
-        if (z.boss) {
-          bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
-          const pulse = 1 + Math.sin(now * 0.006 + i) * (z.bossEnraged ? 0.12 : 0.055);
-          bossAura.scale.setScalar(pulse);
+      const bossChanged = lastBoss.current[i] !== z.boss;
+      if (bossChanged || z.boss) {
+        const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
+        const bossCrown = g.getObjectByName("boss-crown") as THREE.Group | undefined;
+        const bossCore = g.getObjectByName("boss-core") as THREE.Mesh | undefined;
+        const now = performance.now();
+        if (bossChanged) {
+          if (bossAura) bossAura.visible = z.boss;
+          if (bossCrown) bossCrown.visible = z.boss;
+          if (bossCore) bossCore.visible = z.boss;
+          lastBoss.current[i] = z.boss;
         }
-      }
-      if (bossCrown) {
-        bossCrown.visible = z.boss;
         if (z.boss) {
-          bossCrown.rotation.y += z.bossEnraged ? 0.026 : 0.012;
-          bossCrown.position.y = 1.95 + Math.sin(now * 0.004 + i) * 0.025;
-        }
-      }
-      if (bossCore) {
-        bossCore.visible = z.boss;
-        if (z.boss) {
-          const material = bossCore.material as THREE.MeshStandardMaterial;
-          const bossColor = z.bossEnraged ? "#ff6b4a" : "#e9b44c";
-          material.color.set(bossColor);
-          material.emissive.set(z.bossEnraged ? "#ff4f36" : "#e9b44c");
-          material.emissiveIntensity = z.bossEnraged ? 1.25 : 0.85;
-          bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01) * 0.12 : 1);
+          if (bossAura) {
+            bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
+            const pulse = 1 + Math.sin(now * 0.006 + i) * (z.bossEnraged ? 0.12 : 0.055);
+            bossAura.scale.setScalar(pulse);
+          }
+          if (bossCrown) {
+            bossCrown.rotation.y += z.bossEnraged ? 0.026 : 0.012;
+            bossCrown.position.y = 1.95 + Math.sin(now * 0.004 + i) * 0.025;
+          }
+          if (bossCore) {
+            const material = bossCore.material as THREE.MeshStandardMaterial;
+            const bossColor = z.bossEnraged ? "#ff6b4a" : "#e9b44c";
+            material.color.set(bossColor);
+            material.emissive.set(z.bossEnraged ? "#ff4f36" : "#e9b44c");
+            material.emissiveIntensity = z.bossEnraged ? 1.25 : 0.85;
+            bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01) * 0.12 : 1);
+          }
         }
       }
       const scale =
@@ -565,13 +565,13 @@ function Zombies() {
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
           </mesh>
 
-          <group ref={(el) => void (bossAuras.current[i] = el)} visible={false} position={[0, 1.1, 0]}>
+          <group name="boss-aura" visible={false} position={[0, 1.1, 0]}>
             <mesh rotation-x={Math.PI / 2}>
               <torusGeometry args={[0.72, 0.07, 5, 12]} />
               <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.75} transparent opacity={0.62} flatShading />
             </mesh>
           </group>
-          <group ref={(el) => void (bossCrowns.current[i] = el)} visible={false} position={[0, 1.95, 0]}>
+          <group name="boss-crown" visible={false} position={[0, 1.95, 0]}>
             {[-0.34, -0.11, 0.11, 0.34].map((x) => (
               <mesh key={x} position={[x, 0, 0]}>
                 <coneGeometry args={[0.11, 0.38, 4]} />
@@ -579,7 +579,7 @@ function Zombies() {
               </mesh>
             ))}
           </group>
-          <mesh ref={(el) => void (bossCores.current[i] = el)} visible={false} position={[0, 1.94, 0.18]}>
+          <mesh name="boss-core" visible={false} position={[0, 1.94, 0.18]}>
             <icosahedronGeometry args={[0.14, 0]} />
             <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.85} flatShading />
           </mesh>
