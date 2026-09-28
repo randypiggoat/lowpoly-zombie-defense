@@ -33,6 +33,7 @@ import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, 
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { perfectWaveGoldBonus } from "./waveRewards";
 import { bossKillGoldMultiplier } from "./bossRewards";
+import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
 import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
@@ -931,6 +932,7 @@ waveMessageType: "start" | "complete" | "boss" | "";
   streakBonusGold: number;
   bossBonusGold: number;
   bossesDefeated: number;
+  bossEnragedCount: number;
   killStreak: number;
   killStreakTimer: number;
   screenShake: number;
@@ -1027,6 +1029,7 @@ waveMessageType: "",
     streakBonusGold: 0,
     bossBonusGold: 0,
     bossesDefeated: 0,
+    bossEnragedCount: 0,
     killStreak: 0,
     killStreakTimer: 0,
     screenShake: 0,
@@ -1707,6 +1710,20 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       if (z.healFlash) z.healFlash = Math.max(0, z.healFlash - dt * 4);
 
+      if (
+        shouldBossEnrage(z.boss, z.hp, z.maxHp, z.bossEnraged)
+      ) {
+        z.bossEnraged = true;
+        s.bossEnragedCount += 1;
+        s.waveMessage = "BOSS ENRAGED!";
+        s.waveMessageLife = 1.4;
+        s.waveMessageType = "boss";
+        s.screenShake = Math.min(1.8, s.screenShake + 0.65);
+        track("boss_enraged", { wave: s.wave, kind: z.kind });
+        sfx("bigHit");
+        this.emit();
+      }
+
       if (z.kind === 6) {
         z.healTimer = (z.healTimer ?? 0) + dt;
         if (z.healTimer >= 0.9) {
@@ -1731,7 +1748,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       const lifecycle = stepLivingEnemy({
         dist: z.dist,
-        speed: z.speed,
+        speed: z.speed * bossSpeedMultiplier(z.boss, z.bossEnraged),
         slow: z.slow,
         burn: z.burn,
         burnTime: z.burnTime,
