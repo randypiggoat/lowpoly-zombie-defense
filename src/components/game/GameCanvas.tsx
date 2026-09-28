@@ -1,5 +1,4 @@
 import { Canvas } from "@react-three/fiber";
-import { ChevronRight } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
