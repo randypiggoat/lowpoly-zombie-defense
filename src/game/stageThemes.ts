@@ -114,7 +114,24 @@ const THEMES: Record<number, StageTheme> = {
   },
 };
 
-export function getStageTheme(stageId: number, endlessMode = false): StageTheme {
+  1000: {
+    id: 1000,
+    name: "Boss Trial Arena",
+    sky: "#251c2d",
+    fog: "#3b2942",
+    ground: "#3f353a",
+    groundAlt: "#352d32",
+    path: "#67534e",
+    pathEdge: "#211c22",
+    marker: "#e9b44c",
+    hemiSky: "#5c405c",
+    hemiGround: "#292428",
+    light: "#ffd4aa",
+    lightIntensity: 1.05,
+    night: true,
+  },
+export function getStageTheme(stageId: number, endlessMode = false, bossTrial = false): StageTheme {
+  if (bossTrial) return THEMES[1000]!
   if (endlessMode) return THEMES[999]!;
   return THEMES[stageId] ?? THEMES[1]!;
 }
