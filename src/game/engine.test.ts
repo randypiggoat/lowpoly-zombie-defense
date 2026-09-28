@@ -128,3 +128,18 @@ describe("Game simulation", () => {
   });
 });
 
+
+
+describe("combat hit semantics", () => {
+  test("a high-damage ordinary hit is not treated as a critical hit", async () => {
+    const { resolveDamage } = await import("./damage");
+    const result = resolveDamage(100, 100, 40, 1, 1, false);
+    expect(result.crit).toBe(false);
+  });
+
+  test("an explicitly rolled critical hit stays critical", async () => {
+    const { resolveDamage } = await import("./damage");
+    const result = resolveDamage(100, 100, 20, 1, 1, true);
+    expect(result.crit).toBe(true);
+  });
+});
