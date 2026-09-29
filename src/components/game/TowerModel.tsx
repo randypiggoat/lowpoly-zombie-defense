@@ -422,6 +422,34 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <icosahedronGeometry args={[0.16, 0]} />
         <AccentMaterial color={accent} glow={0.9} />
       </mesh>
+      {tower.a > 0 && (
+        <group position={[-0.72, 0.52, -0.05]} rotation-z={0.18 + tower.a * 0.015}>
+          <mesh castShadow>
+            <boxGeometry args={[0.12 + tower.a * 0.025, 0.24 + tower.a * 0.05, 0.18]} />
+            <AccentMaterial color={accent} glow={0.35 + tower.a * 0.05} />
+          </mesh>
+          {tower.a >= 3 && (
+            <mesh position={[0, 0.18, 0.02]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.17, 0.025, 5, 8]} />
+              <AccentMaterial color={accent} glow={0.55} />
+            </mesh>
+          )}
+        </group>
+      )}
+      {tower.b > 0 && (
+        <group position={[0.72, 0.52, -0.05]} rotation-z={-0.18 - tower.b * 0.015}>
+          <mesh castShadow rotation-y={tower.b >= 3 ? Math.PI / 4 : 0}>
+            <boxGeometry args={[0.12 + tower.b * 0.025, 0.24 + tower.b * 0.05, 0.18]} />
+            <AccentMaterial color={accent} glow={0.35 + tower.b * 0.05} />
+          </mesh>
+          {tower.b >= 3 && (
+            <mesh position={[0, 0.18, 0.02]} rotation-z={Math.PI / 2}>
+              <torusGeometry args={[0.17, 0.025, 5, 8]} />
+              <AccentMaterial color={accent} glow={0.55} />
+            </mesh>
+          )}
+        </group>
+      )}
       {level >= 3 && (
         <>
           <mesh position={[-0.62, 0.3, -0.05]} rotation-z={0.18} castShadow>
