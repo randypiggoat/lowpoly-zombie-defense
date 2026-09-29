@@ -110,6 +110,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
 
   for (const [buttonName, expectedText] of screens) {
     await openAndCheck(page, buttonName, expectedText);
+    await expect(page.getByRole("button", { name: /← BACK/i })).toHaveCount(1);
     await page.getByRole("button", { name: /← BACK/i }).click({ force: true });
     await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   }
