@@ -8,6 +8,7 @@ export type PrimaryScreen =
   | "gameplay"
   | "results"
   | "towers"
+  | "knowledge"
   | "collection"
   | "events"
   | "missions"
