@@ -6,7 +6,6 @@ import {
   canBuyTier,
   game,
   incomeCost,
-  incomePerSecond,
   tierCost,
   towerSellValue,
   towerUnlocked,
@@ -21,7 +20,6 @@ import {
   DAILY_MISSION_DEFS,
   dateKey,
   profile,
-  xpForLevel,
   type AchievementProgress,
   type PlayerProfile,
 } from "@/game/profile";
@@ -628,7 +626,7 @@ export function HUD({
                         </span>
                       </span>
                       <span className="shrink-0 text-[9px] text-panel-muted">
-                        {unlocked ? `${info.cost} scrap` : `Lv ${info.unlockLevel}`}
+                        {unlocked ? `${buildCost} scrap` : `Lv ${info.unlockLevel}`}
                       </span>
                     </span>
                     <p className="mt-1 line-clamp-2 text-[9px] leading-tight text-panel-muted">{info.blurb}</p>
