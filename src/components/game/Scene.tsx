@@ -522,12 +522,61 @@ function BuildSurface({
     ? canPlaceTower(map, preview.x, preview.z, towers)
     : null;
 
-  const updatePreview = (event: { stopPropagation: () => void; point: THREE.Vector3 }) => {
-    event.stopPropagation();
+  const { camera, gl, raycaster, pointer } = useThree();
+
+  const updatePreviewFromWorldPoint = (worldPoint: THREE.Vector3) => {
     if (!surface.current) return;
-    const local = surface.current.worldToLocal(event.point.clone());
+    const local = surface.current.worldToLocal(worldPoint.clone());
     onPreviewPosition(snapBuildPosition(map, local.x, local.z));
   };
+
+  const updatePreview = (event: { stopPropagation: () => void; point: THREE.Vector3 }) => {
+    event.stopPropagation();
+    updatePreviewFromWorldPoint(event.point);
+  };
+
+  useEffect(() => {
+    const element = gl.domElement;
+    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+    const updateFromClientPoint = (clientX: number, clientY: number) => {
+      if (!surface.current) return;
+
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      pointer.set(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(pointer, camera);
+
+      // The scene's gameplay group stays level, so its local ground plane maps
+      // to a world-horizontal plane. Read the actual group's world Y instead
+      // of hardcoding a camera- or device-specific offset.
+      const worldGround = surface.current.localToWorld(new THREE.Vector3(0, 0, 0));
+      ground.set(new THREE.Vector3(0, 1, 0), -worldGround.y);
+
+      const hit = raycaster.ray.intersectPlane(ground, new THREE.Vector3());
+      if (hit) updatePreviewFromWorldPoint(hit);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      updateFromClientPoint(event.clientX, event.clientY);
+    };
+
+    const handlePointerLeave = () => {
+      onPreviewPosition(null);
+    };
+
+    element.addEventListener("pointermove", handlePointerMove);
+    element.addEventListener("pointerleave", handlePointerLeave);
+
+    return () => {
+      element.removeEventListener("pointermove", handlePointerMove);
+      element.removeEventListener("pointerleave", handlePointerLeave);
+    };
+  }, [camera, gl, pointer, raycaster]);
 
   return (
     <group ref={surface}>
@@ -537,8 +586,9 @@ function BuildSurface({
           0.012,
           (map.bounds.minZ + map.bounds.maxZ) / 2,
         ]}
-        // PlaneGeometry is created in the local XY plane. Rotate it onto XZ so
-        // R3F ray intersections expose both map coordinates for the ground.
+        // Keep the plane aligned to the playable XZ ground for click/select
+        // intersection. Preview tracking itself uses the camera ray above so it
+        // remains accurate even when obstacles cover the ground mesh.
         rotation-x={-Math.PI / 2}
         onPointerMove={updatePreview}
         onPointerDown={(event) => {
