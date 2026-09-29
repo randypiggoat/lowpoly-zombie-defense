@@ -21,7 +21,6 @@ import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
   towerSellValue as calculateTowerSellValue,
-  towerUpgradeCost as calculateTowerUpgradeCost,
 } from "./towerActions";
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
@@ -408,18 +407,6 @@ export const GORE_BASE: Record<TowerKind, number> = {
   rocket: 1.9,
   laser: 1.3,
 };
-
-/** Gold cost of the next level-up for this tower. */
-export function towerUpgradeCost(t: Tower) {
-  const raw = calculateTowerUpgradeCost(t, TOWER_INFO[t.kind], MAX_TOWER_LEVEL);
-  return Number.isFinite(raw)
-    ? Math.max(1, Math.round(raw * profile.fieldKnowledgeEffects().towerUpgradeCostMultiplier))
-    : raw;
-}
-
-export function towerBuildCost(kind: TowerKind) {
-  return Math.max(1, Math.round(TOWER_INFO[kind].cost * profile.fieldKnowledgeEffects().towerBuildCostMultiplier));
-}
 
 /* ---------------- upgrade paths ---------------- */
 
@@ -931,28 +918,6 @@ export class Game {
       return false;
     }
     return this.placeTowerAt(point.x, point.z, kind, spot);
-  }
-
-  /** Straight level-up: costs gold, raises damage / rate / range. */
-  upgradeTower(towerId: number): boolean {
-    const s = this.state;
-    const t = s.towers.find((x) => x.id === towerId);
-    if (!t || t.level >= MAX_TOWER_LEVEL) {
-      sfx("deny");
-      return false;
-    }
-    const cost = towerUpgradeCost(t);
-    if (s.gold < cost) {
-      sfx("deny");
-      return false;
-    }
-    s.gold -= cost;
-    t.level += 1;
-    profile.recordTowerUpgrade(t.kind);
-    track("tower_upgraded", { kind: t.kind, level: t.level });
-    sfx("upgrade");
-    this.emit();
-    return true;
   }
 
   unlockTower(kind: TowerKind): boolean {
