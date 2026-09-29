@@ -63,6 +63,28 @@ function nextProgressionTarget(player: PlayerProfile) {
   return { label: "Field Knowledge complete", detail: "Every permanent knowledge node unlocked" };
 }
 
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "gold" | "danger" | undefined;
+}) {
+  return (
+    <div className="rotwood-stat flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
+      <span
+        className="rotwood-stat-number font-display text-lg leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
+        data-tone={tone}
+      >
+        {value}
+      </span>
+      <span className="text-[9px] uppercase tracking-[0.16em] text-panel-muted">{label}</span>
+    </div>
+  );
+}
+
 function progressPercent(progress: AchievementProgress | undefined, target: number) {
   const current = progress?.progress ?? 0;
   return Math.min(100, (current / Math.max(1, target)) * 100);
