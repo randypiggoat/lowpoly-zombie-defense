@@ -249,9 +249,6 @@ export function HUD({
   const placement = spot ? game.getPlacementStatus(spot.x, spot.z) : null;
   const incCost = incomeCost(state.incomeLevel);
   const levelCost = tower ? towerUpgradeCost(tower) : Infinity;
-  const towerMetaLevel = tower ? towerProfileUpgradeLevel(tower.kind) : 0;
-  const towerMetaCost = tower ? towerProfileUpgradeCost(tower.kind) : Infinity;
-  const towerMetaBonus = tower ? towerProfileBonus(tower.kind) : null;
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
