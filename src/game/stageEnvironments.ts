@@ -213,6 +213,7 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("palm", 9.9, 8.8, 0.9),
       prop("rock", 11.5, 13, 0.72),
       prop("palm", -13.1, 15.4, 0.72),
+      prop("shrub", 13.2, -20.5, 0.8),
       prop("shrub", 13.1, 15.4, 0.9),
     ],
   },

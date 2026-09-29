@@ -74,7 +74,7 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     obstacles: [
       { x: 10.5, z: -18, width: 4.4, depth: 3.4, height: 1.15, label: "Family house" },
       { x: -10.5, z: -6, width: 3.4, depth: 3.1, height: 0.95, label: "Garage" },
-      { x: 10.5, z: 11, width: 3.8, depth: 2.5, height: 0.65, label: "Garden wall" },
+      { x: 3.8, z: -17.1, width: 2.2, depth: 1.2, height: 0.65, label: "Garden wall" },
     ],
     placementTip: "A forgiving S-route teaches corner coverage: outside lawns give long shots while the upper return rewards a close-range anchor.",
     environmentId: "suburban",
