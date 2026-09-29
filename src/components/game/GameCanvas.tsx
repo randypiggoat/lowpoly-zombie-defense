@@ -457,7 +457,7 @@ export function GameCanvas() {
             towers={state.towers}
             selection={selection}
             onSelectTower={(id) => setSelection({ kind: "tower", id })}
-            onSelectSpot={(index) => setSelection({ kind: "spot", index })}
+            onSelectPosition={(position) => setSelection({ kind: "spot", position })}
           />
         </Canvas>
       )}
