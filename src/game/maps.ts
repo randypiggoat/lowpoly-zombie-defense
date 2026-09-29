@@ -522,6 +522,35 @@ export function getStageMap(mapId?: StageMapId | null) {
   return STAGE_MAPS[mapId ?? "highway"] ?? STAGE_MAPS.highway;
 }
 
+function segmentIntersectsRect(
+  from: MapVec2,
+  to: MapVec2,
+  rect: MapRect,
+  padding = 0.05,
+) {
+  const minX = rect.x - rect.width / 2 - padding;
+  const maxX = rect.x + rect.width / 2 + padding;
+  const minZ = rect.z - rect.depth / 2 - padding;
+  const maxZ = rect.z + rect.depth / 2 + padding;
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  let tMin = 0;
+  let tMax = 1;
+
+  const axis = (origin: number, delta: number, min: number, max: number) => {
+    if (Math.abs(delta) < 0.000001) return origin >= min && origin <= max;
+    const inv = 1 / delta;
+    let t1 = (min - origin) * inv;
+    let t2 = (max - origin) * inv;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tMin = Math.max(tMin, t1);
+    tMax = Math.min(tMax, t2);
+    return tMin <= tMax;
+  };
+
+  return axis(from.x, dx, minX, maxX) && axis(from.z, dz, minZ, maxZ);
+}
+
 export function hasLineOfSight(map: StageMap, from: MapVec2, to: MapVec2) {
   return !map.obstacles.some((obstacle) => segmentIntersectsRect(from, to, obstacle));
 }
