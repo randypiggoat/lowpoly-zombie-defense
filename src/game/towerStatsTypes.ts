@@ -9,6 +9,7 @@ export type Mods = {
   gold?: number;
   gore?: number;
   burn?: number;
+  /** Design-layer ability tags live in towerUpgradeDesign.ts. */
 };
 
 export type TowerKind = string;
