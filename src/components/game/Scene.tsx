@@ -6,12 +6,11 @@ import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
+import { canPlaceTower, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
+import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import {
-  BUILD_SPOTS,
-  PATH,
-  PATH_LENGTH,
   TOWER_INFO,
   game,
   pointAt,
@@ -22,7 +21,7 @@ import {
 
 const MAX_ZOMBIES = 60;
 const MAX_BULLETS = 80;
-const MAX_GIBS = 160;
+const MAX_GIBS = 96;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
 
@@ -46,26 +45,29 @@ const ZOMBIE_LOOKS = [
   { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
 ] as const;
 
-export type Selection = { kind: "tower"; id: number } | { kind: "spot"; index: number } | null;
+export type Selection =
+  | { kind: "tower"; id: number }
+  | { kind: "spot"; position: { x: number; z: number } }
+  | null;
 
 /* ---------------- ground, path, props ---------------- */
 
-function Ground({ theme }: { theme: StageTheme }) {
+function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getStageMapByStageId> }) {
   const segments = useMemo(() => {
     const out: { x: number; z: number; rot: number; len: number }[] = [];
-    for (let i = 1; i < PATH.length; i++) {
-      const a = PATH[i - 1]!;
-      const b = PATH[i]!;
+    for (let i = 1; i < map.path.length; i++) {
+      const a = map.path[i - 1]!;
+      const b = map.path[i]!;
       const len = Math.hypot(b.x - a.x, b.z - a.z);
       out.push({
         x: (a.x + b.x) / 2,
         z: (a.z + b.z) / 2,
         rot: Math.atan2(b.x - a.x, b.z - a.z),
-        len: len + 2.6,
+        len: len + map.pathWidth,
       });
     }
     return out;
-  }, []);
+  }, [map]);
 
   const facets = useMemo(
     () =>
@@ -97,11 +99,11 @@ function Ground({ theme }: { theme: StageTheme }) {
       {segments.map((s, i) => (
         <group key={i}>
           <mesh position={[s.x, 0.07, s.z]} rotation-y={s.rot} receiveShadow>
-            <boxGeometry args={[2.6, 0.14, s.len]} />
+            <boxGeometry args={[map.pathWidth, 0.14, s.len]} />
             <meshStandardMaterial color={theme.path} flatShading />
           </mesh>
           <mesh position={[s.x, 0.15, s.z]} rotation-y={s.rot}>
-            <boxGeometry args={[0.18, 0.025, s.len * 0.82]} />
+            <boxGeometry args={[0.18, 0.025, Math.max(1, s.len - 0.7)]} />
             <meshStandardMaterial color={theme.pathEdge} transparent opacity={0.72} flatShading />
           </mesh>
           {Array.from({ length: Math.max(1, Math.floor(s.len / 4)) }, (_, markerIndex) => {
@@ -123,6 +125,25 @@ function Ground({ theme }: { theme: StageTheme }) {
               </mesh>
             );
           })}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+  return (
+    <group>
+      {map.obstacles.map((obstacle) => (
+        <group key={obstacle.label} position={[obstacle.x, obstacle.height / 2, obstacle.z]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[obstacle.width, obstacle.height, obstacle.depth]} />
+            <meshStandardMaterial color="#6f6b63" flatShading />
+          </mesh>
+          <mesh position={[0, obstacle.height / 2 + 0.04, 0]}>
+            <boxGeometry args={[obstacle.width * 0.72, 0.05, obstacle.depth * 0.72]} />
+            <meshStandardMaterial color="#a29a87" flatShading />
+          </mesh>
         </group>
       ))}
     </group>
@@ -157,7 +178,7 @@ function Rock({ position, scale = 1 }: { position: [number, number, number]; sca
   );
 }
 
-function Scenery({ count = 46 }: { count?: number }) {
+function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof getStageMapByStageId> }) {
   const items = useMemo(() => {
     const trees: [number, number, number][] = [];
     const rocks: [number, number, number][] = [];
@@ -166,29 +187,29 @@ function Scenery({ count = 46 }: { count?: number }) {
     for (let i = 0; i < count; i++) {
       const x = (rnd() - 0.5) * 56;
       const z = (rnd() - 0.5) * 60 - 4;
-      let ok = true;
-      for (let d = 0; d < PATH_LENGTH; d += 1.2) {
-        const p = pointAt(d);
-        if (Math.hypot(p.x - x, p.z - z) < 3.4) ok = false;
-      }
-      for (const s of BUILD_SPOTS) {
-        if (Math.hypot(s.x - x, s.z - z) < 3.4) ok = false;
-      }
-      if (Math.hypot(x + 4, z - 12) < 6) ok = false;
-      if (!ok) continue;
+      const clear =
+        distanceToPath(map, { x, z }) >= 3.4 &&
+        Math.hypot(x - map.base.x, z - map.base.z) >= 6 &&
+        !map.obstacles.some((obstacle) =>
+          x >= obstacle.x - obstacle.width / 2 - 2 &&
+          x <= obstacle.x + obstacle.width / 2 + 2 &&
+          z >= obstacle.z - obstacle.depth / 2 - 2 &&
+          z <= obstacle.z + obstacle.depth / 2 + 2,
+        );
+      if (!clear) continue;
       if (rnd() > 0.25) trees.push([x, 0, z]);
       else rocks.push([x, 0.4, z]);
     }
     return { trees, rocks };
-  }, [count]);
+  }, [count, map]);
 
   return (
     <group>
       {items.trees.map((p, i) => (
-        <Tree key={`t${i}`} position={p} scale={0.85 + ((i * 13) % 5) * 0.12} />
+        <Tree key={'t' + i} position={p} scale={0.85 + ((i * 13) % 5) * 0.12} />
       ))}
       {items.rocks.map((p, i) => (
-        <Rock key={`r${i}`} position={p} scale={0.6 + ((i * 7) % 4) * 0.2} />
+        <Rock key={'r' + i} position={p} scale={0.6 + ((i * 7) % 4) * 0.2} />
       ))}
     </group>
   );
@@ -196,7 +217,7 @@ function Scenery({ count = 46 }: { count?: number }) {
 
 /* ---------------- base ---------------- */
 
-function Base() {
+function Base({ position }: { position: { x: number; z: number } }) {
   const flagRef = useRef<THREE.Mesh>(null);
   const beaconRef = useRef<THREE.Group>(null);
   const coreRef = useRef<THREE.Mesh>(null);
@@ -211,7 +232,7 @@ function Base() {
     }
   });
   return (
-    <group position={[-4, 0, 13.4]}>
+    <group position={[position.x, 0, position.z]}>
       <mesh position={[0, 0.35, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[3.4, 3.8, 0.7, 7]} />
         <meshStandardMaterial color="#9a9083" flatShading />
@@ -250,70 +271,63 @@ function Base() {
   );
 }
 
-/* ---------------- build pads ---------------- */
+/* ---------------- free placement ---------------- */
 
-function BuildPads({
-  occupied,
+function BuildSurface({
+  map,
   selection,
-  onSelectSpot,
+  towers,
+  onSelectPosition,
 }: {
-  occupied: Set<number>;
+  map: ReturnType<typeof getStageMapByStageId>;
   selection: Selection;
-  onSelectSpot: (i: number) => void;
+  towers: Tower[];
+  onSelectPosition: (position: { x: number; z: number }) => void;
 }) {
-  const pulse = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (pulse.current) {
-      const s = 1 + Math.sin(clock.elapsedTime * 3) * 0.06;
-      pulse.current.scale.set(s, 1, s);
-    }
-  });
+  const surface = useRef<THREE.Group>(null);
+  const selected = selection?.kind === "spot" ? selection.position : null;
+  const placement = selected
+    ? canPlaceTower(map, selected.x, selected.z, towers)
+    : null;
 
   return (
-    <group>
-      {BUILD_SPOTS.map((p, i) => {
-        if (occupied.has(i)) return null;
-        const active = selection?.kind === "spot" && selection.index === i;
-        return (
-          <group
-            key={i}
-            position={[p.x, 0, p.z]}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onSelectSpot(i);
-            }}
-          >
-            <mesh position={[0, 0.09, 0]} receiveShadow>
-              <cylinderGeometry args={[1.3, 1.5, 0.18, 6]} />
-              <meshStandardMaterial
-                color={active ? "#e9b44c" : "#7d7568"}
-                transparent
-                opacity={active ? 0.95 : 0.6}
-                flatShading
-              />
+    <group ref={surface}>
+      <mesh
+        position={[
+          (map.bounds.minX + map.bounds.maxX) / 2,
+          0.012,
+          (map.bounds.minZ + map.bounds.maxZ) / 2,
+        ]}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          if (!surface.current) return;
+          const local = surface.current.worldToLocal(e.point.clone());
+          onSelectPosition(snapBuildPosition(map, local.x, local.z));
+        }}
+      >
+        <planeGeometry args={[map.bounds.maxX - map.bounds.minX, map.bounds.maxZ - map.bounds.minZ]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      {selected && placement && (
+        <group position={[selected.x, 0.09, selected.z]}>
+          <mesh rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[0.88, 1.08, 12]} />
+            <meshBasicMaterial
+              color={placement.valid ? "#e9b44c" : "#e24b4b"}
+              transparent
+              opacity={0.9}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          {!placement.valid && (
+            <mesh position={[0, 0.12, 0]}>
+              <boxGeometry args={[0.55, 0.12, 0.55]} />
+              <meshBasicMaterial color="#ff8b7e" />
             </mesh>
-            <group ref={active ? pulse : null}>
-              <mesh rotation-x={-Math.PI / 2} position={[0, 0.2, 0]}>
-                <ringGeometry args={[1.05, 1.25, 6]} />
-                <meshBasicMaterial
-                  color={active ? "#ffe08a" : "#d9d2c4"}
-                  transparent
-                  opacity={active ? 0.9 : 0.45}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-            </group>
-            <mesh position={[0, 0.55, 0]}>
-              <boxGeometry args={[0.12, 0.5, 0.12]} />
-              <meshBasicMaterial color="#f4ead6" transparent opacity={0.7} />
-            </mesh>
-            <mesh position={[0, 0.55, 0]} rotation-z={Math.PI / 2}>
-              <boxGeometry args={[0.12, 0.5, 0.12]} />
-              <meshBasicMaterial color="#f4ead6" transparent opacity={0.7} />
-            </mesh>
-          </group>
-        );
-      })}
+          )}
+        </group>
+      )}
     </group>
   );
 }
@@ -409,6 +423,8 @@ function Zombies() {
       }
       g.visible = true;
       const look = ZOMBIE_LOOKS[z.kind];
+      const goreMask = z.gibMask ?? 0;
+      const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
       const bossChanged = lastBoss.current[i] !== z.boss;
       if (bossChanged || z.boss) {
         const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
@@ -601,6 +617,35 @@ function Zombies() {
           }
         });
       }
+      const hiddenGoreParts: Array<[string, GorePart]> = [
+        ["head", "head"],
+        ["left-arm", "left-arm"],
+        ["right-arm", "right-arm"],
+        ["left-leg", "left-leg"],
+        ["right-leg", "right-leg"],
+        ["left-shoulder", "left-shoulder"],
+        ["right-shoulder", "right-shoulder"],
+        ["runner-crest", "runner-crest"],
+        ["splitter-core", "splitter-core"],
+        ["bomber-pack", "bomber-pack"],
+        ["guardian-shield", "guardian-shield"],
+        ["healer-aura", "healer-aura"],
+        ["swarm-crest", "swarm-crest"],
+      ];
+      for (const [name, part] of hiddenGoreParts) {
+        const object = g.getObjectByName(name);
+        if (!object) continue;
+        const kindRequired =
+          name === "left-shoulder" || name === "right-shoulder" ? z.kind === 2 :
+          name === "runner-crest" ? z.kind === 1 :
+          name === "splitter-core" ? z.kind === 3 :
+          name === "bomber-pack" ? z.kind === 4 :
+          name === "guardian-shield" ? z.kind === 5 :
+          name === "healer-aura" ? z.kind === 6 :
+          name === "swarm-crest" ? z.kind === 7 : true;
+        object.visible = kindRequired && !isBroken(part);
+      }
+
       const hpBackground = g.getObjectByName("hp-background") as THREE.Mesh | undefined;
       const hpFill = g.getObjectByName("hp-fill") as THREE.Mesh | undefined;
       const healthBar = getEnemyHealthBarPresentation(z.kind, z.hp, z.maxHp, z.boss);
@@ -779,6 +824,18 @@ function Zombies() {
 
 function Gibs() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const geometries = useMemo(() => ({
+    shard: new THREE.TetrahedronGeometry(0.1, 0),
+    head: new THREE.IcosahedronGeometry(0.12, 0),
+    limb: new THREE.BoxGeometry(0.11, 0.28, 0.11),
+    core: new THREE.DodecahedronGeometry(0.12, 0),
+    ring: new THREE.TorusGeometry(0.14, 0.035, 5, 8),
+  }), []);
+  useEffect(
+    () => () => Object.values(geometries).forEach((geometry) => geometry.dispose()),
+    [geometries],
+  );
+
   useFrame(() => {
     const list = game.state.gibs;
     for (let i = 0; i < MAX_GIBS; i++) {
@@ -792,22 +849,37 @@ function Gibs() {
       m.visible = true;
       m.position.set(g.x, g.y, g.z);
       m.rotation.set(g.rx, g.ry, g.rx * 0.6);
-      const fade = Math.max(0, 1 - Math.max(0, g.life - 2.2) / 1);
-      m.scale.setScalar(g.size * 6 * fade);
-      (m.material as THREE.MeshStandardMaterial).color.set(GIB_COLORS[g.tint % 3]!);
+      const fade = Math.max(0, 1 - Math.max(0, g.life - 1.05) / 0.7);
+      m.scale.setScalar(g.size * 5.2 * fade);
+      const part = g.part ?? "splitter-core";
+      m.geometry =
+        part === "head" ? geometries.head :
+        part.includes("arm") || part.includes("leg") ? geometries.limb :
+        part.includes("shield") || part.includes("aura") ? geometries.ring :
+        part.includes("core") ? geometries.core :
+        geometries.shard;
+      const material = m.material as THREE.MeshBasicMaterial;
+      material.color.set(
+        part === "head" ? "#7a2b2f" :
+        part.includes("shield") ? "#70c5d6" :
+        part.includes("core") ? "#d3a452" :
+        GIB_COLORS[g.tint % GIB_COLORS.length]!,
+      );
     }
   });
+
   return (
     <group>
       {Array.from({ length: MAX_GIBS }, (_, i) => (
-        <mesh key={i} ref={(el) => void (meshes.current[i] = el)} visible={false} castShadow>
+        <mesh key={i} ref={(el) => void (meshes.current[i] = el)} visible={false}>
           <tetrahedronGeometry args={[0.1, 0]} />
-          <meshStandardMaterial color="#8c2b2b" flatShading />
+          <meshBasicMaterial color="#8c2b2b" />
         </mesh>
       ))}
     </group>
   );
 }
+
 function DamagePopups() {
   const popups = game.state.damagePopups;
 
@@ -885,7 +957,7 @@ function DamagePopup({
       }
     } else if (text.current) {
       text.current.scale.setScalar(popup.crit ? 1.35 : 1);
-      text.current.text = `${popup.value}`;
+      text.current.text = popup.crit ? "CRIT" : "";
       const material = text.current.material;
       if (material) {
         material.transparent = true;
@@ -931,7 +1003,7 @@ function DamagePopup({
           text.current = el as typeof text.current;
         }}
         position={popup.gold > 0 ? [0, -0.32, 0] : [0, 0, 0]}
-        fontSize={popup.gold > 0 ? 0.25 : 0.42}
+        fontSize={popup.gold > 0 ? 0.25 : 0.34}
         color={popup.gold > 0 ? "#ffd86b" : popup.crit ? "#fff3c4" : "#ffffff"}
         outlineColor="#111111"
         outlineWidth={0.045}
@@ -1133,14 +1205,14 @@ export function Scene({
   towers: Tower[];
   selection: Selection;
   onSelectTower: (id: number) => void;
-  onSelectSpot: (i: number) => void;
+  onSelectPosition: (position: { x: number; z: number }) => void;
   paused?: boolean;
   reducedMotion?: boolean;
 }) {
-  const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
   const { size } = useThree();
   const renderQuality = useMemo(() => getSceneRenderQuality(size.width), [size.width]);
   const theme = useMemo(() => getStageTheme(stageId, endlessMode, bossTrial), [stageId, endlessMode, bossTrial]);
+  const map = useMemo(() => getStageMapByStageId(stageId), [stageId]);
   return (
     <>
       <color attach="background" args={[theme.sky]} />
@@ -1161,10 +1233,11 @@ export function Scene({
       <CameraRig reducedMotion={reducedMotion} />
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
-        <Ground theme={theme} />
-        <Scenery count={renderQuality.sceneryCount} />
-        <Base />
-        <BuildPads occupied={occupied} selection={selection} onSelectSpot={onSelectSpot} />
+        <Ground theme={theme} map={map} />
+        <MapObstacles map={map} />
+        <Scenery count={renderQuality.sceneryCount} map={map} />
+        <Base position={map.base} />
+        <BuildSurface map={map} selection={selection} towers={towers} onSelectPosition={onSelectPosition} />
         {towers.map((t) => (
           <TowerMesh
             key={t.id}
