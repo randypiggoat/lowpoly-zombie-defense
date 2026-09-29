@@ -1268,6 +1268,57 @@ function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   return null;
 }
 
+type RenderQaSnapshot = {
+  camera: { x: number; y: number; z: number; targetX: number; targetY: number; targetZ: number };
+  visibleMeshes: number;
+  totalMeshes: number;
+  sceneChildren: number;
+  renderCalls: number;
+  triangles: number;
+};
+
+function RenderQaProbe() {
+  const { gl, scene, camera } = useThree();
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("qa")) return;
+
+    const qaWindow = window as Window & { __ROTWOOD_RENDER_QA__?: () => RenderQaSnapshot };
+    qaWindow.__ROTWOOD_RENDER_QA__ = () => {
+      let visibleMeshes = 0;
+      let totalMeshes = 0;
+      scene.traverse((object) => {
+        if (!(object as THREE.Mesh).isMesh) return;
+        totalMeshes += 1;
+        if (object.visible) visibleMeshes += 1;
+      });
+      const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const renderInfo = gl.info.render;
+      return {
+        camera: {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z,
+          targetX: camera.position.x + direction.x,
+          targetY: camera.position.y + direction.y,
+          targetZ: camera.position.z + direction.z,
+        },
+        visibleMeshes,
+        totalMeshes,
+        sceneChildren: scene.children.length,
+        renderCalls: renderInfo.calls,
+        triangles: renderInfo.triangles,
+      };
+    };
+
+    return () => {
+      delete qaWindow.__ROTWOOD_RENDER_QA__;
+    };
+  }, [camera, gl, scene]);
+
+  return null;
+}
+
 function Simulation({ paused }: { paused: boolean }) {
   useFrame((_, dt) => {
     if (paused) return;
@@ -1319,6 +1370,7 @@ export function Scene({
         shadow-camera-bottom={-26}
       />
       <CameraRig reducedMotion={reducedMotion} />
+      <RenderQaProbe />
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} map={map} />
