@@ -12,6 +12,7 @@ import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import {
   TOWER_INFO,
+  MAX_ACTIVE_BULLETS,
   game,
   towerLevel,
   towerRange,
@@ -19,7 +20,7 @@ import {
 } from "@/game/engine";
 
 const MAX_ZOMBIES = 60;
-const MAX_BULLETS = 64;
+const MAX_BULLETS = MAX_ACTIVE_BULLETS;
 const MAX_GIBS = 96;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
