@@ -56,8 +56,6 @@ import {
 import {
   TOWER_PATHS as DESIGNED_TOWER_PATHS,
   getTowerUpgradeAbilities,
-  type UpgradePath,
-  type TowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
 
 export type Vec2 = { x: number; z: number };
@@ -444,7 +442,7 @@ export type Tier = {
   mods: Mods;
   ability?: string;
 };
-export type { UpgradePath, TowerUpgradeAbilities };
+
 export const TOWER_PATHS = DESIGNED_TOWER_PATHS;
 
 /** Classic rule: only one path may go past tier 2. */
