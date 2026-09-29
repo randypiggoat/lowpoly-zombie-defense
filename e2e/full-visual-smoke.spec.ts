@@ -229,7 +229,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
 
   await page.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByText("PAUSED", { exact: true })).toBeVisible();
-  await assertVisualHealth(page);
+  await assertGameplayLayoutHealth(page);
   await page.getByRole("button", { name: "RESUME" }).click();
 
   expect(pageErrors).toEqual([]);
