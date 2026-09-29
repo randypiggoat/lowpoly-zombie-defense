@@ -4,6 +4,8 @@ export type LivingEnemyStepInput = {
   slow: number;
   burn: number;
   burnTime: number;
+  stun: number;
+  markTime: number;
   wobble: number;
   dt: number;
   pathLength: number;
@@ -14,6 +16,8 @@ export type LivingEnemyStepResult = {
   slow: number;
   burn: number;
   burnTime: number;
+  stun: number;
+  markTime: number;
   wobble: number;
   burnDamage: number;
   reachedBase: boolean;
@@ -45,6 +49,8 @@ export function stepLivingEnemy(
   const nextWobble = wobble + dt * (4 + speed * 2);
   let nextBurnTime = burnTime;
   let nextBurn = burn;
+  let nextStun = Math.max(0, input.stun - dt);
+  let nextMarkTime = Math.max(0, input.markTime - dt);
   let burnDamage = 0;
 
   if (nextBurnTime > 0 && nextBurn > 0) {
@@ -53,7 +59,7 @@ export function stepLivingEnemy(
   }
 
   const nextDist =
-    dist + speed * dt * (1 - Math.min(0.85, slow));
+    dist + speed * dt * (nextStun > 0 ? 0 : 1 - Math.min(0.85, slow));
 
   if (nextBurnTime <= 0) {
     nextBurn = 0;
@@ -64,6 +70,8 @@ export function stepLivingEnemy(
     slow: 0,
     burn: nextBurn,
     burnTime: nextBurnTime,
+    stun: nextStun,
+    markTime: nextMarkTime,
     wobble: nextWobble,
     burnDamage,
     reachedBase: nextDist >= pathLength,
