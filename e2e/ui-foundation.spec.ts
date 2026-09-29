@@ -148,16 +148,37 @@ test("tower placement responds to touch coordinates on mobile", async ({ page },
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
 
-  const first = { x: box!.x + box!.width * 0.35, y: box!.y + box!.height * 0.68 };
-  const second = { x: box!.x + box!.width * 0.65, y: box!.y + box!.height * 0.52 };
+  const dispatchTouchMove = async (x: number, y: number) => {
+    await canvas.evaluate(
+      (element, coords) => {
+        element.dispatchEvent(
+          new PointerEvent("pointermove", {
+            bubbles: true,
+            clientX: coords.x,
+            clientY: coords.y,
+            pointerId: 1,
+            pointerType: "touch",
+            isPrimary: true,
+          }),
+        );
+      },
+      { x, y },
+    );
+    await expect.poll(readPreview).not.toBeNull();
+    return (await readPreview())!;
+  };
 
-  await page.touchscreen.tap(first.x, first.y);
-  await expect.poll(readPreview).not.toBeNull();
-  const firstPreview = (await readPreview())!;
+  const first = {
+    x: box!.x + box!.width * 0.35,
+    y: box!.y + box!.height * 0.68,
+  };
+  const second = {
+    x: box!.x + box!.width * 0.65,
+    y: box!.y + box!.height * 0.52,
+  };
 
-  await page.touchscreen.tap(second.x, second.y);
-  await expect.poll(readPreview).not.toBeNull();
-  const secondPreview = (await readPreview())!;
+  const firstPreview = await dispatchTouchMove(first.x, first.y);
+  const secondPreview = await dispatchTouchMove(second.x, second.y);
 
   expect(Math.abs(secondPreview.x - firstPreview.x)).toBeGreaterThan(0.5);
   expect(Math.abs(secondPreview.z - firstPreview.z)).toBeGreaterThan(0.5);
