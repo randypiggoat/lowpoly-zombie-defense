@@ -4,8 +4,8 @@ export type LivingEnemyStepInput = {
   slow: number;
   burn: number;
   burnTime: number;
-  stun: number;
-  markTime: number;
+  stun?: number;
+  markTime?: number;
   wobble: number;
   dt: number;
   pathLength: number;
