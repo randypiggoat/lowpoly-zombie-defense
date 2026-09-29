@@ -6,7 +6,7 @@ import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
-import { canPlaceTower, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
+import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
