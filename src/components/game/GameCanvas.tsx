@@ -47,6 +47,7 @@ import { isPurchaseAvailable, purchase } from "@/game/monetization";
 import { STORE_CATALOG, storeItemStatus } from "@/game/storeCatalog";
 import type { PurchaseProduct } from "@/game/monetization";
 import { getWaveThreatPreview } from "@/game/waveThreatPreview";
+import { FIELD_KNOWLEDGE } from "@/game/fieldKnowledge";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -624,7 +625,8 @@ export function GameCanvas() {
               <div className="mt-3">
                 <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Progress</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  <HomeShortcut title="Towers" subtitle="Armory & mastery" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
+                  <HomeShortcut title="Armory" subtitle="Tower roster" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
+                  <HomeShortcut title="Knowledge" subtitle="Permanent field perks" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
                   <HomeShortcut title="Collection" subtitle="Equip earned skins" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
                   <HomeShortcut title="Missions" subtitle="Daily objectives" icon={<Gift size={18} />} badge={readyMissionCount || undefined} onClick={() => setScreen("missions")} />
                   <HomeShortcut title="Records" subtitle="Achievements" icon={<Trophy size={18} />} badge={readyAchievementCount || undefined} onClick={() => setScreen("achievements")} />
@@ -941,26 +943,85 @@ export function GameCanvas() {
       {screen === "towers" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
-            </ScreenButton>
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
-              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Towers</h2>
-              <div className="mt-2 space-y-2">
-                {TOWER_KINDS.map((kind) => {
-                  const info = TOWER_INFO[kind];
-                  return (
-                    <div key={kind} className="rounded-xl bg-black/25 px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-panel-foreground">{info.name}</p>
-                        <p className="text-xs text-panel-muted">Unlock Lv {info.unlockLevel}</p>
-                      </div>
-                      <p className="mt-1 text-xs text-panel-muted">{info.blurb}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Field roster</p>
+              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Armory</h2>
+              <p className="mt-1 text-xs text-panel-muted">Choose a tower in battle. Its Scrap upgrades are temporary to the current defense.</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {TOWER_KINDS.map((kind) => {
+                const info = TOWER_INFO[kind];
+                const unlocked = TOWER_INFO[kind].coinUnlock === 0 || player.level >= info.unlockLevel || player.unlockedTowers.includes(kind);
+                return (
+                  <div key={kind} className="rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: info.accent }} />
+                      <p className="font-display text-sm tracking-wide text-panel-foreground">{info.name}</p>
                     </div>
-                  );
-                })}
+                    <p className="mt-1 text-[10px] text-panel-muted">{info.blurb}</p>
+                    <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-accent">{unlocked ? "AVAILABLE IN BATTLE" : "UNLOCK · LV " + info.unlockLevel}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === "knowledge" && (
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md">
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 shadow-panel">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Permanent progression</p>
+                  <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Field Knowledge</h2>
+                  <p className="mt-1 text-xs text-panel-muted">Spend CREDITS here. These perks stay equipped across runs.</p>
+                </div>
+                <div className="shrink-0 rounded-xl bg-black/30 px-3 py-2 text-right">
+                  <p className="font-display text-base text-accent">{player.coins.toLocaleString()}</p>
+                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Credits</p>
+                </div>
               </div>
             </div>
+            {(["ARSENAL", "FIELDCRAFT", "SALVAGE"] as const).map((category) => (
+              <section key={category} className="mt-3">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="font-display text-sm tracking-[0.16em] text-panel-foreground">{category}</p>
+                  <p className="text-[9px] uppercase tracking-wider text-panel-muted">{FIELD_KNOWLEDGE.filter((n) => n.category === category && player.fieldKnowledge[n.id] === 1).length} / 4</p>
+                </div>
+                <div className="space-y-1.5">
+                  {FIELD_KNOWLEDGE.filter((node) => node.category === category).map((node) => {
+                    const owned = player.fieldKnowledge[node.id] === 1;
+                    const open = profile.canUnlockFieldKnowledge(node.id);
+                    const enough = player.coins >= node.cost;
+                    const locked = !owned && !open;
+                    return (
+                      <button
+                        key={node.id}
+                        type="button"
+                        disabled={owned || locked || !enough}
+                        onClick={() => profile.unlockFieldKnowledge(node.id)}
+                        className="w-full rounded-xl border border-white/10 bg-panel/95 p-3 text-left shadow-panel transition active:scale-[0.99] disabled:opacity-55 data-[owned=true]:border-accent/40 data-[owned=true]:bg-accent/10"
+                        data-owned={owned}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-display text-sm tracking-wide text-panel-foreground">{node.name}</p>
+                            <p className="mt-0.5 text-[10px] leading-tight text-panel-muted">{node.description}</p>
+                          </div>
+                          <span className="shrink-0 rounded-lg bg-black/25 px-2 py-1 font-display text-[10px] text-accent">{owned ? "EQUIPPED" : locked ? "LOCKED" : node.cost + " CR"}</span>
+                        </div>
+                        {!owned && open && !enough && <p className="mt-1.5 text-[9px] uppercase tracking-wider text-panel-muted">{node.cost - player.coins} more credits</p>}
+                        {!owned && open && enough && <p className="mt-1.5 text-[9px] uppercase tracking-wider text-accent">READY TO LEARN</p>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
       )}
