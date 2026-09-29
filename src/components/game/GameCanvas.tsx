@@ -272,11 +272,11 @@ function StageRoutePreview({ stageId }: { stageId: number }) {
       >
         <rect width="100%" height="100%" rx="1.25" fill={theme.ground} />
         <rect width="100%" height="100%" rx="1.25" fill={theme.groundAlt} opacity="0.3" />
-        {map.obstacles.map((obstacle) => {
+        {map.obstacles.map((obstacle, index) => {
           const rect = obstacleRect(obstacle);
           return (
             <rect
-              key={obstacle.label}
+              key={obstacle.label + "-" + index}
               x={rect.x}
               y={rect.y}
               width={obstacle.width}
