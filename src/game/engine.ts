@@ -494,12 +494,13 @@ export function towerGold(t: Tower) {
   return towerCombatStats(t).gold;
 }
 export function towerSellValue(t: Tower) {
-  return calculateTowerSellValue(
+  const raw = calculateTowerSellValue(
     t,
     TOWER_INFO[t.kind],
     TOWER_PATHS[t.kind],
     MAX_TOWER_LEVEL,
   );
+  return Math.floor(raw * profile.fieldKnowledgeEffects().sellMultiplier);
 }
 
 export function towerBuildCost(kind: TowerKind) {
@@ -944,8 +945,7 @@ export class Game {
     const s = this.state;
     const i = s.towers.findIndex((t) => t.id === towerId);
     if (i < 0) return;
-    const sellMultiplier = profile.fieldKnowledgeEffects().sellMultiplier;
-    s.gold += Math.floor(towerSellValue(s.towers[i]!) * sellMultiplier);
+    s.gold += towerSellValue(s.towers[i]!);
     s.towers.splice(i, 1);
     sfx("build");
     this.emit();
