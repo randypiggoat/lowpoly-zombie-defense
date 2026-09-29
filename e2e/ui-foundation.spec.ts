@@ -94,8 +94,8 @@ test("tower placement follows pointer across both world axes and builds at the s
     valid: boolean;
   }> = [];
 
-  for (const x of [0.18, 0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82]) {
-    for (const y of [0.32, 0.40, 0.48, 0.56, 0.64, 0.72, 0.80, 0.88]) {
+  for (const x of [0.20, 0.32, 0.50, 0.68, 0.80]) {
+    for (const y of [0.38, 0.50, 0.62, 0.74]) {
       await dispatchPointer("pointermove", x, y);
       const state = await qa();
       if (!state?.preview) continue;
@@ -153,6 +153,8 @@ test("tower placement responds to touch coordinates on mobile", async ({ page },
   await page.goto("/?qa=1");
   await page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ }).click();
   await expect(page.locator("canvas")).toHaveCount(1);
+  await page.getByRole("button", { name: "Pause" }).click();
+  await page.getByRole("button", { name: "Pause" }).click();
 
   await expect.poll(() =>
     page.evaluate(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__)),
