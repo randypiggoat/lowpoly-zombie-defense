@@ -48,9 +48,9 @@ export const TOWER_PATHS = {
       focus: "Mark threats and own long sightlines",
       tiers: [
         tier("Scout Optic", "Longer sightline; the Rifleman learns to watch the map.", 45, { range: 1.14 }),
-        tier("Threat Paint", "First hit marks the target; marked zombies take +12% damage.", 95, { range: 1.08 }, "mark"),
+        tier("Threat Paint", "First hit marks the target; marked zombies take extra damage.", 95, { range: 1.08 }, "mark"),
         tier("Piercing Round", "Shots jump to one nearby target after impact.", 220, { chain: 1 }, "mark"),
-        tier("Deadeye", "Marked targets below 20% health are finished by a heavy critical hit.", 500, { crit: 0.3, gore: 1.4 }, "execute"),
+        tier("Deadeye", "Badly wounded marked targets are finished by a heavy critical hit.", 500, { crit: 0.3, gore: 1.4 }, "execute"),
       ],
     },
     b: {
@@ -94,7 +94,7 @@ export const TOWER_PATHS = {
         tier("Longwatch", "Reach farther lanes from a single position.", 85, { range: 1.24 }),
         tier("Spotter Scope", "First shot marks priority targets for the whole defense.", 190, { range: 1.08 }, "mark"),
         tier("Wall-Piercer", "A shot can jump to a nearby follow-up target.", 390, { chain: 1 }, "mark"),
-        tier("God's Eye", "Marked targets below 25% health become execution candidates.", 820, { crit: 0.35, range: 1.12, gore: 1.8 }, "execute"),
+        tier("God's Eye", "Badly wounded marked targets become execution candidates.", 820, { crit: 0.35, range: 1.12, gore: 1.8 }, "execute"),
       ],
     },
     b: {
@@ -168,7 +168,7 @@ export const TOWER_PATHS = {
       focus: "Convert slowed zombies into brittle targets",
       tiers: [
         tier("Ice Shards", "Frozen flesh takes a heavier hit.", 65, { dmg: 1.2 }, "shatter"),
-        tier("Frostbite", "Brittle targets can spike into critical damage.", 145, { crit: 0.18 }, "shatter"),
+        tier("Frostbite", "Brittle targets can take devastating critical hits.", 145, { crit: 0.18 }, "shatter"),
         tier("Brittle Bones", "Shatter damage jumps again when the target is slowed.", 300, { dmg: 1.22 }, "shatter"),
         tier("Shatterstorm", "Killing a brittle target sends a violent final burst.", 620, { dmg: 1.28, gore: 2.3, splash: 0.7 }, "shatter"),
       ],
