@@ -441,11 +441,13 @@ export function GameCanvas() {
     <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
       {canvasReady && (
         <Canvas
-          shadows
-          dpr={[1, 1.5]}
+          // Use the cheaper supported shadow mode; Three r185 deprecates PCFSoftShadowMap.
+          shadows="basic"
+          // Keep pixel fill-rate predictable on mobile GPUs to reduce WebGL context resets.
+          dpr={1}
           gl={{
             antialias: false,
-            powerPreference: "high-performance",
+            powerPreference: "low-power",
             failIfMajorPerformanceCaveat: false,
           }}
           camera={{ position: [2, 26, 30], fov: 40 }}
