@@ -114,11 +114,13 @@ test("tower placement follows pointer across both world axes and builds at the s
   expect(selected).not.toBeNull();
   expect(selectedPreview).not.toBeNull();
 
-  // Restore normal HUD hit testing before verifying the real build-button interaction.
-  await pointerProbeStyle.evaluate((element) => element.remove());
-
+  // Keep the probe layer disabled for the ground-selection click so the canvas
+  // receives the interaction at the tested map coordinate.
   await page.mouse.click(selected!.x, selected!.y);
   await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
+
+  // Restore normal HUD hit testing before verifying the real build-button interaction.
+  await pointerProbeStyle.evaluate((element) => element.remove());
 
   const before = (await qa())!.towers.length;
   const buildButtons = page.getByRole("button", { name: /^Build ·/ });
