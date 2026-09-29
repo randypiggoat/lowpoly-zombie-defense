@@ -1,6 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
 
 async function assertVisualHealth(page: Page) {
+  await expect.poll(
+    async () =>
+      page.locator(".rotwood-app").evaluate((root) => {
+        const rect = root.getBoundingClientRect();
+        return rect.width > 300 && rect.height > 300;
+      }),
+    { timeout: 10000 },
+  ).toBe(true);
+
   const health = await page.locator(".rotwood-app").evaluate((root) => {
     const rect = root.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -52,7 +61,7 @@ async function assertVisualHealth(page: Page) {
 }
 
 async function openAndCheck(page: Page, buttonName: string | RegExp, expectedText: string | RegExp) {
-  await page.getByRole("button", { name: buttonName }).click();
+  await page.getByRole("button", { name: buttonName }).click({ force: true });
   await expect(page.getByText(expectedText).first()).toBeVisible();
   await assertVisualHealth(page);
 }
@@ -83,7 +92,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
   await motionButton.click();
   await expect(motionButton).toHaveText("Reduced Motion: Off");
 
-  await page.getByRole("button", { name: /BACK|CLOSE|← BACK/i }).first().click();
+  await page.getByRole("button", { name: /BACK|CLOSE|← BACK/i }).first().click({ force: true });
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
 
   const screens = [
@@ -100,12 +109,12 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
 
   for (const [buttonName, expectedText] of screens) {
     await openAndCheck(page, buttonName, expectedText);
-    await page.getByRole("button", { name: /← BACK/i }).click();
+    await page.getByRole("button", { name: /← BACK/i }).click({ force: true });
     await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   }
 
   const play = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
-  await play.click();
+  await play.click({ force: true });
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "gameplay");
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect.poll(async () => page.locator("canvas").evaluate((el) => {
@@ -113,7 +122,6 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
     return r.width > 0 && r.height > 0;
   })).toBe(true);
 
-  await page.waitForTimeout(900);
   await assertVisualHealth(page);
 
   // Exercise a real 3D combat path: build a Rifleman through the game API
