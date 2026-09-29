@@ -691,7 +691,7 @@ export function HUD({
                         </span>
                       </span>
                       <span className="shrink-0 text-[9px] text-panel-muted">
-                        {unlocked ? `${info.cost}g` : `Lv ${info.unlockLevel}`}
+                        {unlocked ? `${info.cost} scrap` : `Lv ${info.unlockLevel}`}
                       </span>
                     </span>
                     <span className="mt-1 block truncate text-[9px] text-panel-muted">
@@ -702,7 +702,7 @@ export function HUD({
                     </span>
                     {matchup && (
                       <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                        GOOD MATCH · ${enemyThreatLabel(matchup.enemyKind)} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                        GOOD MATCH · {enemyThreatLabel(matchup.enemyKind)} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
                       </span>
                     )}
                     <button
