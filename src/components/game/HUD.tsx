@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Coins } from "lucide-react";
 import {
-  MAX_TOWER_LEVEL,
   TOWER_INFO,
   TOWER_KINDS,
   TOWER_PATHS,
@@ -20,7 +19,6 @@ import {
   towerSlow,
   towerSplash,
   towerUnlocked,
-  towerUpgradeCost,
   towerBuildCost,
   type GameState,
   type Tower,
@@ -208,8 +206,13 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
             <span className="line-clamp-2 text-panel-muted">{next.desc}</span>
           </p>
           {ability && <span className="mt-1 inline-flex rounded-full border border-accent/25 bg-accent/10 px-1.5 py-0.5 text-[8px] font-black tracking-[0.12em] text-accent">{ability}</span>}
-          <button onClick={() => game.buyTier(tower.id, path)} disabled={!affordable} className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40">
-            {locked ? "Path locked" : cost + " SCRAP"}
+          <button
+            onClick={() => game.buyTier(tower.id, path)}
+            disabled={!affordable}
+            aria-label={locked ? def.name + " path locked" : "Buy " + next.name}
+            className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+          >
+            {locked ? "LOCKED" : cost + " SCRAP"}
           </button>
         </>
       ) : <p className="mt-2 text-center font-display text-xs text-accent">PATH MAXED</p>}
@@ -249,7 +252,6 @@ export function HUD({
   const map = getStageMapByStageId(state.stageId);
   const placement = spot ? game.getPlacementStatus(spot.x, spot.z) : null;
   const incCost = incomeCost(state.incomeLevel);
-  const levelCost = tower ? towerUpgradeCost(tower) : Infinity;
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
@@ -804,16 +806,16 @@ export function HUD({
     })}
   </div>
 </div>
-            <button
-              onClick={() => game.upgradeTower(tower.id)}
-              disabled={tower.level >= MAX_TOWER_LEVEL || state.gold < levelCost}
-              className="mt-1.5 min-h-10 w-full rounded-lg bg-accent px-2 py-1.5 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
-            >
-              {tower.level >= MAX_TOWER_LEVEL
-                ? "Level maxed"
-                : `Upgrade to Lv ${tower.level + 1} · ${levelCost} scrap`}
-            </button>
-            <div className="mt-1.5 grid grid-cols-2 gap-1">
+            <div className="mt-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] uppercase tracking-[0.18em] text-panel-muted">Field build</span>
+                <span className="font-display text-[10px] tracking-wide text-accent">Lv {tower.level} · {tower.a}/{tower.b}</span>
+              </div>
+              <p className="mt-0.5 text-[9px] text-panel-muted">
+                Spend SCRAP on one path at a time. The first branch to 3 locks the other at 2.
+              </p>
+            </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               <PathColumn tower={tower} path="a" scrap={state.gold} />
               <PathColumn tower={tower} path="b" scrap={state.gold} />
             </div>
