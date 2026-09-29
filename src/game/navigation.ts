@@ -1,3 +1,5 @@
+import type { StageMapId } from "./maps";
+
 export type PrimaryScreen =
   | "main-menu"
   | "stage-select"
