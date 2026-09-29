@@ -537,6 +537,9 @@ function BuildSurface({
           0.012,
           (map.bounds.minZ + map.bounds.maxZ) / 2,
         ]}
+        // PlaneGeometry is created in the local XY plane. Rotate it onto XZ so
+        // R3F ray intersections expose both map coordinates for the ground.
+        rotation-x={-Math.PI / 2}
         onPointerMove={updatePreview}
         onPointerDown={(event) => {
           updatePreview(event);
