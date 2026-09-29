@@ -61,9 +61,9 @@ test("tower placement follows pointer across both world axes and builds at the s
       };
     });
 
-  // Disable only the HUD's interactive hit targets for this regression so the
-  // pointer is guaranteed to reach the R3F placement surface at every probe point.
-  await page.addStyleTag({
+  // Disable only the HUD's interactive hit targets while probing the game surface,
+  // so the mouse is guaranteed to reach the R3F placement plane at every test point.
+  const pointerProbeStyle = await page.addStyleTag({
     content: ".rotwood-hud .pointer-events-auto { pointer-events: none !important; }",
   });
 
@@ -113,6 +113,9 @@ test("tower placement follows pointer across both world axes and builds at the s
 
   expect(selected).not.toBeNull();
   expect(selectedPreview).not.toBeNull();
+
+  // Restore normal HUD hit testing before verifying the real build-button interaction.
+  await pointerProbeStyle.evaluate((element) => element.remove());
 
   await page.mouse.click(selected!.x, selected!.y);
   await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
