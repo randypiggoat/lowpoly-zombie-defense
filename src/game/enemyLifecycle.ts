@@ -18,6 +18,7 @@ export type LivingEnemyStepResult = {
   burnTime: number;
   stun: number;
   markTime: number;
+  markBonus: number;
   wobble: number;
   burnDamage: number;
   reachedBase: boolean;
@@ -51,6 +52,7 @@ export function stepLivingEnemy(
   let nextBurn = burn;
   const nextStun = Math.max(0, input.stun - dt);
   const nextMarkTime = Math.max(0, input.markTime - dt);
+  const nextMarkBonus = nextMarkTime > 0 ? input.markBonus : 0;
   let burnDamage = 0;
 
   if (nextBurnTime > 0 && nextBurn > 0) {
@@ -72,6 +74,7 @@ export function stepLivingEnemy(
     burnTime: nextBurnTime,
     stun: nextStun,
     markTime: nextMarkTime,
+    markBonus: nextMarkBonus,
     wobble: nextWobble,
     burnDamage,
     reachedBase: nextDist >= pathLength,
