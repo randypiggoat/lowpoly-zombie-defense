@@ -1,5 +1,5 @@
-import type { Mods, Tower, TowerDef, TowerKind, TowerPathTiers } from "./towerStatsTypes";
-import { getTowerUpgradeAbilities } from "./towerUpgradeDesign";
+import type { Mods, Tower, TowerDef, TowerPathTiers } from "./towerStatsTypes";
+import { getTowerUpgradeAbilities, type TowerKindKey } from "./towerUpgradeDesign";
 
 export type TowerProfileBonus = {
   level: number;
@@ -81,7 +81,7 @@ export function getTowerCombatStats(
   const levelRate = Math.pow(1.06, tower.level - 1);
   const levelRange = Math.pow(1.035, tower.level - 1);
 
-  const abilities = getTowerUpgradeAbilities(tower.kind as TowerKind, tower.a, tower.b);
+  const abilities = getTowerUpgradeAbilities(tower.kind as TowerKindKey, tower.a, tower.b);
 
   return {
     damage: definition.damage * mods.dmg * levelDmg * profileBonus.damage,
