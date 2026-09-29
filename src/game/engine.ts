@@ -1601,6 +1601,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.burnTime = lifecycle.burnTime;
       z.stun = lifecycle.stun;
       z.markTime = lifecycle.markTime;
+      z.markBonus = lifecycle.markBonus;
 
       if (lifecycle.burnDamage > 0) {
         this.damage(z, lifecycle.burnDamage, z.x, z.z, 1);
