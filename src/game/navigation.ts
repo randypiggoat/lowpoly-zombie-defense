@@ -111,6 +111,7 @@ export type StageDefinition = {
   rewards: StageRewards;
   objectives: StageObjectiveDefinition[];
   placeholder: boolean;
+  mapId: StageMapId;
 };
 
 export const STAGE_DEFS: StageDefinition[] = [
@@ -120,7 +121,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     worldName: "Suburbs",
     stageNumber: 1,
     name: "The Neighborhood",
-    description: "Intro defense lane focused on core tower placement fundamentals.",
+    description: "Open neighborhood bends teach placement; corners reward compact splash towers while outer lots favor range.",
     difficulty: "Easy",
     unlockRequirement: { type: "none" },
     startingCoins: 180,
@@ -160,6 +161,7 @@ export const STAGE_DEFS: StageDefinition[] = [
       },
     ],
     placeholder: false,
+    mapId: "neighborhood",
   },
   {
     id: 2,
@@ -167,7 +169,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     worldName: "Suburbs",
     stageNumber: 2,
     name: "Gas Station",
-    description: "Runner-heavy waves hit the fuel depot at a quicker pace.",
+    description: "Long fuel-lane sightlines reward sniper and laser reach; tight returns reward shotgun and flame coverage.",
     difficulty: "Normal",
     unlockRequirement: { type: "complete-stage", stageId: 1 },
     startingCoins: 190,
@@ -207,6 +209,7 @@ export const STAGE_DEFS: StageDefinition[] = [
       },
     ],
     placeholder: false,
+    mapId: "gas-station",
   },
   {
     id: 3,
@@ -214,7 +217,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     worldName: "Suburbs",
     stageNumber: 3,
     name: "Shopping Center",
-    description: "Mixed enemy formations pressure both parking lanes and storefronts.",
+    description: "A bend-heavy parking route creates premium chain and splash pockets without removing long-range options.",
     difficulty: "Normal",
     unlockRequirement: { type: "complete-stage", stageId: 2 },
     startingCoins: 200,
@@ -254,6 +257,7 @@ export const STAGE_DEFS: StageDefinition[] = [
       },
     ],
     placeholder: false,
+    mapId: "shopping-center",
   },
   {
     id: 4,
@@ -261,7 +265,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     worldName: "Suburbs",
     stageNumber: 4,
     name: "Police Station",
-    description: "Armored enemies become common while mid-stage pressure ramps up.",
+    description: "A central crossfire position sees multiple lanes; close bends make point-blank damage meaningful.",
     difficulty: "Hard",
     unlockRequirement: { type: "complete-stage", stageId: 3 },
     startingCoins: 210,
@@ -301,6 +305,7 @@ export const STAGE_DEFS: StageDefinition[] = [
       },
     ],
     placeholder: false,
+    mapId: "police-station",
   },
   {
     id: 5,
@@ -308,7 +313,7 @@ export const STAGE_DEFS: StageDefinition[] = [
     worldName: "Suburbs",
     stageNumber: 5,
     name: "Highway",
-    description: "Sustain advanced enemy combinations before a major brute boss push.",
+    description: "The highway alternates long straights with a few premium bends, making placement and coverage the main late-game puzzle.",
     difficulty: "Hard",
     unlockRequirement: { type: "complete-stage", stageId: 4 },
     startingCoins: 220,
@@ -348,6 +353,7 @@ export const STAGE_DEFS: StageDefinition[] = [
       },
     ],
     placeholder: false,
+    mapId: "highway",
   },
 ];
 
