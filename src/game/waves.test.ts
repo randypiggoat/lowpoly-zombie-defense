@@ -54,10 +54,10 @@ describe("wave spawning rules", () => {
   test("clamps invalid stage targets without throwing", () => {
     expect(getWaveSpawnPlan(1, 0)).toEqual({
       band: 7,
-      sizeMultiplier: 1.95,
-      intervalMultiplier: 0.45,
+      sizeMultiplier: 1.78,
+      intervalMultiplier: 0.54,
       batchSize: 3,
-      clearDelay: 0.2,
+      clearDelay: 0.78,
     });
   });
 });
