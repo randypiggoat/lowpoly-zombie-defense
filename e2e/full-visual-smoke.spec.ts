@@ -116,11 +116,16 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
   ] as const;
 
   for (const [buttonName, expectedText] of screens) {
+    // Recreate the app before each major-screen assertion so the smoke suite does
+    // not accumulate WebGL/React renderer state across ten independent screens.
+    await page.goto("/?qa=1");
+    await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
     await openAndCheck(page, buttonName, expectedText);
     await expect(page.getByRole("button", { name: /← BACK/i })).toHaveCount(1);
-    await page.getByRole("button", { name: /← BACK/i }).click({ force: true });
-    await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   }
+
+  await page.goto("/?qa=1");
+  await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
 
   const play = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
   await play.click({ force: true });
