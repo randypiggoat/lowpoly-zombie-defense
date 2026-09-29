@@ -1,4 +1,5 @@
 import type { TargetMode, Vec2, Zombie } from "./engine";
+import { hasLineOfSight, type StageMap } from "./maps";
 
 type TargetingPosition = Pick<Vec2, "x" | "z">;
 
@@ -7,10 +8,12 @@ export function selectTowerTarget(
   tower: TargetingPosition,
   range: number,
   mode: TargetMode,
+  map?: StageMap,
 ): Zombie | null {
   const candidates = zombies.filter((zombie) => {
     if (zombie.dead) return false;
-    return Math.hypot(zombie.x - tower.x, zombie.z - tower.z) <= range;
+    if (Math.hypot(zombie.x - tower.x, zombie.z - tower.z) > range) return false;
+    return !map || hasLineOfSight(map, tower, zombie);
   });
 
   if (candidates.length === 0) return null;
