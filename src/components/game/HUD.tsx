@@ -47,6 +47,7 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
+import { getStageMapByStageId, pathCoverageRatio } from "@/game/maps";
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { bestTowerCounterplayMatch } from "@/game/towerCounterplay";
 import { enemyThreatLabel } from "@/game/enemyPresentation";
@@ -272,7 +273,9 @@ export function HUD({
   const scrapGainTimer = useRef<number | null>(null);
   const tower =
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
-  const spot = selection?.kind === "spot" ? selection.index : null;
+  const spot = selection?.kind === "spot" ? selection.position : null;
+  const map = getStageMapByStageId(state.stageId);
+  const placement = spot ? game.getPlacementStatus(spot.x, spot.z) : null;
   const incCost = incomeCost(state.incomeLevel);
   const levelCost = tower ? towerUpgradeCost(tower) : Infinity;
   const towerMetaLevel = tower ? towerProfileUpgradeLevel(tower.kind) : 0;
@@ -624,7 +627,7 @@ export function HUD({
         {!tower && spot === null && state.towers.length === 0 && (
           <div className="rounded-xl bg-panel/85 px-3 py-2 text-center shadow-panel backdrop-blur">
             <p className="font-display text-sm tracking-wide text-panel-foreground">
-              Tap a glowing pad to build
+              Tap open ground to place a tower
             </p>
           </div>
         )}
@@ -643,14 +646,33 @@ export function HUD({
                 ×
               </button>
             </div>
+            <div className="mt-1 flex items-center justify-between rounded-lg border border-white/10 bg-black/25 px-2 py-1.5">
+              <span className="text-[9px] uppercase tracking-[0.16em] text-panel-muted">
+                Placement target
+              </span>
+              <span className={placement?.valid ? "font-display text-xs tracking-wide text-accent" : "font-display text-xs tracking-wide text-danger"}>
+                {placement?.valid
+                  ? "LEGAL PLACEMENT"
+                  : placement?.reason === "road"
+                    ? "TOO CLOSE TO ROAD"
+                    : placement?.reason === "obstacle"
+                      ? "BLOCKED TERRAIN"
+                      : placement?.reason === "too-close"
+                        ? "TOO CLOSE"
+                        : "OUT OF BOUNDS"}
+              </span>
+            </div>
             <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               {KINDS.map((k) => {
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
-                const canBuild = unlocked && state.gold >= info.cost;
+                const canBuild = unlocked && state.gold >= info.cost && Boolean(placement?.valid);
                 const matchup = waveThreatPreview
                   ? bestTowerCounterplayMatch(k, waveThreatPreview.enemyKinds)
                   : null;
+                const coverage = spot
+                  ? Math.round(pathCoverageRatio(map, spot.x, spot.z, info.range) * 100)
+                  : 0;
                 const unlockAffordable =
                   !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
@@ -673,19 +695,19 @@ export function HUD({
                       </span>
                     </span>
                     <span className="mt-1 block truncate text-[9px] text-panel-muted">
-                      {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG
+                      {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG · {coverage}% PATH
                     </span>
                     <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
                       {counterplaySummary(k)}
                     </span>
                     {matchup && (
                       <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                        GOOD MATCH · enemyThreatLabel(matchup.enemyKind) · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                        GOOD MATCH · ${enemyThreatLabel(matchup.enemyKind)} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
                       </span>
                     )}
                     <button
                       onClick={() => {
-                        if (game.build(spot, k)) onSelect(null);
+                        if (game.buildAt(spot.x, spot.z, k)) onSelect(null);
                       }}
                       disabled={!canBuild}
                       className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
