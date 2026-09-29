@@ -63,7 +63,7 @@ test("tower placement follows pointer across both world axes and builds at the s
 
   // Keep probes on the canvas itself so the regression test exercises the
   // production pointer listeners without HUD hit-testing affecting delivery.
-  await page.addStyleTag({
+  const pointerProbeStyle = await page.addStyleTag({
     content: ".rotwood-hud .pointer-events-auto { pointer-events: none !important; }",
   });
 
@@ -131,9 +131,7 @@ test("tower placement follows pointer across both world axes and builds at the s
   const committedPreview = (await qa())?.preview;
   expect(committedPreview).not.toBeNull();
 
-  await page.locator(".rotwood-hud .pointer-events-auto").evaluate((element) => {
-    (element as HTMLElement).style.pointerEvents = "";
-  });
+  await pointerProbeStyle.evaluate((element) => element.remove());
 
   const before = (await qa())!.towers.length;
   const buildButtons = page.getByRole("button", { name: /^Build ·/ });
