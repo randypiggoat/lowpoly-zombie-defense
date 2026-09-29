@@ -49,8 +49,8 @@ export function stepLivingEnemy(
   const nextWobble = wobble + dt * (4 + speed * 2);
   let nextBurnTime = burnTime;
   let nextBurn = burn;
-  let nextStun = Math.max(0, input.stun - dt);
-  let nextMarkTime = Math.max(0, input.markTime - dt);
+  const nextStun = Math.max(0, input.stun - dt);
+  const nextMarkTime = Math.max(0, input.markTime - dt);
   let burnDamage = 0;
 
   if (nextBurnTime > 0 && nextBurn > 0) {
