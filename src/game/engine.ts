@@ -506,13 +506,13 @@ export function towerProfileUpgradeCost(kind: TowerKind) {
   return profile.towerUpgradeCost(TOWER_INFO[kind].upgradeBase, kind);
 }
 
-export function towerProfileBonus(kind: TowerKind) {
-  const level = towerProfileUpgradeLevel(kind);
+export function towerProfileBonus(_kind: TowerKind) {
+  const knowledge = profile.fieldKnowledgeEffects();
   return {
-    level,
-    damage: Math.pow(1.08, level),
-    rate: Math.pow(1.03, level),
-    range: 1 + level * 0.02,
+    level: 0,
+    damage: knowledge.damageMultiplier,
+    rate: knowledge.rateMultiplier,
+    range: knowledge.rangeMultiplier,
   };
 }
 
@@ -639,9 +639,9 @@ const DEFAULT_STAGE: StageRunConfig = {
 
 function makeState(stage: StageRunConfig): GameState {
   return {
-    gold: stage.startingCoins,
-    baseHp: stage.startingBaseHealth,
-    baseMaxHp: stage.startingBaseHealth,
+    gold: stage.startingCoins + profile.fieldKnowledgeEffects().startingScrap,
+    baseHp: stage.startingBaseHealth + profile.fieldKnowledgeEffects().baseHealth,
+    baseMaxHp: stage.startingBaseHealth + profile.fieldKnowledgeEffects().baseHealth,
     stageId: stage.id,
     stageWaveTarget: Math.max(1, stage.waveCount),
     wave: 0,
@@ -865,7 +865,8 @@ export class Game {
       sfx("deny");
       return false;
     }
-    const cost = TOWER_INFO[kind].cost;
+    const knowledge = profile.fieldKnowledgeEffects();
+    const cost = Math.round(TOWER_INFO[kind].cost * knowledge.towerBuildCostMultiplier);
     if (s.gold < cost) {
       sfx("deny");
       return false;
@@ -932,7 +933,8 @@ export class Game {
       sfx("deny");
       return false;
     }
-    const cost = towerUpgradeCost(t);
+    const knowledge = profile.fieldKnowledgeEffects();
+    const cost = Math.round(towerUpgradeCost(t) * knowledge.towerUpgradeCostMultiplier);
     if (s.gold < cost) {
       sfx("deny");
       return false;
@@ -972,7 +974,8 @@ export class Game {
     const s = this.state;
     const i = s.towers.findIndex((t) => t.id === towerId);
     if (i < 0) return;
-    s.gold += towerSellValue(s.towers[i]!);
+    const sellMultiplier = profile.fieldKnowledgeEffects().sellMultiplier;
+    s.gold += Math.floor(towerSellValue(s.towers[i]!) * sellMultiplier);
     s.towers.splice(i, 1);
     sfx("build");
     this.emit();
@@ -1232,7 +1235,8 @@ export class Game {
     s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
     s.maxKillStreak = Math.max(s.maxKillStreak, s.killStreak);
     s.killStreakTimer = 2.25;
-    const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
+    const knowledge = profile.fieldKnowledgeEffects();
+    const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier * knowledge.scrapMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
     const bossGoldMultiplier = bossKillGoldMultiplier(z.boss);
     const reward = calculateKillReward(
