@@ -45,12 +45,37 @@ async function assertVisualHealth(page: Page) {
         text: (el.textContent ?? "").trim().slice(0, 80),
       }));
 
+    const controls = visible.filter((el) => ["BUTTON", "INPUT", "SELECT", "TEXTAREA"].includes(el.tagName));
+    const overlaps: string[] = [];
+    for (let i = 0; i < controls.length; i++) {
+      const a = controls[i]!.getBoundingClientRect();
+      for (let j = i + 1; j < controls.length; j++) {
+        const b = controls[j]!.getBoundingClientRect();
+        const overlapWidth = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+        const overlapHeight = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        if (overlapWidth * overlapHeight > 36) {
+          overlaps.push(
+            `${(controls[i]!.textContent ?? "").trim().slice(0, 40)} <> ${(controls[j]!.textContent ?? "").trim().slice(0, 40)}`,
+          );
+        }
+      }
+    }
+
+    const clippedControls = controls
+      .filter((el) => {
+        if (isInsideScrollable(el)) return false;
+        return el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + 2;
+      })
+      .map((el) => (el.textContent ?? "").trim().slice(0, 60));
+
     return {
       rootWidth: rect.width,
       rootHeight: rect.height,
       horizontalOverflow: Math.max(0, docWidth - clientWidth),
       visibleCount: visible.length,
       outOfViewport,
+      overlaps,
+      clippedControls,
     };
   });
 
@@ -58,6 +83,8 @@ async function assertVisualHealth(page: Page) {
   expect(health.rootHeight).toBeGreaterThan(300);
   expect(health.horizontalOverflow).toBeLessThanOrEqual(2);
   expect(health.outOfViewport).toEqual([]);
+  expect(health.overlaps).toEqual([]);
+  expect(health.clippedControls).toEqual([]);
 }
 
 async function openAndCheck(page: Page, buttonName: string | RegExp, expectedText: string | RegExp) {
