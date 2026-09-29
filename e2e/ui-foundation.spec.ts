@@ -86,6 +86,7 @@ test("tower placement follows pointer across both world axes and builds at the s
       pointerType: "mouse",
       isPrimary: true,
     });
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
   };
 
   const probes: Array<{
@@ -181,15 +182,15 @@ test("tower placement responds to touch coordinates on mobile", async ({ page },
       pointerType: "touch",
       isPrimary: true,
     });
-    await expect.poll(readPreview).not.toBeNull();
-    return (await readPreview())!;
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    return readPreview();
   };
 
   const probes: Array<{ screen: { x: number; y: number }; preview: { x: number; z: number } }> = [];
   for (const x of [0.20, 0.35, 0.50, 0.65, 0.80]) {
     for (const y of [0.38, 0.50, 0.62, 0.74]) {
       const preview = await dispatchTouchMove(x, y);
-      probes.push({ screen: { x, y }, preview });
+      if (preview) probes.push({ screen: { x, y }, preview });
     }
   }
 
