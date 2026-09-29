@@ -21,6 +21,7 @@ import {
   towerSplash,
   towerUnlocked,
   towerUpgradeCost,
+  towerBuildCost,
   type GameState,
   type Tower,
   type TowerKind,
@@ -634,7 +635,8 @@ export function HUD({
               {KINDS.map((k) => {
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
-                const canBuild = unlocked && state.gold >= info.cost && Boolean(placement?.valid);
+                const buildCost = towerBuildCost(k);
+                const canBuild = unlocked && state.gold >= buildCost && Boolean(placement?.valid);
                 const matchup = waveThreatPreview
                   ? bestTowerCounterplayMatch(k, waveThreatPreview.enemyKinds)
                   : null;
@@ -681,7 +683,7 @@ export function HUD({
                       className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
                     >
                       {unlocked
-                        ? `Build · ${info.cost}g`
+                        ? `Build · ${buildCost} scrap`
                         : `Unlocks Lv ${info.unlockLevel}`}
                     </button>
                     {!unlocked && info.coinUnlock > 0 && (
