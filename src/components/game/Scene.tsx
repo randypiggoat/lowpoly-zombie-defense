@@ -6,21 +6,20 @@ import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
-import { canPlaceTower, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
+import { canPlaceTower, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import {
   TOWER_INFO,
   game,
-  pointAt,
   towerLevel,
   towerRange,
   type Tower,
 } from "@/game/engine";
 
 const MAX_ZOMBIES = 60;
-const MAX_BULLETS = 80;
+const MAX_BULLETS = 64;
 const MAX_GIBS = 96;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
@@ -590,7 +589,8 @@ function Zombies() {
         g.rotation.x = 0;
         g.rotation.z = Math.sin(z.wobble) * 0.16;
         g.scale.setScalar(scale * (z.boss ? 1.16 : 1));
-        const nextPoint = pointAt(z.dist + 0.6);
+        const map = getStageMapByStageId(game.state.stageId);
+        const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
         g.rotation.y = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
       }
       // damage flash
@@ -1195,7 +1195,7 @@ export function Scene({
   towers,
   selection,
   onSelectTower,
-  onSelectSpot,
+  onSelectPosition,
   paused = false,
   reducedMotion = false,
 }: {
