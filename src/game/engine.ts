@@ -38,6 +38,21 @@ import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
 import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
+import {
+  canPlaceTower,
+  getPathLength,
+  getStageMap,
+  getStageMapByStageId,
+  placementKey,
+  snapBuildPosition,
+  pointAtPath,
+} from "./maps";
+import {
+  goreAnchor,
+  gorePartBit,
+  gorePartsBrokenBetween,
+  type GorePart,
+} from "./enemyGore";
 
 export type Vec2 = { x: number; z: number };
 
@@ -116,6 +131,8 @@ export type Zombie = {
   spin: number;
   roll: number;
   gibbed: boolean;
+  /** Bit mask of body/signature pieces already broken off by damage. */
+  gibMask?: number;
 };
 
 export type Gib = {
@@ -132,6 +149,7 @@ export type Gib = {
   life: number;
   size: number;
   tint: number;
+  part?: GorePart;
 };
 export type DamagePopup = {
   id: number;
@@ -968,6 +986,7 @@ type StageRunConfig = Pick<
   | "specialRules"
   | "rewards"
   | "objectives"
+  | "mapId"
 > & {
   endless?: boolean;
   challenge?: EndlessChallenge;
@@ -1002,6 +1021,7 @@ const DEFAULT_STAGE: StageRunConfig = {
     firstCompletionBonus: { coins: 0, xp: 0, stars: 0 },
   },
   objectives: [],
+  mapId: "neighborhood",
   allowRunModifiers: true,
 };
 
@@ -1066,6 +1086,8 @@ waveMessageType: "",
 export class Game {
   private readonly random: RandomSource;
   private nextId = 1;
+  private map = getStageMapByStageId(DEFAULT_STAGE.id);
+  private pathLength = PATH_LENGTH;
 
   constructor(random: RandomSource = Math.random) {
     this.random = random;
@@ -1098,6 +1120,8 @@ export class Game {
 
   startStage(stage: StageRunConfig) {
     this.stage = stage;
+    this.map = getStageMap(stage.mapId);
+    this.pathLength = getPathLength(this.map.path);
     this.nextId = 1;
     this.resetTransientState();
     this.state = makeState(stage);
@@ -1108,6 +1132,8 @@ export class Game {
  startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
   const stage = createEndlessStage(challenge);
   this.stage = { ...stage, challenge, challengeKey, endless: true };
+  this.map = getStageMap(stage.mapId);
+  this.pathLength = getPathLength(this.map.path);
   this.nextId = 1;
   this.resetTransientState();
   this.state = makeState(this.stage);
@@ -1118,6 +1144,8 @@ export class Game {
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
     const stage = createBossTrialStage(trial);
     this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
+    this.map = getStageMap(stage.mapId);
+    this.pathLength = getPathLength(this.map.path);
     this.nextId = 1;
     this.resetTransientState();
     this.state = makeState(this.stage);
@@ -1218,10 +1246,8 @@ export class Game {
     return true;
   }
 
-  build(spot: number, kind: TowerKind): boolean {
+  private placeTowerAt(x: number, z: number, kind: TowerKind, spot: number) {
     const s = this.state;
-    const pad = BUILD_SPOTS[spot];
-    if (!pad || this.towerAtSpot(spot)) return false;
     const p = profile.profile;
     if (!towerUnlocked(kind, p.level, p.unlockedTowers)) {
       sfx("deny");
@@ -1237,8 +1263,8 @@ export class Game {
       id: this.nextId++,
       kind,
       spot,
-      x: pad.x,
-      z: pad.z,
+      x,
+      z,
       level: 1,
       a: 0,
       b: 0,
@@ -1254,6 +1280,40 @@ export class Game {
     sfx("build");
     this.emit();
     return true;
+  }
+
+  /**
+   * Legacy indexed build used by existing saves/tests. New gameplay uses buildAt()
+   * so towers can occupy any legal ground position.
+   */
+  build(spot: number, kind: TowerKind): boolean {
+    const pad = BUILD_SPOTS[spot];
+    if (!pad || this.towerAtSpot(spot)) return false;
+    const placement = canPlaceTower(this.map, pad.x, pad.z, this.state.towers);
+    if (!placement.valid) {
+      sfx("deny");
+      return false;
+    }
+    return this.placeTowerAt(pad.x, pad.z, kind, spot);
+  }
+
+  getPlacementStatus(x: number, z: number) {
+    return canPlaceTower(this.map, x, z, this.state.towers);
+  }
+
+  buildAt(x: number, z: number, kind: TowerKind): boolean {
+    const point = snapBuildPosition(this.map, x, z);
+    const placement = canPlaceTower(this.map, point.x, point.z, this.state.towers);
+    if (!placement.valid) {
+      sfx("deny");
+      return false;
+    }
+    const spot = placementKey(point.x, point.z);
+    if (this.towerAtSpot(spot)) {
+      sfx("deny");
+      return false;
+    }
+    return this.placeTowerAt(point.x, point.z, kind, spot);
   }
 
   /** Straight level-up: costs gold, raises damage / rate / range. */
@@ -1474,6 +1534,7 @@ export class Game {
       spin: 0,
       roll: 0,
       gibbed: false,
+      gibMask: 0,
     };
     s.zombies.push(spawned);
     return spawned;
@@ -1514,17 +1575,31 @@ export class Game {
       goldMult,
       crit,
     );
+    const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
+    const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
+    const brokenParts = gorePartsBrokenBetween(
+      z.kind,
+      previousRatio,
+      nextRatio,
+      z.gibMask ?? 0,
+    );
+    for (const part of brokenParts) {
+      z.gibMask = (z.gibMask ?? 0) | gorePartBit(part);
+      this.spawnPartGib(z, part, goreBase, result.crit ? 1.15 : 1);
+    }
 
-    if (s.damagePopups.length < 80) {
+    // Numeric damage spam is deliberately suppressed. Only rare crits and
+    // currency rewards create text, while body breakpoints carry the rest.
+    if (!result.killed && result.crit && s.damagePopups.length < 24) {
       s.damagePopups.push({
         id: this.nextId++,
-        x: z.x + (this.random() - 0.5) * 0.45,
-        y: 1.35 + this.random() * 0.35,
-        z: z.z + (this.random() - 0.5) * 0.45,
-        value: result.popupValue,
+        x: z.x,
+        y: 1.65,
+        z: z.z,
+        value: 0,
         life: 0,
-        crit: result.crit,
+        crit: true,
         gold: 0,
       });
     }
@@ -1589,7 +1664,7 @@ export class Game {
       sfx("bigHit");
     }
 
-    if (s.damagePopups.length < 80) {
+    if (s.damagePopups.length < 24) {
       s.damagePopups.push({
         id: this.nextId++,
         x: z.x,
@@ -1604,7 +1679,7 @@ export class Game {
 
     profile.recordZombieKill(z.kind);
 
-    if (z.kind === 3) {
+    if (z.kind === 3 && !(z.gibMask && (z.gibMask & gorePartBit("splitter-core")))) {
       const trialTraits = this.stage.bossTrial?.variant?.traits;
       const splitCount = z.boss && trialTraits?.bossSplitCount
         ? Math.max(2, Math.floor(trialTraits.bossSplitCount))
@@ -1638,30 +1713,65 @@ export class Game {
     this.emit();
   }
 
-    private spawnGibs(z: Zombie, count: number, force: number) {
+  private spawnPartGib(z: Zombie, part: GorePart, goreBase: number, force = 1) {
     const s = this.state;
-    if (s.gibs.length > 160) return;
+    if (s.gibs.length >= 96) return;
+    const anchor = goreAnchor(part);
+    const angle = this.random() * Math.PI * 2;
+    const speed = (1.25 + this.random() * 2.4) * Math.max(0.7, Math.min(2, goreBase)) * force;
+    s.gibs.push({
+      id: this.nextId++,
+      x: z.x + anchor.x * 0.6,
+      y: Math.max(0.18, anchor.y + (this.random() - 0.5) * 0.12),
+      z: z.z + anchor.z * 0.6,
+      vx: Math.cos(angle) * speed,
+      vy: 2.25 + this.random() * 2.8 * force,
+      vz: Math.sin(angle) * speed,
+      rx: this.random() * 3,
+      ry: this.random() * 3,
+      spin: (this.random() - 0.5) * 13,
+      life: 0,
+      size: anchor.size * (0.85 + this.random() * 0.35),
+      tint: part === "head" ? 0 : part.includes("core") ? 2 : 1,
+      part,
+    });
+  }
+
+  private spawnGibs(z: Zombie, count: number, force: number) {
+    const s = this.state;
+    if (s.gibs.length >= 96) return;
 
     for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
-      const sp = (1.5 + this.random() * 3) * force;
+      const sp = (1.1 + this.random() * 2.1) * force;
+      const debrisPart: GorePart = i % 3 === 0 ? "head" : i % 3 === 1 ? "left-arm" : "splitter-core";
 
       s.gibs.push({
         id: this.nextId++,
         x: z.x,
-        y: 0.6 + this.random() * 0.9,
+        y: 0.55 + this.random() * 0.85,
         z: z.z,
         vx: Math.cos(a) * sp,
-        vy: 2.5 + this.random() * 3.5 * force,
+        vy: 2 + this.random() * 3 * force,
         vz: Math.sin(a) * sp,
         rx: this.random() * 3,
         ry: this.random() * 3,
         spin: (this.random() - 0.5) * 14,
         life: 0,
-        size: 0.12 + this.random() * 0.16,
+        size: 0.08 + this.random() * 0.1,
         tint: i % 3,
+        part: debrisPart,
       });
     }
+  }
+
+  private enemyMobilityMultiplier(z: Zombie) {
+    const mask = z.gibMask ?? 0;
+    const has = (part: GorePart) => (mask & gorePartBit(part)) !== 0;
+    if (z.kind === 1 && (has("left-leg") || has("right-leg"))) return 0.78;
+    if (z.kind === 2 && (has("left-shoulder") || has("right-shoulder"))) return 0.9;
+    if (z.kind === 7 && has("swarm-crest")) return 0.8;
+    return 1;
   }
 
   /** Frame-rate independent entry point: runs fixed sim steps for the elapsed time. */
@@ -1822,8 +1932,10 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       if (z.kind === 6) {
         const bossHeal = z.boss && this.stage.bossTrial ? this.stage.bossTrial.variant?.traits : undefined;
+        const auraBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("healer-aura")));
+
         const healInterval = 0.9 * (bossHeal?.bossHealIntervalMultiplier ?? 1);
-        const healAmount = 0.08 * (bossHeal?.bossHealAmountMultiplier ?? 1);
+        const healAmount = 0.08 * (bossHeal?.bossHealAmountMultiplier ?? 1) * (auraBroken ? 0.42 : 1);
         const targetCount = Math.max(1, Math.floor(bossHeal?.bossHealTargetCount ?? 1));
         z.healTimer = (z.healTimer ?? 0) + dt;
         if (z.healTimer >= healInterval) {
@@ -1844,13 +1956,16 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       const lifecycle = stepLivingEnemy({
         dist: z.dist,
-        speed: z.speed * bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier),
+        speed:
+          z.speed *
+          bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier) *
+          this.enemyMobilityMultiplier(z),
         slow: z.slow,
         burn: z.burn,
         burnTime: z.burnTime,
         wobble: z.wobble,
         dt,
-        pathLength: PATH_LENGTH,
+        pathLength: this.pathLength,
       });
 
       z.wobble = lifecycle.wobble;
@@ -1865,7 +1980,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.dist = lifecycle.dist;
       z.slow = lifecycle.slow;
 
-      const p = pointAt(z.dist);
+      const p = pointAtPath(this.map.path, z.dist);
       z.x = p.x;
       z.z = p.z;
 
@@ -1874,11 +1989,13 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         z.fade = 1.4;
         const baseHit = resolveBaseHit(s.baseHp, z.kind);
         const rawDamage = s.baseHp - baseHit.nextHealth;
+        const bomberPackBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("bomber-pack")));
+        const bomberBaseDamageMultiplier = z.kind === 4 && bomberPackBroken ? 0.55 : 1;
         const bossBaseDamageMultiplier =
           z.boss && this.stage.bossTrial
             ? Math.max(1, this.stage.bossTrial.variant?.traits.bossBaseDamageMultiplier ?? 1)
             : 1;
-        const adjustedDamage = Math.ceil(rawDamage * bossBaseDamageMultiplier);
+        const adjustedDamage = Math.ceil(rawDamage * bossBaseDamageMultiplier * bomberBaseDamageMultiplier);
         const nextHealth = Math.max(0, s.baseHp - adjustedDamage);
         s.waveDamageTaken += adjustedDamage;
         s.baseHp = nextHealth;
