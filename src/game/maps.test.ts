@@ -8,6 +8,36 @@ import {
   snapBuildPosition,
 } from "./maps";
 
+
+function segmentIntersectsRect(
+  a: { x: number; z: number },
+  b: { x: number; z: number },
+  rect: { x: number; z: number; width: number; depth: number },
+  padding = 0.05,
+) {
+  const minX = rect.x - rect.width / 2 - padding;
+  const maxX = rect.x + rect.width / 2 + padding;
+  const minZ = rect.z - rect.depth / 2 - padding;
+  const maxZ = rect.z + rect.depth / 2 + padding;
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  let tMin = 0;
+  let tMax = 1;
+  for (const [origin, delta, min, max] of [[a.x, dx, minX, maxX], [a.z, dz, minZ, maxZ]] as const) {
+    if (Math.abs(delta) < 0.000001) {
+      if (origin < min || origin > max) return false;
+      continue;
+    }
+    let t1 = (min - origin) / delta;
+    let t2 = (max - origin) / delta;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tMin = Math.max(tMin, t1);
+    tMax = Math.min(tMax, t2);
+    if (tMin > tMax) return false;
+  }
+  return true;
+}
+
 describe("stage maps", () => {
   test("campaign exposes twenty distinct map environments", () => {
     const maps = Object.values(STAGE_MAPS);
@@ -49,5 +79,30 @@ describe("stage maps", () => {
     const longRange = pathCoverageRatio(map, 4, 5, 14);
     expect(longRange).toBeGreaterThan(shortRange);
     expect(longRange).toBeLessThanOrEqual(1);
+  });
+
+  test("every authored route stays outside its blockers", () => {
+    for (const map of Object.values(STAGE_MAPS)) {
+      for (let i = 1; i < map.path.length; i++) {
+        for (const obstacle of map.obstacles) {
+          expect(segmentIntersectsRect(map.path[i - 1]!, map.path[i]!, obstacle)).toBe(false);
+        }
+      }
+    }
+  });
+
+  test("campaign routes use multiple tactical silhouettes", () => {
+    const directions = new Set<string>();
+    const widths = new Set<number>();
+    for (const map of Object.values(STAGE_MAPS)) {
+      widths.add(map.pathWidth);
+      for (let i = 1; i < map.path.length; i++) {
+        const dx = map.path[i]!.x - map.path[i - 1]!.x;
+        const dz = map.path[i]!.z - map.path[i - 1]!.z;
+        directions.add((dx === 0 ? 0 : dx > 0 ? 1 : -1) + "," + (dz === 0 ? 0 : dz > 0 ? 1 : -1));
+      }
+    }
+    expect(widths.size).toBeGreaterThanOrEqual(6);
+    expect(directions.size).toBeGreaterThanOrEqual(5);
   });
 });
