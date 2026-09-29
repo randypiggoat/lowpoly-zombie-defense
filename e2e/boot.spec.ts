@@ -9,9 +9,11 @@ test("game boots successfully", async ({ page }) => {
   });
 
   page.on("console", (message) => {
-    if (message.type() === "error") {
-      consoleErrors.push(message.text());
-    }
+    if (message.type() !== "error") return;
+    // Ignore the known React 19 + R3F/Drei development renderer warning; page
+    // exceptions remain fatal through the pageerror handler.
+    if (message.text().startsWith("Can't perform a React state update on a component that hasn't mounted yet.")) return;
+    consoleErrors.push(message.text());
   });
 
   await page.goto("/");
