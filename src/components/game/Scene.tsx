@@ -1,6 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
@@ -968,6 +968,19 @@ function Gibs() {
   );
 }
 
+class TextRenderBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (this.state.failed) return null;
+    return <Suspense fallback={null}>{this.props.children}</Suspense>;
+  }
+}
+
 function DamagePopups() {
   const popups = game.state.damagePopups;
 
@@ -1086,8 +1099,9 @@ function DamagePopup({
           </mesh>
         </>
       )}
-      <Text
-        ref={(el) => {
+      <TextRenderBoundary>
+        <Text
+          ref={(el) => {
           text.current = el as typeof text.current;
         }}
         position={popup.gold > 0 ? [0, -0.32, 0] : [0, 0, 0]}
@@ -1099,8 +1113,9 @@ function DamagePopup({
         anchorY="middle"
         depthOffset={-2}
       >
-        0
-      </Text>
+          0
+        </Text>
+      </TextRenderBoundary>
     </group>
   );
 }
