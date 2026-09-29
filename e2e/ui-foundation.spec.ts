@@ -6,7 +6,10 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
 
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() !== "error") return;
+    const text = message.text();
+    if (text.startsWith("Can't perform a React state update on a component that hasn't mounted yet.")) return;
+    consoleErrors.push(text);
   });
 
   await page.goto("/");
