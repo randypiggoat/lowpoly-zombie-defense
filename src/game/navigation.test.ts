@@ -2,16 +2,35 @@ import { describe, expect, test } from "bun:test";
 import {
   STAGE_DEFS,
   evaluateStageObjectives,
+  getNextStageId,
+  getStageById,
   type StageObjectiveDefinition,
 } from "./navigation";
 
-describe("campaign mastery objectives", () => {
-  test("campaign stages use varied replay goals", () => {
-    const signatures = STAGE_DEFS.slice(0, 5).map((stage) =>
+describe("campaign progression", () => {
+  test("campaign contains twenty stages across four worlds", () => {
+    expect(STAGE_DEFS).toHaveLength(20);
+    expect(new Set(STAGE_DEFS.map((stage) => stage.worldId))).toEqual(new Set([1, 2, 3, 4]));
+    expect(new Set(STAGE_DEFS.map((stage) => stage.mapId)).size).toBe(20);
+    expect(getStageById(20).name).toBe("Blacksite Omega");
+    expect(getNextStageId(20)).toBeNull();
+  });
+
+  test("campaign unlocks in order", () => {
+    expect(STAGE_DEFS[0]!.unlockRequirement).toEqual({ type: "none" });
+    for (let index = 1; index < STAGE_DEFS.length; index += 1) {
+      expect(STAGE_DEFS[index]!.unlockRequirement).toEqual({
+        type: "complete-stage",
+        stageId: STAGE_DEFS[index - 1]!.id,
+      });
+    }
+  });
+
+  test("campaign mastery objectives use varied replay goals", () => {
+    const signatures = STAGE_DEFS.map((stage) =>
       stage.objectives.map((objective) => objective.type).join("|"),
     );
-
-    expect(new Set(signatures).size).toBeGreaterThan(1);
+    expect(new Set(signatures).size).toBeGreaterThan(3);
   });
 
   test("kill streak mastery reads the run's maximum streak", () => {
