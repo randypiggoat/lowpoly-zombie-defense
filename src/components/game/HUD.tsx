@@ -32,7 +32,7 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
-import { getStageMapByStageId, pathCoverageRatio } from "@/game/maps";
+
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 
@@ -710,49 +710,7 @@ export function HUD({
               </button>
             </div>
             <p className="mt-1 text-xs leading-relaxed text-panel-muted">{TOWER_INFO[tower.kind].blurb}</p>
-            <div className="mt-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-              <span className="text-[8px] uppercase tracking-[0.18em] text-panel-muted">UPGRADE PATHS</span>
-              <p className="mt-0.5 text-[9px] leading-tight text-panel-muted">Choose the next upgrade that fits your defense. Each purchased upgrade stays visible.</p>
-            </div>
-     </div>
-<div className="mt-1.5 rounded-lg bg-black/25 p-1.5">
-  <p className="mb-1 text-[8px] uppercase tracking-[0.16em] text-panel-muted">
-    Targeting
-  </p>
-
-  <div className="grid grid-cols-3 gap-1">
-    {([
-      ["first", "First"],
-      ["last", "Last"],
-      ["strongest", "Strongest"],
-    ] as const).map(([mode, label]) => {
-      const active = tower.targetMode === mode;
-
-      return (
-        <button
-          key={mode}
-          type="button"
-          onClick={() => game.setTowerTargetMode(tower.id, mode)}
-          className="min-h-9 rounded-md border border-white/10 bg-panel/70 px-1 py-1 font-display text-[11px] tracking-wide text-panel-foreground transition active:scale-[0.97] data-[active=true]:border-accent data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
-          data-active={active}
-          aria-pressed={active}
-        >
-          {label}
-        </button>
-      );
-    })}
-  </div>
-</div>
-            <div className="mt-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[8px] uppercase tracking-[0.18em] text-panel-muted">Field build</span>
-                <span className="font-display text-[10px] tracking-wide text-accent">Lv {tower.level} · {tower.a}/{tower.b}</span>
-              </div>
-              <p className="mt-0.5 text-[9px] text-panel-muted">
-                Spend SCRAP on one path at a time. The first branch to 3 locks the other at 2.
-              </p>
-            </div>
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+            <div className="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <PathColumn tower={tower} path="a" scrap={state.gold} />
               <PathColumn tower={tower} path="b" scrap={state.gold} />
             </div>
