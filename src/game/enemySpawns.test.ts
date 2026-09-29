@@ -53,7 +53,7 @@ describe("enemy spawn rules", () => {
     const stage = getStageById(1);
 
     expect(getEnemySpawnStats(stage.gameplay, 0, 1, stage.waveCount)).toMatchObject({
-      hp: expect.closeTo(17.282016, 10),
+      hp: expect.closeTo(19.8743184, 10),
       speed: 1.2512,
     });
 
