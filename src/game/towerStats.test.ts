@@ -73,6 +73,16 @@ describe("tower stat calculations", () => {
     expect(stats.crit).toBe(0.35);
     expect(stats.gore).toBe(2);
     expect(stats.gold).toBe(1.25);
+    expect(stats.volley).toBe(1);
+    expect(stats.stun).toBe(0);
+    expect(stats.markDuration).toBe(0);
+    expect(stats.markBonus).toBe(0);
+    expect(stats.shatterMultiplier).toBe(0);
+    expect(stats.executeThreshold).toBe(0);
+    expect(stats.executeMultiplier).toBe(1);
+    expect(stats.bossDamageMultiplier).toBe(1);
+    expect(stats.closeDamageMultiplier).toBe(1);
+    expect(stats.burnDuration).toBe(2.4);
   });
 
   test("preserves base tower stats when no upgrades are purchased", () => {
@@ -94,6 +104,16 @@ describe("tower stat calculations", () => {
       crit: 0,
       gore: 1,
       gold: 1,
+      volley: 1,
+      stun: 0,
+      markDuration: 0,
+      markBonus: 0,
+      shatterMultiplier: 0,
+      executeThreshold: 0,
+      executeMultiplier: 1,
+      bossDamageMultiplier: 1,
+      closeDamageMultiplier: 1,
+      burnDuration: 2.4,
     });
   });
 });
