@@ -14,7 +14,7 @@ export function getFirstSessionTip(
   if (towerCount === 0) {
     return {
       title: "BUILD YOUR FIRST TOWER",
-      body: "Tap a glowing pad, then choose a tower to start the defense.",
+      body: "Tap open ground, choose a tower, and place it where its range covers the lane.",
     } satisfies FirstSessionTip;
   }
 
