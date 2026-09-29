@@ -449,7 +449,6 @@ export function GameCanvas() {
           onCreated={({ gl }) => {
             gl.setClearColor("#8fc4d8");
           }}
-          onPointerMissed={() => setSelection(null)}
         >
           <Scene
             stageId={state.stageId}
