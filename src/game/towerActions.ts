@@ -18,7 +18,7 @@ export type TowerEconomyPaths = {
 export function towerUpgradeCost(
   tower: Pick<TowerEconomyTower, "level">,
   definition: TowerEconomyDef,
-  _maxLevel: number,
+  maxLevel: number,
 ) {
   if (tower.level >= maxLevel) return Infinity;
   return Math.round(definition.upgradeBase * Math.pow(1.55, tower.level - 1));
