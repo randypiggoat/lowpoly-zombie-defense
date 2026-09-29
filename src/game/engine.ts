@@ -1220,8 +1220,8 @@ export class Game {
     const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
     if (!result.killed) {
-      if (ability.stun) z.stun = Math.max(z.stun, ability.stun);
-      if (ability.markDuration) z.markTime = Math.max(z.markTime, ability.markDuration);
+      if (ability.stun) z.stun = Math.max(z.stun ?? 0, ability.stun);
+      if (ability.markDuration) z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
     }
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
