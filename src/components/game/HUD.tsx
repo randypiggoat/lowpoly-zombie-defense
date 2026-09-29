@@ -6,17 +6,8 @@ import {
   canBuyTier,
   game,
   incomeCost,
-  incomePerSecond,
   tierCost,
-  towerBurn,
-  towerChain,
-  towerCrit,
-  towerDamage,
-  towerRange,
-  towerRate,
   towerSellValue,
-  towerSlow,
-  towerSplash,
   towerUnlocked,
   towerBuildCost,
   type GameState,
@@ -29,22 +20,18 @@ import {
   DAILY_MISSION_DEFS,
   dateKey,
   profile,
-  xpForLevel,
   type AchievementProgress,
   type PlayerProfile,
 } from "@/game/profile";
 import type { Selection } from "./Scene";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
 import { sfx } from "@/game/audio";
-import { towerCounterplayLabels } from "@/game/towerCounterplay";
 import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
-import { getStageMapByStageId, pathCoverageRatio } from "@/game/maps";
+
 import { getBossHealthSummary } from "@/game/bossHealth";
-import { bestTowerCounterplayMatch } from "@/game/towerCounterplay";
-import { enemyThreatLabel } from "@/game/enemyPresentation";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 
 function useProfileSnapshot() {
@@ -74,25 +61,6 @@ function nextProgressionTarget(player: PlayerProfile) {
     };
   }
   return { label: "Field Knowledge complete", detail: "Every permanent knowledge node unlocked" };
-}
-
-function towerSpecialSummary(tower: Tower) {
-  const parts: string[] = [];
-  if (towerSplash(tower) > 0) {
-    parts.push(
-      `${tower.kind === "flamethrower" ? "Cone" : "Blast"} ${towerSplash(tower).toFixed(1)}`,
-    );
-  }
-  if (towerChain(tower) > 0) parts.push(`Chains ${towerChain(tower)}`);
-  if (towerBurn(tower) > 0) parts.push(`${towerBurn(tower).toFixed(0)}/s burn`);
-  if (towerSlow(tower) > 0) parts.push(`${Math.round(towerSlow(tower) * 100)}% slow`);
-  if (towerCrit(tower) > 0) parts.push(`${Math.round(towerCrit(tower) * 100)}% crit`);
-  return parts.join(" · ") || "Single-target fire";
-}
-
-function counterplaySummary(kind: TowerKind) {
-  const labels = towerCounterplayLabels(kind);
-  return labels.length > 0 ? labels.join(" · ") : "General-purpose tower";
 }
 
 function Stat({
@@ -187,38 +155,80 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
   const locked = !canBuyTier(tower, path);
   const cost = tierCost(tower, path);
   const next = owned < 4 ? def.tiers[owned]! : null;
-  const affordable = !!next && !locked && scrap >= cost;
-  const ability = abilityLabel(next?.ability);
+
   return (
-    <div className="min-w-0 rounded-lg border border-white/10 bg-black/25 p-1.5">
-      <div className="flex items-center justify-between gap-1">
+    <section className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-2">
+      <div className="mb-1.5 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="block truncate font-display text-xs tracking-wide text-panel-foreground">{def.name}</span>
-          <span className="block truncate text-[8px] uppercase tracking-wider text-panel-muted">{def.focus}</span>
+          <h3 className="truncate font-display text-xs tracking-[0.12em] text-panel-foreground">{def.name}</h3>
+          <p className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-panel-muted">{def.focus}</p>
         </div>
-        <span className="font-display text-[9px] text-panel-muted">{owned}/4</span>
+        <span className="shrink-0 text-[9px] uppercase tracking-wider text-panel-muted">
+          {owned === 4 ? "MAXED" : locked ? "LOCKED" : "UP NEXT"}
+        </span>
       </div>
-      {next ? (
-        <>
-          <p className="mt-1.5 min-h-9 text-[10px] leading-tight text-panel-foreground">
-            <span className="block truncate font-semibold">{next.name}</span>
-            <span className="line-clamp-2 text-panel-muted">{next.desc}</span>
-          </p>
-          {ability && <span className="mt-1 inline-flex rounded-full border border-accent/25 bg-accent/10 px-1.5 py-0.5 text-[8px] font-black tracking-[0.12em] text-accent">{ability}</span>}
-          <button
-            onClick={() => game.buyTier(tower.id, path)}
-            disabled={!affordable}
-            aria-label={locked ? def.name + " path locked" : "Buy " + next.name}
-            className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
-          >
-            {locked ? "LOCKED" : cost + " SCRAP"}
-          </button>
-        </>
-      ) : <p className="mt-2 text-center font-display text-xs text-accent">PATH MAXED</p>}
-    </div>
+      <div className="space-y-1.5">
+        {def.tiers.map((tier, index) => {
+          const purchased = index < owned;
+          const isNext = index === owned && Boolean(next);
+          const ability = abilityLabel(tier.ability);
+          return (
+            <div
+              key={tier.name}
+              data-upgrade-state={purchased ? "owned" : isNext && !locked ? "next" : "future"}
+              className={
+                "rounded-lg border px-2 py-1.5 " +
+                (purchased
+                  ? "border-accent/20 bg-accent/5"
+                  : isNext && !locked
+                    ? "border-accent/45 bg-accent/10"
+                    : "border-white/5 bg-black/15")
+              }
+            >
+              <div className="flex items-start gap-2">
+                <span
+                  aria-hidden="true"
+                  className={
+                    "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[9px] font-black " +
+                    (purchased
+                      ? "bg-accent text-accent-foreground"
+                      : isNext && !locked
+                        ? "border border-accent/50 text-accent"
+                        : "border border-white/10 text-panel-muted")
+                  }
+                >
+                  {purchased ? "✓" : index + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate font-display text-[11px] tracking-wide text-panel-foreground">{tier.name}</p>
+                    {ability ? <span className="shrink-0 rounded-full bg-accent/10 px-1 py-0.5 text-[7px] font-black tracking-[0.12em] text-accent">{ability}</span> : null}
+                  </div>
+                  {purchased || isNext ? (
+                    <p className="mt-0.5 text-[9px] leading-tight text-panel-muted">{tier.desc}</p>
+                  ) : (
+                    <p className="mt-0.5 text-[9px] uppercase tracking-wider text-panel-muted/70">Unlock later</p>
+                  )}
+                  {isNext && !locked ? (
+                    <button
+                      type="button"
+                      onClick={() => game.buyTier(tower.id, path)}
+                      disabled={scrap < cost}
+                      aria-label={"Buy " + tier.name}
+                      className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-2 py-1 font-display text-[10px] tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                    >
+                      {cost} SCRAP
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
-
 export function HUD({
   state,
   selection,
@@ -245,7 +255,6 @@ export function HUD({
   const tower =
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
   const spot = selection?.kind === "spot" ? selection.position : null;
-  const map = getStageMapByStageId(state.stageId);
   const placement = spot ? game.getPlacementStatus(spot.x, spot.z) : null;
   const incCost = incomeCost(state.incomeLevel);
   const nextTarget = nextProgressionTarget(player);
@@ -607,12 +616,6 @@ export function HUD({
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
                 const buildCost = towerBuildCost(k);
                 const canBuild = unlocked && state.gold >= buildCost && Boolean(placement?.valid);
-                const matchup = waveThreatPreview
-                  ? bestTowerCounterplayMatch(k, waveThreatPreview.enemyKinds)
-                  : null;
-                const coverage = spot
-                  ? Math.round(pathCoverageRatio(map, spot.x, spot.z, info.range) * 100)
-                  : 0;
                 const unlockAffordable =
                   !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
@@ -631,20 +634,10 @@ export function HUD({
                         </span>
                       </span>
                       <span className="shrink-0 text-[9px] text-panel-muted">
-                        {unlocked ? `${info.cost} scrap` : `Lv ${info.unlockLevel}`}
+                        {unlocked ? `${buildCost} scrap` : `Lv ${info.unlockLevel}`}
                       </span>
                     </span>
-                    <span className="mt-1 block truncate text-[9px] text-panel-muted">
-                      {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG · {coverage}% PATH
-                    </span>
-                    <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                      {counterplaySummary(k)}
-                    </span>
-                    {matchup && (
-                      <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                        GOOD MATCH · {enemyThreatLabel(matchup.enemyKind)} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
-                      </span>
-                    )}
+                    <p className="mt-1 line-clamp-2 text-[9px] leading-tight text-panel-muted">{info.blurb}</p>
                     <button
                       onClick={() => {
                         if (game.buildAt(spot.x, spot.z, k)) onSelect(null);
@@ -722,68 +715,8 @@ export function HUD({
                 ×
               </button>
             </div>
-            <p className="truncate text-[10px] text-panel-muted">{towerSpecialSummary(tower)}</p>
-            <p className="mt-0.5 truncate text-[9px] font-semibold text-accent">
-              {counterplaySummary(tower.kind)}
-            </p>
-            <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
-              {[
-                ["Damage", towerDamage(tower).toFixed(0)],
-                ["Rate", `${towerRate(tower).toFixed(1)}/s`],
-                ["Range", towerRange(tower).toFixed(1)],
-                [
-                  towerSlow(tower) > 0 ? "Slow" : "Crit",
-                  towerSlow(tower) > 0
-                    ? `${Math.round(towerSlow(tower) * 100)}%`
-                    : `${Math.round(towerCrit(tower) * 100)}%`,
-                ],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-md bg-black/20 py-0.5">
-                  <div className="font-display text-sm text-panel-foreground">{value}</div>
-                  <div className="text-[8px] uppercase tracking-wider text-panel-muted">
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-<div className="mt-1.5 rounded-lg bg-black/25 p-1.5">
-  <p className="mb-1 text-[8px] uppercase tracking-[0.16em] text-panel-muted">
-    Targeting
-  </p>
-
-  <div className="grid grid-cols-3 gap-1">
-    {([
-      ["first", "First"],
-      ["last", "Last"],
-      ["strongest", "Strongest"],
-    ] as const).map(([mode, label]) => {
-      const active = tower.targetMode === mode;
-
-      return (
-        <button
-          key={mode}
-          type="button"
-          onClick={() => game.setTowerTargetMode(tower.id, mode)}
-          className="min-h-9 rounded-md border border-white/10 bg-panel/70 px-1 py-1 font-display text-[11px] tracking-wide text-panel-foreground transition active:scale-[0.97] data-[active=true]:border-accent data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
-          data-active={active}
-          aria-pressed={active}
-        >
-          {label}
-        </button>
-      );
-    })}
-  </div>
-</div>
-            <div className="mt-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[8px] uppercase tracking-[0.18em] text-panel-muted">Field build</span>
-                <span className="font-display text-[10px] tracking-wide text-accent">Lv {tower.level} · {tower.a}/{tower.b}</span>
-              </div>
-              <p className="mt-0.5 text-[9px] text-panel-muted">
-                Spend SCRAP on one path at a time. The first branch to 3 locks the other at 2.
-              </p>
-            </div>
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+            <p className="mt-1 text-xs leading-relaxed text-panel-muted">{TOWER_INFO[tower.kind].blurb}</p>
+            <div className="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <PathColumn tower={tower} path="a" scrap={state.gold} />
               <PathColumn tower={tower} path="b" scrap={state.gold} />
             </div>
@@ -797,7 +730,7 @@ export function HUD({
             disabled={state.gold < incCost}
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
-            Salvage +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
+            Upgrade salvage income
             <span className="block text-[10px] text-panel-muted">{incCost} SCRAP</span>
           </button>
           <button
@@ -805,7 +738,7 @@ export function HUD({
             disabled={state.gold < 30 || state.baseHp >= state.baseMaxHp}
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
-            Repair base +5
+            Repair base
             <span className="block text-[10px] text-panel-muted">30 scrap</span>
           </button>
         </div>

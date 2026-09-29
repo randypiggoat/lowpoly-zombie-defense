@@ -10,7 +10,7 @@ import {
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
 import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
-import { TOWER_INFO, TOWER_KINDS, game, type TowerKind } from "@/game/engine";
+import { TOWER_INFO, TOWER_KINDS, TOWER_PATHS, game, type TowerKind } from "@/game/engine";
 import {
   STAGE_DEFS,
   evaluateStageObjectives,
@@ -24,7 +24,6 @@ import {
   DAILY_LOGIN_REWARDS,
   DAILY_MISSION_DEFS,
   dateKey,
-  xpForLevel,
   profile,
 } from "@/game/profile";
 import { TOWER_COSMETICS } from "@/game/collection";
@@ -48,6 +47,7 @@ import { STORE_CATALOG, storeItemStatus } from "@/game/storeCatalog";
 import type { PurchaseProduct } from "@/game/monetization";
 import { getWaveThreatPreview } from "@/game/waveThreatPreview";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
+import { getStageMapByStageId } from "@/game/maps";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -209,6 +209,65 @@ function HomeShortcut({
   );
 }
 
+function UpgradeReference({ kind }: { kind: TowerKind }) {
+  const paths = TOWER_PATHS[kind];
+  return (
+    <div className="mt-3 space-y-2">
+      {(["a", "b"] as const).map((path) => (
+        <section key={path} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-display text-sm tracking-[0.12em] text-panel-foreground">{paths[path].name}</p>
+              <p className="mt-0.5 text-[10px] leading-tight text-panel-muted">{paths[path].focus}</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-accent/10 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-accent">Path</span>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {paths[path].tiers.map((tier) => (
+              <div key={tier.name} className="rounded-xl border border-white/5 bg-black/15 px-2.5 py-2">
+                <p className="font-display text-[11px] tracking-wide text-panel-foreground">{tier.name}</p>
+                <p className="mt-0.5 text-[10px] leading-tight text-panel-muted">{tier.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function StageRoutePreview({ stageId }: { stageId: number }) {
+  const map = getStageMapByStageId(stageId);
+  const xs = map.path.map((point) => point.x);
+  const zs = map.path.map((point) => point.z);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minZ = Math.min(...zs);
+  const maxZ = Math.max(...zs);
+  const width = Math.max(1, maxX - minX);
+  const height = Math.max(1, maxZ - minZ);
+  const pad = 2;
+  const viewWidth = width + pad * 2;
+  const viewHeight = height + pad * 2;
+  const point = (value: { x: number; z: number }) =>
+    (value.x - minX + pad) + "," + (maxZ - value.z + pad);
+  const d = map.path.map((value, index) => (index === 0 ? "M " : "L ") + point(value)).join(" ");
+  const start = point(map.path[0]!).split(",");
+  const end = point(map.path[map.path.length - 1]!).split(",");
+
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2">
+      <svg viewBox={"0 0 " + viewWidth + " " + viewHeight} className="h-24 w-full" role="img" aria-label="Map route preview">
+        <rect width="100%" height="100%" fill="rgba(255,255,255,0.03)" />
+        <path d={d} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={d} fill="none" stroke="currentColor" className="text-accent" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={start[0]} cy={start[1]} r="1" fill="currentColor" className="text-accent" />
+        <circle cx={end[0]} cy={end[1]} r="1" fill="currentColor" className="text-danger" />
+      </svg>
+      <span className="absolute bottom-2 left-2 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-panel-muted">Route</span>
+    </div>
+  );
+}
 function seasonalEventProgressTarget(target: number, progress: number) {
   return Math.min(target, Math.max(0, progress));
 }
@@ -228,6 +287,7 @@ export function GameCanvas() {
   const [canvasReady, setCanvasReady] = useState(false);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const [purchasedProducts, setPurchasedProducts] = useState<Partial<Record<PurchaseProduct, boolean>>>({});
+  const [armoryTowerKind, setArmoryTowerKind] = useState<TowerKind>("rifleman");
   const activeStage = getStageById(activeStageId);
   const gameplayStage =
     state.endlessMode && activeChallenge
@@ -257,7 +317,6 @@ export function GameCanvas() {
     stages.find((stage) => !stage.locked) ??
     stages[stages.length - 1]!;
   const isFirstRun = player.gamesPlayed === 0;
-  const xpPercent = Math.max(0, Math.min(100, (player.xp / Math.max(1, xpForLevel(player.level))) * 100));
   const todayKey = dateKey();
   const dailyLoginReward =
     DAILY_LOGIN_REWARDS.find((entry) => entry.day === player.loginCycleDay) ??
@@ -523,15 +582,9 @@ export function GameCanvas() {
                     <ShieldMark size={24} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Player</p>
-                        <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
-                      </div>
-                      <span className="text-xs font-black tabular-nums text-accent">{Math.round(xpPercent)}%</span>
-                    </div>
-                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-black/35">
-                      <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: xpPercent + "%" }} />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Player</p>
+                      <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
                     </div>
                   </div>
                 </div>
@@ -556,10 +609,10 @@ export function GameCanvas() {
                     <p className="rotwood-display text-sm text-accent">{recommendedStage.difficulty}</p>
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-1.5">
-                  <HomeMetric label="Waves" value={recommendedStage.waveCount} />
-                  <HomeMetric label="Best" value={recommendedStage.bestWave || "—"} />
-                  <HomeMetric label="Stars" value={<span className="text-accent">{"★".repeat(recommendedStage.stars) || "—"}</span>} />
+                <div className="mt-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-panel-muted">
+                  <span>Best wave {recommendedStage.bestWave || "—"}</span>
+                  <span aria-hidden="true">•</span>
+                  <span className="text-accent">{"★".repeat(recommendedStage.stars) || "No stars yet"}</span>
                 </div>
                 <ScreenButton
                   className="mt-3"
@@ -633,22 +686,22 @@ export function GameCanvas() {
               <div className="mt-3">
                 <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Modes</p>
                 <div className="space-y-1.5">
-                  <MenuTile title="Campaign" subtitle="Clear stages, earn stars, and unlock the route." onClick={() => setScreen("stage-select")} />
-                  <MenuTile title="Endless Siege" subtitle="Push free, daily, and weekly best scores." onClick={() => setScreen("endless-select")} />
-                  <MenuTile title="Boss Trials" subtitle="A hard boss challenge rotates every week." onClick={() => setScreen("boss-trial-select")} />
+                  <MenuTile title="Campaign" subtitle="Story stages." onClick={() => setScreen("stage-select")} />
+                  <MenuTile title="Endless Siege" subtitle="Survive as long as you can." onClick={() => setScreen("endless-select")} />
+                  <MenuTile title="Boss Trials" subtitle="A weekly boss challenge." onClick={() => setScreen("boss-trial-select")} />
                 </div>
               </div>
 
               <div className="mt-3">
                 <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Progress</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  <HomeShortcut title="Armory" subtitle="Tower roster" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
-                  <HomeShortcut title="Knowledge" subtitle="Permanent field perks" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
-                  <HomeShortcut title="Collection" subtitle="Equip earned skins" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
-                  <HomeShortcut title="Missions" subtitle="Daily objectives" icon={<Gift size={18} />} badge={readyMissionCount || undefined} onClick={() => setScreen("missions")} />
+                  <HomeShortcut title="Armory" subtitle="Learn your towers" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
+                  <HomeShortcut title="Knowledge" subtitle="Permanent upgrades" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
+                  <HomeShortcut title="Collection" subtitle="Your cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
+                  <HomeShortcut title="Missions" subtitle="Daily goals" icon={<Gift size={18} />} badge={readyMissionCount || undefined} onClick={() => setScreen("missions")} />
                   <HomeShortcut title="Records" subtitle="Achievements" icon={<Trophy size={18} />} badge={readyAchievementCount || undefined} onClick={() => setScreen("achievements")} />
-                  <HomeShortcut title="Events" subtitle="Limited-time rewards" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
-                  <HomeShortcut title="Market" subtitle="Cosmetics & support" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
+                  <HomeShortcut title="Events" subtitle="Limited-time" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
+                  <HomeShortcut title="Market" subtitle="Cosmetics" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
                 </div>
               </div>
             </ScreenCard>
@@ -810,74 +863,41 @@ export function GameCanvas() {
       {screen === "stage-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
-            </ScreenButton>
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
             <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
-              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">World 1</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Campaign</p>
               <h2 className="font-display text-2xl tracking-wide">Suburbs</h2>
+              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it.</p>
             </div>
             <div className="mt-3 space-y-2">
               {stages.map((stage) => (
-                <div
-                  key={stage.id}
-                  className="rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-display text-lg tracking-wide">
-                        STAGE {stage.stageNumber}
-                      </p>
-                      <p className="text-sm">{stage.name}</p>
-                      <p className="mt-1 text-xs text-panel-muted">{stage.description}</p>
+                <div key={stage.id} className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}>
+                  <StageRoutePreview stageId={stage.id} />
+                  <div className="mt-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-display text-lg tracking-wide">STAGE {stage.stageNumber}</p>
+                      <p className="font-display text-base tracking-wide">{stage.name}</p>
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-panel-muted">{stage.description}</p>
                     </div>
-                    <p className="rounded-full bg-black/30 px-2 py-1 text-xs uppercase tracking-wider text-panel-muted">
-                      {stage.difficulty}
-                    </p>
-                  </div>
-                  {stage.placeholder && (
-                    <p className="mt-2 rounded-lg bg-black/30 px-2 py-1 text-xs text-panel-muted">
-                      Placeholder stage content using current map.
-                    </p>
-                  )}
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-panel-muted">
-                    <p>Best wave: {stage.bestWave}</p>
-                    <p>Status: {stage.completed ? "Complete" : "Not completed"}</p>
-                    <p>Stars: {"★".repeat(stage.stars) || "—"}</p>
-                    <p>{stage.locked ? "Locked" : "Unlocked"}</p>
-                    <p>Waves: {stage.waveCount}</p>
-                    <p>Reward x{stage.rewardMultiplier.toFixed(2)}</p>
-                  </div>
-                  <div className="mt-2 rounded-xl bg-black/20 px-3 py-2 text-xs text-panel-muted">
-                    <p>
-                      Completion Reward: +{stage.rewards.completionCoins} credits · +
-                      {stage.rewards.completionXp} XP
-                    </p>
-                    <p>
-                      First Clear Bonus: +{stage.rewards.firstCompletionBonus.coins} credits · +
-                      {stage.rewards.firstCompletionBonus.xp} XP · +
-                      {stage.rewards.firstCompletionBonus.stars}★
-                    </p>
-                    <p className="mt-1">Rule: {stage.specialRules.join(" • ")}</p>
-                  </div>
-                  {stage.locked ? (
-                    <div className="mt-2 rounded-xl bg-black/30 px-3 py-2 text-sm">
-                      <p className="font-semibold">🔒 LOCKED</p>
-                      <p className="text-panel-muted">{stage.requiredText}</p>
+                    <div className="shrink-0 text-right">
+                      <p className="font-display text-sm tracking-wide text-accent">{stage.difficulty}</p>
+                      <p className="mt-1 text-base text-accent" aria-label={stage.stars + " stars"}>{"★".repeat(stage.stars) || "☆"}</p>
                     </div>
-                  ) : (
-                    <div className="mt-2">
-                      <ScreenButton onClick={() => startStage(stage.id)}>PLAY</ScreenButton>
-                    </div>
-                  )}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.14em] text-panel-muted">
+                    <span>{stage.locked ? stage.requiredText.toUpperCase() : stage.completed ? "COMPLETED" : "READY"}</span>
+                    {!stage.locked && stage.bestWave > 0 ? <span>BEST WAVE {stage.bestWave}</span> : null}
+                  </div>
+                  <div className="mt-2">
+                    {stage.locked ? <div className="rounded-xl bg-black/25 px-3 py-2 text-center text-xs text-panel-muted">🔒 {stage.requiredText}</div> : <ScreenButton onClick={() => startStage(stage.id)}>{stage.completed ? "REPLAY" : "PLAY"}</ScreenButton>}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
       )}
-
-      {screen === "collection" && (
+{screen === "collection" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
             <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
@@ -962,31 +982,37 @@ export function GameCanvas() {
           <div className="mx-auto w-full max-w-md">
             <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Field roster</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Tower guide</p>
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Armory</h2>
-              <p className="mt-1 text-xs text-panel-muted">Choose a tower in battle. Its Scrap upgrades are temporary to the current defense.</p>
+              <p className="mt-1 text-xs text-panel-muted">Learn each tower’s role and every upgrade path. Combat numbers stay in battle.</p>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {TOWER_KINDS.map((kind) => {
                 const info = TOWER_INFO[kind];
-                const unlocked = TOWER_INFO[kind].coinUnlock === 0 || player.level >= info.unlockLevel || player.unlockedTowers.includes(kind);
+                const unlocked = info.coinUnlock === 0 || player.level >= info.unlockLevel || player.unlockedTowers.includes(kind);
+                const active = armoryTowerKind === kind;
                 return (
-                  <div key={kind} className="rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
+                  <button key={kind} type="button" onClick={() => setArmoryTowerKind(kind)} data-active={active} className="rounded-2xl border bg-panel/95 p-3 text-left shadow-panel transition active:scale-[0.99] data-[active=true]:border-accent/50 data-[active=true]:bg-accent/5">
                     <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: info.accent }} />
-                      <p className="font-display text-sm tracking-wide text-panel-foreground">{info.name}</p>
+                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: info.accent }} />
+                      <p className="truncate font-display text-sm tracking-wide text-panel-foreground">{info.name}</p>
                     </div>
-                    <p className="mt-1 text-[10px] text-panel-muted">{info.blurb}</p>
-                    <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-accent">{unlocked ? "AVAILABLE IN BATTLE" : "UNLOCK · LV " + info.unlockLevel}</p>
-                  </div>
+                    <p className="mt-1 line-clamp-2 text-[10px] leading-tight text-panel-muted">{info.blurb}</p>
+                    <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-accent">{unlocked ? "AVAILABLE" : "LOCKS LATER"}</p>
+                  </button>
                 );
               })}
+            </div>
+            <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Tower overview</p>
+              <h3 className="font-display text-xl tracking-wide text-panel-foreground">{TOWER_INFO[armoryTowerKind].name}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-panel-muted">{TOWER_INFO[armoryTowerKind].blurb}</p>
+              <UpgradeReference kind={armoryTowerKind} />
             </div>
           </div>
         </div>
       )}
-
-      {screen === "knowledge" && (
+{screen === "knowledge" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
             <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
@@ -1258,212 +1284,49 @@ export function GameCanvas() {
       {screen === "results" && (
         <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/70 p-3">
           <ScreenCard>
-            <h2
-              className={
-                "text-center font-display text-3xl tracking-wide " +
-                (state.stageWon ? "text-accent" : state.endlessMode ? "text-accent" : "text-danger")
-              }
-            >
-              {resultLabel}
-            </h2>
-            {state.bossTrial && activeBossTrial ? (
-              <div className="mt-1 text-center">
-                <p className="text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p>
-                <p className="text-[9px] uppercase tracking-[0.18em] text-accent">Weekly Boss Trial</p>
+            <h2 className={"text-center font-display text-3xl tracking-wide " + (state.stageWon ? "text-accent" : state.endlessMode ? "text-accent" : "text-danger")}>{resultLabel}</h2>
+            {state.bossTrial && activeBossTrial ? <p className="mt-1 text-center text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p> : state.endlessMode && activeChallenge ? <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p> : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
+            {lastReward ? (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">+{lastReward.coins}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">Credits</p></div>
+                <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">+{lastReward.xp}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">XP</p></div>
+                <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">{"★".repeat(lastReward.starsEarned ?? 0) || "—"}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">Stars</p></div>
               </div>
-            ) : state.endlessMode && activeChallenge ? (
-              <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
             ) : null}
-            <div className="mt-3 grid grid-cols-3 gap-1.5">
-              <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
-                <p className="font-display text-lg text-panel-foreground">{state.kills}</p>
-                <p className="text-[8px] uppercase tracking-wider text-panel-muted">Kills</p>
-              </div>
-              <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
-                <p className="font-display text-lg text-panel-foreground">{state.maxKillStreak}</p>
-                <p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Streak</p>
-              </div>
-              <div className="rounded-xl bg-black/30 px-2 py-2 text-center">
-                <p className="font-display text-lg text-panel-foreground">{state.uniqueTowerKinds.length}</p>
-                <p className="text-[8px] uppercase tracking-wider text-panel-muted">Tower Types</p>
-              </div>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
-              <p>Wave Reached</p>
-              <p className="text-right">{state.wave}</p>
-              {state.endlessMode && (
-                <>
-                  <p>Score</p>
-                  <p className="text-right">{(lastReward && "score" in lastReward ? lastReward.score : 0).toLocaleString()}</p>
-                  <p>Best Challenge Score</p>
-                  <p className="text-right">{endlessBestDisplay.toLocaleString()}</p>
-                </>
+            <div className="mt-3 rounded-2xl bg-black/25 p-3 text-center">
+              {state.endlessMode || state.bossTrial ? (
+                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">{state.bossTrial ? "Trial score" : "Score"}</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.bossTrial ? state.bossTrialScore.toLocaleString() : lastReward && "score" in lastReward ? lastReward.score.toLocaleString() : "—"}</p></>
+              ) : (
+                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">Wave reached</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.wave}</p></>
               )}
-              {state.bossTrial && (
-                <>
-                  <p>Trial Score</p>
-                  <p className="text-right">{state.bossTrialScore.toLocaleString()}</p>
-                  <p>Best This Week</p>
-                  <p className="text-right">
-                    {(player.bossTrialWeekKey === weekKey ? player.bossTrialBestScore : 0).toLocaleString()}
-                  </p>
-                  <p>Boss Phases Triggered</p>
-                  <p className="text-right">{state.bossEnragedCount}</p>
-                </>
-              )}
-
-              <p>Credits Earned</p>
-              <p className="text-right">{lastReward?.coins ?? 0}</p>
-              <p>XP Earned</p>
-              <p className="text-right">{lastReward?.xp ?? 0}</p>
-              <p>Stars Earned</p>
-              <p className="text-right">{"★".repeat(lastReward?.starsEarned ?? 0) || "—"}</p>
-              <p>Best Wave</p>
-              <p className="text-right">
-                {lastReward?.previousBestWave ?? 0} →{" "}
-                {Math.max(lastReward?.previousBestWave ?? 0, state.wave)}
-              </p>
-              <p>Best Stars</p>
-              <p className="text-right">
-                {"★".repeat(lastReward?.previousBestStars ?? 0) || "—"} →{" "}
-                {"★".repeat(lastReward?.bestStars ?? 0) || "—"}
-              </p>
+              {lastReward?.newRecord ? <p className="mt-1 font-display text-sm tracking-wide text-accent">NEW RECORD</p> : null}
             </div>
-            {lastReward?.newRecord && (
-              <p className="mt-3 text-center font-display text-xl tracking-wide text-accent">
-                NEW RECORD!
-              </p>
-            )}
-            {(state.perfectWaves > 0 || state.streakBonusGold > 0 || state.bossBonusGold > 0) && (
-              <div className="mt-3 rounded-2xl border border-white/10 bg-black/25 p-3">
-                <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Run bonuses</p>
-                <div className="mt-1.5 space-y-1 text-xs text-panel-foreground">
-                  {state.perfectWaves > 0 && (
-                    <div className="flex items-center justify-between gap-3">
-                      <span>Perfect Waves · {state.perfectWaves}</span>
-                      <span className="font-display text-accent">+{state.perfectWaveBonusGold} SCRAP</span>
-                    </div>
-                  )}
-                  {state.streakBonusGold > 0 && (
-                    <div className="flex items-center justify-between gap-3">
-                      <span>Kill Chain Bonus</span>
-                      <span className="font-display text-accent">+{state.streakBonusGold} SCRAP</span>
-                    </div>
-                  )}
-                  {state.bossBonusGold > 0 && (
-                    <div className="flex items-center justify-between gap-3">
-                      <span>Boss Defeats · {state.bossesDefeated}</span>
-                      <span className="font-display text-accent">+{state.bossBonusGold} SCRAP</span>
-                    </div>
-                  )}
+            {lastReward?.stageCompleted ? (
+              <div className="mt-3 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Stage goals</p>
+                <div className="mt-1 space-y-1">
+                  {evaluateStageObjectives(activeStage.objectives, { stageCompleted: true, baseHealth: state.baseHp, baseMaxHealth: state.baseMaxHp, towersPlaced: state.towersPlaced, maxKillStreak: state.maxKillStreak, uniqueTowerKinds: state.uniqueTowerKinds.length }).results.map((result) => (
+                    <p key={result.objective.id}>{result.passed ? "★" : "☆"} {result.objective.label}</p>
+                  ))}
                 </div>
               </div>
-            )}
-            {!state.stageWon &&
-              !state.reviveUsed &&
-              state.baseHp <= 0 &&
-              rewardedAvailable && (
-                <ScreenButton
-                  onClick={async () => {
-                    const { showRewarded } = await import("@/game/monetization");
-                    const earned = await showRewarded("revive");
-                    if (earned && game.reviveRun()) setScreen("gameplay");
-                  }}
-                  variant="secondary"
-                >
-                  SECOND CHANCE · WATCH AD
-                </ScreenButton>
-              )}
-            {lastReward &&
-              !player.adsRemoved &&
-              rewardedAvailable &&
-              profile.canClaimLastRunRewardBoost && (
-                <ScreenButton
-                  onClick={async () => {
-                    const { showRewarded } = await import("@/game/monetization");
-                    const earned = await showRewarded("double-run-rewards");
-                    if (earned) profile.claimLastRunRewardBoost();
-                  }}
-                  variant="secondary"
-                >
-                  DOUBLE REWARDS · WATCH AD
-                </ScreenButton>
-              )}
-            {lastReward?.stageCompleted && (
-              <div className="mt-3 space-y-1 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
-                {evaluateStageObjectives(activeStage.objectives, {
-                  stageCompleted: true,
-                  baseHealth: state.baseHp,
-                  baseMaxHealth: state.baseMaxHp,
-                  towersPlaced: state.towersPlaced,
-                  maxKillStreak: state.maxKillStreak,
-                  uniqueTowerKinds: state.uniqueTowerKinds.length,
-                }).results.map((result, index) => (
-                  <p key={result.objective.id}>
-                    {index + 1 === 1 ? "⭐" : index + 1 === 2 ? "⭐⭐" : "⭐⭐⭐"}{" "}
-                    {result.passed ? "✓" : "✕"} {result.objective.label}
-                  </p>
-                ))}
-                <p className="pt-1 text-xs text-panel-muted">
-                  {lastReward.firstCompletionBonusApplied
-                    ? "First-clear bonus awarded."
-                    : "Replay rewards awarded (first-clear bonus already claimed)."}
-                </p>
-              </div>
-            )}
+            ) : null}
+            {!state.stageWon && !state.reviveUsed && state.baseHp <= 0 && rewardedAvailable ? (
+              <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("revive"); if (earned && game.reviveRun()) setScreen("gameplay"); }} variant="secondary">SECOND CHANCE · WATCH AD</ScreenButton>
+            ) : null}
+            {lastReward && !player.adsRemoved && rewardedAvailable && profile.canClaimLastRunRewardBoost ? (
+              <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("double-run-rewards"); if (earned) profile.claimLastRunRewardBoost(); }} variant="secondary">DOUBLE REWARDS · WATCH AD</ScreenButton>
+            ) : null}
             <div className="mt-4 space-y-2">
-              {state.stageWon && nextStage ? (
-                <ScreenButton onClick={() => startStage(nextStage.id)}>
-                  NEXT STAGE · {nextStage.name}
-                </ScreenButton>
-              ) : state.stageWon ? (
-                <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton>
-              ) : state.bossTrial && activeBossTrial ? (
-                <ScreenButton
-                  onClick={() => {
-                    resetGameplayState();
-                    game.startBossTrial(activeBossTrial, weekKey);
-                    setScreen("gameplay");
-                  }}
-                >
-                  RETRY TRIAL
-                </ScreenButton>
-              ) : state.endlessMode && activeChallenge ? (
-                <ScreenButton
-                  onClick={() => {
-                    resetGameplayState();
-                    game.startEndless(
-                      activeChallenge,
-                      activeChallenge.period === "weekly" ? weekKey : todayKey,
-                    );
-                    setScreen("gameplay");
-                  }}
-                >
-                  RETRY
-                </ScreenButton>
-              ) : (
-                <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>
-              )}
-              {state.stageWon && (
-                <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">
-                  REPLAY STAGE
-                </ScreenButton>
-              )}
-              <ScreenButton
-                onClick={() => state.bossTrial ? setScreen("boss-trial-select") : setScreen("stage-select")}
-                variant="secondary"
-              >
-                {state.bossTrial ? "BOSS TRIALS" : "STAGE SELECT"}
-              </ScreenButton>
-              <ScreenButton onClick={leaveToMainMenu} variant="secondary">
-                MAIN MENU
-              </ScreenButton>
+              {state.stageWon && nextStage ? <ScreenButton onClick={() => startStage(nextStage.id)}>NEXT STAGE</ScreenButton> : state.stageWon ? <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton> : state.bossTrial && activeBossTrial ? <ScreenButton onClick={() => { resetGameplayState(); game.startBossTrial(activeBossTrial, weekKey); setScreen("gameplay"); }}>RETRY TRIAL</ScreenButton> : state.endlessMode && activeChallenge ? <ScreenButton onClick={() => { resetGameplayState(); game.startEndless(activeChallenge, activeChallenge.period === "weekly" ? weekKey : todayKey); setScreen("gameplay"); }}>RETRY</ScreenButton> : <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>}
+              {state.stageWon ? <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">REPLAY</ScreenButton> : null}
+              <ScreenButton onClick={() => state.bossTrial ? setScreen("boss-trial-select") : state.endlessMode ? setScreen("endless-select") : setScreen("stage-select")} variant="secondary">{state.bossTrial ? "BOSS TRIALS" : state.endlessMode ? "ENDLESS" : "CAMPAIGN"}</ScreenButton>
+              <ScreenButton onClick={leaveToMainMenu} variant="secondary">MAIN MENU</ScreenButton>
             </div>
           </ScreenCard>
         </div>
       )}
-
-      {screen === "gameplay" && overlay === "pause" && (
+{screen === "gameplay" && overlay === "pause" && (
         <div className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center bg-black/65 p-3">
           <ScreenCard>
             <h2 className="text-center font-display text-3xl tracking-wide text-panel-foreground">
