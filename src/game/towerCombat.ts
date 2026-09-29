@@ -34,6 +34,17 @@ export type ProjectileState = {
   gold: number;
   crit: boolean;
   alive: boolean;
+  originX: number;
+  originZ: number;
+  stun: number;
+  markDuration: number;
+  markBonus: number;
+  shatterMultiplier: number;
+  executeThreshold: number;
+  executeMultiplier: number;
+  bossDamageMultiplier: number;
+  closeDamageMultiplier: number;
+  burnDuration: number;
 };
 
 export type ProjectileLaunchInput = Omit<ProjectileState, "alive" | "y"> & {
