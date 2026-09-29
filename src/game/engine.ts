@@ -222,6 +222,17 @@ export type Bullet = {
   gold: number;
   crit: boolean;
   alive: boolean;
+  originX: number;
+  originZ: number;
+  stun: number;
+  markDuration: number;
+  markBonus: number;
+  shatterMultiplier: number;
+  executeThreshold: number;
+  executeMultiplier: number;
+  bossDamageMultiplier: number;
+  closeDamageMultiplier: number;
+  burnDuration: number;
 };
 
 export type TowerDef = {
@@ -1136,6 +1147,8 @@ export class Game {
       slow: 0,
       burn: 0,
       burnTime: 0,
+      stun: 0,
+      markTime: 0,
       healTimer: 0,
       healFlash: 0,
       vx: 0,
@@ -1160,6 +1173,18 @@ export class Game {
     goreBase: number,
     goldMult = 1,
     crit = false,
+    ability: {
+      stun?: number;
+      markDuration?: number;
+      markBonus?: number;
+      shatterMultiplier?: number;
+      executeThreshold?: number;
+      executeMultiplier?: number;
+      bossDamageMultiplier?: number;
+      closeDamageMultiplier?: number;
+      originX?: number;
+      originZ?: number;
+    } = {},
   ) {
     const s = this.state;
     if (z.dead) return;
@@ -1177,8 +1202,27 @@ export class Game {
         : 1
       : 1;
     const guardianShieldBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("guardian-shield")));
+    const markedMultiplier = z.markTime > 0 ? 1 + Math.max(0, ability.markBonus ?? 0) : 1;
+    const shatterMultiplier = z.slow > 0 ? Math.max(1, ability.shatterMultiplier ?? 1) : 1;
+    const executeMultiplier =
+      ability.executeThreshold && z.hp / Math.max(1, z.maxHp) <= ability.executeThreshold
+        ? Math.max(1, ability.executeMultiplier ?? 1)
+        : 1;
+    const bossMultiplier = z.boss ? Math.max(1, ability.bossDamageMultiplier ?? 1) : 1;
+    const originX = ability.originX ?? fromX;
+    const originZ = ability.originZ ?? fromZ;
+    const closeMultiplier =
+      Math.hypot(z.x - originX, z.z - originZ) <= 3.8
+        ? Math.max(1, ability.closeDamageMultiplier ?? 1)
+        : 1;
     const incomingDamage =
-      (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) * guardianAura;
+      (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) *
+      guardianAura *
+      markedMultiplier *
+      shatterMultiplier *
+      executeMultiplier *
+      bossMultiplier *
+      closeMultiplier;
     const result = resolveDamage(
       z.hp,
       z.maxHp,
@@ -1189,6 +1233,10 @@ export class Game {
     );
     const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
+    if (!result.killed) {
+      if (ability.stun) z.stun = Math.max(z.stun, ability.stun);
+      if (ability.markDuration) z.markTime = Math.max(z.markTime, ability.markDuration);
+    }
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
       z.kind,
@@ -1801,9 +1849,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           const rate = towerRate(t) * runEffects.rateMultiplier;
           t.cooldown = 1 / rate;
           t.recoil = 1;
-          const crit = this.random() < towerCrit(t);
-
-          if (s.bullets.length < MAX_ACTIVE_BULLETS) {
+          const combat = towerCombatStats(t);
+          const crit = this.random() < combat.crit;
+          const volley = Math.max(1, Math.min(3, combat.volley));
+          const volleyDamageFactor = volley === 3 ? 0.48 : volley === 2 ? 0.68 : 1;
+          for (let shot = 0; shot < volley && s.bullets.length < MAX_ACTIVE_BULLETS; shot++) {
             s.bullets.push(
               createTowerProjectile({
                 id: this.nextId++,
@@ -1811,21 +1861,32 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 z: t.z,
                 tx: best.x,
                 tz: best.z,
+                originX: t.x,
+                originZ: t.z,
                 speed: BULLET_SPEED[t.kind],
-                damage: towerDamage(t) * runEffects.damageMultiplier * (crit ? 2.5 : 1),
+                damage: combat.damage * runEffects.damageMultiplier * volleyDamageFactor * (crit ? 2.5 : 1),
                 target: best.id,
                 kind: t.kind,
-                splash: towerSplash(t) * runEffects.splashMultiplier,
-                chain: towerChain(t),
-                slow: towerSlow(t) * runEffects.slowMultiplier,
-                burn: towerBurn(t),
-                gold: towerGold(t),
+                splash: combat.splash * runEffects.splashMultiplier,
+                chain: combat.chain,
+                slow: combat.slow * runEffects.slowMultiplier,
+                burn: combat.burn,
+                gold: combat.gold,
                 crit,
                 level: t.level,
+                stun: combat.stun,
+                markDuration: combat.markDuration,
+                markBonus: combat.markBonus,
+                shatterMultiplier: combat.shatterMultiplier,
+                executeThreshold: combat.executeThreshold,
+                executeMultiplier: combat.executeMultiplier,
+                bossDamageMultiplier: combat.bossDamageMultiplier,
+                closeDamageMultiplier: combat.closeDamageMultiplier,
+                burnDuration: combat.burnDuration,
               }),
             );
-            sfx(SHOOT_SFX[t.kind]);
           }
+          sfx(SHOOT_SFX[t.kind]);
         }
       }
     }
@@ -1850,6 +1911,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             z,
             b.slow,
             b.burn,
+            b.burnDuration,
           );
           z.slow = z.kind === 5 ? status.slow * 0.45 : status.slow;
           z.burn = status.burn;
@@ -1863,6 +1925,18 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             goreBase,
             b.gold,
             z.id === target.id ? b.crit : false,
+            {
+              stun: b.stun,
+              markDuration: b.markDuration,
+              markBonus: b.markBonus,
+              shatterMultiplier: b.shatterMultiplier,
+              executeThreshold: b.executeThreshold,
+              executeMultiplier: b.executeMultiplier,
+              bossDamageMultiplier: b.bossDamageMultiplier,
+              closeDamageMultiplier: b.closeDamageMultiplier,
+              originX: b.originX,
+              originZ: b.originZ,
+            },
           );
         };
 
