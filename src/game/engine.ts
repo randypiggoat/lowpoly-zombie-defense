@@ -353,6 +353,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
 };
 
 export const MAX_TOWER_LEVEL = 8;
+export const MAX_ACTIVE_BULLETS = 64;
 
 /** Projectile flight speed per tower. */
 export const BULLET_SPEED: Record<TowerKind, number> = {
@@ -2190,27 +2191,29 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           t.recoil = 1;
           const crit = this.random() < towerCrit(t);
 
-          s.bullets.push(
-            createTowerProjectile({
-              id: this.nextId++,
-              x: t.x,
-              z: t.z,
-              tx: best.x,
-              tz: best.z,
-              speed: BULLET_SPEED[t.kind],
-              damage: towerDamage(t) * runEffects.damageMultiplier * (crit ? 2.5 : 1),
-              target: best.id,
-              kind: t.kind,
-              splash: towerSplash(t) * runEffects.splashMultiplier,
-              chain: towerChain(t),
-              slow: towerSlow(t) * runEffects.slowMultiplier,
-              burn: towerBurn(t),
-              gold: towerGold(t),
-              crit,
-              level: t.level,
-            }),
-          );
-          sfx(SHOOT_SFX[t.kind]);
+          if (s.bullets.length < MAX_ACTIVE_BULLETS) {
+            s.bullets.push(
+              createTowerProjectile({
+                id: this.nextId++,
+                x: t.x,
+                z: t.z,
+                tx: best.x,
+                tz: best.z,
+                speed: BULLET_SPEED[t.kind],
+                damage: towerDamage(t) * runEffects.damageMultiplier * (crit ? 2.5 : 1),
+                target: best.id,
+                kind: t.kind,
+                splash: towerSplash(t) * runEffects.splashMultiplier,
+                chain: towerChain(t),
+                slow: towerSlow(t) * runEffects.slowMultiplier,
+                burn: towerBurn(t),
+                gold: towerGold(t),
+                crit,
+                level: t.level,
+              }),
+            );
+            sfx(SHOOT_SFX[t.kind]);
+          }
         }
       }
     }
@@ -2287,7 +2290,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       s.bullets = s.bullets.filter((b) => b.alive);
     }
     if (s.gibs.length > 0) {
-      s.gibs = s.gibs.filter((g) => g.life < 3.2);
+      s.gibs = s.gibs.filter((g) => g.life < 1.75);
     }
   }
 }
