@@ -3,6 +3,7 @@ import {
   STAGE_MAPS,
   canPlaceTower,
   getPathLength,
+  hasLineOfSight,
   pathCoverageRatio,
   snapBuildPosition,
 } from "./maps";
@@ -33,4 +34,15 @@ describe("stage maps", () => {
     expect(longRange).toBeGreaterThan(shortRange);
     expect(longRange).toBeLessThanOrEqual(1);
   });
+
+  test("map blockers can intentionally break line of sight", () => {
+    const map = STAGE_MAPS.neighborhood;
+    expect(
+      hasLineOfSight(map, { x: 3.8, z: -15 }, { x: 7, z: -19 }),
+    ).toBe(false);
+    expect(
+      hasLineOfSight(map, { x: 3.8, z: -15 }, { x: 8, z: -13 }),
+    ).toBe(true);
+  });
+
 });

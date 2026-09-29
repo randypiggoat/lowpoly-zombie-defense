@@ -27,11 +27,11 @@ describe("enemy spawn rules", () => {
     const stage = getStageById(5);
 
     expect(
-      chooseEnemyKind(stage.enemyPool, stage.boss, 10, stage.waveCount, () => 0),
+      chooseEnemyKind(stage.enemyPool, stage.boss, 32, stage.waveCount, () => 0),
     ).toBe(2);
 
     expect(
-      chooseEnemyKind(stage.enemyPool, stage.boss, 10, stage.waveCount, () => 0.999999),
+      chooseEnemyKind(stage.enemyPool, stage.boss, 32, stage.waveCount, () => 0.999999),
     ).toBe(2);
   });
 
@@ -53,18 +53,18 @@ describe("enemy spawn rules", () => {
     const stage = getStageById(1);
 
     expect(getEnemySpawnStats(stage.gameplay, 0, 1, stage.waveCount)).toMatchObject({
-      hp: expect.closeTo(20.825235, 10),
-      speed: 1.292,
+      hp: expect.closeTo(19.8743184, 6),
+      speed: expect.closeTo(1.2512, 10),
     });
 
     expect(getEnemySpawnStats(stage.gameplay, 1, 1, stage.waveCount)).toMatchObject({
-      hp: expect.closeTo(14.48712, 10),
-      speed: 2.071,
+      hp: expect.closeTo(13.8256128, 6),
+      speed: expect.closeTo(2.0056, 10),
     });
 
     expect(getEnemySpawnStats(stage.gameplay, 2, 1, stage.waveCount)).toMatchObject({
-      hp: expect.closeTo(67.00293, 10),
-      speed: 0.874,
+      hp: expect.closeTo(63.9434592, 6),
+      speed: expect.closeTo(0.8464, 10),
     });
   });
 
@@ -72,7 +72,7 @@ describe("enemy spawn rules", () => {
     const stage = getStageById(1);
 
     const early = getEnemySpawnStats(stage.gameplay, 0, 1, stage.waveCount);
-    const late = getEnemySpawnStats(stage.gameplay, 0, 6, stage.waveCount);
+    const late = getEnemySpawnStats(stage.gameplay, 0, 16, stage.waveCount);
 
     expect(late.hp).toBeGreaterThan(early.hp);
     expect(late.speed).toBeGreaterThan(early.speed);

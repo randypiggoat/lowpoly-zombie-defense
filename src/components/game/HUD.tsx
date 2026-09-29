@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Coins } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   TOWER_INFO,
   TOWER_KINDS,
@@ -243,9 +242,6 @@ export function HUD({
 }) {
   const { player, lastReward, levelUpNotice } = useProfileSnapshot();
   const [activeLevel, setActiveLevel] = useState<number | null>(null);
-  const [recentScrapGain, setRecentScrapGain] = useState(0);
-  const previousGold = useRef(Math.floor(state.gold));
-  const scrapGainTimer = useRef<number | null>(null);
   const tower =
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
   const spot = selection?.kind === "spot" ? selection.position : null;
@@ -277,28 +273,6 @@ export function HUD({
       sfx("streak");
     }
   }, [state.killStreak]);
-
-  useEffect(() => {
-    const currentGold = Math.floor(state.gold);
-    const delta = currentGold - previousGold.current;
-    previousGold.current = currentGold;
-    if (delta > 0) {
-      setRecentScrapGain((current) => current + delta);
-      if (scrapGainTimer.current !== null) {
-        window.clearTimeout(scrapGainTimer.current);
-      }
-      scrapGainTimer.current = window.setTimeout(() => {
-        setRecentScrapGain(0);
-        scrapGainTimer.current = null;
-      }, 720);
-    }
-    return () => {
-      if (scrapGainTimer.current !== null) {
-        window.clearTimeout(scrapGainTimer.current);
-        scrapGainTimer.current = null;
-      }
-    };
-  }, [state.gold]);
 
   useEffect(() => {
     profile.refreshRetentionState();
@@ -447,12 +421,6 @@ export function HUD({
             </button>
           </div>
         </div>
-        {recentScrapGain > 0 && !state.gameOver && (
-          <div className="rotwood-scrap-gain pointer-events-none absolute left-3 top-[4.15rem] inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-black/55 px-2.5 py-1 text-xs font-black text-accent shadow-panel backdrop-blur">
-            <Coins size={14} aria-hidden="true" />
-            <span>+{recentScrapGain} SCRAP</span>
-          </div>
-        )}
         <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>

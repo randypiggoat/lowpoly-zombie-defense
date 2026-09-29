@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { selectTowerTarget } from "./targeting";
+import { STAGE_MAPS } from "./maps";
 import { type Zombie } from "./engine";
 
 function zombie(overrides: Partial<Zombie> = {}): Zombie {
@@ -99,4 +100,14 @@ describe("tower targeting rules", () => {
 
     expect(selectTowerTarget(zombies, tower, 10, "first")?.id).toBe(11);
   });
+
+  test("respects line-of-sight blockers when a map is supplied", () => {
+    const zombies = [
+      zombie({ id: 1, x: 3.8, z: -19, dist: 8 }),
+      zombie({ id: 2, x: 8, z: -13, dist: 7 }),
+    ];
+
+    expect(selectTowerTarget(zombies, { x: 3.8, z: -15 }, 10, "first", STAGE_MAPS.neighborhood)?.id).toBe(2);
+  });
+
 });

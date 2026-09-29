@@ -96,12 +96,16 @@ export function getEnemySpawnStats(
   const healthMult = Math.max(0.7, gameplay.enemyHealthMultiplier);
   const speedMult = Math.max(0.7, gameplay.enemySpeedMultiplier);
   const progress = Math.max(0, (wave - 1) / Math.max(1, waveTarget - 1));
+  // Scale primarily with progression through the stage rather than raw wave number.
+  // This keeps longer campaign stages challenging without making later waves exponentially
+  // more punishing simply because the stage has more rounds.
+  const progressionHp = Math.pow(1.06, Math.max(0, wave - 1));
   const baseHp =
     18 *
-    Math.pow(1.22, wave - 1) *
+    progressionHp *
     (0.85 + difficultyMult * 0.22) *
     healthMult;
-  const hpScale = 1 + progress * 0.45 + Math.max(0, wave - 3) * 0.02;
+  const hpScale = 1 + progress * 0.5;
 
   const speedPressure = 1 + progress * 0.14;
   const speedBase =

@@ -217,6 +217,7 @@ export function GameCanvas() {
   const state = useGameSnapshot();
   const { player, lastReward } = useProfileSnapshot();
   const [selection, setSelection] = useState<Selection>(null);
+  const [placementPreview, setPlacementPreview] = useState<{ x: number; z: number } | null>(null);
   const [screen, setScreen] = useState<PrimaryScreen>("main-menu");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
@@ -279,6 +280,7 @@ export function GameCanvas() {
     profile.clearReward();
     game.reset();
     setSelection(null);
+    setPlacementPreview(null);
     setOverlay(null);
   };
 
@@ -463,8 +465,16 @@ export function GameCanvas() {
             bossTrial={state.bossTrial}
             towers={state.towers}
             selection={selection}
-            onSelectTower={(id) => setSelection({ kind: "tower", id })}
-            onSelectPosition={(position) => setSelection({ kind: "spot", position })}
+            previewPosition={placementPreview}
+            onSelectTower={(id) => {
+              setPlacementPreview(null);
+              setSelection({ kind: "tower", id });
+            }}
+            onSelectPosition={(position) => {
+              setPlacementPreview(position);
+              setSelection({ kind: "spot", position });
+            }}
+            onPreviewPosition={setPlacementPreview}
           />
         </Canvas>
       )}
@@ -474,7 +484,10 @@ export function GameCanvas() {
           <HUD
             state={state}
             selection={selection}
-            onSelect={setSelection}
+            onSelect={(next) => {
+              if (next?.kind === "tower") setPlacementPreview(null);
+              setSelection(next);
+            }}
             onPause={() => setOverlay("pause")}
             rewardedAvailable={rewardedAvailable}
             waveThreatPreview={waveThreatPreview}

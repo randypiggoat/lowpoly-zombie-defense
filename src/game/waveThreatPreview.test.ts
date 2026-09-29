@@ -11,7 +11,7 @@ describe("wave threat preview", () => {
   });
 
   test("flags scheduled campaign bosses", () => {
-    const preview = getWaveThreatPreview(getStageById(4), 9);
+    const preview = getWaveThreatPreview(getStageById(4), 28);
     expect(preview.boss).toBe(true);
     expect(preview.threats[0]).toBe("BRUTE");
   });

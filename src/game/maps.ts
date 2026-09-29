@@ -36,12 +36,18 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     id: "neighborhood",
     name: "Neighborhood",
     path: [
-      { x: -6, z: -22 },
-      { x: -6, z: -9 },
-      { x: 5, z: -9 },
-      { x: 5, z: 2 },
-      { x: -4, z: 2 },
-      { x: -4, z: 11 },
+      { x: -11, z: -22 },
+      { x: -11, z: -15 },
+      { x: -1.5, z: -15 },
+      { x: -1.5, z: -9 },
+      { x: 8, z: -9 },
+      { x: 8, z: -2 },
+      { x: -4, z: -2 },
+      { x: -4, z: 6 },
+      { x: 8, z: 6 },
+      { x: 8, z: 11.5 },
+      { x: -4, z: 11.5 },
+      { x: -4, z: 13.4 },
     ],
     pathWidth: 2.7,
     base: { x: -4, z: 13.4 },
@@ -49,11 +55,11 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     buildClearance: 1.8,
     towerClearance: 1.55,
     obstacles: [
-      { x: -0.8, z: -18.2, width: 4.5, depth: 3.2, height: 0.9, label: "House lot" },
-      { x: 10, z: 8.5, width: 4.2, depth: 3.8, height: 0.75, label: "Garage lot" },
-      { x: -10, z: 5.8, width: 3.6, depth: 3.4, height: 0.7, label: "Garden wall" },
+      { x: 3.8, z: -19, width: 4.4, depth: 3.4, height: 1.15, label: "Family house" },
+      { x: -9, z: -4.2, width: 3.4, depth: 3.1, height: 0.95, label: "Garage" },
+      { x: 10, z: 10.5, width: 3.8, depth: 2.5, height: 0.65, label: "Garden wall" },
     ],
-    placementTip: "Corners create double-coverage for short-range towers; outer lots reward long range.",
+    placementTip: "The residential bends create premium crossfire corners while the outer lawns reward long-range coverage.",
   },
   "gas-station": {
     id: "gas-station",
@@ -61,43 +67,47 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     path: [
       { x: -11, z: -22 },
       { x: -11, z: -15 },
-      { x: 8, z: -15 },
-      { x: 8, z: -7 },
-      { x: -3, z: -7 },
-      { x: -3, z: 1 },
-      { x: 10, z: 1 },
-      { x: 10, z: 9 },
-      { x: -4, z: 9 },
-      { x: -4, z: 11.5 },
+      { x: 10, z: -15 },
+      { x: 10, z: -8 },
+      { x: -4, z: -8 },
+      { x: -4, z: -2 },
+      { x: 11, z: -2 },
+      { x: 11, z: 5 },
+      { x: -9, z: 5 },
+      { x: -9, z: 10 },
+      { x: -4, z: 10 },
+      { x: -4, z: 13.8 },
     ],
     pathWidth: 2.8,
-    base: { x: -4, z: 14 },
+    base: { x: -4, z: 13.8 },
     bounds: COMMON_BOUNDS,
     buildClearance: 1.85,
     towerClearance: 1.55,
     obstacles: [
-      { x: -0.4, z: -11, width: 6.4, depth: 2.6, height: 1.1, label: "Canopy" },
-      { x: -10.2, z: -5.5, width: 3.3, depth: 4.2, height: 0.8, label: "Shop" },
-      { x: 7.1, z: 4.8, width: 3.4, depth: 3.1, height: 0.9, label: "Pump island" },
+      { x: 0, z: -11.7, width: 6.8, depth: 2.5, height: 1.2, label: "Fuel canopy" },
+      { x: -9.2, z: -8.5, width: 3.2, depth: 3.8, height: 1.05, label: "Station shop" },
+      { x: 7.4, z: 4.4, width: 3.2, depth: 2.6, height: 0.82, label: "Pump island" },
     ],
-    placementTip: "The long lower lane favors sniper/laser reach; tight returns favor shotgun/flame splash.",
+    placementTip: "The canopy creates a real sightline puzzle: outer positions see the straights, while inside corners dominate the returns.",
   },
   "shopping-center": {
     id: "shopping-center",
     name: "Shopping Center",
     path: [
-      { x: -11, z: -22 },
-      { x: -11, z: -17 },
-      { x: 4, z: -17 },
-      { x: 4, z: -11 },
-      { x: -6, z: -11 },
-      { x: -6, z: -4 },
-      { x: 10, z: -4 },
-      { x: 10, z: 4 },
-      { x: -9, z: 4 },
-      { x: -9, z: 10 },
-      { x: -4, z: 10 },
+      { x: -12, z: -22 },
+      { x: -12, z: -17 },
+      { x: 7, z: -17 },
+      { x: 7, z: -11 },
+      { x: -7, z: -11 },
+      { x: -7, z: -4 },
+      { x: 9, z: -4 },
+      { x: 9, z: 3 },
+      { x: -3, z: 3 },
+      { x: -3, z: 9 },
+      { x: 10, z: 9 },
+      { x: 10, z: 12 },
       { x: -4, z: 12 },
+      { x: -4, z: 14.2 },
     ],
     pathWidth: 2.8,
     base: { x: -4, z: 14.2 },
@@ -105,38 +115,42 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     buildClearance: 1.85,
     towerClearance: 1.55,
     obstacles: [
-      { x: 9, z: -15.2, width: 3.5, depth: 3.5, height: 1, label: "Storefront A" },
-      { x: -10, z: -1, width: 3.4, depth: 3.5, height: 0.9, label: "Storefront B" },
-      { x: 3.8, z: 7.8, width: 3.8, depth: 3.5, height: 0.85, label: "Storefront C" },
+      { x: 9.2, z: -14.5, width: 3.6, depth: 3.2, height: 1.1, label: "Anchor storefront" },
+      { x: -10, z: -1, width: 3.5, depth: 3.8, height: 1.05, label: "Corner storefront" },
+      { x: 4.2, z: 7.1, width: 4.2, depth: 2.9, height: 0.95, label: "Food court kiosk" },
     ],
-    placementTip: "Repeated bends create splash and chain hotspots while still leaving a few long sightlines.",
+    placementTip: "Alternating parking-lot bends create several high-value pockets; blockers split the map into short tactical sightlines.",
   },
   "police-station": {
     id: "police-station",
     name: "Police Station",
     path: [
-      { x: -10, z: -22 },
-      { x: -10, z: -12 },
-      { x: 1, z: -12 },
-      { x: 1, z: -4 },
-      { x: -8, z: -4 },
-      { x: -8, z: 4 },
-      { x: 9, z: 4 },
-      { x: 9, z: 11 },
-      { x: -4, z: 11 },
-      { x: -4, z: 12.6 },
+      { x: -11, z: -22 },
+      { x: -11, z: -14 },
+      { x: 4, z: -14 },
+      { x: 4, z: -8 },
+      { x: -8, z: -8 },
+      { x: -8, z: -1 },
+      { x: 8, z: -1 },
+      { x: 8, z: 5 },
+      { x: -2, z: 5 },
+      { x: -2, z: 10 },
+      { x: 9, z: 10 },
+      { x: 9, z: 12 },
+      { x: -4, z: 12 },
+      { x: -4, z: 14.5 },
     ],
     pathWidth: 2.9,
-    base: { x: -4, z: 15 },
+    base: { x: -4, z: 14.5 },
     bounds: COMMON_BOUNDS,
     buildClearance: 1.9,
     towerClearance: 1.6,
     obstacles: [
-      { x: -4.7, z: -17.8, width: 5.2, depth: 4, height: 1.2, label: "Station block" },
-      { x: 6.2, z: -7.8, width: 3.3, depth: 3.2, height: 0.9, label: "Impound lot" },
-      { x: 4.7, z: 13.4, width: 4.4, depth: 2.4, height: 0.8, label: "Evidence yard" },
+      { x: -4.2, z: -18, width: 5.8, depth: 3.8, height: 1.35, label: "Police station" },
+      { x: 6.2, z: -6.9, width: 3.4, depth: 3.1, height: 1.0, label: "Impound lot" },
+      { x: 4.7, z: 13.1, width: 4.4, depth: 2.3, height: 0.82, label: "Evidence yard" },
     ],
-    placementTip: "A strong central perch reaches several lanes; point-blank towers need to hug the bends.",
+    placementTip: "The central courtyard gives broad coverage, but the station and impound buildings create deliberate blind pockets for specialized towers.",
   },
   "highway": {
     id: "highway",
@@ -146,15 +160,16 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
       { x: -12, z: -18 },
       { x: 10, z: -18 },
       { x: 10, z: -12 },
-      { x: -2, z: -12 },
-      { x: -2, z: -6 },
-      { x: 12, z: -6 },
-      { x: 12, z: 2 },
-      { x: -10, z: 2 },
-      { x: -10, z: 8 },
-      { x: 4, z: 8 },
-      { x: 4, z: 14 },
-      { x: -4, z: 14 },
+      { x: -4, z: -12 },
+      { x: -4, z: -5 },
+      { x: 11, z: -5 },
+      { x: 11, z: 2 },
+      { x: -9, z: 2 },
+      { x: -9, z: 8 },
+      { x: 5, z: 8 },
+      { x: 5, z: 13 },
+      { x: -1, z: 15 },
+      { x: -4, z: 15.8 },
     ],
     pathWidth: 2.9,
     base: { x: -4, z: 15.8 },
@@ -162,11 +177,11 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     buildClearance: 1.95,
     towerClearance: 1.6,
     obstacles: [
-      { x: -7, z: -15, width: 4, depth: 3.2, height: 0.8, label: "Median block" },
-      { x: 7.5, z: -1, width: 4, depth: 3.4, height: 0.85, label: "Median block" },
-      { x: -6.7, z: 5.2, width: 3.8, depth: 3.4, height: 0.8, label: "Service block" },
+      { x: -7.2, z: -15.1, width: 4.2, depth: 2.6, height: 0.82, label: "Concrete median" },
+      { x: 7.2, z: -1.2, width: 4.2, depth: 2.7, height: 0.82, label: "Jersey barrier" },
+      { x: -5.6, z: 6.1, width: 4.1, depth: 3.0, height: 0.9, label: "Road service depot" },
     ],
-    placementTip: "Long straights reward range and precision; the few close bends are premium shotgun/flame positions.",
+    placementTip: "Long highway sightlines reward precision towers, while barriers create small pockets where splash and slowing become valuable.",
   },
 };
 
@@ -309,6 +324,39 @@ export function placementKey(x: number, z: number) {
   return snappedX * 1000 + snappedZ + 500_000;
 }
 
+function segmentIntersectsRect(
+  from: MapVec2,
+  to: MapVec2,
+  rect: MapRect,
+  padding = 0.05,
+) {
+  const minX = rect.x - rect.width / 2 - padding;
+  const maxX = rect.x + rect.width / 2 + padding;
+  const minZ = rect.z - rect.depth / 2 - padding;
+  const maxZ = rect.z + rect.depth / 2 + padding;
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  let tMin = 0;
+  let tMax = 1;
+
+  const axis = (origin: number, delta: number, min: number, max: number) => {
+    if (Math.abs(delta) < 0.000001) return origin >= min && origin <= max;
+    const inv = 1 / delta;
+    let t1 = (min - origin) * inv;
+    let t2 = (max - origin) * inv;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tMin = Math.max(tMin, t1);
+    tMax = Math.min(tMax, t2);
+    return tMin <= tMax;
+  };
+
+  return axis(from.x, dx, minX, maxX) && axis(from.z, dz, minZ, maxZ);
+}
+
+export function hasLineOfSight(map: StageMap, from: MapVec2, to: MapVec2) {
+  return !map.obstacles.some((obstacle) => segmentIntersectsRect(from, to, obstacle));
+}
+
 export function pathCoverageRatio(
   map: StageMap,
   x: number,
@@ -322,7 +370,12 @@ export function pathCoverageRatio(
   const sampleStep = 0.75;
   for (let d = 0; d <= total; d += sampleStep) {
     const point = pointAtPath(map.path, d);
-    if (Math.hypot(point.x - x, point.z - z) <= range) covered += sampleStep;
+    if (
+      Math.hypot(point.x - x, point.z - z) <= range &&
+      hasLineOfSight(map, { x, z }, point)
+    ) {
+      covered += sampleStep;
+    }
   }
   return Math.min(1, covered / total);
 }

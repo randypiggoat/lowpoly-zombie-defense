@@ -615,6 +615,24 @@ type StageRunConfig = Pick<
 };
 
 
+function waveQueueSize(
+  wave: number,
+  waveTarget: number,
+  queueMultiplier: number,
+  planMultiplier: number,
+  bossCount: number,
+) {
+  const progress = Math.max(0, (wave - 1) / Math.max(1, waveTarget - 1));
+  const baseQueue =
+    4 +
+    Math.round(progress * 12) +
+    Math.floor(Math.max(0, wave - 1) / 10);
+  return Math.min(
+    64,
+    Math.max(1, Math.floor(baseQueue * queueMultiplier * planMultiplier) + bossCount),
+  );
+}
+
 const DEFAULT_STAGE: StageRunConfig = {
   id: 1,
   startingCoins: 180,
@@ -729,8 +747,6 @@ export class Game {
   }
   private resetTransientState() {
     this.accumulator = 0;
-    this.salvageFeedbackBuffer = 0;
-    this.salvageFeedbackTimer = 0;
     this.waveEndNotified = false;
   }
 
@@ -845,7 +861,13 @@ export class Game {
         ? Math.max(0, this.stage.boss.count)
         : 0;
     state.bossesRemaining = bossCount;
-    const queue = Math.floor((4 + state.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
+    const queue = waveQueueSize(
+      state.wave,
+      state.stageWaveTarget,
+      queueMult,
+      plan.sizeMultiplier,
+      bossCount,
+    );
     state.spawnQueue = Math.min(64, Math.max(1, queue));
     state.spawnTimer = 0;
     state.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
@@ -1043,7 +1065,13 @@ export class Game {
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
       Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
     const plan = getWaveSpawnPlan(s.wave, s.stageWaveTarget);
-    const queue = Math.floor((4 + s.wave * 1.5) * queueMult * plan.sizeMultiplier) + bossCount;
+    const queue = waveQueueSize(
+      s.wave,
+      s.stageWaveTarget,
+      queueMult,
+      plan.sizeMultiplier,
+      bossCount,
+    );
     s.spawnQueue = Math.min(64, Math.max(1, queue));
     s.spawnTimer = 0;
     s.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
@@ -1223,21 +1251,7 @@ export class Game {
       this.spawnPartGib(z, part, goreBase, result.crit ? 1.15 : 1);
     }
 
-    // Numeric damage spam is deliberately suppressed. Only rare crits and
-    // currency rewards create text, while body breakpoints carry the rest.
-    if (!result.killed && result.crit && s.damagePopups.length < 24) {
-      s.damagePopups.push({
-        id: this.nextId++,
-        x: z.x,
-        y: 1.65,
-        z: z.z,
-        value: 0,
-        life: 0,
-        crit: true,
-        gold: 0,
-      });
-    }
-
+    // Damage stays in the battlefield; earned SCRAP is the only pickup feedback.
     if (!result.killed) {
       z.flash = 1;
       const feedback = getCombatFeedback({
@@ -1431,8 +1445,6 @@ export class Game {
   }
 
   private accumulator = 0;
-  private salvageFeedbackBuffer = 0;
-  private salvageFeedbackTimer = 0;
 
   private step(dt: number) {
     const s = this.state;
@@ -1464,30 +1476,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 }
 
 
-    // Passive salvage feeds the same reward language as combat gold.
-    this.salvageFeedbackTimer = Math.max(0, this.salvageFeedbackTimer - dt);
+    // Passive income is intentionally quiet so the base is not constantly flashing or chiming.
     s.income += incomePerSecond(s.incomeLevel) * dt;
     if (s.income >= 1) {
       const whole = Math.floor(s.income);
       s.gold += whole;
       s.income -= whole;
-      this.salvageFeedbackBuffer += whole;
-    }
-    if (this.salvageFeedbackBuffer > 0 && this.salvageFeedbackTimer <= 0 && s.damagePopups.length < 80) {
-      const amount = this.salvageFeedbackBuffer;
-      this.salvageFeedbackBuffer = 0;
-      this.salvageFeedbackTimer = 0.8;
-      s.damagePopups.push({
-        id: this.nextId++,
-        x: -4,
-        y: 4.25,
-        z: 13.4,
-        value: 0,
-        life: 0,
-        crit: false,
-        gold: amount,
-      });
-      sfx("coin");
     }
 
     // waves
@@ -1770,17 +1764,6 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (perfectBonus > 0) {
           s.perfectWaves += 1;
           s.perfectWaveBonusGold += perfectBonus;
-          s.damagePopups.push({
-            id: this.nextId++,
-            x: -4,
-            y: 4.1,
-            z: 13.4,
-            value: 0,
-            life: 0,
-            crit: false,
-            gold: perfectBonus,
-          });
-          sfx("coin");
           track("perfect_wave", { wave: s.wave, bonusGold: perfectBonus });
         }
         s.waveMessage =
@@ -1821,7 +1804,13 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       t.cooldown = cooldown.cooldown;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
 
-      const best = selectTowerTarget(s.zombies, t, towerRange(t) * runEffects.rangeMultiplier, t.targetMode);
+      const best = selectTowerTarget(
+        s.zombies,
+        t,
+        towerRange(t) * runEffects.rangeMultiplier,
+        t.targetMode,
+        this.map,
+      );
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (cooldown.ready) {

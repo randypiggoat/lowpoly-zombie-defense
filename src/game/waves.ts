@@ -8,10 +8,11 @@ export type WaveSpawnPlan = {
   clearDelay: number;
 };
 
-const SIZE_MULTIPLIERS = [1, 1.1, 1.22, 1.38, 1.58, 1.76, 1.95] as const;
-const INTERVAL_MULTIPLIERS = [1, 0.84, 0.72, 0.62, 0.56, 0.5, 0.45] as const;
-const BATCH_SIZES = [1, 1, 2, 2, 2, 3, 3] as const;
-const CLEAR_DELAYS = [0.55, 0.45, 0.38, 0.32, 0.28, 0.24, 0.2] as const;
+const SIZE_MULTIPLIERS = [1, 1.08, 1.18, 1.3, 1.44, 1.6, 1.78] as const;
+const INTERVAL_MULTIPLIERS = [1.12, 1.02, 0.92, 0.82, 0.72, 0.62, 0.54] as const;
+const BATCH_SIZES = [1, 1, 1, 2, 2, 2, 3] as const;
+// Longer between-wave breathing room lets players read the field and spend their rewards.
+const CLEAR_DELAYS = [1.8, 1.55, 1.35, 1.2, 1.05, 0.9, 0.78] as const;
 
 /**
  * Converts a wave's progress through a stage into one of seven intensity bands.
@@ -20,12 +21,12 @@ const CLEAR_DELAYS = [0.55, 0.45, 0.38, 0.32, 0.28, 0.24, 0.2] as const;
 export function waveIntensityBand(wave: number, waveTarget: number): WaveIntensityBand {
   const normalized = Math.round((wave / Math.max(1, waveTarget)) * 20);
 
-  if (normalized <= 3) return 1;
-  if (normalized <= 6) return 2;
-  if (normalized <= 9) return 3;
-  if (normalized <= 10) return 4;
+  if (normalized <= 4) return 1;
+  if (normalized <= 7) return 2;
+  if (normalized <= 10) return 3;
+  if (normalized <= 12) return 4;
   if (normalized <= 15) return 5;
-  if (normalized <= 19) return 6;
+  if (normalized <= 18) return 6;
   return 7;
 }
 
