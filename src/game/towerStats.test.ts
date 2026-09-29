@@ -85,6 +85,18 @@ describe("tower stat calculations", () => {
     expect(stats.burnDuration).toBe(2.4);
   });
 
+  test("global Field Knowledge is the only persistent combat modifier", () => {
+    const stats = getTowerCombatStats(
+      { kind: "test", level: 1, a: 0, b: 0 },
+      definition,
+      paths,
+      profileBonus,
+    );
+    expect(stats.damage).toBe(10);
+    expect(stats.rate).toBe(2);
+    expect(stats.range).toBe(6);
+  });
+
   test("preserves base tower stats when no upgrades are purchased", () => {
     const stats = getTowerCombatStats(
       { kind: "test", level: 1, a: 0, b: 0 },
