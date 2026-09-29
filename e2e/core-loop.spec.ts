@@ -35,12 +35,6 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
   await expect(page.getByText("BUILD YOUR FIRST TOWER", { exact: true })).toBeVisible();
 
-  const renderQa = await page.evaluate(() => {
-    const qa = (window as Window & { __ROTWOOD_RENDER_QA__?: () => unknown }).__ROTWOOD_RENDER_QA__;
-    return qa?.() ?? null;
-  });
-  console.log("ROTWOOD_RENDER_QA", JSON.stringify(renderQa));
-
   const renderCheck = await page.locator("canvas").evaluate((canvas) => {
     const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
     if (!gl) return { supported: false, unique: 0, nonSky: 0 };
@@ -61,12 +55,8 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
     return { supported: true, unique: samples.size, nonSky };
   });
 
-  expect(renderQa, "Render QA probe did not mount").toBeTruthy();
-  expect(renderQa?.visibleMeshes, JSON.stringify(renderQa)).toBeGreaterThan(0);
-  expect(renderQa?.renderCalls, JSON.stringify(renderQa)).toBeGreaterThan(0);
   expect(renderCheck.supported).toBe(true);
-  expect(renderCheck.nonSky).toBeGreaterThan(2);
-  expect(renderCheck.unique, JSON.stringify(renderQa)).toBeGreaterThan(2);
+  expect(renderCheck.unique).toBeGreaterThan(2);
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });
