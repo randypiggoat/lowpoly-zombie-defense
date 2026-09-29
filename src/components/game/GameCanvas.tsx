@@ -4,6 +4,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -277,7 +278,12 @@ export function GameCanvas() {
   const { player, lastReward } = useProfileSnapshot();
   const [selection, setSelection] = useState<Selection>(null);
   const [placementPreview, setPlacementPreview] = useState<{ x: number; z: number } | null>(null);
+  const placementPreviewRef = useRef<{ x: number; z: number } | null>(null);
   const [screen, setScreen] = useState<PrimaryScreen>("main-menu");
+
+  useEffect(() => {
+    placementPreviewRef.current = placementPreview;
+  }, [placementPreview]);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
@@ -465,6 +471,9 @@ export function GameCanvas() {
     type QaApi = {
       buildTower: (spot: number, kind: TowerKind) => boolean;
       buildTowerAt: (x: number, z: number, kind: TowerKind) => boolean;
+      getPlacementPreview: () => { x: number; z: number } | null;
+      getPlacementStatus: () => { valid: boolean; reason: string } | null;
+      getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: TowerKind }>;
       getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
     };
 
@@ -472,6 +481,18 @@ export function GameCanvas() {
     qaWindow.__ROTWOOD_QA__ = {
       buildTower: (spot, kind) => game.build(spot, kind),
       buildTowerAt: (x, z, kind) => game.buildAt(x, z, kind),
+      getPlacementPreview: () => placementPreviewRef.current,
+      getPlacementStatus: () => {
+        const point = placementPreviewRef.current;
+        return point ? game.getPlacementStatus(point.x, point.z) : null;
+      },
+      getTowerPositions: () =>
+        game.state.towers.map((tower) => ({
+          id: tower.id,
+          x: tower.x,
+          z: tower.z,
+          kind: tower.kind,
+        })),
       selectTower: (id) => setSelection({ kind: "tower", id }),
       getTowerIds: () => game.state.towers.map((tower) => tower.id),
       getCombatSnapshot: () => ({
