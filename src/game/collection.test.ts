@@ -20,6 +20,7 @@ function profile(overrides: Partial<PlayerProfile> = {}): PlayerProfile {
     lastLoginClaimDate: null,
     lastLoginRewardDayClaimed: null,
     towerUpgrades: {},
+    fieldKnowledge: {},
     unlockedTowers: [],
     achievements: {},
     dailyMissionProgress: {},
