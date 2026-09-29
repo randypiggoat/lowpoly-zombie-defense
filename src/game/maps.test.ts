@@ -22,8 +22,8 @@ describe("stage maps", () => {
   });
 
   test("placement snaps to half-unit coordinates", () => {
-    const snapped = snapBuildPosition(STAGE_MAPS.neighborhood, 0.24, -21.76);
-    expect(snapped).toEqual({ x: 0, z: -21.5 });
+    const snapped = snapBuildPosition(STAGE_MAPS.neighborhood, 0.24, -21.24);
+    expect(snapped).toEqual({ x: 0, z: -21 });
   });
 
   test("path coverage measures why placement location matters", () => {
