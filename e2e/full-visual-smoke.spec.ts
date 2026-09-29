@@ -161,6 +161,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
         buildTower: (spot: number, kind: "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser") => boolean;
         buildTowerAt: (x: number, z: number, kind: "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser") => boolean;
         selectTower: (id: number) => void;
+        getTowerIds: () => number[];
         getCombatSnapshot: () => { towerCount: number; projectileKinds: Array<"rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser"> };
       };
     }).__ROTWOOD_QA__;
@@ -184,10 +185,9 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
         selectTower: (id: number) => void;
       };
     }).__ROTWOOD_QA__;
-    const ids = (window as Window & { __ROTWOOD_GAME__?: { state?: { towers?: Array<{ id: number }> } } }).__ROTWOOD_GAME__?.state?.towers;
-    const id = ids?.[0]?.id;
-    if (qa && typeof id === "number") qa.selectTower(id);
-    return id ?? -1;
+    const id = qa?.getTowerIds()?.[0] ?? -1;
+    if (qa && id > 0) qa.selectTower(id);
+    return id;
   });
   if (towerId > 0) {
     await expect(page.getByText(/Spend SCRAP on one path at a time/)).toBeVisible();
