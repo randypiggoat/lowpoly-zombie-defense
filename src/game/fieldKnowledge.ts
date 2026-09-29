@@ -3,7 +3,6 @@ export type KnowledgeCategory = "ARSENAL" | "FIELDCRAFT" | "SALVAGE";
 export type KnowledgeEffect = {
   scrapMultiplier?: number;
   startingScrap?: number;
-  towerCostMultiplier?: number;
   towerUpgradeCostMultiplier?: number;
   towerBuildCostMultiplier?: number;
   damageMultiplier?: number;
@@ -43,7 +42,6 @@ export const FIELD_KNOWLEDGE: readonly FieldKnowledgeNode[] = [
 export type FieldKnowledgeEffects = {
   scrapMultiplier: number;
   startingScrap: number;
-  towerCostMultiplier: number;
   towerUpgradeCostMultiplier: number;
   towerBuildCostMultiplier: number;
   damageMultiplier: number;
@@ -56,7 +54,6 @@ export type FieldKnowledgeEffects = {
 export const DEFAULT_FIELD_KNOWLEDGE_EFFECTS: FieldKnowledgeEffects = {
   scrapMultiplier: 1,
   startingScrap: 0,
-  towerCostMultiplier: 1,
   towerUpgradeCostMultiplier: 1,
   towerBuildCostMultiplier: 1,
   damageMultiplier: 1,
@@ -73,7 +70,6 @@ export function resolveFieldKnowledgeEffects(ranks: Record<string, number>): Fie
     const e = node.effect;
     if (e.scrapMultiplier) out.scrapMultiplier *= e.scrapMultiplier;
     if (e.startingScrap) out.startingScrap += e.startingScrap;
-    if (e.towerCostMultiplier) out.towerCostMultiplier *= e.towerCostMultiplier;
     if (e.towerUpgradeCostMultiplier) out.towerUpgradeCostMultiplier *= e.towerUpgradeCostMultiplier;
     if (e.towerBuildCostMultiplier) out.towerBuildCostMultiplier *= e.towerBuildCostMultiplier;
     if (e.damageMultiplier) out.damageMultiplier *= e.damageMultiplier;
