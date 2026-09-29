@@ -554,7 +554,7 @@ function BuildSurface({
       // The scene's gameplay group stays level, so its local ground plane maps
       // to a world-horizontal plane. Read the actual group's world Y instead
       // of hardcoding a camera- or device-specific offset.
-      const worldGround = surface.current.localToWorld(new THREE.Vector3(0, 0, 0));
+      const worldGround = surface.current.localToWorld(new THREE.Vector3(0, 0.012, 0));
       ground.set(new THREE.Vector3(0, 1, 0), -worldGround.y);
 
       const hit = raycaster.ray.intersectPlane(ground, new THREE.Vector3());
