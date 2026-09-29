@@ -24,11 +24,11 @@ const PARTS_BY_KIND: Record<number, readonly GorePart[]> = {
   0: ["left-arm", "right-arm", "left-leg", "head"],
   1: ["left-leg", "right-leg", "runner-crest", "head"],
   2: ["left-shoulder", "right-shoulder", "left-arm", "head"],
-  3: ["left-arm", "right-arm", "splitter-core", "head"],
+  3: ["splitter-core", "left-arm", "right-arm", "head"],
   4: ["bomber-pack", "left-arm", "right-arm", "head"],
   5: ["guardian-shield", "left-arm", "right-arm", "head"],
   6: ["healer-aura", "left-arm", "right-arm", "head"],
-  7: ["left-arm", "right-arm", "swarm-crest", "head"],
+  7: ["swarm-crest", "left-arm", "right-arm", "head"],
 };
 
 const ANCHORS: Record<GorePart, GoreAnchor> = {
