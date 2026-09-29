@@ -412,6 +412,7 @@ export function GameCanvas() {
       buildTower: (spot, kind) => game.build(spot, kind),
       buildTowerAt: (x, z, kind) => game.buildAt(x, z, kind),
       selectTower: (id) => setSelection({ kind: "tower", id }),
+      getTowerIds: () => game.state.towers.map((tower) => tower.id),
       getCombatSnapshot: () => ({
         towerCount: game.state.towers.length,
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
