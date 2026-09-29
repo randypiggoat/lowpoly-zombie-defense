@@ -1251,7 +1251,8 @@ export class Game {
       this.spawnPartGib(z, part, goreBase, result.crit ? 1.15 : 1);
     }
 
-    // Damage stays in the battlefield; earned SCRAP is the only pickup feedback.\n    if (!result.killed) {
+    // Damage stays in the battlefield; earned SCRAP is the only pickup feedback.
+    if (!result.killed) {
       z.flash = 1;
       const feedback = getCombatFeedback({
         killed: false,
