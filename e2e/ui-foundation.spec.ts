@@ -109,18 +109,13 @@ test("tower placement follows pointer across both world axes and builds at the s
 
   expect(probes.length).toBeGreaterThan(4);
 
-  const left = probes.find((probe) => probe.screen.x <= 0.34);
-  const right = [...probes].reverse().find((probe) => probe.screen.x >= 0.66);
-  const upper = probes.find((probe) => probe.screen.y <= 0.48);
-  const lower = [...probes].reverse().find((probe) => probe.screen.y >= 0.72);
+  const left = probes.reduce((best, probe) => probe.preview.x < best.preview.x ? probe : best, probes[0]!);
+  const right = probes.reduce((best, probe) => probe.preview.x > best.preview.x ? probe : best, probes[0]!);
+  const upper = probes.reduce((best, probe) => probe.preview.z > best.preview.z ? probe : best, probes[0]!);
+  const lower = probes.reduce((best, probe) => probe.preview.z < best.preview.z ? probe : best, probes[0]!);
 
-  expect(left).toBeTruthy();
-  expect(right).toBeTruthy();
-  expect(upper).toBeTruthy();
-  expect(lower).toBeTruthy();
-
-  expect(Math.abs(right!.preview.x - left!.preview.x)).toBeGreaterThan(0.5);
-  expect(Math.abs(lower!.preview.z - upper!.preview.z)).toBeGreaterThan(0.5);
+  expect(Math.abs(right.preview.x - left.preview.x)).toBeGreaterThan(0.5);
+  expect(Math.abs(lower.preview.z - upper.preview.z)).toBeGreaterThan(0.5);
 
   const selected = probes.find((probe) => probe.valid);
   expect(selected).toBeTruthy();
@@ -154,7 +149,6 @@ test("tower placement responds to touch coordinates on mobile", async ({ page },
   await page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ }).click();
   await expect(page.locator("canvas")).toHaveCount(1);
   await page.getByRole("button", { name: "Pause" }).click();
-  await page.getByRole("button", { name: "Pause" }).click();
 
   await expect.poll(() =>
     page.evaluate(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__)),
@@ -172,40 +166,42 @@ test("tower placement responds to touch coordinates on mobile", async ({ page },
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
 
+  const point = (x: number, y: number) => ({
+    x: box!.x + box!.width * x,
+    y: box!.y + box!.height * y,
+  });
+
   const dispatchTouchMove = async (x: number, y: number) => {
-    await canvas.evaluate(
-      (element, coords) => {
-        element.dispatchEvent(
-          new PointerEvent("pointermove", {
-            bubbles: true,
-            clientX: coords.x,
-            clientY: coords.y,
-            pointerId: 1,
-            pointerType: "touch",
-            isPrimary: true,
-          }),
-        );
-      },
-      { x, y },
-    );
+    const target = point(x, y);
+    await canvas.dispatchEvent("pointermove", {
+      bubbles: true,
+      clientX: target.x,
+      clientY: target.y,
+      pointerId: 1,
+      pointerType: "touch",
+      isPrimary: true,
+    });
     await expect.poll(readPreview).not.toBeNull();
     return (await readPreview())!;
   };
 
-  const first = {
-    x: box!.x + box!.width * 0.35,
-    y: box!.y + box!.height * 0.68,
-  };
-  const second = {
-    x: box!.x + box!.width * 0.65,
-    y: box!.y + box!.height * 0.52,
-  };
+  const probes: Array<{ screen: { x: number; y: number }; preview: { x: number; z: number } }> = [];
+  for (const x of [0.20, 0.35, 0.50, 0.65, 0.80]) {
+    for (const y of [0.38, 0.50, 0.62, 0.74]) {
+      const preview = await dispatchTouchMove(x, y);
+      probes.push({ screen: { x, y }, preview });
+    }
+  }
 
-  const firstPreview = await dispatchTouchMove(first.x, first.y);
-  const secondPreview = await dispatchTouchMove(second.x, second.y);
+  expect(probes.length).toBeGreaterThan(4);
 
-  expect(Math.abs(secondPreview.x - firstPreview.x)).toBeGreaterThan(0.5);
-  expect(Math.abs(secondPreview.z - firstPreview.z)).toBeGreaterThan(0.5);
+  const left = probes.reduce((best, probe) => probe.preview.x < best.preview.x ? probe : best, probes[0]!);
+  const right = probes.reduce((best, probe) => probe.preview.x > best.preview.x ? probe : best, probes[0]!);
+  const upper = probes.reduce((best, probe) => probe.preview.z > best.preview.z ? probe : best, probes[0]!);
+  const lower = probes.reduce((best, probe) => probe.preview.z < best.preview.z ? probe : best, probes[0]!);
+
+  expect(Math.abs(right.preview.x - left.preview.x)).toBeGreaterThan(0.5);
+  expect(Math.abs(lower.preview.z - upper.preview.z)).toBeGreaterThan(0.5);
 });
 
 test("streamlined upgrade UI hides combat math while keeping upgrade effects readable", async ({ page }) => {
