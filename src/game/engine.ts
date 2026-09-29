@@ -181,7 +181,7 @@ export type Tower = {
   spot: number;
   x: number;
   z: number;
-  level: number; // 1..MAX_TOWER_LEVEL, bought with gold
+  level: number; // 1..MAX_TOWER_LEVEL, derived from SCRAP path tiers
   a: number; // tiers bought in path A (0-4)
   b: number; // tiers bought in path B (0-4)
   targetMode: TargetMode;
@@ -499,6 +499,15 @@ export function towerSellValue(t: Tower) {
     TOWER_INFO[t.kind],
     TOWER_PATHS[t.kind],
     MAX_TOWER_LEVEL,
+  );
+}
+
+export function towerBuildCost(kind: TowerKind) {
+  return Math.max(
+    1,
+    Math.round(
+      TOWER_INFO[kind].cost * profile.fieldKnowledgeEffects().towerBuildCostMultiplier,
+    ),
   );
 }
 
