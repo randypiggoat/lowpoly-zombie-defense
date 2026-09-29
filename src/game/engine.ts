@@ -1109,6 +1109,7 @@ export class Game {
       burnTime: 0,
       stun: 0,
       markTime: 0,
+      markBonus: 0,
       healTimer: 0,
       healFlash: 0,
       vx: 0,
@@ -1162,7 +1163,8 @@ export class Game {
         : 1
       : 1;
     const guardianShieldBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("guardian-shield")));
-    const markedMultiplier = z.markTime > 0 ? 1 + Math.max(0, ability.markBonus ?? 0) : 1;
+    const markedMultiplier =
+      (z.markTime ?? 0) > 0 ? 1 + Math.max(0, z.markBonus ?? ability.markBonus ?? 0) : 1;
     const shatterMultiplier = z.slow > 0 ? Math.max(1, ability.shatterMultiplier ?? 1) : 1;
     const executeMultiplier =
       ability.executeThreshold && z.hp / Math.max(1, z.maxHp) <= ability.executeThreshold
@@ -1195,7 +1197,10 @@ export class Game {
     z.hp = result.nextHp;
     if (!result.killed) {
       if (ability.stun) z.stun = Math.max(z.stun ?? 0, ability.stun);
-      if (ability.markDuration) z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
+      if (ability.markDuration) {
+        z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
+        z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
+      }
     }
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
