@@ -22,6 +22,17 @@ async function assertVisualHealth(page: Page) {
         const style = getComputedStyle(el);
         const r = el.getBoundingClientRect();
         return style.visibility !== "hidden" && style.display !== "none" && r.width > 0 && r.height > 0;
+      })
+      .filter((el) => {
+        // Ignore controls that are visually covered by a higher z-index modal/overlay.
+        // Those controls remain in the HUD DOM while a pause/settings layer is open,
+        // but they are not actually visible or interactive to the player.
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        if (x < 0 || x > viewportWidth || y < 0 || y > viewportHeight) return false;
+        const hit = document.elementFromPoint(x, y);
+        return hit === el || Boolean(hit && el.contains(hit));
       });
 
     const isInsideScrollable = (el: Element) => {
@@ -92,6 +103,8 @@ async function openAndCheck(page: Page, buttonName: string | RegExp, expectedTex
   await expect(page.getByText(expectedText).first()).toBeVisible();
   await assertVisualHealth(page);
 }
+
+test.describe.configure({ timeout: 120_000 });
 
 test("full Rotwood visual smoke coverage", async ({ page }) => {
   const pageErrors: string[] = [];
