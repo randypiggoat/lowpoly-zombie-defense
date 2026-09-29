@@ -452,6 +452,22 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       const look = ZOMBIE_LOOKS[z.kind];
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
+      const statusMark = g.getObjectByName("status-mark");
+      const statusStun = g.getObjectByName("status-stun");
+      if (statusMark) {
+        statusMark.visible = z.markTime > 0 && !z.dead;
+        if (statusMark.visible) {
+          statusMark.rotation.y += 0.03;
+          statusMark.position.y = 1.1 + Math.sin(performance.now() * 0.008 + i) * 0.025;
+        }
+      }
+      if (statusStun) {
+        statusStun.visible = (z.stun ?? 0) > 0 && !z.dead;
+        if (statusStun.visible) {
+          statusStun.rotation.y -= 0.05;
+          statusStun.scale.setScalar(0.85 + Math.sin(performance.now() * 0.012 + i) * 0.08);
+        }
+      }
       const bossChanged = lastBoss.current[i] !== z.boss;
       if (bossChanged || z.boss) {
         const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
@@ -785,6 +801,14 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           <mesh name="boss-core" visible={false} position={[0, 1.94, 0.18]}>
             <icosahedronGeometry args={[0.14, 0]} />
             <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.85} flatShading />
+          </mesh>
+          <mesh name="status-mark" visible={false} position={[0, 1.1, 0]} rotation-x={Math.PI / 2}>
+            <torusGeometry args={[0.52, 0.035, 5, 10]} />
+            <meshBasicMaterial color="#e9b44c" transparent opacity={0.8} />
+          </mesh>
+          <mesh name="status-stun" visible={false} position={[0, 2.0, 0]}>
+            <octahedronGeometry args={[0.16, 0]} />
+            <meshBasicMaterial color="#fff1a8" transparent opacity={0.88} />
           </mesh>
           <mesh name="hp-background" position={[0, 2.3, 0.02]} visible={false}>
             <planeGeometry args={[0.9, 0.09]} />
