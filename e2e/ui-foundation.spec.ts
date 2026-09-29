@@ -32,6 +32,137 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
 });
 
 
+test("tower placement follows pointer across both world axes and builds at the selected point", async ({ page }) => {
+  await page.goto("/?qa=1");
+
+  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+  await expect(playButton).toBeVisible();
+  await playButton.click();
+  await expect(page.locator("canvas")).toHaveCount(1);
+
+  await expect.poll(() =>
+    page.evaluate(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__)),
+  ).toBe(true);
+
+  const qa = () =>
+    page.evaluate(() => {
+      const api = (window as Window & {
+        __ROTWOOD_QA__?: {
+          getPlacementPreview: () => { x: number; z: number } | null;
+          getPlacementStatus: () => { valid: boolean; reason: string } | null;
+          getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: "rifleman" }>;
+        };
+      }).__ROTWOOD_QA__;
+      if (!api) return null;
+      return {
+        preview: api.getPlacementPreview(),
+        status: api.getPlacementStatus(),
+        towers: api.getTowerPositions(),
+      };
+    });
+
+  const canvas = page.locator("canvas");
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+
+  const point = (x: number, y: number) => ({
+    x: box!.x + box!.width * x,
+    y: box!.y + box!.height * y,
+  });
+
+  const moveAndRead = async (x: number, y: number) => {
+    const target = point(x, y);
+    await page.mouse.move(target.x, target.y);
+    await expect.poll(async () => (await qa())?.preview).not.toBeNull();
+    return (await qa())!.preview!;
+  };
+
+  const left = await moveAndRead(0.28, 0.68);
+  const upper = await moveAndRead(0.50, 0.46);
+  const right = await moveAndRead(0.72, 0.68);
+
+  expect(Math.abs(right.x - left.x)).toBeGreaterThan(0.5);
+  expect(Math.abs(upper.z - left.z)).toBeGreaterThan(0.5);
+
+  const candidates = [
+    [0.28, 0.68],
+    [0.50, 0.68],
+    [0.72, 0.68],
+    [0.40, 0.58],
+    [0.60, 0.58],
+    [0.50, 0.78],
+  ] as const;
+
+  let selected: { x: number; y: number } | null = null;
+  let selectedPreview: { x: number; z: number } | null = null;
+  for (const [x, y] of candidates) {
+    const preview = await moveAndRead(x, y);
+    const status = (await qa())?.status;
+    if (status?.valid) {
+      selected = point(x, y);
+      selectedPreview = preview;
+      break;
+    }
+  }
+
+  expect(selected).not.toBeNull();
+  expect(selectedPreview).not.toBeNull();
+
+  await page.mouse.click(selected!.x, selected!.y);
+  await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
+
+  const before = (await qa())!.towers.length;
+  const buildButton = page.getByRole("button", { name: /^Build ·/ }).filter({ visible: true }).first();
+  await expect(buildButton).toBeVisible();
+  await expect(buildButton).toBeEnabled();
+  await buildButton.click();
+
+  await expect.poll(async () => (await qa())!.towers.length).toBe(before + 1);
+  const towers = (await qa())!.towers;
+  const built = towers[towers.length - 1]!;
+
+  expect(built.x).toBe(selectedPreview!.x);
+  expect(built.z).toBe(selectedPreview!.z);
+});
+
+test("tower placement responds to touch coordinates on mobile", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.includes("iphone"), "Touch-specific regression runs on the iPhone project.");
+
+  await page.goto("/?qa=1");
+  await page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ }).click();
+  await expect(page.locator("canvas")).toHaveCount(1);
+
+  await expect.poll(() =>
+    page.evaluate(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__)),
+  ).toBe(true);
+
+  const readPreview = () =>
+    page.evaluate(() => {
+      const api = (window as Window & {
+        __ROTWOOD_QA__?: { getPlacementPreview: () => { x: number; z: number } | null };
+      }).__ROTWOOD_QA__;
+      return api?.getPlacementPreview() ?? null;
+    });
+
+  const canvas = page.locator("canvas");
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+
+  const first = { x: box!.x + box!.width * 0.35, y: box!.y + box!.height * 0.68 };
+  const second = { x: box!.x + box!.width * 0.65, y: box!.y + box!.height * 0.52 };
+
+  await page.touchscreen.tap(first.x, first.y);
+  await expect.poll(readPreview).not.toBeNull();
+  const firstPreview = (await readPreview())!;
+
+  await page.touchscreen.tap(second.x, second.y);
+  await expect.poll(readPreview).not.toBeNull();
+  const secondPreview = (await readPreview())!;
+
+  expect(Math.abs(secondPreview.x - firstPreview.x)).toBeGreaterThan(0.5);
+  expect(Math.abs(secondPreview.z - firstPreview.z)).toBeGreaterThan(0.5);
+});
+
 test("streamlined upgrade UI hides combat math while keeping upgrade effects readable", async ({ page }) => {
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
