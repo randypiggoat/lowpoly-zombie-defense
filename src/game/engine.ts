@@ -704,6 +704,7 @@ waveMessageType: "",
 export class Game {
   private readonly random: RandomSource;
   private nextId = 1;
+  private projectileEmissions = 0;
   private map = getStageMapByStageId(DEFAULT_STAGE.id);
   private pathLength = PATH_LENGTH;
 
@@ -714,6 +715,10 @@ export class Game {
   state: GameState = makeState(DEFAULT_STAGE);
   private stage: StageRunConfig = DEFAULT_STAGE;
   private listeners = new Set<() => void>();
+
+  getProjectileEmissionCount() {
+    return this.projectileEmissions;
+  }
 
   subscribe(fn: () => void) {
     this.listeners.add(fn);
@@ -731,12 +736,14 @@ export class Game {
 
   reset() {
     this.nextId = 1;
+    this.projectileEmissions = 0;
     this.resetTransientState();
     this.state = makeState(this.stage);
     this.emit();
   }
 
   startStage(stage: StageRunConfig) {
+    this.projectileEmissions = 0;
     this.stage = stage;
     this.map = getStageMap(stage.mapId);
     this.pathLength = getPathLength(this.map.path);
@@ -748,6 +755,7 @@ export class Game {
 }
 
  startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+  this.projectileEmissions = 0;
   const stage = createEndlessStage(challenge);
   this.stage = { ...stage, challenge, challengeKey, endless: true };
   this.map = getStageMap(stage.mapId);
@@ -760,6 +768,7 @@ export class Game {
 }
 
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
+    this.projectileEmissions = 0;
     const stage = createBossTrialStage(trial);
     this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
     this.map = getStageMap(stage.mapId);
@@ -1855,6 +1864,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 burnDuration: combat.burnDuration,
               }),
             );
+            this.projectileEmissions += 1;
           }
           sfx(SHOOT_SFX[t.kind]);
         }
