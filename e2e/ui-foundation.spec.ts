@@ -112,10 +112,10 @@ test("tower placement follows pointer across both world axes and builds at the s
   await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
 
   const before = (await qa())!.towers.length;
-  const buildButton = page.getByRole("button", { name: /^Build ·/ }).filter({ visible: true }).first();
-  await expect(buildButton).toBeVisible();
-  await expect(buildButton).toBeEnabled();
-  await buildButton.click();
+  const buildButtons = page.getByRole("button", { name: /^Build ·/ });
+  await expect(buildButtons.first()).toBeVisible();
+  await expect(buildButtons.first()).toBeEnabled();
+  await buildButtons.first().click();
 
   await expect.poll(async () => (await qa())!.towers.length).toBe(before + 1);
   const towers = (await qa())!.towers;
