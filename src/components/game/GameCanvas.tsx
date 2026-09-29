@@ -411,6 +411,7 @@ export function GameCanvas() {
     qaWindow.__ROTWOOD_QA__ = {
       buildTower: (spot, kind) => game.build(spot, kind),
       buildTowerAt: (x, z, kind) => game.buildAt(x, z, kind),
+      selectTower: (id) => setSelection({ kind: "tower", id }),
       getCombatSnapshot: () => ({
         towerCount: game.state.towers.length,
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
