@@ -1,10 +1,11 @@
 import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
+import { FIELD_KNOWLEDGE, knowledgeUnlocked, resolveFieldKnowledgeEffects } from "./fieldKnowledge";
 import { TOWER_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
 
 const KEY = "rotwood.profile.v1";
-const PROFILE_VERSION = 3;
+const PROFILE_VERSION = 4;
 const MAX_TOWER_UPGRADE_LEVEL = 5;
 const STARTER_TOWER_KINDS = ["rifleman", "shotgunner", "freezer"] as const;
 
@@ -197,8 +198,10 @@ export type PlayerProfile = {
   lastLoginRewardDayClaimed: number | null;
   /** Date on which the optional rewarded-ad daily bonus was claimed. */
   dailyRewardedBonusDate: string | null;
-  /** Persistent per-tower-kind upgrade data, expandable later. */
+  /** Legacy Workshop data retained only for save compatibility; no longer affects combat. */
   towerUpgrades: Record<string, TowerUpgradeProfile>;
+  /** Permanent account-wide Field Knowledge nodes. */
+  fieldKnowledge: Record<string, number>;
   /** Tower kinds unlocked ahead of their level gate. */
   unlockedTowers: string[];
   achievements: Record<string, AchievementProgress>;
@@ -320,6 +323,7 @@ function blank(): PlayerProfile {
     lastLoginRewardDayClaimed: null,
     dailyRewardedBonusDate: null,
     towerUpgrades: {},
+    fieldKnowledge: {},
     unlockedTowers: [],
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
@@ -550,6 +554,11 @@ function load(): PlayerProfile {
           ? null
           : normalizeDay(parsed.lastLoginRewardDayClaimed),
       towerUpgrades: normalizeTowerUpgrades(parsed.towerUpgrades),
+      fieldKnowledge: isRecord(parsed.fieldKnowledge)
+        ? Object.fromEntries(
+            Object.entries(parsed.fieldKnowledge).filter(([id, rank]) => FIELD_KNOWLEDGE.some((node) => node.id === id) && Number(rank) > 0).map(([id]) => [id, 1]),
+          )
+        : {},
       unlockedTowers: normalizeStringArray(parsed.unlockedTowers),
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
@@ -641,6 +650,33 @@ class ProfileStore {
 
   get snapshot() {
     return this.revision;
+  }
+
+
+  fieldKnowledgeRank(id: string) {
+    return this.profile.fieldKnowledge[id] ?? 0;
+  }
+
+  fieldKnowledgeEffects() {
+    return resolveFieldKnowledgeEffects(this.profile.fieldKnowledge);
+  }
+
+  canUnlockFieldKnowledge(id: string) {
+    const node = FIELD_KNOWLEDGE.find((entry) => entry.id === id);
+    if (!node || this.fieldKnowledgeRank(id) > 0) return false;
+    return knowledgeUnlocked(node, this.profile.fieldKnowledge);
+  }
+
+  unlockFieldKnowledge(id: string) {
+    const node = FIELD_KNOWLEDGE.find((entry) => entry.id === id);
+    const p = this.profile;
+    if (!node || p.fieldKnowledge[id] > 0) return false;
+    if (!knowledgeUnlocked(node, p.fieldKnowledge)) return false;
+    if (p.coins < node.cost) return false;
+    p.coins -= node.cost;
+    p.fieldKnowledge[id] = 1;
+    this.save();
+    return true;
   }
 
   subscribe(fn: () => void) {
