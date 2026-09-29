@@ -517,16 +517,6 @@ export function towerSellValue(t: Tower) {
   );
 }
 
-export const MAX_PROFILE_TOWER_UPGRADE = 5;
-
-export function towerProfileUpgradeLevel(kind: TowerKind) {
-  return profile.towerUpgradeLevel(kind);
-}
-
-export function towerProfileUpgradeCost(kind: TowerKind) {
-  return profile.towerUpgradeCost(TOWER_INFO[kind].upgradeBase, kind);
-}
-
 export function towerProfileBonus(_kind: TowerKind) {
   const knowledge = profile.fieldKnowledgeEffects();
   return {
@@ -962,17 +952,6 @@ export class Game {
     t.level += 1;
     profile.recordTowerUpgrade(t.kind);
     track("tower_upgraded", { kind: t.kind, level: t.level });
-    sfx("upgrade");
-    this.emit();
-    return true;
-  }
-
-  buyProfileTowerUpgrade(kind: TowerKind): boolean {
-    const cost = towerProfileUpgradeCost(kind);
-    if (!Number.isFinite(cost) || !profile.buyTowerUpgrade(kind, cost)) {
-      sfx("deny");
-      return false;
-    }
     sfx("upgrade");
     this.emit();
     return true;
