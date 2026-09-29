@@ -128,6 +128,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("shed", 9.9, 4.8, 0.9),
       prop("car", -8.9, 5.2, 0.82, 0.2),
       prop("tree", 12.2, 5.2, 0.85),
+      prop("lamp", -13.1, 15.4, 0.72),
+      prop("rock", 13.1, 15.4, 0.7),
     ],
   },
   orchard: {
@@ -143,6 +145,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("hay-bale", 9.8, -1.8, 0.8),
       prop("fence", -11.2, 12.2, 0.95),
       prop("shed", 10.6, 7.6, 0.9),
+      prop("tree", -13.1, 15.4, 0.82),
+      prop("hay-bale", 13.1, 15.4, 0.7),
     ],
   },
   market: {
@@ -158,6 +162,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("car", -10.8, -12.8, 0.75, -0.4),
       prop("car", 11.4, 8.6, 0.72, 0.3),
       prop("barrel", -9.2, 6.2, 0.72),
+      prop("barrel", -13.1, 15.4, 0.68),
+      prop("lamp", 13.1, 15.4, 0.72),
     ],
   },
   "rail-yard": {
@@ -173,6 +179,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("barrel", 11.2, 12.5, 0.7),
       prop("container", -11.2, 13.1, 0.8),
       prop("shed", 7.7, 10.9, 0.82),
+      prop("container", -13.1, 15.4, 0.65),
+      prop("lamp", 13.1, 15.4, 0.72),
     ],
   },
   "river-checkpoint": {
@@ -188,6 +196,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("shed", 9.6, 7.2, 0.82),
       prop("tree", -11.4, 13.1, 0.78),
       prop("rock", 9.2, 12.2, 0.8),
+      prop("tree", -13.1, 15.4, 0.72),
+      prop("rock", 13.1, 15.4, 0.68),
     ],
   },
   "jungle-ruins": {
@@ -202,6 +212,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("shrub", -10.8, 8.8, 1),
       prop("palm", 9.9, 8.8, 0.9),
       prop("rock", 11.5, 13, 0.72),
+      prop("palm", -13.1, 15.4, 0.72),
+      prop("shrub", 13.1, 15.4, 0.9),
     ],
   },
   mangrove: {
@@ -217,6 +229,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("dock", 10.8, 8.9, 0.84),
       prop("rock", -10.8, 12.8, 0.72),
       prop("palm", 9.5, 13, 0.75),
+      prop("dead-tree", -13.1, 15.4, 0.72),
+      prop("rock", 13.1, 15.4, 0.65),
     ],
   },
   redwood: {
@@ -232,6 +246,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("pine", 10.5, 12.2, 0.95),
       prop("shed", 9.2, 5.9, 0.8),
       prop("rock", -9.9, 13.1, 0.82),
+      prop("pine", -13.1, 15.4, 0.72),
+      prop("rock", 13.1, 15.4, 0.68),
     ],
   },
   "frozen-lab": {
@@ -247,6 +263,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("antenna", 10.2, 6.1, 0.82),
       prop("ice", -10.8, 13, 0.78),
       prop("container", 8.3, 12.5, 0.75),
+      prop("ice", -13.1, 15.4, 0.72),
+      prop("vent", 13.1, 15.4, 0.65),
     ],
   },
   "ice-cavern": {
@@ -262,6 +280,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("crystal", 10.8, 7.4, 0.8),
       prop("ice", -10.4, 12.8, 0.8),
       prop("crystal", 8.4, 13.2, 0.72),
+      prop("crystal", -13.1, 15.4, 0.62),
+      prop("ice", 13.1, 15.4, 0.72),
     ],
   },
   harbor: {
@@ -277,6 +297,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("crate", 11.2, 8.2, 0.7),
       prop("boat", -9.9, 12.2, 0.7, 0.5),
       prop("barrel", 8.5, 13, 0.7),
+      prop("container", -13.1, 15.4, 0.62),
+      prop("barrel", 13.1, 15.4, 0.68),
     ],
   },
   "desert-bazaar": {
@@ -292,6 +314,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("barrel", 10.9, 8.1, 0.72),
       prop("rock", -10.2, 12.7, 0.78),
       prop("cactus", 8.8, 13.1, 0.74),
+      prop("cactus", -13.1, 15.4, 0.68),
+      prop("rock", 13.1, 15.4, 0.7),
     ],
   },
   "redrock-canyon": {
@@ -307,6 +331,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("rock", 11, 8.5, 0.8),
       prop("boulder", -10.1, 13, 0.82),
       prop("rock", 9, 13, 0.76),
+      prop("boulder", -13.1, 15.4, 0.7),
+      prop("rock", 13.1, 15.4, 0.68),
     ],
   },
   "deep-mine": {
@@ -322,6 +348,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("barrel", 10.8, 8.8, 0.72),
       prop("ore", -10.2, 12.8, 0.78),
       prop("crate", 8.7, 13.2, 0.72),
+      prop("ore", -13.1, 15.4, 0.7),
+      prop("crate", 13.1, 15.4, 0.68),
     ],
   },
   "military-outpost": {
@@ -337,6 +365,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("lamp", 10.6, 8.4, 0.8),
       prop("barrier", -10.2, 12.8, 0.78),
       prop("antenna", 8.7, 13, 0.76),
+      prop("sandbag", -13.1, 15.4, 0.7),
+      prop("barrier", 13.1, 15.4, 0.62),
     ],
   },
   "abandoned-city": {
@@ -352,6 +382,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("lamp", 10.5, 8.2, 0.85),
       prop("rubble", -10.2, 12.8, 0.84),
       prop("car", 8.8, 13, 0.7, 0.1),
+      prop("car", -13.1, 15.4, 0.62),
+      prop("rubble", 13.1, 15.4, 0.7),
     ],
   },
   foundry: {
@@ -367,6 +399,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("pipe", 10.5, 8.3, 0.82),
       prop("barrel", -10.2, 12.7, 0.7),
       prop("crate", 8.8, 13, 0.7),
+      prop("pipe", -13.1, 15.4, 0.68),
+      prop("vent", 13.1, 15.4, 0.64),
     ],
   },
   graveyard: {
@@ -382,6 +416,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("dead-tree", 10.5, 8.3, 0.82),
       prop("tombstone", -10.1, 12.8, 0.76),
       prop("dead-tree", 8.7, 13, 0.74),
+      prop("tombstone", -13.1, 15.4, 0.65),
+      prop("dead-tree", 13.1, 15.4, 0.68),
     ],
   },
   volcano: {
@@ -397,6 +433,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("vent", 10.5, 8.4, 0.84),
       prop("boulder", -10.2, 12.8, 0.84),
       prop("boulder", 8.8, 13, 0.75),
+      prop("boulder", -13.1, 15.4, 0.68),
+      prop("vent", 13.1, 15.4, 0.64),
     ],
   },
   blacksite: {
@@ -412,6 +450,8 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("vent", 10.5, 8.4, 0.82),
       prop("barrier", -10.1, 12.8, 0.78),
       prop("antenna", 8.8, 13, 0.74),
+      prop("antenna", -13.1, 15.4, 0.62),
+      prop("barrier", 13.1, 15.4, 0.62),
     ],
   },
 };

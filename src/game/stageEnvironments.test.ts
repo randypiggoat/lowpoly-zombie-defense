@@ -9,7 +9,7 @@ describe("stage environment catalog", () => {
 
     for (const environment of environments) {
       expect(environment.label.length).toBeGreaterThan(3);
-      expect(environment.props.length).toBeGreaterThanOrEqual(6);
+      expect(environment.props.length).toBeGreaterThanOrEqual(10);
       expect(environment.landmark.scale).toBeGreaterThan(0);
     }
   });
