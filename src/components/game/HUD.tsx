@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Coins } from "lucide-react";
 import {
-  MAX_PROFILE_TOWER_UPGRADE,
   MAX_TOWER_LEVEL,
   TOWER_INFO,
   TOWER_KINDS,
@@ -11,9 +10,6 @@ import {
   incomeCost,
   incomePerSecond,
   tierCost,
-  towerProfileBonus,
-  towerProfileUpgradeCost,
-  towerProfileUpgradeLevel,
   towerBurn,
   towerChain,
   towerCrit,
@@ -51,6 +47,7 @@ import { getStageMapByStageId, pathCoverageRatio } from "@/game/maps";
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { bestTowerCounterplayMatch } from "@/game/towerCounterplay";
 import { enemyThreatLabel } from "@/game/enemyPresentation";
+import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -68,41 +65,17 @@ function useProfileSnapshot() {
 const KINDS: TowerKind[] = TOWER_KINDS;
 
 function nextProgressionTarget(player: PlayerProfile) {
-  const nextTower = KINDS.find((kind) => !towerUnlocked(kind, player.level, player.unlockedTowers));
-  if (nextTower) {
-    const info = TOWER_INFO[nextTower];
-    const xpLeft = Math.max(0, xpForLevel(player.level) - player.xp);
-    if (player.level < info.unlockLevel) {
-      return {
-        label: `${info.name} unlock`,
-        detail:
-          info.coinUnlock > 0
-            ? `Reach Lv ${info.unlockLevel} or save ${info.coinUnlock} credits · ${xpLeft} XP to next level`
-            : `Reach Lv ${info.unlockLevel} · ${xpLeft} XP to next level`,
-      };
-    }
+  const nextKnowledge = FIELD_KNOWLEDGE.find(
+    (node) => player.fieldKnowledge[node.id] !== 1 && knowledgeUnlocked(node, player.fieldKnowledge),
+  );
+  if (nextKnowledge) {
+    const affordable = player.coins >= nextKnowledge.cost;
     return {
-      label: `${info.name} early unlock`,
-      detail: `${Math.max(0, info.coinUnlock - player.coins)} more credits needed`,
+      label: nextKnowledge.name,
+      detail: affordable ? "Ready · " + nextKnowledge.cost + " credits" : (nextKnowledge.cost - player.coins) + " credits to Field Knowledge",
     };
   }
-
-  const towerToUpgrade = [...KINDS].sort((a, b) => {
-    const byLevel = towerProfileUpgradeLevel(a) - towerProfileUpgradeLevel(b);
-    return byLevel !== 0 ? byLevel : towerProfileUpgradeCost(a) - towerProfileUpgradeCost(b);
-  })[0];
-
-  if (towerToUpgrade && towerProfileUpgradeLevel(towerToUpgrade) < MAX_PROFILE_TOWER_UPGRADE) {
-    return {
-      label: `${TOWER_INFO[towerToUpgrade].name} mastery`,
-      detail: `Upgrade to Lv ${towerProfileUpgradeLevel(towerToUpgrade) + 1} for ${towerProfileUpgradeCost(towerToUpgrade)} credits`,
-    };
-  }
-
-  return {
-    label: `Player level ${player.level + 1}`,
-    detail: `${Math.max(0, xpForLevel(player.level) - player.xp)} XP to next level`,
-  };
+  return { label: "Field Knowledge complete", detail: "Every permanent knowledge node unlocked" };
 }
 
 function towerSpecialSummary(tower: Tower) {
@@ -196,51 +169,49 @@ function ClaimButton({
   );
 }
 
-function PathColumn({ tower, path, gold }: { tower: Tower; path: "a" | "b"; gold: number }) {
+function abilityLabel(ability: string | undefined) {
+  switch (ability) {
+    case "burst": return "BURST";
+    case "stun": return "STUN";
+    case "mark": return "MARK";
+    case "shatter": return "SHATTER";
+    case "execute": return "EXECUTE";
+    case "boss-hunter": return "ELITE HUNTER";
+    case "close-range": return "POINT BLANK";
+    case "burn-duration": return "LONG BURN";
+    default: return "";
+  }
+}
+
+function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scrap: number }) {
   const def = TOWER_PATHS[tower.kind][path];
   const owned = path === "a" ? tower.a : tower.b;
   const locked = !canBuyTier(tower, path);
   const cost = tierCost(tower, path);
   const next = owned < 4 ? def.tiers[owned]! : null;
-  const affordable = !!next && !locked && gold >= cost;
-
+  const affordable = !!next && !locked && scrap >= cost;
+  const ability = abilityLabel(next?.ability);
   return (
-    <div className="min-w-0 rounded-lg bg-black/25 p-1.5">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
-        <span className="truncate font-display text-xs tracking-wide text-panel-foreground">
-          {def.name}
-        </span>
-        <span className="flex shrink-0 gap-0.5">
-          {[0, 1, 2, 3].map((i) => (
-            <span
-              key={i}
-              className="h-1 w-2 rounded-full"
-              style={{
-                backgroundColor:
-                  i < owned ? TOWER_INFO[tower.kind].accent : "rgba(255,255,255,0.16)",
-              }}
-            />
-          ))}
-        </span>
+    <div className="min-w-0 rounded-lg border border-white/10 bg-black/25 p-1.5">
+      <div className="flex items-center justify-between gap-1">
+        <div className="min-w-0">
+          <span className="block truncate font-display text-xs tracking-wide text-panel-foreground">{def.name}</span>
+          <span className="block truncate text-[8px] uppercase tracking-wider text-panel-muted">{def.focus}</span>
+        </div>
+        <span className="font-display text-[9px] text-panel-muted">{owned}/4</span>
       </div>
-      <p className="truncate text-[9px] uppercase tracking-wider text-panel-muted">{def.focus}</p>
       {next ? (
         <>
-          <p className="mt-1 min-h-8 text-[10px] leading-tight text-panel-foreground">
+          <p className="mt-1.5 min-h-9 text-[10px] leading-tight text-panel-foreground">
             <span className="block truncate font-semibold">{next.name}</span>
             <span className="line-clamp-2 text-panel-muted">{next.desc}</span>
           </p>
-          <button
-            onClick={() => game.buyTier(tower.id, path)}
-            disabled={!affordable}
-            className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
-          >
-            {locked ? "Path locked" : `${cost} scrap`}
+          {ability && <span className="mt-1 inline-flex rounded-full border border-accent/25 bg-accent/10 px-1.5 py-0.5 text-[8px] font-black tracking-[0.12em] text-accent">{ability}</span>}
+          <button onClick={() => game.buyTier(tower.id, path)} disabled={!affordable} className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40">
+            {locked ? "Path locked" : cost + " SCRAP"}
           </button>
         </>
-      ) : (
-        <p className="mt-2 text-center font-display text-xs text-accent">Path maxed</p>
-      )}
+      ) : <p className="mt-2 text-center font-display text-xs text-accent">PATH MAXED</p>}
     </div>
   );
 }
@@ -844,34 +815,10 @@ export function HUD({
                 : `Upgrade to Lv ${tower.level + 1} · ${levelCost} scrap`}
             </button>
             <div className="mt-1.5 grid grid-cols-2 gap-1">
-              <PathColumn tower={tower} path="a" gold={state.gold} />
-              <PathColumn tower={tower} path="b" gold={state.gold} />
+              <PathColumn tower={tower} path="a" scrap={state.gold} />
+              <PathColumn tower={tower} path="b" scrap={state.gold} />
             </div>
-            <div className="mt-1.5 rounded-lg bg-black/25 p-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                    <p className="font-display text-xs tracking-wide text-panel-foreground">
-                    Workshop Lv {towerMetaLevel}
-                  </p>
-                  {towerMetaBonus && (
-                    <p className="line-clamp-1 text-[9px] text-panel-muted">
-                      Permanent +{Math.round((towerMetaBonus.damage - 1) * 100)}% DMG · +
-                      {Math.round((towerMetaBonus.rate - 1) * 100)}% SPD · +
-                      {Math.round((towerMetaBonus.range - 1) * 100)}% RNG
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => game.buyProfileTowerUpgrade(tower.kind)}
-                  disabled={!Number.isFinite(towerMetaCost) || player.coins < towerMetaCost}
-                  className="shrink-0 rounded-md bg-accent px-2 py-1.5 text-[10px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
-                >
-                  {towerMetaLevel >= MAX_PROFILE_TOWER_UPGRADE
-                    ? "Mastery maxed"
-                    : `${towerMetaCost} credits`}
-                </button>
-              </div>
-            </div>
+            
           </div>
         )}
 
