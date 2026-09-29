@@ -1625,6 +1625,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         slow: z.slow,
         burn: z.burn,
         burnTime: z.burnTime,
+        stun: z.stun,
+        markTime: z.markTime,
         wobble: z.wobble,
         dt,
         pathLength: this.pathLength,
@@ -1632,6 +1634,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       z.wobble = lifecycle.wobble;
       z.burnTime = lifecycle.burnTime;
+      z.stun = lifecycle.stun;
+      z.markTime = lifecycle.markTime;
 
       if (lifecycle.burnDamage > 0) {
         this.damage(z, lifecycle.burnDamage, z.x, z.z, 1);
