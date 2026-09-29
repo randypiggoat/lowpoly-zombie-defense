@@ -134,18 +134,64 @@ function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getS
 function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
   return (
     <group>
-      {map.obstacles.map((obstacle) => (
-        <group key={obstacle.label} position={[obstacle.x, obstacle.height / 2, obstacle.z]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[obstacle.width, obstacle.height, obstacle.depth]} />
-            <meshStandardMaterial color="#6f6b63" flatShading />
-          </mesh>
-          <mesh position={[0, obstacle.height / 2 + 0.04, 0]}>
-            <boxGeometry args={[obstacle.width * 0.72, 0.05, obstacle.depth * 0.72]} />
-            <meshStandardMaterial color="#a29a87" flatShading />
-          </mesh>
-        </group>
-      ))}
+      {map.obstacles.map((obstacle) => {
+        const label = obstacle.label.toLowerCase();
+        const warm = label.includes("shop") || label.includes("storefront") || label.includes("station") || label.includes("garage");
+        const accent = warm ? "#8e5542" : "#6f6b63";
+        return (
+          <group key={obstacle.label} position={[obstacle.x, obstacle.height / 2, obstacle.z]}>
+            {label.includes("garden") || label.includes("median") || label.includes("service") || label.includes("evidence") ? (
+              <>
+                <mesh castShadow receiveShadow>
+                  <boxGeometry args={[obstacle.width, obstacle.height, obstacle.depth]} />
+                  <meshStandardMaterial color={accent} flatShading />
+                </mesh>
+                <mesh position={[0, obstacle.height / 2 + 0.06, 0]} castShadow>
+                  <boxGeometry args={[obstacle.width * 0.82, 0.12, obstacle.depth * 0.82]} />
+                  <meshStandardMaterial color="#a29a87" flatShading />
+                </mesh>
+              </>
+            ) : label.includes("pump") ? (
+              <>
+                <mesh castShadow receiveShadow>
+                  <boxGeometry args={[obstacle.width * 0.82, obstacle.height, obstacle.depth * 0.68]} />
+                  <meshStandardMaterial color="#d1c7ae" flatShading />
+                </mesh>
+                {[-0.32, 0.32].map((x) => (
+                  <mesh key={x} position={[x, obstacle.height * 0.72, 0]} castShadow>
+                    <cylinderGeometry args={[0.11, 0.14, 0.42, 5]} />
+                    <meshStandardMaterial color="#a94f3f" flatShading />
+                  </mesh>
+                ))}
+              </>
+            ) : label.includes("canopy") ? (
+              <>
+                <mesh position={[0, obstacle.height, 0]} castShadow>
+                  <boxGeometry args={[obstacle.width, 0.12, obstacle.depth]} />
+                  <meshStandardMaterial color="#d0c7af" flatShading />
+                </mesh>
+                {[-1, 1].map((x) => (
+                  <mesh key={x} position={[x * obstacle.width * 0.38, obstacle.height * 0.48, 0]} castShadow>
+                    <boxGeometry args={[0.11, obstacle.height, 0.11]} />
+                    <meshStandardMaterial color="#8f5545" flatShading />
+                  </mesh>
+                ))}
+              </>
+            ) : (
+              <>
+                <mesh castShadow receiveShadow>
+                  <boxGeometry args={[obstacle.width, obstacle.height, obstacle.depth]} />
+                  <meshStandardMaterial color={accent} flatShading />
+                </mesh>
+                <mesh position={[0, obstacle.height / 2 + 0.22, 0]} rotation-y={Math.PI / 4} castShadow>
+                  <coneGeometry args={[Math.min(obstacle.width, obstacle.depth) * 0.62, 0.34, 4]} />
+                  <meshStandardMaterial color="#4f463c" flatShading />
+                </mesh>
+              </>
+            )}
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -384,18 +430,7 @@ function TowerMesh({
       <group ref={turret} position={[0, 1.18 + level * 0.1, 0]}>
         <TowerModel tower={tower} accent={accent} level={level} bodyColor={bodyColor} />
       </group>
-      {Array.from({ length: tower.a }, (_, i) => (
-        <mesh key={`a${i}`} position={[-0.75, 0.5 + i * 0.24, 1.15]}>
-          <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} flatShading />
-        </mesh>
-      ))}
-      {Array.from({ length: tower.b }, (_, i) => (
-        <mesh key={`b${i}`} position={[0.75, 0.5 + i * 0.24, 1.15]}>
-          <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial color="#f4ead6" emissive="#f4ead6" emissiveIntensity={0.35} flatShading />
-        </mesh>
-      ))}
+
     </group>
   );
 }
