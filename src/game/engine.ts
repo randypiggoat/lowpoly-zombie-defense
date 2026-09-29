@@ -413,7 +413,14 @@ export const GORE_BASE: Record<TowerKind, number> = {
 
 /** Gold cost of the next level-up for this tower. */
 export function towerUpgradeCost(t: Tower) {
-  return calculateTowerUpgradeCost(t, TOWER_INFO[t.kind], MAX_TOWER_LEVEL);
+  const raw = calculateTowerUpgradeCost(t, TOWER_INFO[t.kind], MAX_TOWER_LEVEL);
+  return Number.isFinite(raw)
+    ? Math.max(1, Math.round(raw * profile.fieldKnowledgeEffects().towerUpgradeCostMultiplier))
+    : raw;
+}
+
+export function towerBuildCost(kind: TowerKind) {
+  return Math.max(1, Math.round(TOWER_INFO[kind].cost * profile.fieldKnowledgeEffects().towerBuildCostMultiplier));
 }
 
 /* ---------------- upgrade paths ---------------- */
@@ -446,7 +453,10 @@ export function canBuyTier(t: Tower, path: "a" | "b") {
 }
 
 export function tierCost(t: Tower, path: "a" | "b") {
-  return getTowerTierCost(t, path, TOWER_PATHS[t.kind]);
+  const raw = getTowerTierCost(t, path, TOWER_PATHS[t.kind]);
+  return Number.isFinite(raw)
+    ? Math.max(1, Math.round(raw * profile.fieldKnowledgeEffects().towerUpgradeCostMultiplier))
+    : raw;
 }
 
 function towerCombatStats(t: Tower) {
@@ -876,8 +886,7 @@ export class Game {
       sfx("deny");
       return false;
     }
-    const knowledge = profile.fieldKnowledgeEffects();
-    const cost = Math.round(TOWER_INFO[kind].cost * knowledge.towerBuildCostMultiplier);
+    const cost = towerBuildCost(kind);
     if (s.gold < cost) {
       sfx("deny");
       return false;
@@ -944,8 +953,7 @@ export class Game {
       sfx("deny");
       return false;
     }
-    const knowledge = profile.fieldKnowledgeEffects();
-    const cost = Math.round(towerUpgradeCost(t) * knowledge.towerUpgradeCostMultiplier);
+    const cost = towerUpgradeCost(t);
     if (s.gold < cost) {
       sfx("deny");
       return false;
