@@ -404,7 +404,7 @@ export function GameCanvas() {
     type QaApi = {
       buildTower: (spot: number, kind: TowerKind) => boolean;
       buildTowerAt: (x: number, z: number, kind: TowerKind) => boolean;
-      getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[] };
+      getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
     };
 
     const qaWindow = window as Window & { __ROTWOOD_QA__?: QaApi };
@@ -416,6 +416,7 @@ export function GameCanvas() {
       getCombatSnapshot: () => ({
         towerCount: game.state.towers.length,
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
+        projectileEmissions: game.getProjectileEmissionCount(),
       }),
     };
 
