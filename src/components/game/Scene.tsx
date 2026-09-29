@@ -522,47 +522,64 @@ function BuildSurface({
     ? canPlaceTower(map, preview.x, preview.z, towers)
     : null;
 
-  const { camera, gl, raycaster, pointer } = useThree();
+  const { camera, gl, raycaster, pointer, scene } = useThree();
 
-  const updatePreviewFromWorldPoint = (worldPoint: THREE.Vector3) => {
-    if (!surface.current) return;
-    const local = surface.current.worldToLocal(worldPoint.clone());
-    onPreviewPosition(snapBuildPosition(map, local.x, local.z));
+  const getMapPointFromClient = (clientX: number, clientY: number) => {
+    if (!surface.current) return null;
+
+    const rect = gl.domElement.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+
+    pointer.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(pointer, camera);
+
+    const worldGround = surface.current.localToWorld(new THREE.Vector3(0, 0.012, 0));
+    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), -worldGround.y);
+    const hit = raycaster.ray.intersectPlane(ground, new THREE.Vector3());
+    if (!hit) return null;
+
+    const local = surface.current.worldToLocal(hit.clone());
+    if (
+      local.x < map.bounds.minX ||
+      local.x > map.bounds.maxX ||
+      local.z < map.bounds.minZ ||
+      local.z > map.bounds.maxZ
+    ) {
+      return null;
+    }
+
+    return snapBuildPosition(map, local.x, local.z);
   };
 
-  const updatePreview = (event: { stopPropagation: () => void; point: THREE.Vector3 }) => {
-    event.stopPropagation();
-    updatePreviewFromWorldPoint(event.point);
+  const rayHitsTower = () => {
+    const hits = raycaster.intersectObjects(scene.children, true);
+    return hits.some((hit) => {
+      let object: THREE.Object3D | null = hit.object;
+      while (object) {
+        if (object.userData.rotwoodTowerId !== undefined) return true;
+        object = object.parent;
+      }
+      return false;
+    });
   };
 
   useEffect(() => {
     const element = gl.domElement;
-    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-
-    const updateFromClientPoint = (clientX: number, clientY: number) => {
-      if (!surface.current) return;
-
-      const rect = element.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return;
-
-      pointer.set(
-        ((clientX - rect.left) / rect.width) * 2 - 1,
-        -((clientY - rect.top) / rect.height) * 2 + 1,
-      );
-      raycaster.setFromCamera(pointer, camera);
-
-      // The scene's gameplay group stays level, so its local ground plane maps
-      // to a world-horizontal plane. Read the actual group's world Y instead
-      // of hardcoding a camera- or device-specific offset.
-      const worldGround = surface.current.localToWorld(new THREE.Vector3(0, 0.012, 0));
-      ground.set(new THREE.Vector3(0, 1, 0), -worldGround.y);
-
-      const hit = raycaster.ray.intersectPlane(ground, new THREE.Vector3());
-      if (hit) updatePreviewFromWorldPoint(hit);
-    };
+    const previousTouchAction = element.style.touchAction;
+    element.style.touchAction = "none";
 
     const handlePointerMove = (event: PointerEvent) => {
-      updateFromClientPoint(event.clientX, event.clientY);
+      onPreviewPosition(getMapPointFromClient(event.clientX, event.clientY));
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const point = getMapPointFromClient(event.clientX, event.clientY);
+      if (!point || rayHitsTower()) return;
+      onPreviewPosition(point);
+      onSelectPosition(point);
     };
 
     const handlePointerLeave = () => {
@@ -570,13 +587,16 @@ function BuildSurface({
     };
 
     element.addEventListener("pointermove", handlePointerMove);
+    element.addEventListener("pointerdown", handlePointerDown);
     element.addEventListener("pointerleave", handlePointerLeave);
 
     return () => {
+      element.style.touchAction = previousTouchAction;
       element.removeEventListener("pointermove", handlePointerMove);
+      element.removeEventListener("pointerdown", handlePointerDown);
       element.removeEventListener("pointerleave", handlePointerLeave);
     };
-  }, [camera, gl, pointer, raycaster]);
+  }, [camera, gl, pointer, raycaster, scene]);
 
   return (
     <group ref={surface}>
@@ -586,16 +606,9 @@ function BuildSurface({
           0.012,
           (map.bounds.minZ + map.bounds.maxZ) / 2,
         ]}
-        // Keep the plane aligned to the playable XZ ground for click/select
-        // intersection. Preview tracking itself uses the camera ray above so it
-        // remains accurate even when obstacles cover the ground mesh.
+        // Keep the visual placement surface aligned to the playable XZ ground.
+        // Pointer input is handled on the canvas so scenery cannot intercept it.
         rotation-x={-Math.PI / 2}
-        onPointerDown={(event) => {
-          updatePreview(event);
-          if (!surface.current) return;
-          const local = surface.current.worldToLocal(event.point.clone());
-          onSelectPosition(snapBuildPosition(map, local.x, local.z));
-        }}
       >
         <planeGeometry args={[map.bounds.maxX - map.bounds.minX, map.bounds.maxZ - map.bounds.minZ]} />
         <meshBasicMaterial transparent opacity={0} />
@@ -691,6 +704,7 @@ function TowerMesh({
   return (
     <group
       position={[tower.x, 0, tower.z]}
+      userData={{ rotwoodTowerId: tower.id }}
       onPointerDown={(e) => {
         e.stopPropagation();
         onSelect(tower.id);
