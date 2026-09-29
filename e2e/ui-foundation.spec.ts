@@ -61,6 +61,12 @@ test("tower placement follows pointer across both world axes and builds at the s
       };
     });
 
+  // Disable only the HUD's interactive hit targets for this regression so the
+  // pointer is guaranteed to reach the R3F placement surface at every probe point.
+  await page.addStyleTag({
+    content: ".rotwood-hud .pointer-events-auto { pointer-events: none !important; }",
+  });
+
   const canvas = page.locator("canvas");
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
