@@ -18,7 +18,7 @@ export type TowerEconomyPaths = {
 export function towerUpgradeCost(
   tower: Pick<TowerEconomyTower, "level">,
   definition: TowerEconomyDef,
-  maxLevel: number,
+  _maxLevel: number,
 ) {
   if (tower.level >= maxLevel) return Infinity;
   return Math.round(definition.upgradeBase * Math.pow(1.55, tower.level - 1));
@@ -60,10 +60,6 @@ export function towerSellValue(
 
   for (let i = 0; i < tower.b; i++) {
     spent += paths.b.tiers[i]?.cost ?? 0;
-  }
-
-  for (let level = 1; level < Math.min(tower.level, maxLevel); level++) {
-    spent += Math.round(definition.upgradeBase * Math.pow(1.55, level - 1));
   }
 
   return Math.floor(spent * 0.6);
