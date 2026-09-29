@@ -77,9 +77,9 @@ export function getTowerCombatStats(
   profileBonus: TowerProfileBonus,
 ): TowerCombatStats {
   const mods = getTowerMods(tower, paths);
-  const levelDmg = Math.pow(1.22, tower.level - 1);
-  const levelRate = Math.pow(1.06, tower.level - 1);
-  const levelRange = Math.pow(1.035, tower.level - 1);
+  const levelDmg = Math.pow(1.04, tower.level - 1);
+  const levelRate = Math.pow(1.01, tower.level - 1);
+  const levelRange = Math.pow(1.01, tower.level - 1);
 
   const abilities = getTowerUpgradeAbilities(tower.kind as TowerKindKey, tower.a, tower.b);
 
