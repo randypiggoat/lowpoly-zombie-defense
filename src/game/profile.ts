@@ -6,7 +6,6 @@ import { STAGE_DEFS, getNextStageId } from "./navigation";
 
 const KEY = "rotwood.profile.v1";
 const PROFILE_VERSION = 4;
-const MAX_TOWER_UPGRADE_LEVEL = 5;
 const STARTER_TOWER_KINDS = ["rifleman", "shotgunner", "freezer"] as const;
 
 export type RewardGrant = {
@@ -739,15 +738,6 @@ class ProfileStore {
     return { leveledTo: levelsGained > 0 ? p.level : null, levelsGained };
   }
 
-  private towerUpgrade(kind: string): TowerUpgradeProfile {
-    const p = this.profile;
-    const existing = p.towerUpgrades[kind];
-    if (existing) return existing;
-    const created: TowerUpgradeProfile = { level: 0, points: 0, spentCoins: 0 };
-    p.towerUpgrades[kind] = created;
-    return created;
-  }
-
   private awardReward(reward: RewardGrant) {
     const p = this.profile;
     if (reward.coins) p.coins += reward.coins;
@@ -1100,35 +1090,12 @@ class ProfileStore {
   }
 
   /** Track in-run upgrade activity separately from permanent upgrade levels. */
-  recordTowerUpgrade(kind: string, points = 1) {
+  recordTowerUpgrade(_kind: string, points = 1) {
     this.refreshRetentionState();
     const p = this.profile;
-    const entry = this.towerUpgrade(kind);
-    entry['points'] += points;
-    p.towerUpgradeActions += points;
+    p.towerUpgradeActions += Math.max(0, points);
     this.syncAchievementProgress();
     this.save();
-  }
-
-  towerUpgradeLevel(kind: string) {
-    return this.profile.towerUpgrades[kind]?.level ?? 0;
-  }
-
-  towerUpgradeCost(baseCost: number, kind: string) {
-    const level = this.towerUpgradeLevel(kind);
-    if (level >= MAX_TOWER_UPGRADE_LEVEL) return Infinity;
-    return Math.round(baseCost * (1.5 + level * 0.85));
-  }
-
-  buyTowerUpgrade(kind: string, cost: number) {
-    const p = this.profile;
-    const entry = this.towerUpgrade(kind);
-    if (entry['level'] >= MAX_TOWER_UPGRADE_LEVEL || p.coins < cost) return false;
-    p.coins -= cost;
-    entry['level'] += 1;
-    entry['spentCoins'] += cost;
-    this.save();
-    return true;
   }
 
   unlockTower(kind: string, cost: number) {
