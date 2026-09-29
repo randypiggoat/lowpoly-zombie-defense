@@ -147,7 +147,7 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
     towerClearance: 1.6,
     obstacles: [
       { x: -4.2, z: -18, width: 5.8, depth: 3.8, height: 1.35, label: "Police station" },
-      { x: 6.2, z: -6.9, width: 3.4, depth: 3.1, height: 1.0, label: "Impound garage" },
+      { x: 6.2, z: -6.9, width: 3.4, depth: 3.1, height: 1.0, label: "Impound lot" },
       { x: 4.7, z: 13.1, width: 4.4, depth: 2.3, height: 0.82, label: "Evidence yard" },
     ],
     placementTip: "The central courtyard gives broad coverage, but the station and impound buildings create deliberate blind pockets for specialized towers.",
