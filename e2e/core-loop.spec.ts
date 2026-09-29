@@ -34,6 +34,30 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
   await expect(page.getByText("BUILD YOUR FIRST TOWER", { exact: true })).toBeVisible();
+
+  const renderCheck = await page.locator("canvas").evaluate((canvas) => {
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    if (!gl) return { supported: false, unique: 0, nonSky: 0 };
+    const width = gl.drawingBufferWidth;
+    const height = gl.drawingBufferHeight;
+    const pixel = new Uint8Array(4);
+    const samples = new Set<string>();
+    let nonSky = 0;
+    const sky = "143,196,216";
+    for (const px of [0.15, 0.35, 0.5, 0.65, 0.85]) {
+      for (const py of [0.2, 0.4, 0.6, 0.8]) {
+        gl.readPixels(Math.floor(width * px), Math.floor(height * py), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        const key = `${pixel[0]},${pixel[1]},${pixel[2]}`;
+        samples.add(key);
+        if (key !== sky) nonSky += 1;
+      }
+    }
+    return { supported: true, unique: samples.size, nonSky };
+  });
+
+  expect(renderCheck.supported).toBe(true);
+  expect(renderCheck.nonSky).toBeGreaterThan(2);
+  expect(renderCheck.unique).toBeGreaterThan(2);
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });
