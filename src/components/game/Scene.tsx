@@ -516,6 +516,13 @@ function BuildSurface({
   onPreviewPosition: (position: { x: number; z: number } | null) => void;
 }) {
   const surface = useRef<THREE.Group>(null);
+  const mapRef = useRef(map);
+  const previewCallbackRef = useRef(onPreviewPosition);
+  const selectCallbackRef = useRef(onSelectPosition);
+  mapRef.current = map;
+  previewCallbackRef.current = onPreviewPosition;
+  selectCallbackRef.current = onSelectPosition;
+
   const selected = selection?.kind === "spot" ? selection.position : null;
   const preview = previewPosition ?? selected;
   const placement = preview
@@ -542,16 +549,17 @@ function BuildSurface({
     if (!hit) return null;
 
     const local = surface.current.worldToLocal(hit.clone());
+    const activeMap = mapRef.current;
     if (
-      local.x < map.bounds.minX ||
-      local.x > map.bounds.maxX ||
-      local.z < map.bounds.minZ ||
-      local.z > map.bounds.maxZ
+      local.x < activeMap.bounds.minX ||
+      local.x > activeMap.bounds.maxX ||
+      local.z < activeMap.bounds.minZ ||
+      local.z > activeMap.bounds.maxZ
     ) {
       return null;
     }
 
-    return snapBuildPosition(map, local.x, local.z);
+    return snapBuildPosition(activeMap, local.x, local.z);
   };
 
   const rayHitsTower = () => {
@@ -572,18 +580,18 @@ function BuildSurface({
     element.style.touchAction = "none";
 
     const handlePointerMove = (event: PointerEvent) => {
-      onPreviewPosition(getMapPointFromClient(event.clientX, event.clientY));
+      previewCallbackRef.current(getMapPointFromClient(event.clientX, event.clientY));
     };
 
     const handlePointerDown = (event: PointerEvent) => {
       const point = getMapPointFromClient(event.clientX, event.clientY);
       if (!point || rayHitsTower()) return;
-      onPreviewPosition(point);
-      onSelectPosition(point);
+      previewCallbackRef.current(point);
+      selectCallbackRef.current(point);
     };
 
     const handlePointerLeave = () => {
-      onPreviewPosition(null);
+      previewCallbackRef.current(null);
     };
 
     element.addEventListener("pointermove", handlePointerMove);
