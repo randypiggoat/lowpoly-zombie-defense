@@ -590,14 +590,12 @@ function BuildSurface({
         // intersection. Preview tracking itself uses the camera ray above so it
         // remains accurate even when obstacles cover the ground mesh.
         rotation-x={-Math.PI / 2}
-        onPointerMove={updatePreview}
         onPointerDown={(event) => {
           updatePreview(event);
           if (!surface.current) return;
           const local = surface.current.worldToLocal(event.point.clone());
           onSelectPosition(snapBuildPosition(map, local.x, local.z));
         }}
-        onPointerOut={() => onPreviewPosition(null)}
       >
         <planeGeometry args={[map.bounds.maxX - map.bounds.minX, map.bounds.maxZ - map.bounds.minZ]} />
         <meshBasicMaterial transparent opacity={0} />
