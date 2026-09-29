@@ -126,6 +126,9 @@ test("tower placement follows pointer across both world axes and builds at the s
   });
   await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
 
+  const committedPreview = (await qa())!.preview;
+  expect(committedPreview).not.toBeNull();
+
   // Restore normal HUD hit testing before verifying the real build-button interaction.
   await pointerProbeStyle.evaluate((element) => element.remove());
 
@@ -139,8 +142,8 @@ test("tower placement follows pointer across both world axes and builds at the s
   const towers = (await qa())!.towers;
   const built = towers[towers.length - 1]!;
 
-  expect(built.x).toBe(selectedPreview!.x);
-  expect(built.z).toBe(selectedPreview!.z);
+  expect(built.x).toBe(committedPreview!.x);
+  expect(built.z).toBe(committedPreview!.z);
 });
 
 test("tower placement responds to touch coordinates on mobile", async ({ page }, testInfo) => {
