@@ -402,7 +402,34 @@ function TowerMesh({
 
 /* ---------------- pooled zombies, gibs & bullets ---------------- */
 
-function Zombies() {
+function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+  const bodyGeometries = useMemo(() => ({
+    0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
+    1: new THREE.BoxGeometry(0.5, 0.9, 0.34),
+    2: new THREE.DodecahedronGeometry(0.55, 0),
+    3: new THREE.OctahedronGeometry(0.52, 0),
+    4: new THREE.BoxGeometry(0.7, 0.8, 0.5),
+    5: new THREE.CylinderGeometry(0.52, 0.62, 0.95, 6),
+    6: new THREE.IcosahedronGeometry(0.5, 0),
+    7: new THREE.TetrahedronGeometry(0.52, 0),
+  } as Record<number, THREE.BufferGeometry>), []);
+  const headGeometries = useMemo(() => ({
+    0: new THREE.BoxGeometry(0.46, 0.46, 0.46),
+    1: new THREE.IcosahedronGeometry(0.3, 0),
+    2: new THREE.DodecahedronGeometry(0.34, 0),
+    3: new THREE.OctahedronGeometry(0.33, 0),
+    4: new THREE.BoxGeometry(0.5, 0.42, 0.44),
+    5: new THREE.OctahedronGeometry(0.34, 0),
+    6: new THREE.IcosahedronGeometry(0.34, 0),
+    7: new THREE.TetrahedronGeometry(0.35, 0),
+  } as Record<number, THREE.BufferGeometry>), []);
+  useEffect(
+    () => () => {
+      Object.values(bodyGeometries).forEach((geometry) => geometry.dispose());
+      Object.values(headGeometries).forEach((geometry) => geometry.dispose());
+    },
+    [bodyGeometries, headGeometries],
+  );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const legs = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
@@ -526,6 +553,8 @@ function Zombies() {
         const healerAura = g.getObjectByName("healer-aura") as THREE.Mesh | undefined;
         const swarmCrest = g.getObjectByName("swarm-crest") as THREE.Mesh | undefined;
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
+          body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
+          head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
           if (z.kind === 1) {
             body.position.set(0, 0.9, 0.08);
             body.scale.set(0.68, 1.06, 0.72);
@@ -589,7 +618,6 @@ function Zombies() {
         g.rotation.x = 0;
         g.rotation.z = Math.sin(z.wobble) * 0.16;
         g.scale.setScalar(scale * (z.boss ? 1.16 : 1));
-        const map = getStageMapByStageId(game.state.stageId);
         const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
         g.rotation.y = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
       }
@@ -1246,7 +1274,7 @@ export function Scene({
             onSelect={onSelectTower}
           />
         ))}
-        <Zombies />
+        <Zombies map={map} />
         <Gibs />
         <DamagePopups/>
         <Bullets />
