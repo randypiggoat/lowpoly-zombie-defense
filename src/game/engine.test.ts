@@ -3,7 +3,7 @@
 // @ts-expect-error Bun test globals are available when this file runs under Bun.
 import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
-import { getStageById, type StageEnemyKind } from "./navigation";
+import { STAGE_DEFS, getStageById, type StageEnemyKind } from "./navigation";
 import { createSeededRandom } from "./random";
 import { getWeeklyBossTrial } from "./bossTrials";
 
@@ -71,6 +71,21 @@ describe("Game simulation", () => {
     game.tick(0.7);
     expect(game.state.wave).toBe(1);
     expect(game.state.runModifierOffer).toHaveLength(0);
+  });
+
+  test("every campaign stage boots against its configured map", () => {
+    const game = new Game();
+    const mapIds = new Set<string>();
+
+    for (const stage of STAGE_DEFS) {
+      game.startStage(stage);
+      mapIds.add(stage.mapId);
+      expect(game.state.stageId).toBe(stage.id);
+      expect(game.state.stageWaveTarget).toBe(stage.waveCount);
+      expect(game.state.baseHp).toBe(stage.startingBaseHealth);
+    }
+
+    expect(mapIds.size).toBe(20);
   });
 
   test("starts the first wave after the initial delay", () => {
