@@ -49,6 +49,7 @@ import type { PurchaseProduct } from "@/game/monetization";
 import { getWaveThreatPreview } from "@/game/waveThreatPreview";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { getStageMapByStageId } from "@/game/maps";
+import { getStageTheme } from "@/game/stageThemes";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -239,6 +240,7 @@ function UpgradeReference({ kind }: { kind: TowerKind }) {
 
 function StageRoutePreview({ stageId }: { stageId: number }) {
   const map = getStageMapByStageId(stageId);
+  const theme = getStageTheme(stageId, false, false);
   const xs = map.path.map((point) => point.x);
   const zs = map.path.map((point) => point.z);
   const minX = Math.min(...xs);
@@ -255,17 +257,59 @@ function StageRoutePreview({ stageId }: { stageId: number }) {
   const d = map.path.map((value, index) => (index === 0 ? "M " : "L ") + point(value)).join(" ");
   const start = point(map.path[0]!).split(",");
   const end = point(map.path[map.path.length - 1]!).split(",");
+  const obstacleRect = (obstacle: { x: number; z: number; width: number; depth: number }) => ({
+    x: obstacle.x - minX + pad - obstacle.width / 2,
+    y: maxZ - obstacle.z + pad - obstacle.depth / 2,
+  });
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2">
-      <svg viewBox={"0 0 " + viewWidth + " " + viewHeight} className="h-24 w-full" role="img" aria-label="Map route preview">
-        <rect width="100%" height="100%" fill="rgba(255,255,255,0.03)" />
-        <path d={d} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d={d} fill="none" stroke="currentColor" className="text-accent" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx={start[0]} cy={start[1]} r="1" fill="currentColor" className="text-accent" />
-        <circle cx={end[0]} cy={end[1]} r="1" fill="currentColor" className="text-danger" />
+      <svg
+        viewBox={"0 0 " + viewWidth + " " + viewHeight}
+        className="h-24 w-full"
+        role="img"
+        aria-label={"Map preview for " + map.name}
+      >
+        <rect width="100%" height="100%" rx="1.25" fill={theme.ground} />
+        <rect width="100%" height="100%" rx="1.25" fill={theme.groundAlt} opacity="0.3" />
+        {map.obstacles.map((obstacle, index) => {
+          const rect = obstacleRect(obstacle);
+          return (
+            <rect
+              key={obstacle.label + "-" + index}
+              x={rect.x}
+              y={rect.y}
+              width={obstacle.width}
+              height={obstacle.depth}
+              rx="0.35"
+              fill={theme.pathEdge}
+              opacity="0.58"
+            />
+          );
+        })}
+        <path
+          d={d}
+          fill="none"
+          stroke={theme.pathEdge}
+          strokeWidth={Math.max(2.2, map.pathWidth * 0.92)}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.68"
+        />
+        <path
+          d={d}
+          fill="none"
+          stroke={theme.path}
+          strokeWidth={Math.max(1.35, map.pathWidth * 0.54)}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx={start[0]} cy={start[1]} r="1.05" fill={theme.marker} />
+        <circle cx={end[0]} cy={end[1]} r="1.05" fill={theme.light} />
       </svg>
-      <span className="absolute bottom-2 left-2 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-panel-muted">Route</span>
+      <span className="absolute bottom-2 left-2 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-panel-muted">
+        {map.path.length - 1} path segments · blockers shown
+      </span>
     </div>
   );
 }
@@ -887,12 +931,20 @@ export function GameCanvas() {
             <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
             <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Campaign</p>
-              <h2 className="font-display text-2xl tracking-wide">Suburbs</h2>
-              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it.</p>
+              <h2 className="font-display text-2xl tracking-wide">20 Locations · 4 Worlds</h2>
+              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it. Each world introduces a new environment language and tactical rhythm.</p>
             </div>
             <div className="mt-3 space-y-2">
               {stages.map((stage) => (
-                <div key={stage.id} className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}>
+                <div
+                  key={stage.id}
+                  data-stage-id={stage.id}
+                  data-world-id={stage.worldId}
+                  className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}
+                >
+                  <p className="mb-1 text-[9px] uppercase tracking-[0.18em] text-accent">
+                    World {stage.worldId} · {stage.worldName}
+                  </p>
                   <StageRoutePreview stageId={stage.id} />
                   <div className="mt-2 flex items-start justify-between gap-2">
                     <div className="min-w-0">
