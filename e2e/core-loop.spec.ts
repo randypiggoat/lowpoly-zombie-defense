@@ -61,6 +61,9 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
     return { supported: true, unique: samples.size, nonSky };
   });
 
+  expect(renderQa, "Render QA probe did not mount").toBeTruthy();
+  expect(renderQa?.visibleMeshes, JSON.stringify(renderQa)).toBeGreaterThan(0);
+  expect(renderQa?.renderCalls, JSON.stringify(renderQa)).toBeGreaterThan(0);
   expect(renderCheck.supported).toBe(true);
   expect(renderCheck.nonSky).toBeGreaterThan(2);
   expect(renderCheck.unique, JSON.stringify(renderQa)).toBeGreaterThan(2);
