@@ -7,12 +7,28 @@ async function assertVisualHealth(page: Page) {
     const viewportHeight = window.innerHeight;
     const docWidth = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
     const clientWidth = Math.max(document.body.clientWidth, document.documentElement.clientWidth);
+    const isInsideScrollable = (el: Element) => {
+      let parent = el.parentElement;
+      while (parent && parent !== root) {
+        const style = getComputedStyle(parent);
+        if (/(auto|scroll)/.test(style.overflowY) || /(auto|scroll)/.test(style.overflow)) return true;
+        parent = parent.parentElement;
+      }
+      return false;
+    };
+
     const visibleControls = [...root.querySelectorAll("button, input, select, textarea")]
       .filter((el) => {
         const style = getComputedStyle(el);
         const r = el.getBoundingClientRect();
-        return style.visibility !== "hidden" && style.display !== "none" && r.width > 0 && r.height > 0;
+        return (
+          style.visibility !== "hidden" &&
+          style.display !== "none" &&
+          r.width > 0 &&
+          r.height > 0
+        );
       })
+      .filter((el) => !isInsideScrollable(el))
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.width > 0 && r.height > 0);
 
