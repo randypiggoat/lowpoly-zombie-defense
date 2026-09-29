@@ -134,7 +134,7 @@ function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getS
 function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
   return (
     <group>
-      {map.obstacles.map((obstacle) => {
+      {map.obstacles.map((obstacle, index) => {
         const label = obstacle.label.toLowerCase();
         const x = obstacle.x;
         const z = obstacle.z;
@@ -144,7 +144,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("house")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#b96d52" flatShading />
@@ -163,7 +163,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("garage")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#7a7e83" flatShading />
@@ -182,7 +182,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("garden")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d * 0.55]} />
                 <meshStandardMaterial color="#a29a87" flatShading />
@@ -199,7 +199,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("canopy")) {
           return (
-            <group key={obstacle.label} position={[x, 0, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
               <mesh position={[0, h, 0]} castShadow receiveShadow>
                 <boxGeometry args={[w, 0.14, d]} />
                 <meshStandardMaterial color="#d8d0bd" flatShading />
@@ -220,7 +220,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("pump")) {
           return (
-            <group key={obstacle.label} position={[x, 0, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
               <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
                 <boxGeometry args={[w, 0.28, d]} />
                 <meshStandardMaterial color="#cfc7b5" flatShading />
@@ -243,7 +243,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("storefront") || label.includes("shop") || label.includes("kiosk") || label.includes("food court")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#66747d" flatShading />
@@ -266,7 +266,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("police station")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#5d6870" flatShading />
@@ -289,7 +289,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("impound")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#6d6f70" flatShading />
@@ -310,7 +310,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("evidence")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#8d806b" flatShading />
@@ -331,7 +331,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("median") || label.includes("jersey")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#8e9394" flatShading />
@@ -348,7 +348,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("service depot")) {
           return (
-            <group key={obstacle.label} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#765d49" flatShading />
@@ -368,7 +368,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         }
 
         return (
-          <mesh key={obstacle.label} position={[x, h / 2, z]} castShadow receiveShadow>
+          <mesh key={obstacle.label + "-" + index} position={[x, h / 2, z]} castShadow receiveShadow>
             <boxGeometry args={[w, h, d]} />
             <meshStandardMaterial color="#6f6b63" flatShading />
           </mesh>
