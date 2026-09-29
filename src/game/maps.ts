@@ -520,7 +520,7 @@ const MAP_BY_STAGE_ID: Record<number, StageMapId> = {
 };
 
 export function getStageMap(mapId?: StageMapId | null) {
-  return STAGE_MAPS[mapId ?? "highway"] ?? STAGE_MAPS.highway;
+  return STAGE_MAPS[mapId ?? "neighborhood"] ?? STAGE_MAPS.neighborhood;
 }
 
 function segmentIntersectsRect(
