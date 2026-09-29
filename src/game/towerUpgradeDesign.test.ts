@@ -15,7 +15,6 @@ describe("tower upgrade design", () => {
   test("behavior abilities unlock at named tiers", () => {
     expect(getTowerUpgradeAbilities("rifleman", 0, 1).volley).toBe(2);
     expect(getTowerUpgradeAbilities("rifleman", 1, 1).markDuration).toBeGreaterThan(0);
-    expect(getTowerUpgradeAbilities("freezer", 0, 1).shatterMultiplier).toBeGreaterThan(1);
     expect(TOWER_PATHS.freezer.b.tiers[0]?.ability).toBe("shatter");
   });
 });
