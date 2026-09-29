@@ -1,4 +1,5 @@
-import type { Mods, Tower, TowerDef, TowerKind, TowerPathTiers } from "./towerStatsTypes";
+import type { Mods, Tower, TowerDef, TowerPathTiers } from "./towerStatsTypes";
+import { getTowerUpgradeAbilities, type TowerKindKey } from "./towerUpgradeDesign";
 
 export type TowerProfileBonus = {
   level: number;
@@ -18,6 +19,16 @@ export type TowerCombatStats = {
   crit: number;
   gore: number;
   gold: number;
+  volley: number;
+  stun: number;
+  markDuration: number;
+  markBonus: number;
+  shatterMultiplier: number;
+  executeThreshold: number;
+  executeMultiplier: number;
+  bossDamageMultiplier: number;
+  closeDamageMultiplier: number;
+  burnDuration: number;
 };
 
 export function getTowerMods(
@@ -66,9 +77,11 @@ export function getTowerCombatStats(
   profileBonus: TowerProfileBonus,
 ): TowerCombatStats {
   const mods = getTowerMods(tower, paths);
-  const levelDmg = Math.pow(1.22, tower.level - 1);
-  const levelRate = Math.pow(1.06, tower.level - 1);
-  const levelRange = Math.pow(1.035, tower.level - 1);
+  const levelDmg = Math.pow(1.04, tower.level - 1);
+  const levelRate = Math.pow(1.01, tower.level - 1);
+  const levelRange = Math.pow(1.01, tower.level - 1);
+
+  const abilities = getTowerUpgradeAbilities(tower.kind as TowerKindKey, tower.a, tower.b);
 
   return {
     damage: definition.damage * mods.dmg * levelDmg * profileBonus.damage,
@@ -84,5 +97,6 @@ export function getTowerCombatStats(
     crit: mods.crit,
     gore: mods.gore,
     gold: mods.gold,
+    ...abilities,
   };
 }

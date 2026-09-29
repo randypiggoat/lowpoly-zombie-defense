@@ -1,4 +1,5 @@
 import { Canvas } from "@react-three/fiber";
+import { Coins, Gem, Gift, Settings2, ShoppingBag, Sparkles, Swords, Trophy, Wrench } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -8,8 +9,8 @@ import {
 } from "react";
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
-import { isMuted, setMuted, unlockAudio } from "@/game/audio";
-import { TOWER_INFO, TOWER_KINDS, game } from "@/game/engine";
+import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
+import { TOWER_INFO, TOWER_KINDS, game, type TowerKind } from "@/game/engine";
 import {
   STAGE_DEFS,
   evaluateStageObjectives,
@@ -23,6 +24,7 @@ import {
   DAILY_LOGIN_REWARDS,
   DAILY_MISSION_DEFS,
   dateKey,
+  xpForLevel,
   profile,
 } from "@/game/profile";
 import { TOWER_COSMETICS } from "@/game/collection";
@@ -45,6 +47,7 @@ import { isPurchaseAvailable, purchase } from "@/game/monetization";
 import { STORE_CATALOG, storeItemStatus } from "@/game/storeCatalog";
 import type { PurchaseProduct } from "@/game/monetization";
 import { getWaveThreatPreview } from "@/game/waveThreatPreview";
+import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -79,18 +82,17 @@ type ScreenButtonProps = {
   onClick: () => void;
   variant?: "primary" | "secondary";
   disabled?: boolean;
+  className?: string;
 };
 
-function ScreenButton({ children, onClick, variant = "primary", disabled }: ScreenButtonProps) {
+function ScreenButton({ children, onClick, variant = "primary", disabled, className = "" }: ScreenButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      onPointerDown={() => sfx("uiClick")}
       disabled={disabled}
-      className="w-full rounded-2xl px-4 py-3 text-base font-semibold tracking-wide transition active:scale-[0.98] disabled:opacity-40"
-      style={{
-        background: variant === "primary" ? "rgba(233,180,76,0.96)" : "rgba(29,36,48,0.9)",
-        color: variant === "primary" ? "#20150a" : "#f2efe9",
-      }}
+      className={`rotwood-button rotwood-button-${variant} w-full text-sm ${className}`}
     >
       {children}
     </button>
@@ -112,10 +114,11 @@ function MenuTile({
     <button
       type="button"
       onClick={onClick}
-      className="min-h-[64px] rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-left transition active:scale-[0.98] hover:border-accent/40"
+      onPointerDown={() => sfx("uiClick")}
+      className="rotwood-menu-tile group min-h-[68px] w-full px-3 py-2.5 text-left"
     >
       <span className="flex items-center justify-between gap-2">
-        <span className="truncate font-display text-sm tracking-wide text-panel-foreground">{title}</span>
+        <span className="min-w-0 flex-1 truncate font-display text-sm tracking-wide text-panel-foreground">{title}</span>
         {badge ? (
           <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-semibold text-accent-foreground">
             {badge}
@@ -131,9 +134,78 @@ function MenuTile({
 
 function ScreenCard({ children }: { children: ReactNode }) {
   return (
-    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel backdrop-blur">
+    <div className="rotwood-shell max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto p-4">
       {children}
     </div>
+  );
+}
+
+function ShieldMark({ size = 24 }: { size?: number }) {
+  return (
+    <span
+      className="grid place-items-center rounded-[28%] border-2 border-current"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      <span className="h-[42%] w-[42%] rounded-full border border-current" />
+    </span>
+  );
+}
+
+function HomeCurrency({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
+  return (
+    <div className="rotwood-currency">
+      <span className="text-accent">{icon}</span>
+      <span className="rotwood-display text-base tabular-nums text-panel-foreground">{value.toLocaleString()}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-panel-muted">{label}</span>
+    </div>
+  );
+}
+
+function HomeMetric({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-panel-muted">{label}</p>
+      <div className="mt-0.5 text-sm font-extrabold tabular-nums text-panel-foreground">{value}</div>
+    </div>
+  );
+}
+
+function HomeShortcut({
+  title,
+  subtitle,
+  icon,
+  badge,
+  onClick,
+}: {
+  title: string;
+  subtitle: string;
+  icon: ReactNode;
+  badge?: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onPointerDown={() => sfx("uiClick")}
+      className="rotwood-menu-tile min-h-[76px] w-full px-3 py-2.5 text-left"
+    >
+      <span className="flex items-center gap-2.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/20 text-accent">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1 pr-5">
+          <span className="block truncate font-display text-base tracking-wide text-panel-foreground">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] text-panel-muted">{subtitle}</span>
+        </span>
+        {badge ? (
+          <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-accent px-1 text-[10px] font-black text-accent-foreground">
+            {badge}
+          </span>
+        ) : null}
+      </span>
+    </button>
   );
 }
 
@@ -184,6 +256,7 @@ export function GameCanvas() {
     stages.find((stage) => !stage.locked) ??
     stages[stages.length - 1]!;
   const isFirstRun = player.gamesPlayed === 0;
+  const xpPercent = Math.max(0, Math.min(100, (player.xp / Math.max(1, xpForLevel(player.level))) * 100));
   const todayKey = dateKey();
   const dailyLoginReward =
     DAILY_LOGIN_REWARDS.find((entry) => entry.day === player.loginCycleDay) ??
@@ -325,6 +398,33 @@ export function GameCanvas() {
       ? player.weeklyChallengeBestScore
       : player.endlessBestScore;
 
+  useEffect(() => {
+    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has("qa")) return;
+
+    type QaApi = {
+      buildTower: (spot: number, kind: TowerKind) => boolean;
+      buildTowerAt: (x: number, z: number, kind: TowerKind) => boolean;
+      getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
+    };
+
+    const qaWindow = window as Window & { __ROTWOOD_QA__?: QaApi };
+    qaWindow.__ROTWOOD_QA__ = {
+      buildTower: (spot, kind) => game.build(spot, kind),
+      buildTowerAt: (x, z, kind) => game.buildAt(x, z, kind),
+      selectTower: (id) => setSelection({ kind: "tower", id }),
+      getTowerIds: () => game.state.towers.map((tower) => tower.id),
+      getCombatSnapshot: () => ({
+        towerCount: game.state.towers.length,
+        projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
+        projectileEmissions: game.getProjectileEmissionCount(),
+      }),
+    };
+
+    return () => {
+      delete qaWindow.__ROTWOOD_QA__;
+    };
+  }, []);
+
   const weekKey = getWeekKey();
   const dailyChallenge = getDailyChallenge(todayKey);
   const weeklyChallenge = getWeeklyChallenge(weekKey);
@@ -338,7 +438,7 @@ export function GameCanvas() {
   }).length;
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-sky" onPointerDown={() => unlockAudio()}>
+    <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
       {canvasReady && (
         <Canvas
           shadows
@@ -352,7 +452,6 @@ export function GameCanvas() {
           onCreated={({ gl }) => {
             gl.setClearColor("#8fc4d8");
           }}
-          onPointerMissed={() => setSelection(null)}
         >
           <Scene
             stageId={state.stageId}
@@ -363,7 +462,7 @@ export function GameCanvas() {
             towers={state.towers}
             selection={selection}
             onSelectTower={(id) => setSelection({ kind: "tower", id })}
-            onSelectSpot={(index) => setSelection({ kind: "spot", index })}
+            onSelectPosition={(position) => setSelection({ kind: "spot", position })}
           />
         </Canvas>
       )}
@@ -385,163 +484,159 @@ export function GameCanvas() {
       )}
 
       {screen === "main-menu" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/55 p-3">
-          <div className="flex min-h-full items-center justify-center">
-            <ScreenCard>
-            <h1 className="text-center font-display text-3xl tracking-wide text-panel-foreground">
-              Rotwood Defense
-            </h1>
-            <p className="mt-1 text-center text-sm text-panel-muted">
-              Low-poly zombie tower defense
-            </p>
-            <div className="mt-4 space-y-3">
-              <ScreenButton
-                onClick={() => {
-                  resetGameplayState();
-                  setActiveStageId(recommendedStage.id);
-                  if (isFirstRun) track("menu_quick_play", { stageId: recommendedStage.id });
-                  game.startStage(recommendedStage);
-                  setScreen("gameplay");
-                }}
-              >
-                {isFirstRun ? "DEFEND NOW" : "CONTINUE · STAGE " + recommendedStage.stageNumber}
-              </ScreenButton>
-
-              <div className="rounded-xl bg-black/25 px-3 py-2 text-center">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
-                  {isFirstRun
-                    ? "Start the first defense immediately"
-                    : recommendedStage.name + " · Best wave " + recommendedStage.bestWave}
-                </p>
-                <p className="mt-0.5 text-xs text-panel-foreground">
-                  {isFirstRun
-                    ? "Build your first tower, then survive the first wave."
-                    : recommendedStage.completed
-                      ? "Replay your strongest unlocked stage and chase more stars."
-                      : "Pick up where you left off and push the next stage."}
-                </p>
+        <div className="rotwood-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pb-[calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]">
+          <div className="mx-auto w-full max-w-md">
+            <div className="mb-2 flex items-center justify-between gap-2 px-1">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Last defense network</p>
+                <h1 className="rotwood-display text-3xl text-panel-foreground">Rotwood Defense</h1>
               </div>
+              <button
+                type="button"
+                onClick={() => openSettings("main-menu")}
+                aria-label="Settings"
+                className="rotwood-button rotwood-button-secondary grid h-11 w-11 shrink-0 place-items-center p-0"
+              >
+                <Settings2 size={19} />
+              </button>
+            </div>
 
-              <div className="rounded-xl border border-accent/20 bg-black/25 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-display text-sm tracking-wide text-panel-foreground">
-                      DAILY SUPPLY DROP · DAY {player.loginCycleDay}/7
-                    </p>
-                    <p className="text-[10px] text-panel-muted">
-                      {dailyLoginReward.title} · {dailyLoginReward.reward.label}
-                    </p>
+            <ScreenCard>
+              <div className="rotwood-card rotwood-shine p-3">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-accent/30 bg-accent/10 text-accent">
+                    <ShieldMark size={24} />
                   </div>
-                  {dailyLoginAvailable ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!profile.claimDailyLoginReward()) return;
-                        track("daily_login_claimed", {
-                          day: dailyLoginReward.day,
-                          reward: dailyLoginReward.reward.label,
-                        });
-                      }}
-                      className="shrink-0 rounded-xl bg-accent px-3 py-2 font-display text-[11px] tracking-wide text-accent-foreground transition active:scale-[0.98]"
-                    >
-                      CLAIM
-                    </button>
-                  ) : (
-                    <span className="shrink-0 rounded-xl bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-panel-muted">
-                      CLAIMED
-                    </span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Player</p>
+                        <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
+                      </div>
+                      <span className="text-xs font-black tabular-nums text-accent">{Math.round(xpPercent)}%</span>
+                    </div>
+                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-black/35">
+                      <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: xpPercent + "%" }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-0.5">
+                  <HomeCurrency icon={<Coins size={15} />} value={player.coins} label="Credits" />
+                  <HomeCurrency icon={<Gem size={15} />} value={player.gems} label="Gems" />
+                  <HomeMetric label="Best Wave" value={player.highestWave} />
                 </div>
               </div>
 
-              {player.adsRemoved ? null : (
-                <div className="rounded-xl border border-white/10 bg-black/25 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-display text-sm tracking-wide text-panel-foreground">DAILY BONUS</p>
-                      <p className="text-[10px] text-panel-muted">Optional ad · +150 coins +1 gem</p>
+              <div className="rotwood-card rotwood-card-highlight mt-2 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Next defense</p>
+                    <h2 className="rotwood-display mt-1 text-2xl leading-none text-panel-foreground">
+                      STAGE {recommendedStage.stageNumber} · {recommendedStage.name}
+                    </h2>
+                    <p className="mt-1.5 text-xs leading-relaxed text-panel-muted">{recommendedStage.description}</p>
+                  </div>
+                  <div className="rounded-lg border border-accent/20 bg-accent/10 px-2 py-1 text-right">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-panel-muted">Difficulty</p>
+                    <p className="rotwood-display text-sm text-accent">{recommendedStage.difficulty}</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-1.5">
+                  <HomeMetric label="Waves" value={recommendedStage.waveCount} />
+                  <HomeMetric label="Best" value={recommendedStage.bestWave || "—"} />
+                  <HomeMetric label="Stars" value={<span className="text-accent">{"★".repeat(recommendedStage.stars) || "—"}</span>} />
+                </div>
+                <ScreenButton
+                  className="mt-3"
+                  onClick={() => {
+                    resetGameplayState();
+                    setActiveStageId(recommendedStage.id);
+                    if (isFirstRun) track("menu_quick_play", { stageId: recommendedStage.id });
+                    game.startStage(recommendedStage);
+                    setScreen("gameplay");
+                  }}
+                  >
+                  {isFirstRun ? "DEFEND NOW" : "CONTINUE DEFENSE"}
+                </ScreenButton>
+              </div>
+
+              <div className="rotwood-card mt-2 p-3">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+                    <Gift size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-panel-muted">Daily supply drop</p>
+                    <p className="rotwood-display text-lg text-panel-foreground">
+                      DAY {player.loginCycleDay}/7 · {dailyLoginReward.title}
+                    </p>
+                    <p className="text-xs text-panel-muted">{dailyLoginReward.reward.label}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!dailyLoginAvailable}
+                    onClick={() => {
+                      if (!profile.claimDailyLoginReward()) return;
+                      track("daily_login_claimed", { day: dailyLoginReward.day, reward: dailyLoginReward.reward.label });
+                    }}
+                    className="rotwood-button rotwood-button-primary min-h-11 shrink-0 px-3 text-xs disabled:opacity-50"
+                  >
+                    {dailyLoginAvailable ? "CLAIM" : "CLAIMED"}
+                  </button>
+                </div>
+              </div>
+
+              {!player.adsRemoved && (
+                <div className="mt-2 rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/5 text-panel-foreground">
+                      <Sparkles size={18} />
                     </div>
-                    {dailyBonusAvailable ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const { showRewarded } = await import("@/game/monetization");
-                          const earned = await showRewarded("daily-bonus");
-                          if (earned && profile.claimDailyRewardedBonus()) {
-                            track("daily_rewarded_bonus_claimed", { coins: 150, gems: 1 });
-                          }
-                        }}
-                        className="shrink-0 rounded-xl bg-accent px-3 py-2 font-display text-[11px] tracking-wide text-accent-foreground transition active:scale-[0.98]"
-                      >
-                        WATCH AD
-                      </button>
-                    ) : (
-                      <span className="shrink-0 rounded-xl bg-white/5 px-3 py-2 text-[10px] uppercase tracking-wider text-panel-muted">
-                        {profile.canClaimDailyRewardedBonus ? "AD UNAVAILABLE" : "CLAIMED"}
-                      </span>
-                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-panel-muted">Optional bonus</p>
+                      <p className="rotwood-display text-base text-panel-foreground">+150 CREDITS · +1 GEM</p>
+                      <p className="text-[10px] text-panel-muted">One voluntary rewarded ad per day.</p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!dailyBonusAvailable}
+                      onClick={async () => {
+                        const { showRewarded } = await import("@/game/monetization");
+                        const earned = await showRewarded("daily-bonus");
+                        if (earned && profile.claimDailyRewardedBonus()) {
+                          track("daily_rewarded_bonus_claimed", { coins: 150, gems: 1 });
+                        }
+                      }}
+                      className="rotwood-button rotwood-button-secondary min-h-11 shrink-0 px-3 text-[10px]"
+                    >
+                      {dailyBonusAvailable ? "WATCH" : "DONE"}
+                    </button>
                   </div>
                 </div>
               )}
 
-              <div>
-                <p className="mb-1.5 text-[9px] uppercase tracking-[0.22em] text-panel-muted">Modes</p>
+              <div className="mt-3">
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Modes</p>
                 <div className="space-y-1.5">
-                  <MenuTile
-                    title="Campaign"
-                    subtitle="Clear stages, earn stars, and unlock the next defense."
-                    onClick={() => setScreen("stage-select")}
-                  />
-                  <MenuTile
-                    title="Endless Siege"
-                    subtitle="Push your best wave with free, daily, and weekly challenges."
-                    onClick={() => setScreen("endless-select")}
-                  />
-                  <MenuTile
-                    title="Boss Trials"
-                    subtitle="One hard boss variant rotates every week."
-                    onClick={() => setScreen("boss-trial-select")}
-                  />
+                  <MenuTile title="Campaign" subtitle="Clear stages, earn stars, and unlock the route." onClick={() => setScreen("stage-select")} />
+                  <MenuTile title="Endless Siege" subtitle="Push free, daily, and weekly best scores." onClick={() => setScreen("endless-select")} />
+                  <MenuTile title="Boss Trials" subtitle="A hard boss challenge rotates every week." onClick={() => setScreen("boss-trial-select")} />
                 </div>
               </div>
 
-              <div>
-                <p className="mb-1.5 text-[9px] uppercase tracking-[0.22em] text-panel-muted">Progress</p>
+              <div className="mt-3">
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Progress</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  <MenuTile title="Towers" subtitle="Build roster & mastery" onClick={() => setScreen("towers")} />
-                  <MenuTile title="Collection" subtitle="Equip earned tower skins" onClick={() => setScreen("collection")} />
-                  <MenuTile title="Missions" subtitle="Daily objectives" badge={readyMissionCount ? String(readyMissionCount) : undefined} onClick={() => setScreen("missions")} />
-                  <MenuTile title="Achievements" subtitle="Long-term milestones" badge={readyAchievementCount ? String(readyAchievementCount) : undefined} onClick={() => setScreen("achievements")} />
-                  <MenuTile title="Events" subtitle="Limited-time rewards" badge={readyEventCount ? String(readyEventCount) : undefined} onClick={() => setScreen("events")} />
+                  <HomeShortcut title="Armory" subtitle="Tower roster" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
+                  <HomeShortcut title="Knowledge" subtitle="Permanent field perks" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
+                  <HomeShortcut title="Collection" subtitle="Equip earned skins" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
+                  <HomeShortcut title="Missions" subtitle="Daily objectives" icon={<Gift size={18} />} badge={readyMissionCount || undefined} onClick={() => setScreen("missions")} />
+                  <HomeShortcut title="Records" subtitle="Achievements" icon={<Trophy size={18} />} badge={readyAchievementCount || undefined} onClick={() => setScreen("achievements")} />
+                  <HomeShortcut title="Events" subtitle="Limited-time rewards" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
+                  <HomeShortcut title="Market" subtitle="Cosmetics & support" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
                 </div>
               </div>
-
-              <div>
-                <p className="mb-1.5 text-[9px] uppercase tracking-[0.22em] text-panel-muted">Extras</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <MenuTile title="Shop" subtitle="Optional purchases" onClick={() => setScreen("shop")} />
-                  <MenuTile title="Settings" subtitle="Sound & accessibility" onClick={() => openSettings("main-menu")} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
-                <div className="rounded-lg bg-black/20 px-2 py-1.5">
-                  <p className="font-display text-sm text-panel-foreground">Lv {player.level}</p>
-                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Player</p>
-                </div>
-                <div className="rounded-lg bg-black/20 px-2 py-1.5">
-                  <p className="font-display text-sm text-panel-foreground">{player.highestWave}</p>
-                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Wave</p>
-                </div>
-                <div className="rounded-lg bg-black/20 px-2 py-1.5">
-                  <p className="font-display text-sm text-panel-foreground">
-                    {player.dailyChallengeDate === todayKey ? player.dailyChallengeBestScore : 0}
-                  </p>
-                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Today</p>
-                </div>
-              </div>
-            </div>
-          </ScreenCard>
+            </ScreenCard>
           </div>
         </div>
       )}
@@ -740,11 +835,11 @@ export function GameCanvas() {
                   </div>
                   <div className="mt-2 rounded-xl bg-black/20 px-3 py-2 text-xs text-panel-muted">
                     <p>
-                      Completion Reward: +{stage.rewards.completionCoins} coins · +
+                      Completion Reward: +{stage.rewards.completionCoins} credits · +
                       {stage.rewards.completionXp} XP
                     </p>
                     <p>
-                      First Clear Bonus: +{stage.rewards.firstCompletionBonus.coins} coins · +
+                      First Clear Bonus: +{stage.rewards.firstCompletionBonus.coins} credits · +
                       {stage.rewards.firstCompletionBonus.xp} XP · +
                       {stage.rewards.firstCompletionBonus.stars}★
                     </p>
@@ -795,7 +890,7 @@ export function GameCanvas() {
                         </div>
                         <p className="mt-2 text-[10px] text-panel-muted">{unlocked ? "Unlocked" : cosmetic.requirement}</p>
                         {targetKind !== "all" && (
-                          <button type="button" disabled={!unlocked} onClick={() => profile.equipTowerCosmetic(targetKind, cosmetic.id)} className="mt-2 min-h-9 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40">
+                          <button type="button" disabled={!unlocked} onClick={() => profile.equipTowerCosmetic(targetKind, cosmetic.id)} className="mt-2 min-h-11 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40">
                             {equipped ? "Equipped" : "Equip"}
                           </button>
                         )}
@@ -850,26 +945,85 @@ export function GameCanvas() {
       {screen === "towers" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
-            </ScreenButton>
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
-              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Towers</h2>
-              <div className="mt-2 space-y-2">
-                {TOWER_KINDS.map((kind) => {
-                  const info = TOWER_INFO[kind];
-                  return (
-                    <div key={kind} className="rounded-xl bg-black/25 px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-panel-foreground">{info.name}</p>
-                        <p className="text-xs text-panel-muted">Unlock Lv {info.unlockLevel}</p>
-                      </div>
-                      <p className="mt-1 text-xs text-panel-muted">{info.blurb}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Field roster</p>
+              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Armory</h2>
+              <p className="mt-1 text-xs text-panel-muted">Choose a tower in battle. Its Scrap upgrades are temporary to the current defense.</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {TOWER_KINDS.map((kind) => {
+                const info = TOWER_INFO[kind];
+                const unlocked = TOWER_INFO[kind].coinUnlock === 0 || player.level >= info.unlockLevel || player.unlockedTowers.includes(kind);
+                return (
+                  <div key={kind} className="rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: info.accent }} />
+                      <p className="font-display text-sm tracking-wide text-panel-foreground">{info.name}</p>
                     </div>
-                  );
-                })}
+                    <p className="mt-1 text-[10px] text-panel-muted">{info.blurb}</p>
+                    <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-accent">{unlocked ? "AVAILABLE IN BATTLE" : "UNLOCK · LV " + info.unlockLevel}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {screen === "knowledge" && (
+        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto w-full max-w-md">
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 shadow-panel">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Permanent progression</p>
+                  <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Field Knowledge</h2>
+                  <p className="mt-1 text-xs text-panel-muted">Spend CREDITS here. These perks stay equipped across runs.</p>
+                </div>
+                <div className="shrink-0 rounded-xl bg-black/30 px-3 py-2 text-right">
+                  <p className="font-display text-base text-accent">{player.coins.toLocaleString()}</p>
+                  <p className="text-[8px] uppercase tracking-wider text-panel-muted">Credits</p>
+                </div>
               </div>
             </div>
+            {(["ARSENAL", "FIELDCRAFT", "SALVAGE"] as const).map((category) => (
+              <section key={category} className="mt-3">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="font-display text-sm tracking-[0.16em] text-panel-foreground">{category}</p>
+                  <p className="text-[9px] uppercase tracking-wider text-panel-muted">{FIELD_KNOWLEDGE.filter((n) => n.category === category && player.fieldKnowledge[n.id] === 1).length} / 4</p>
+                </div>
+                <div className="space-y-1.5">
+                  {FIELD_KNOWLEDGE.filter((node) => node.category === category).map((node) => {
+                    const owned = player.fieldKnowledge[node.id] === 1;
+                    const open = profile.canUnlockFieldKnowledge(node.id);
+                    const enough = player.coins >= node.cost;
+                    const locked = !owned && !open;
+                    return (
+                      <button
+                        key={node.id}
+                        type="button"
+                        disabled={owned || locked || !enough}
+                        onClick={() => profile.unlockFieldKnowledge(node.id)}
+                        className="w-full rounded-xl border border-white/10 bg-panel/95 p-3 text-left shadow-panel transition active:scale-[0.99] disabled:opacity-55 data-[owned=true]:border-accent/40 data-[owned=true]:bg-accent/10"
+                        data-owned={owned}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-display text-sm tracking-wide text-panel-foreground">{node.name}</p>
+                            <p className="mt-0.5 text-[10px] leading-tight text-panel-muted">{node.description}</p>
+                          </div>
+                          <span className="shrink-0 rounded-lg bg-black/25 px-2 py-1 font-display text-[10px] text-accent">{owned ? "EQUIPPED" : locked ? "LOCKED" : node.cost + " CR"}</span>
+                        </div>
+                        {!owned && open && !enough && <p className="mt-1.5 text-[9px] uppercase tracking-wider text-panel-muted">{node.cost - player.coins} more credits</p>}
+                        {!owned && open && enough && <p className="mt-1.5 text-[9px] uppercase tracking-wider text-accent">READY TO LEARN</p>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
       )}
@@ -887,13 +1041,28 @@ export function GameCanvas() {
               <div className="mt-2 space-y-2">
                 {DAILY_MISSION_DEFS.map((mission) => {
                   const progress = player.dailyMissionProgress[mission.id];
+                  const completed = Boolean(progress?.completed);
+                  const claimed = Boolean(progress?.claimed);
                   return (
                     <div key={mission.id} className="rounded-xl bg-black/25 px-3 py-2 text-sm">
-                      <p className="font-semibold text-panel-foreground">{mission.description}</p>
-                      <p className="text-xs text-panel-muted">
-                        Progress {Math.min(mission.target, progress?.progress ?? 0)}/
-                        {mission.target}
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-panel-foreground">{mission.description}</p>
+                          <p className="text-xs text-panel-muted">
+                            Progress {Math.min(mission.target, progress?.progress ?? 0)}/
+                            {mission.target} · Reward {mission.reward.label}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onPointerDown={() => sfx("uiClick")}
+                          onClick={() => profile.claimDailyMission(mission.id)}
+                          disabled={!completed || claimed}
+                          className="min-h-11 shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                        >
+                          {claimed ? "CLAIMED" : completed ? "CLAIM" : "IN PROGRESS"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -916,14 +1085,29 @@ export function GameCanvas() {
               <div className="mt-2 space-y-2">
                 {ACHIEVEMENT_DEFS.map((achievement) => {
                   const progress = player.achievements[achievement.id];
+                  const completed = Boolean(progress?.completed);
+                  const claimed = Boolean(progress?.claimed);
                   return (
                     <div key={achievement.id} className="rounded-xl bg-black/25 px-3 py-2 text-sm">
-                      <p className="font-semibold text-panel-foreground">{achievement.title}</p>
-                      <p className="text-xs text-panel-muted">{achievement.description}</p>
-                      <p className="text-xs text-panel-muted">
-                        Progress {Math.min(achievement.target, progress?.progress ?? 0)}/
-                        {achievement.target}
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-panel-foreground">{achievement.title}</p>
+                          <p className="text-xs text-panel-muted">{achievement.description}</p>
+                          <p className="text-xs text-panel-muted">
+                            Progress {Math.min(achievement.target, progress?.progress ?? 0)}/
+                            {achievement.target} · Reward {achievement.reward.label}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onPointerDown={() => sfx("uiClick")}
+                          onClick={() => profile.claimAchievement(achievement.id)}
+                          disabled={!completed || claimed}
+                          className="min-h-11 shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                        >
+                          {claimed ? "CLAIMED" : completed ? "CLAIM" : "LOCKED"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -949,7 +1133,7 @@ export function GameCanvas() {
                   </p>
                 </div>
                 <div className="shrink-0 rounded-xl bg-black/25 px-3 py-2 text-right">
-                  <p className="text-sm text-accent">{player.coins.toLocaleString()} COINS</p>
+                  <p className="text-sm text-accent">{player.coins.toLocaleString()} CREDITS</p>
                   <p className="text-xs text-panel-muted">{player.gems.toLocaleString()} GEMS</p>
                 </div>
               </div>
@@ -1007,7 +1191,7 @@ export function GameCanvas() {
                             if (item.product === "remove-ads") profile.setAdsRemoved(true);
                             track("iap_purchase", { product: item.product });
                           }}
-                          className="min-h-10 w-full rounded-xl bg-accent px-3 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                          className="min-h-11 w-full rounded-xl bg-accent px-3 py-2 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98]"
                         >
                           PURCHASE
                         </button>
@@ -1113,7 +1297,7 @@ export function GameCanvas() {
                 </>
               )}
 
-              <p>Coins Earned</p>
+              <p>Credits Earned</p>
               <p className="text-right">{lastReward?.coins ?? 0}</p>
               <p>XP Earned</p>
               <p className="text-right">{lastReward?.xp ?? 0}</p>
@@ -1142,19 +1326,19 @@ export function GameCanvas() {
                   {state.perfectWaves > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <span>Perfect Waves · {state.perfectWaves}</span>
-                      <span className="font-display text-accent">+{state.perfectWaveBonusGold}G</span>
+                      <span className="font-display text-accent">+{state.perfectWaveBonusGold} SCRAP</span>
                     </div>
                   )}
                   {state.streakBonusGold > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <span>Kill Chain Bonus</span>
-                      <span className="font-display text-accent">+{state.streakBonusGold}G</span>
+                      <span className="font-display text-accent">+{state.streakBonusGold} SCRAP</span>
                     </div>
                   )}
                   {state.bossBonusGold > 0 && (
                     <div className="flex items-center justify-between gap-3">
                       <span>Boss Defeats · {state.bossesDefeated}</span>
-                      <span className="font-display text-accent">+{state.bossBonusGold}G</span>
+                      <span className="font-display text-accent">+{state.bossBonusGold} SCRAP</span>
                     </div>
                   )}
                 </div>

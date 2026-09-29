@@ -62,9 +62,5 @@ export function towerSellValue(
     spent += paths.b.tiers[i]?.cost ?? 0;
   }
 
-  for (let level = 1; level < Math.min(tower.level, maxLevel); level++) {
-    spent += Math.round(definition.upgradeBase * Math.pow(1.55, level - 1));
-  }
-
   return Math.floor(spent * 0.6);
 }

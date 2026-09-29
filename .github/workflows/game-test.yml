@@ -4,10 +4,13 @@ on:
   push:
     branches:
       - main
+      - "feat/**"
 
   pull_request:
     branches:
       - main
+      - "feat/**"
+      - feat/art-style-boss-trials
 
 jobs:
   test:

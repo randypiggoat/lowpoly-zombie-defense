@@ -1,7 +1,6 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Coins } from "lucide-react";
 import {
-  MAX_PROFILE_TOWER_UPGRADE,
-  MAX_TOWER_LEVEL,
   TOWER_INFO,
   TOWER_KINDS,
   TOWER_PATHS,
@@ -10,9 +9,6 @@ import {
   incomeCost,
   incomePerSecond,
   tierCost,
-  towerProfileBonus,
-  towerProfileUpgradeCost,
-  towerProfileUpgradeLevel,
   towerBurn,
   towerChain,
   towerCrit,
@@ -23,7 +19,7 @@ import {
   towerSlow,
   towerSplash,
   towerUnlocked,
-  towerUpgradeCost,
+  towerBuildCost,
   type GameState,
   type Tower,
   type TowerKind,
@@ -46,9 +42,11 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
+import { getStageMapByStageId, pathCoverageRatio } from "@/game/maps";
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { bestTowerCounterplayMatch } from "@/game/towerCounterplay";
 import { enemyThreatLabel } from "@/game/enemyPresentation";
+import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -66,41 +64,17 @@ function useProfileSnapshot() {
 const KINDS: TowerKind[] = TOWER_KINDS;
 
 function nextProgressionTarget(player: PlayerProfile) {
-  const nextTower = KINDS.find((kind) => !towerUnlocked(kind, player.level, player.unlockedTowers));
-  if (nextTower) {
-    const info = TOWER_INFO[nextTower];
-    const xpLeft = Math.max(0, xpForLevel(player.level) - player.xp);
-    if (player.level < info.unlockLevel) {
-      return {
-        label: `${info.name} unlock`,
-        detail:
-          info.coinUnlock > 0
-            ? `Reach Lv ${info.unlockLevel} or save ${info.coinUnlock} coins · ${xpLeft} XP to next level`
-            : `Reach Lv ${info.unlockLevel} · ${xpLeft} XP to next level`,
-      };
-    }
+  const nextKnowledge = FIELD_KNOWLEDGE.find(
+    (node) => player.fieldKnowledge[node.id] !== 1 && knowledgeUnlocked(node, player.fieldKnowledge),
+  );
+  if (nextKnowledge) {
+    const affordable = player.coins >= nextKnowledge.cost;
     return {
-      label: `${info.name} early unlock`,
-      detail: `${Math.max(0, info.coinUnlock - player.coins)} more coins needed`,
+      label: nextKnowledge.name,
+      detail: affordable ? "Ready · " + nextKnowledge.cost + " credits" : (nextKnowledge.cost - player.coins) + " credits to Field Knowledge",
     };
   }
-
-  const towerToUpgrade = [...KINDS].sort((a, b) => {
-    const byLevel = towerProfileUpgradeLevel(a) - towerProfileUpgradeLevel(b);
-    return byLevel !== 0 ? byLevel : towerProfileUpgradeCost(a) - towerProfileUpgradeCost(b);
-  })[0];
-
-  if (towerToUpgrade && towerProfileUpgradeLevel(towerToUpgrade) < MAX_PROFILE_TOWER_UPGRADE) {
-    return {
-      label: `${TOWER_INFO[towerToUpgrade].name} mastery`,
-      detail: `Upgrade to Lv ${towerProfileUpgradeLevel(towerToUpgrade) + 1} for ${towerProfileUpgradeCost(towerToUpgrade)} coins`,
-    };
-  }
-
-  return {
-    label: `Player level ${player.level + 1}`,
-    detail: `${Math.max(0, xpForLevel(player.level) - player.xp)} XP to next level`,
-  };
+  return { label: "Field Knowledge complete", detail: "Every permanent knowledge node unlocked" };
 }
 
 function towerSpecialSummary(tower: Tower) {
@@ -132,9 +106,9 @@ function Stat({
   tone?: "gold" | "danger" | undefined;
 }) {
   return (
-    <div className="flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
+    <div className="rotwood-stat flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
       <span
-        className="font-display text-base leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
+        className="rotwood-stat-number font-display text-lg leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
         data-tone={tone}
       >
         {value}
@@ -187,58 +161,61 @@ function ClaimButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg bg-accent px-3 py-2 text-[11px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+      className="rotwood-hud-button rounded-lg bg-accent px-3 py-2 text-xs font-extrabold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
     >
       {children}
     </button>
   );
 }
 
-function PathColumn({ tower, path, gold }: { tower: Tower; path: "a" | "b"; gold: number }) {
+function abilityLabel(ability: string | undefined) {
+  switch (ability) {
+    case "burst": return "BURST";
+    case "stun": return "STUN";
+    case "mark": return "MARK";
+    case "shatter": return "SHATTER";
+    case "execute": return "EXECUTE";
+    case "boss-hunter": return "ELITE HUNTER";
+    case "close-range": return "POINT BLANK";
+    case "burn-duration": return "LONG BURN";
+    default: return "";
+  }
+}
+
+function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scrap: number }) {
   const def = TOWER_PATHS[tower.kind][path];
   const owned = path === "a" ? tower.a : tower.b;
   const locked = !canBuyTier(tower, path);
   const cost = tierCost(tower, path);
   const next = owned < 4 ? def.tiers[owned]! : null;
-  const affordable = !!next && !locked && gold >= cost;
-
+  const affordable = !!next && !locked && scrap >= cost;
+  const ability = abilityLabel(next?.ability);
   return (
-    <div className="min-w-0 rounded-lg bg-black/25 p-1.5">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
-        <span className="truncate font-display text-xs tracking-wide text-panel-foreground">
-          {def.name}
-        </span>
-        <span className="flex shrink-0 gap-0.5">
-          {[0, 1, 2, 3].map((i) => (
-            <span
-              key={i}
-              className="h-1 w-2 rounded-full"
-              style={{
-                backgroundColor:
-                  i < owned ? TOWER_INFO[tower.kind].accent : "rgba(255,255,255,0.16)",
-              }}
-            />
-          ))}
-        </span>
+    <div className="min-w-0 rounded-lg border border-white/10 bg-black/25 p-1.5">
+      <div className="flex items-center justify-between gap-1">
+        <div className="min-w-0">
+          <span className="block truncate font-display text-xs tracking-wide text-panel-foreground">{def.name}</span>
+          <span className="block truncate text-[8px] uppercase tracking-wider text-panel-muted">{def.focus}</span>
+        </div>
+        <span className="font-display text-[9px] text-panel-muted">{owned}/4</span>
       </div>
-      <p className="truncate text-[9px] uppercase tracking-wider text-panel-muted">{def.focus}</p>
       {next ? (
         <>
-          <p className="mt-1 min-h-8 text-[10px] leading-tight text-panel-foreground">
+          <p className="mt-1.5 min-h-9 text-[10px] leading-tight text-panel-foreground">
             <span className="block truncate font-semibold">{next.name}</span>
             <span className="line-clamp-2 text-panel-muted">{next.desc}</span>
           </p>
+          {ability && <span className="mt-1 inline-flex rounded-full border border-accent/25 bg-accent/10 px-1.5 py-0.5 text-[8px] font-black tracking-[0.12em] text-accent">{ability}</span>}
           <button
             onClick={() => game.buyTier(tower.id, path)}
             disabled={!affordable}
+            aria-label={locked ? def.name + " path locked" : "Buy " + next.name}
             className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
           >
-            {locked ? "Path locked" : `${cost} gold`}
+            {locked ? "LOCKED" : cost + " SCRAP"}
           </button>
         </>
-      ) : (
-        <p className="mt-2 text-center font-display text-xs text-accent">Path maxed</p>
-      )}
+      ) : <p className="mt-2 text-center font-display text-xs text-accent">PATH MAXED</p>}
     </div>
   );
 }
@@ -266,14 +243,15 @@ export function HUD({
 }) {
   const { player, lastReward, levelUpNotice } = useProfileSnapshot();
   const [activeLevel, setActiveLevel] = useState<number | null>(null);
+  const [recentScrapGain, setRecentScrapGain] = useState(0);
+  const previousGold = useRef(Math.floor(state.gold));
+  const scrapGainTimer = useRef<number | null>(null);
   const tower =
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
-  const spot = selection?.kind === "spot" ? selection.index : null;
+  const spot = selection?.kind === "spot" ? selection.position : null;
+  const map = getStageMapByStageId(state.stageId);
+  const placement = spot ? game.getPlacementStatus(spot.x, spot.z) : null;
   const incCost = incomeCost(state.incomeLevel);
-  const levelCost = tower ? towerUpgradeCost(tower) : Infinity;
-  const towerMetaLevel = tower ? towerProfileUpgradeLevel(tower.kind) : 0;
-  const towerMetaCost = tower ? towerProfileUpgradeCost(tower.kind) : Infinity;
-  const towerMetaBonus = tower ? towerProfileBonus(tower.kind) : null;
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
@@ -301,13 +279,35 @@ export function HUD({
   }, [state.killStreak]);
 
   useEffect(() => {
+    const currentGold = Math.floor(state.gold);
+    const delta = currentGold - previousGold.current;
+    previousGold.current = currentGold;
+    if (delta > 0) {
+      setRecentScrapGain((current) => current + delta);
+      if (scrapGainTimer.current !== null) {
+        window.clearTimeout(scrapGainTimer.current);
+      }
+      scrapGainTimer.current = window.setTimeout(() => {
+        setRecentScrapGain(0);
+        scrapGainTimer.current = null;
+      }, 720);
+    }
+    return () => {
+      if (scrapGainTimer.current !== null) {
+        window.clearTimeout(scrapGainTimer.current);
+        scrapGainTimer.current = null;
+      }
+    };
+  }, [state.gold]);
+
+  useEffect(() => {
     profile.refreshRetentionState();
     const interval = window.setInterval(() => profile.refreshRetentionState(), 60_000);
     return () => window.clearInterval(interval);
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
+    <div className="rotwood-hud pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-[max(0.6rem,env(safe-area-inset-top))]">
       {baseDanger === "critical" && !reducedMotion && !state.gameOver && (
         <div
           aria-hidden="true"
@@ -315,8 +315,8 @@ export function HUD({
         />
       )}
       {state.runModifierOffer.length > 0 && (
-        <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-panel/95 p-4 shadow-panel">
+        <div className="rotwood-modal pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
+          <div className="rotwood-shell w-full max-w-md p-4">
             <p className="text-center text-[10px] uppercase tracking-[0.24em] text-accent">Wave {state.wave} reward</p>
             <h2 className="mt-1 text-center font-display text-3xl tracking-wide text-panel-foreground">Choose Your Power</h2>
             <p className="mt-1 text-center text-xs text-panel-muted">This choice lasts for the rest of the run.</p>
@@ -350,15 +350,15 @@ export function HUD({
         </div>
       )}
       {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
-        <div className="pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
+        <div className="rotwood-toast pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
           <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
-            +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% GOLD · KEEP IT GOING
+            +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% SCRAP · KEEP IT GOING
           </p>
         </div>
       )}
       {activeLevel !== null && !state.gameOver && (
-        <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-2xl bg-accent px-4 py-2 text-center shadow-panel">
+        <div className="rotwood-toast absolute left-1/2 top-4 -translate-x-1/2 rounded-xl bg-accent px-4 py-2 text-center shadow-panel">
           <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
           <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
         </div>
@@ -366,7 +366,7 @@ export function HUD({
       
             {state.waveMessage && !state.gameOver && (
         <div
-          className="pointer-events-none absolute left-1/2 top-[18%] -translate-x-1/2 text-center"
+          className="rotwood-wave-message pointer-events-none absolute left-1/2 top-[18%] -translate-x-1/2 text-center"
           style={{
             opacity: Math.min(1, state.waveMessageLife),
           }}
@@ -419,7 +419,7 @@ export function HUD({
 
       <div className="space-y-1.5">
         <div className="flex items-start gap-1.5">
-          <Stat label="Coins" value={`${Math.floor(state.gold)}`} tone="gold" />
+          <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" />
           <Stat label="Wave" value={`${state.wave || 1}`} />
           <Stat
             label="Base"
@@ -447,6 +447,12 @@ export function HUD({
             </button>
           </div>
         </div>
+        {recentScrapGain > 0 && !state.gameOver && (
+          <div className="rotwood-scrap-gain pointer-events-none absolute left-3 top-[4.15rem] inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-black/55 px-2.5 py-1 text-xs font-black text-accent shadow-panel backdrop-blur">
+            <Coins size={14} aria-hidden="true" />
+            <span>+{recentScrapGain} SCRAP</span>
+          </div>
+        )}
         <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>
@@ -592,7 +598,7 @@ export function HUD({
         {!tower && spot === null && state.towers.length === 0 && (
           <div className="rounded-xl bg-panel/85 px-3 py-2 text-center shadow-panel backdrop-blur">
             <p className="font-display text-sm tracking-wide text-panel-foreground">
-              Tap a glowing pad to build
+              Tap open ground to place a tower
             </p>
           </div>
         )}
@@ -611,14 +617,34 @@ export function HUD({
                 ×
               </button>
             </div>
+            <div className="mt-1 flex items-center justify-between rounded-lg border border-white/10 bg-black/25 px-2 py-1.5">
+              <span className="text-[9px] uppercase tracking-[0.16em] text-panel-muted">
+                Placement target
+              </span>
+              <span className={placement?.valid ? "font-display text-xs tracking-wide text-accent" : "font-display text-xs tracking-wide text-danger"}>
+                {placement?.valid
+                  ? "LEGAL PLACEMENT"
+                  : placement?.reason === "road"
+                    ? "TOO CLOSE TO ROAD"
+                    : placement?.reason === "obstacle"
+                      ? "BLOCKED TERRAIN"
+                      : placement?.reason === "too-close"
+                        ? "TOO CLOSE"
+                        : "OUT OF BOUNDS"}
+              </span>
+            </div>
             <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               {KINDS.map((k) => {
                 const info = TOWER_INFO[k];
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
-                const canBuild = unlocked && state.gold >= info.cost;
+                const buildCost = towerBuildCost(k);
+                const canBuild = unlocked && state.gold >= buildCost && Boolean(placement?.valid);
                 const matchup = waveThreatPreview
                   ? bestTowerCounterplayMatch(k, waveThreatPreview.enemyKinds)
                   : null;
+                const coverage = spot
+                  ? Math.round(pathCoverageRatio(map, spot.x, spot.z, info.range) * 100)
+                  : 0;
                 const unlockAffordable =
                   !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
@@ -637,29 +663,29 @@ export function HUD({
                         </span>
                       </span>
                       <span className="shrink-0 text-[9px] text-panel-muted">
-                        {unlocked ? `${info.cost}g` : `Lv ${info.unlockLevel}`}
+                        {unlocked ? `${info.cost} scrap` : `Lv ${info.unlockLevel}`}
                       </span>
                     </span>
                     <span className="mt-1 block truncate text-[9px] text-panel-muted">
-                      {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG
+                      {info.damage} DMG · {info.rate.toFixed(1)}/s · {info.range.toFixed(1)} RNG · {coverage}% PATH
                     </span>
                     <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
                       {counterplaySummary(k)}
                     </span>
                     {matchup && (
                       <span className="mt-0.5 block truncate text-[9px] font-semibold text-accent">
-                        GOOD MATCH · enemyThreatLabel(matchup.enemyKind) · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
+                        GOOD MATCH · {enemyThreatLabel(matchup.enemyKind)} · +{Math.round((matchup.damageMultiplier - 1) * 100)}%
                       </span>
                     )}
                     <button
                       onClick={() => {
-                        if (game.build(spot, k)) onSelect(null);
+                        if (game.buildAt(spot.x, spot.z, k)) onSelect(null);
                       }}
                       disabled={!canBuild}
                       className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
                     >
                       {unlocked
-                        ? `Build · ${info.cost}g`
+                        ? `Build · ${buildCost} scrap`
                         : `Unlocks Lv ${info.unlockLevel}`}
                     </button>
                     {!unlocked && info.coinUnlock > 0 && (
@@ -718,7 +744,7 @@ export function HUD({
                 }}
                 className="shrink-0 rounded-md bg-black/25 px-2 py-1 text-[10px] text-panel-muted"
               >
-                Sell · {towerSellValue(tower)}g
+                Sell · {towerSellValue(tower)} scrap
               </button>
               <button
                 onClick={() => onSelect(null)}
@@ -780,44 +806,20 @@ export function HUD({
     })}
   </div>
 </div>
-            <button
-              onClick={() => game.upgradeTower(tower.id)}
-              disabled={tower.level >= MAX_TOWER_LEVEL || state.gold < levelCost}
-              className="mt-1.5 min-h-10 w-full rounded-lg bg-accent px-2 py-1.5 font-display text-sm tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
-            >
-              {tower.level >= MAX_TOWER_LEVEL
-                ? "Level maxed"
-                : `Upgrade to Lv ${tower.level + 1} · ${levelCost}g`}
-            </button>
-            <div className="mt-1.5 grid grid-cols-2 gap-1">
-              <PathColumn tower={tower} path="a" gold={state.gold} />
-              <PathColumn tower={tower} path="b" gold={state.gold} />
-            </div>
-            <div className="mt-1.5 rounded-lg bg-black/25 p-1.5">
+            <div className="mt-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
-                <div>
-                    <p className="font-display text-xs tracking-wide text-panel-foreground">
-                    Workshop Lv {towerMetaLevel}
-                  </p>
-                  {towerMetaBonus && (
-                    <p className="line-clamp-1 text-[9px] text-panel-muted">
-                      Permanent +{Math.round((towerMetaBonus.damage - 1) * 100)}% DMG · +
-                      {Math.round((towerMetaBonus.rate - 1) * 100)}% SPD · +
-                      {Math.round((towerMetaBonus.range - 1) * 100)}% RNG
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => game.buyProfileTowerUpgrade(tower.kind)}
-                  disabled={!Number.isFinite(towerMetaCost) || player.coins < towerMetaCost}
-                  className="shrink-0 rounded-md bg-accent px-2 py-1.5 text-[10px] font-semibold text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
-                >
-                  {towerMetaLevel >= MAX_PROFILE_TOWER_UPGRADE
-                    ? "Mastery maxed"
-                    : `${towerMetaCost} coins`}
-                </button>
+                <span className="text-[8px] uppercase tracking-[0.18em] text-panel-muted">Field build</span>
+                <span className="font-display text-[10px] tracking-wide text-accent">Lv {tower.level} · {tower.a}/{tower.b}</span>
               </div>
+              <p className="mt-0.5 text-[9px] text-panel-muted">
+                Spend SCRAP on one path at a time. The first branch to 3 locks the other at 2.
+              </p>
             </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <PathColumn tower={tower} path="a" scrap={state.gold} />
+              <PathColumn tower={tower} path="b" scrap={state.gold} />
+            </div>
+            
           </div>
         )}
 
@@ -827,8 +829,8 @@ export function HUD({
             disabled={state.gold < incCost}
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
-            Income +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
-            <span className="block text-[10px] text-panel-muted">{incCost}g</span>
+            Salvage +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
+            <span className="block text-[10px] text-panel-muted">{incCost} SCRAP</span>
           </button>
           <button
             onClick={() => game.repair()}
@@ -836,7 +838,7 @@ export function HUD({
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Repair base +5
-            <span className="block text-[10px] text-panel-muted">30g</span>
+            <span className="block text-[10px] text-panel-muted">30 scrap</span>
           </button>
         </div>
       </div>
@@ -857,7 +859,7 @@ export function HUD({
               <div className="grid grid-cols-3 gap-2">
                 {[
                   ["XP", `+${lastReward.xp}`],
-                  ["Coins", `+${lastReward.coins}`],
+                  ["Credits", `+${lastReward.coins}`],
                   ["Gems", `+${lastReward.gems}`],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-lg bg-black/25 py-1.5">

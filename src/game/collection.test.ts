@@ -4,7 +4,7 @@ import type { PlayerProfile } from "./profile";
 
 function profile(overrides: Partial<PlayerProfile> = {}): PlayerProfile {
   return {
-    version: 3,
+    version: 4,
     xp: 0,
     level: 1,
     coins: 0,
@@ -20,6 +20,7 @@ function profile(overrides: Partial<PlayerProfile> = {}): PlayerProfile {
     lastLoginClaimDate: null,
     lastLoginRewardDayClaimed: null,
     towerUpgrades: {},
+    fieldKnowledge: {},
     unlockedTowers: [],
     achievements: {},
     dailyMissionProgress: {},

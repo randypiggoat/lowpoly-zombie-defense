@@ -8,14 +8,22 @@ let muted = false;
 function ensure(): Ctx {
   if (typeof window === "undefined") return null;
   if (!ctx) {
-    const AC =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return null;
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0.5;
-    master.connect(ctx.destination);
+    try {
+      const AC =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(ctx.destination);
+    } catch {
+      // Some embedded/mobile browsers can reject audio-context creation.
+      // Audio failure must never make an otherwise valid tap fail.
+      ctx = null;
+      master = null;
+      return null;
+    }
   }
   return ctx;
 }
@@ -78,10 +86,14 @@ function noise(dur = 0.18, gain = 0.18, filterFreq = 900) {
 }
 
 export type SfxName =
-  | "shootGunner"
-  | "shootCannon"
-  | "shootFrost"
+  | "shootRifle"
+  | "shootShotgun"
+  | "shootSniper"
   | "shootTesla"
+  | "shootFlame"
+  | "shootFrost"
+  | "shootRocket"
+  | "shootLaser"
   | "hit"
   | "death"
   | "gib"
@@ -92,39 +104,66 @@ export type SfxName =
   | "wave"
   | "streak"
   | "gameOver"
-  | "bigHit";
+  | "bigHit"
+  | "coin"
+  | "uiClick";
 
 let lastShot = 0;
+let lastImpact = -Infinity;
+let lastCoin = -Infinity;
+let coinCombo = 0;
 
 export function sfx(name: SfxName) {
-  const c = ensure();
-  if (!c || muted) return;
-  switch (name) {
-    case "shootGunner":
-    case "shootFrost":
+  try {
+    const c = ensure();
+    if (!c || muted) return;
+    switch (name) {
+    case "shootRifle":
+    case "shootShotgun":
+    case "shootSniper":
     case "shootTesla":
-    case "shootCannon": {
-      // throttle shot spam
+    case "shootFlame":
+    case "shootFrost":
+    case "shootRocket":
+    case "shootLaser": {
+      // Throttle dense weapon fire while keeping each weapon's timbre distinct.
       const now = c.currentTime;
       if (now - lastShot < 0.045) return;
       lastShot = now;
-      if (name === "shootGunner")
-        tone({ freq: 620, to: 260, dur: 0.06, type: "square", gain: 0.08 });
-      if (name === "shootCannon") {
-        tone({ freq: 160, to: 45, dur: 0.2, type: "sawtooth", gain: 0.16 });
-        noise(0.14, 0.1, 600);
-      }
-      if (name === "shootFrost")
-        tone({ freq: 1200, to: 700, dur: 0.1, type: "triangle", gain: 0.07 });
-      if (name === "shootTesla") {
-        tone({ freq: 900, to: 1800, dur: 0.08, type: "sawtooth", gain: 0.07 });
-        noise(0.07, 0.05, 3000);
+
+      if (name === "shootRifle") {
+        tone({ freq: 700, to: 310, dur: 0.045, type: "square", gain: 0.055 });
+      } else if (name === "shootShotgun") {
+        tone({ freq: 180, to: 62, dur: 0.13, type: "sawtooth", gain: 0.12 });
+        noise(0.09, 0.075, 760);
+      } else if (name === "shootSniper") {
+        tone({ freq: 105, to: 52, dur: 0.16, type: "sine", gain: 0.11 });
+        tone({ freq: 1700, to: 1050, dur: 0.075, type: "triangle", gain: 0.065, delay: 0.012 });
+      } else if (name === "shootTesla") {
+        tone({ freq: 820, to: 1780, dur: 0.085, type: "sawtooth", gain: 0.065 });
+        noise(0.075, 0.045, 3000);
+      } else if (name === "shootFlame") {
+        noise(0.12, 0.085, 1500);
+        tone({ freq: 150, to: 90, dur: 0.11, type: "triangle", gain: 0.045 });
+      } else if (name === "shootFrost") {
+        tone({ freq: 1350, to: 820, dur: 0.105, type: "triangle", gain: 0.06 });
+        tone({ freq: 2100, to: 1600, dur: 0.08, type: "sine", gain: 0.035, delay: 0.028 });
+      } else if (name === "shootRocket") {
+        tone({ freq: 125, to: 46, dur: 0.19, type: "sawtooth", gain: 0.115 });
+        noise(0.14, 0.08, 520);
+      } else if (name === "shootLaser") {
+        tone({ freq: 480, to: 1850, dur: 0.12, type: "triangle", gain: 0.05 });
+        tone({ freq: 1450, to: 620, dur: 0.09, type: "sine", gain: 0.03, delay: 0.02 });
       }
       return;
     }
-    case "hit":
+    case "hit": {
+      const now = c.currentTime;
+      if (now - lastImpact < 0.025) return;
+      lastImpact = now;
       tone({ freq: 240, to: 150, dur: 0.05, type: "triangle", gain: 0.05 });
       return;
+    }
     case "death":
       noise(0.22, 0.14, 700);
       tone({ freq: 180, to: 60, dur: 0.18, type: "sawtooth", gain: 0.08 });
@@ -163,5 +202,21 @@ export function sfx(name: SfxName) {
     case "bigHit":
       tone({ freq: 920, to: 240, dur: 0.11, type: "triangle", gain: 0.1 });
       return;
+    case "uiClick":
+      tone({ freq: 420, to: 300, dur: 0.045, type: "triangle", gain: 0.04 });
+      return;
+    case "coin": {
+      const now = c.currentTime;
+      if (now - lastCoin < 0.045) return;
+      coinCombo = now - lastCoin < 0.32 ? Math.min(8, coinCombo + 1) : 0;
+      lastCoin = now;
+      const freq = 760 + coinCombo * 68;
+      tone({ freq, to: freq * 1.18, dur: 0.07, type: "triangle", gain: 0.075 });
+      tone({ freq: freq * 1.5, dur: 0.055, type: "sine", gain: 0.045, delay: 0.035 });
+      return;
+    }
+    }
+  } catch {
+    // Sound is feedback only and must never block the action that caused it.
   }
 }

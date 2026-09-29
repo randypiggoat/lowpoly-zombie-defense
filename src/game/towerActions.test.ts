@@ -54,7 +54,7 @@ describe("tower action rules", () => {
 
   test("calculates 60 percent tower resale value from total spent", () => {
     const tower = { kind: "rifleman", level: 3, a: 2, b: 1 };
-    const spent = 40 + 50 + 110 + 45 + 30 + 47;
+    const spent = 40 + 50 + 110 + 45;
     expect(towerSellValue(tower, definition, paths, 8)).toBe(
       Math.floor(spent * 0.6),
     );
@@ -75,6 +75,6 @@ describe("tower action rules", () => {
     );
 
     expect(base).toBe(24);
-    expect(upgraded).toBe(Math.floor((40 + 50 + 45 + 30) * 0.6));
+    expect(upgraded).toBe(Math.floor((40 + 50 + 45) * 0.6));
   });
 });

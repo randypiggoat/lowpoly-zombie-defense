@@ -16,11 +16,38 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+The project uses **Bun** for installs and scripts.
+
+### Launch from GitHub
+
+To run the current gameplay branch locally:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+git clone https://github.com/randypiggoat/lowpoly-zombie-defense.git
+cd lowpoly-zombie-defense
+git checkout feat/ui-retention-polish
+bun install
+bun run dev
 ```
+
+Then open the local URL printed by Vite (usually `http://localhost:5173`).
+
+### Verify changes
+
+```sh
+bun run lint
+bun run test:unit
+bun run build
+bun run test:e2e
+```
+
+GitHub Actions runs the same quality gates on feature branches and pull requests.
+
+## Progression design
+
+Tower upgrades are intentionally split into two layers:
+
+- **SCRAP (in-run):** each placed tower chooses between two four-tier paths. Path tiers are the main source of power and unlock behavior changes such as burst fire, stun, marks, shatter effects, executions, elite/boss specialization, and burn persistence. A tower's displayed level is derived from its purchased path tiers.
+- **CREDITS (persistent):** **Field Knowledge** is the permanent account progression layer. It has three small prerequisite branches—Arsenal, Fieldcraft, and Salvage—and is not tied to an individual tower. Legacy per-tower Workshop save data is retained only for compatibility and has no combat effect.
+
+The upgrade UI shows only the next tier on each branch, keeping the tactical decision readable during combat.

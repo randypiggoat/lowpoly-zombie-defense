@@ -21,7 +21,6 @@ import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
   towerSellValue as calculateTowerSellValue,
-  towerUpgradeCost as calculateTowerUpgradeCost,
 } from "./towerActions";
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
@@ -38,6 +37,25 @@ import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
 import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
 import { createEndlessStage, type EndlessChallenge } from "./endless";
+import {
+  canPlaceTower,
+  getPathLength,
+  getStageMap,
+  getStageMapByStageId,
+  placementKey,
+  snapBuildPosition,
+  pointAtPath,
+} from "./maps";
+import {
+  goreAnchor,
+  gorePartBit,
+  gorePartsBrokenBetween,
+  type GorePart,
+} from "./enemyGore";
+import {
+  TOWER_PATHS as DESIGNED_TOWER_PATHS,
+  getTowerUpgradeAbilities,
+} from "./towerUpgradeDesign";
 
 export type Vec2 = { x: number; z: number };
 
@@ -116,6 +134,8 @@ export type Zombie = {
   spin: number;
   roll: number;
   gibbed: boolean;
+  /** Bit mask of body/signature pieces already broken off by damage. */
+  gibMask?: number;
 };
 
 export type Gib = {
@@ -132,6 +152,7 @@ export type Gib = {
   life: number;
   size: number;
   tint: number;
+  part?: GorePart;
 };
 export type DamagePopup = {
   id: number;
@@ -160,7 +181,7 @@ export type Tower = {
   spot: number;
   x: number;
   z: number;
-  level: number; // 1..MAX_TOWER_LEVEL, bought with gold
+  level: number; // 1..MAX_TOWER_LEVEL, derived from SCRAP path tiers
   a: number; // tiers bought in path A (0-4)
   b: number; // tiers bought in path B (0-4)
   targetMode: TargetMode;
@@ -198,6 +219,17 @@ export type Bullet = {
   gold: number;
   crit: boolean;
   alive: boolean;
+  originX: number;
+  originZ: number;
+  stun: number;
+  markDuration: number;
+  markBonus: number;
+  shatterMultiplier: number;
+  executeThreshold: number;
+  executeMultiplier: number;
+  bossDamageMultiplier: number;
+  closeDamageMultiplier: number;
+  burnDuration: number;
 };
 
 export type TowerDef = {
@@ -335,6 +367,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
 };
 
 export const MAX_TOWER_LEVEL = 8;
+export const MAX_ACTIVE_BULLETS = 64;
 
 /** Projectile flight speed per tower. */
 export const BULLET_SPEED: Record<TowerKind, number> = {
@@ -351,16 +384,16 @@ export const BULLET_SPEED: Record<TowerKind, number> = {
 /** Which existing shot sound each tower reuses. */
 export const SHOOT_SFX: Record<
   TowerKind,
-  "shootGunner" | "shootCannon" | "shootFrost" | "shootTesla"
+  "shootRifle" | "shootShotgun" | "shootSniper" | "shootTesla" | "shootFlame" | "shootFrost" | "shootRocket" | "shootLaser"
 > = {
-  rifleman: "shootGunner",
-  shotgunner: "shootCannon",
-  sniper: "shootCannon",
+  rifleman: "shootRifle",
+  shotgunner: "shootShotgun",
+  sniper: "shootSniper",
   tesla: "shootTesla",
-  flamethrower: "shootFrost",
+  flamethrower: "shootFlame",
   freezer: "shootFrost",
-  rocket: "shootCannon",
-  laser: "shootTesla",
+  rocket: "shootRocket",
+  laser: "shootLaser",
 };
 
 /** How violently kills from each tower come apart. */
@@ -374,11 +407,6 @@ export const GORE_BASE: Record<TowerKind, number> = {
   rocket: 1.9,
   laser: 1.3,
 };
-
-/** Gold cost of the next level-up for this tower. */
-export function towerUpgradeCost(t: Tower) {
-  return calculateTowerUpgradeCost(t, TOWER_INFO[t.kind], MAX_TOWER_LEVEL);
-}
 
 /* ---------------- upgrade paths ---------------- */
 
@@ -394,413 +422,15 @@ export type Mods = {
   gore?: number;
   burn?: number;
 };
-
-export type Tier = { name: string; desc: string; cost: number; mods: Mods };
-export type UpgradePath = { name: string; focus: string; tiers: [Tier, Tier, Tier, Tier] };
-
-export const TOWER_PATHS: Record<TowerKind, { a: UpgradePath; b: UpgradePath }> = {
-  rifleman: {
-    a: {
-      name: "Marksman",
-      focus: "Range & precision",
-      tiers: [
-        {
-          name: "Long Barrel",
-          desc: "+25% range, +15% damage",
-          cost: 50,
-          mods: { range: 1.25, dmg: 1.15 },
-        },
-        {
-          name: "Scope",
-          desc: "+20% range, 20% crit chance",
-          cost: 110,
-          mods: { range: 1.2, crit: 0.2 },
-        },
-        {
-          name: "Hollow Points",
-          desc: "+60% damage, 30% crit",
-          cost: 240,
-          mods: { dmg: 1.6, crit: 0.3 },
-        },
-        {
-          name: "Deadeye",
-          desc: "+120% damage, wide reach",
-          cost: 520,
-          mods: { dmg: 2.2, range: 1.25, crit: 0.4, gore: 1.5 },
-        },
-      ],
-    },
-    b: {
-      name: "Suppressor",
-      focus: "Rate of fire",
-      tiers: [
-        { name: "Quick Hands", desc: "+40% fire rate", cost: 45, mods: { rate: 1.4 } },
-        { name: "Drum Mag", desc: "+45% fire rate", cost: 100, mods: { rate: 1.45 } },
-        {
-          name: "Twin Barrels",
-          desc: "+60% rate, +25% damage",
-          cost: 230,
-          mods: { rate: 1.6, dmg: 1.25 },
-        },
-        {
-          name: "Minigun",
-          desc: "+120% rate, more gold per kill",
-          cost: 500,
-          mods: { rate: 2.2, dmg: 1.2, gold: 1.25 },
-        },
-      ],
-    },
-  },
-  rocket: {
-    a: {
-      name: "Siege Artillery",
-      focus: "Range & slowing shrapnel",
-      tiers: [
-        { name: "Long Gun", desc: "+30% range", cost: 80, mods: { range: 1.3 } },
-        {
-          name: "Tar Shells",
-          desc: "Shots slow zombies 35%",
-          cost: 170,
-          mods: { slow: 0.35, splash: 0.6 },
-        },
-        {
-          name: "Cluster Shot",
-          desc: "+1.4 blast radius, +25% damage",
-          cost: 340,
-          mods: { splash: 1.4, dmg: 1.25 },
-        },
-        {
-          name: "Bombardier",
-          desc: "+45% range, 55% slow, huge blast",
-          cost: 720,
-          mods: { range: 1.45, slow: 0.55, splash: 1.8, dmg: 1.3 },
-        },
-      ],
-    },
-    b: {
-      name: "Point Blank",
-      focus: "Pure close-range killing",
-      tiers: [
-        {
-          name: "Packed Powder",
-          desc: "+70% damage, -10% range",
-          cost: 85,
-          mods: { dmg: 1.7, range: 0.9 },
-        },
-        { name: "Rapid Loader", desc: "+55% fire rate", cost: 180, mods: { rate: 1.55 } },
-        { name: "Siege Slugs", desc: "+110% damage", cost: 360, mods: { dmg: 2.1 } },
-        {
-          name: "Meat Grinder",
-          desc: "+180% damage, gibs everything",
-          cost: 760,
-          mods: { dmg: 2.8, rate: 1.3, gore: 2.5 },
-        },
-      ],
-    },
-  },
-  freezer: {
-    a: {
-      name: "Deep Freeze",
-      focus: "Crowd control",
-      tiers: [
-        {
-          name: "Chill Mist",
-          desc: "Slow 45%, small blast",
-          cost: 65,
-          mods: { slow: 0.45, splash: 1 },
-        },
-        {
-          name: "Wide Nozzle",
-          desc: "+30% range, bigger blast",
-          cost: 140,
-          mods: { range: 1.3, splash: 1 },
-        },
-        {
-          name: "Cryo Core",
-          desc: "Slow 62%, +50% rate",
-          cost: 290,
-          mods: { slow: 0.62, rate: 1.5 },
-        },
-        {
-          name: "Absolute Zero",
-          desc: "Slow 75% in a huge radius",
-          cost: 600,
-          mods: { slow: 0.75, splash: 1.6, range: 1.25 },
-        },
-      ],
-    },
-    b: {
-      name: "Shatter",
-      focus: "Damage on frozen flesh",
-      tiers: [
-        { name: "Ice Shards", desc: "+90% damage", cost: 70, mods: { dmg: 1.9 } },
-        {
-          name: "Frostbite",
-          desc: "+70% damage, 20% crit",
-          cost: 150,
-          mods: { dmg: 1.7, crit: 0.2 },
-        },
-        {
-          name: "Brittle Bones",
-          desc: "+90% damage, 35% crit",
-          cost: 310,
-          mods: { dmg: 1.9, crit: 0.35 },
-        },
-        {
-          name: "Shatterstorm",
-          desc: "+150% damage, bodies explode",
-          cost: 640,
-          mods: { dmg: 2.5, rate: 1.3, gore: 2.2 },
-        },
-      ],
-    },
-  },
-  tesla: {
-    a: {
-      name: "Chain Coil",
-      focus: "Hitting the whole horde",
-      tiers: [
-        { name: "Extra Arc", desc: "+1 chain target", cost: 100, mods: { chain: 1, splash: 0.4 } },
-        {
-          name: "Conductors",
-          desc: "+30% range, +1 chain",
-          cost: 210,
-          mods: { range: 1.3, chain: 1 },
-        },
-        {
-          name: "Storm Net",
-          desc: "+2 chains, +25% damage",
-          cost: 420,
-          mods: { chain: 2, dmg: 1.25, splash: 0.6 },
-        },
-        {
-          name: "Tempest",
-          desc: "+3 chains, +40% range",
-          cost: 880,
-          mods: { chain: 3, range: 1.4, dmg: 1.3 },
-        },
-      ],
-    },
-    b: {
-      name: "Overload",
-      focus: "Raw single-target power",
-      tiers: [
-        { name: "Capacitors", desc: "+80% damage", cost: 95, mods: { dmg: 1.8 } },
-        { name: "Fast Discharge", desc: "+60% fire rate", cost: 200, mods: { rate: 1.6 } },
-        {
-          name: "Arc Furnace",
-          desc: "+110% damage, 25% crit",
-          cost: 400,
-          mods: { dmg: 2.1, crit: 0.25 },
-        },
-        {
-          name: "Annihilator",
-          desc: "+200% damage, vaporizes bodies",
-          cost: 840,
-          mods: { dmg: 3, rate: 1.25, gore: 3 },
-        },
-      ],
-    },
-  },
-  shotgunner: {
-    a: {
-      name: "Riot Spread",
-      focus: "Crowd shredding",
-      tiers: [
-        { name: "Wide Choke", desc: "+0.8 blast radius", cost: 60, mods: { splash: 0.8 } },
-        {
-          name: "Buckshot",
-          desc: "+45% damage, bigger spread",
-          cost: 130,
-          mods: { dmg: 1.45, splash: 0.6 },
-        },
-        {
-          name: "Dragon's Breath",
-          desc: "Shots set zombies alight",
-          cost: 280,
-          mods: { burn: 6, splash: 0.6 },
-        },
-        {
-          name: "Riot Storm",
-          desc: "+90% damage, huge spread",
-          cost: 590,
-          mods: { dmg: 1.9, splash: 1.4, gore: 2 },
-        },
-      ],
-    },
-    b: {
-      name: "Executioner",
-      focus: "Point-blank stopping power",
-      tiers: [
-        {
-          name: "Slug Rounds",
-          desc: "+75% damage, -15% spread",
-          cost: 65,
-          mods: { dmg: 1.75, splash: -0.4 },
-        },
-        { name: "Pump Grip", desc: "+50% fire rate", cost: 140, mods: { rate: 1.5 } },
-        {
-          name: "Breacher",
-          desc: "+90% damage, 25% crit",
-          cost: 300,
-          mods: { dmg: 1.9, crit: 0.25 },
-        },
-        {
-          name: "Gore Cannon",
-          desc: "+170% damage, gibs everything",
-          cost: 620,
-          mods: { dmg: 2.7, rate: 1.25, gore: 2.6 },
-        },
-      ],
-    },
-  },
-  sniper: {
-    a: {
-      name: "Overwatch",
-      focus: "Reach across the map",
-      tiers: [
-        { name: "Bipod", desc: "+25% range", cost: 90, mods: { range: 1.25 } },
-        {
-          name: "Rangefinder",
-          desc: "+20% range, 25% crit",
-          cost: 200,
-          mods: { range: 1.2, crit: 0.25 },
-        },
-        {
-          name: "Match Barrel",
-          desc: "+70% damage, +15% range",
-          cost: 400,
-          mods: { dmg: 1.7, range: 1.15 },
-        },
-        {
-          name: "God's Eye",
-          desc: "+150% damage, 45% crit",
-          cost: 850,
-          mods: { dmg: 2.5, crit: 0.45, range: 1.2, gore: 1.8 },
-        },
-      ],
-    },
-    b: {
-      name: "Anti-Materiel",
-      focus: "Killing big targets fast",
-      tiers: [
-        { name: "Quick Bolt", desc: "+45% fire rate", cost: 95, mods: { rate: 1.45 } },
-        { name: "Heavy Rounds", desc: "+80% damage", cost: 210, mods: { dmg: 1.8 } },
-        {
-          name: "Explosive Tips",
-          desc: "+1.6 blast radius",
-          cost: 430,
-          mods: { splash: 1.6, dmg: 1.2 },
-        },
-        {
-          name: "Brute Breaker",
-          desc: "+200% damage, wrecks brutes",
-          cost: 900,
-          mods: { dmg: 3, rate: 1.2, gore: 2.4 },
-        },
-      ],
-    },
-  },
-  flamethrower: {
-    a: {
-      name: "Inferno",
-      focus: "Burning damage over time",
-      tiers: [
-        { name: "Hot Fuel", desc: "+6 burn damage per second", cost: 70, mods: { burn: 6 } },
-        {
-          name: "Sticky Napalm",
-          desc: "+9 burn, bigger cone",
-          cost: 150,
-          mods: { burn: 9, splash: 0.5 },
-        },
-        {
-          name: "Firestorm",
-          desc: "+14 burn, +30% range",
-          cost: 320,
-          mods: { burn: 14, range: 1.3 },
-        },
-        {
-          name: "Hellmouth",
-          desc: "+26 burn, everything cooks",
-          cost: 660,
-          mods: { burn: 26, splash: 0.8, gore: 2.2 },
-        },
-      ],
-    },
-    b: {
-      name: "Pressure Tank",
-      focus: "Raw output on groups",
-      tiers: [
-        {
-          name: "Wide Cone",
-          desc: "+0.7 spread, +20% range",
-          cost: 75,
-          mods: { splash: 0.7, range: 1.2 },
-        },
-        { name: "High Pressure", desc: "+45% fire rate", cost: 160, mods: { rate: 1.45 } },
-        { name: "Twin Nozzles", desc: "+90% damage", cost: 330, mods: { dmg: 1.9 } },
-        {
-          name: "Purifier",
-          desc: "+160% damage, huge cone",
-          cost: 680,
-          mods: { dmg: 2.6, splash: 1.2, rate: 1.2 },
-        },
-      ],
-    },
-  },
-  laser: {
-    a: {
-      name: "Focus Array",
-      focus: "Single-target annihilation",
-      tiers: [
-        { name: "Tight Beam", desc: "+70% damage", cost: 170, mods: { dmg: 1.7 } },
-        {
-          name: "Prism Lens",
-          desc: "+55% damage, 25% crit",
-          cost: 360,
-          mods: { dmg: 1.55, crit: 0.25 },
-        },
-        {
-          name: "Fusion Core",
-          desc: "+90% damage, +20% range",
-          cost: 700,
-          mods: { dmg: 1.9, range: 1.2 },
-        },
-        {
-          name: "Deathray",
-          desc: "+220% damage, vaporizes bodies",
-          cost: 1400,
-          mods: { dmg: 3.2, crit: 0.4, gore: 3 },
-        },
-      ],
-    },
-    b: {
-      name: "Scatter Optics",
-      focus: "Cutting through crowds",
-      tiers: [
-        { name: "Beam Splitter", desc: "+1 chain target", cost: 165, mods: { chain: 1 } },
-        {
-          name: "Refraction",
-          desc: "+2 chains, +25% range",
-          cost: 350,
-          mods: { chain: 2, range: 1.25 },
-        },
-        {
-          name: "Thermal Bloom",
-          desc: "Beams ignite for 18/s",
-          cost: 680,
-          mods: { burn: 18, splash: 0.6 },
-        },
-        {
-          name: "Starfall",
-          desc: "+3 chains, +80% damage",
-          cost: 1350,
-          mods: { chain: 3, dmg: 1.8, rate: 1.2 },
-        },
-      ],
-    },
-  },
+export type Tier = {
+  name: string;
+  desc: string;
+  cost: number;
+  mods: Mods;
+  ability?: string;
 };
+
+export const TOWER_PATHS = DESIGNED_TOWER_PATHS;
 
 /** Classic rule: only one path may go past tier 2. */
 export function canBuyTier(t: Tower, path: "a" | "b") {
@@ -808,7 +438,10 @@ export function canBuyTier(t: Tower, path: "a" | "b") {
 }
 
 export function tierCost(t: Tower, path: "a" | "b") {
-  return getTowerTierCost(t, path, TOWER_PATHS[t.kind]);
+  const raw = getTowerTierCost(t, path, TOWER_PATHS[t.kind]);
+  return Number.isFinite(raw)
+    ? Math.max(1, Math.round(raw * profile.fieldKnowledgeEffects().towerUpgradeCostMultiplier))
+    : raw;
 }
 
 function towerCombatStats(t: Tower) {
@@ -818,6 +451,9 @@ function towerCombatStats(t: Tower) {
     TOWER_PATHS[t.kind],
     towerProfileBonus(t.kind),
   );
+}
+export function towerUpgradeAbilities(t: Tower) {
+  return getTowerUpgradeAbilities(t.kind as keyof typeof DESIGNED_TOWER_PATHS, t.a, t.b);
 }
 
 /** Total tiers bought across both paths (used for visuals). */
@@ -858,31 +494,31 @@ export function towerGold(t: Tower) {
   return towerCombatStats(t).gold;
 }
 export function towerSellValue(t: Tower) {
-  return calculateTowerSellValue(
+  const raw = calculateTowerSellValue(
     t,
     TOWER_INFO[t.kind],
     TOWER_PATHS[t.kind],
     MAX_TOWER_LEVEL,
   );
+  return Math.floor(raw * profile.fieldKnowledgeEffects().sellMultiplier);
 }
 
-export const MAX_PROFILE_TOWER_UPGRADE = 5;
-
-export function towerProfileUpgradeLevel(kind: TowerKind) {
-  return profile.towerUpgradeLevel(kind);
+export function towerBuildCost(kind: TowerKind) {
+  return Math.max(
+    1,
+    Math.round(
+      TOWER_INFO[kind].cost * profile.fieldKnowledgeEffects().towerBuildCostMultiplier,
+    ),
+  );
 }
 
-export function towerProfileUpgradeCost(kind: TowerKind) {
-  return profile.towerUpgradeCost(TOWER_INFO[kind].upgradeBase, kind);
-}
-
-export function towerProfileBonus(kind: TowerKind) {
-  const level = towerProfileUpgradeLevel(kind);
+export function towerProfileBonus(_kind: TowerKind) {
+  const knowledge = profile.fieldKnowledgeEffects();
   return {
-    level,
-    damage: Math.pow(1.08, level),
-    rate: Math.pow(1.03, level),
-    range: 1 + level * 0.02,
+    level: 0,
+    damage: knowledge.damageMultiplier,
+    rate: knowledge.rateMultiplier,
+    range: knowledge.rangeMultiplier,
   };
 }
 
@@ -968,6 +604,7 @@ type StageRunConfig = Pick<
   | "specialRules"
   | "rewards"
   | "objectives"
+  | "mapId"
 > & {
   endless?: boolean;
   challenge?: EndlessChallenge;
@@ -1002,14 +639,15 @@ const DEFAULT_STAGE: StageRunConfig = {
     firstCompletionBonus: { coins: 0, xp: 0, stars: 0 },
   },
   objectives: [],
+  mapId: "neighborhood",
   allowRunModifiers: true,
 };
 
 function makeState(stage: StageRunConfig): GameState {
   return {
-    gold: stage.startingCoins,
-    baseHp: stage.startingBaseHealth,
-    baseMaxHp: stage.startingBaseHealth,
+    gold: stage.startingCoins + profile.fieldKnowledgeEffects().startingScrap,
+    baseHp: stage.startingBaseHealth + profile.fieldKnowledgeEffects().baseHealth,
+    baseMaxHp: stage.startingBaseHealth + profile.fieldKnowledgeEffects().baseHealth,
     stageId: stage.id,
     stageWaveTarget: Math.max(1, stage.waveCount),
     wave: 0,
@@ -1066,6 +704,9 @@ waveMessageType: "",
 export class Game {
   private readonly random: RandomSource;
   private nextId = 1;
+  private projectileEmissions = 0;
+  private map = getStageMapByStageId(DEFAULT_STAGE.id);
+  private pathLength = PATH_LENGTH;
 
   constructor(random: RandomSource = Math.random) {
     this.random = random;
@@ -1075,6 +716,10 @@ export class Game {
   private stage: StageRunConfig = DEFAULT_STAGE;
   private listeners = new Set<() => void>();
 
+  getProjectileEmissionCount() {
+    return this.projectileEmissions;
+  }
+
   subscribe(fn: () => void) {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
@@ -1082,33 +727,54 @@ export class Game {
   private emit() {
     this.listeners.forEach((l) => l());
   }
-reset() {
-  this.nextId = 1;
-  this.state = makeState(this.stage);
-  this.emit();
-}
+  private resetTransientState() {
+    this.accumulator = 0;
+    this.salvageFeedbackBuffer = 0;
+    this.salvageFeedbackTimer = 0;
+    this.waveEndNotified = false;
+  }
 
- startStage(stage: StageRunConfig) {
-  this.stage = stage;
-  this.nextId = 1;
-  this.state = makeState(stage);
-  track("run_started", { stageId: stage.id, endless: false });
+  reset() {
+    this.nextId = 1;
+    this.projectileEmissions = 0;
+    this.resetTransientState();
+    this.state = makeState(this.stage);
+    this.emit();
+  }
+
+  startStage(stage: StageRunConfig) {
+    this.projectileEmissions = 0;
+    this.stage = stage;
+    this.map = getStageMap(stage.mapId);
+    this.pathLength = getPathLength(this.map.path);
+    this.nextId = 1;
+    this.resetTransientState();
+    this.state = makeState(stage);
+    track("run_started", { stageId: stage.id, endless: false });
   this.emit();
 }
 
  startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+  this.projectileEmissions = 0;
   const stage = createEndlessStage(challenge);
   this.stage = { ...stage, challenge, challengeKey, endless: true };
+  this.map = getStageMap(stage.mapId);
+  this.pathLength = getPathLength(this.map.path);
   this.nextId = 1;
+  this.resetTransientState();
   this.state = makeState(this.stage);
   track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
   this.emit();
 }
 
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
+    this.projectileEmissions = 0;
     const stage = createBossTrialStage(trial);
     this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
+    this.map = getStageMap(stage.mapId);
+    this.pathLength = getPathLength(this.map.path);
     this.nextId = 1;
+    this.resetTransientState();
     this.state = makeState(this.stage);
     track("boss_trial_started", {
       trial: trial.id,
@@ -1207,16 +873,14 @@ reset() {
     return true;
   }
 
-  build(spot: number, kind: TowerKind): boolean {
+  private placeTowerAt(x: number, z: number, kind: TowerKind, spot: number) {
     const s = this.state;
-    const pad = BUILD_SPOTS[spot];
-    if (!pad || this.towerAtSpot(spot)) return false;
     const p = profile.profile;
     if (!towerUnlocked(kind, p.level, p.unlockedTowers)) {
       sfx("deny");
       return false;
     }
-    const cost = TOWER_INFO[kind].cost;
+    const cost = towerBuildCost(kind);
     if (s.gold < cost) {
       sfx("deny");
       return false;
@@ -1226,8 +890,8 @@ reset() {
       id: this.nextId++,
       kind,
       spot,
-      x: pad.x,
-      z: pad.z,
+      x,
+      z,
       level: 1,
       a: 0,
       b: 0,
@@ -1245,37 +909,34 @@ reset() {
     return true;
   }
 
-  /** Straight level-up: costs gold, raises damage / rate / range. */
-  upgradeTower(towerId: number): boolean {
-    const s = this.state;
-    const t = s.towers.find((x) => x.id === towerId);
-    if (!t || t.level >= MAX_TOWER_LEVEL) {
-      sfx("deny");
-      return false;
-    }
-    const cost = towerUpgradeCost(t);
-    if (s.gold < cost) {
-      sfx("deny");
-      return false;
-    }
-    s.gold -= cost;
-    t.level += 1;
-    profile.recordTowerUpgrade(t.kind);
-    track("tower_upgraded", { kind: t.kind, level: t.level });
-    sfx("upgrade");
-    this.emit();
-    return true;
+  /**
+   * Legacy indexed build used by existing saves/tests. New gameplay uses buildAt()
+   * so towers can occupy any legal ground position.
+   */
+  build(spot: number, kind: TowerKind): boolean {
+    const pad = BUILD_SPOTS[spot];
+    if (!pad || this.towerAtSpot(spot)) return false;
+    // Keep the indexed API for legacy callers/tests. Gameplay now uses buildAt().
+    return this.placeTowerAt(pad.x, pad.z, kind, spot);
   }
 
-  buyProfileTowerUpgrade(kind: TowerKind): boolean {
-    const cost = towerProfileUpgradeCost(kind);
-    if (!Number.isFinite(cost) || !profile.buyTowerUpgrade(kind, cost)) {
+  getPlacementStatus(x: number, z: number) {
+    return canPlaceTower(this.map, x, z, this.state.towers);
+  }
+
+  buildAt(x: number, z: number, kind: TowerKind): boolean {
+    const point = snapBuildPosition(this.map, x, z);
+    const placement = canPlaceTower(this.map, point.x, point.z, this.state.towers);
+    if (!placement.valid) {
       sfx("deny");
       return false;
     }
-    sfx("upgrade");
-    this.emit();
-    return true;
+    const spot = placementKey(point.x, point.z);
+    if (this.towerAtSpot(spot)) {
+      sfx("deny");
+      return false;
+    }
+    return this.placeTowerAt(point.x, point.z, kind, spot);
   }
 
   unlockTower(kind: TowerKind): boolean {
@@ -1314,6 +975,7 @@ reset() {
     s.gold -= cost;
     if (path === "a") t.a += 1;
     else t.b += 1;
+    t.level = Math.min(MAX_TOWER_LEVEL, 1 + t.a + t.b);
     profile.recordTowerUpgrade(t.kind);
     sfx("upgrade");
     this.emit();
@@ -1394,9 +1056,9 @@ reset() {
     forcedKind?: StageEnemyKind,
     startDist?: number,
     isBoss = false,
-  ) {
+  ): Zombie | null {
     const s = this.state;
-    if (s.zombies.length >= 60) return;
+    if (s.zombies.length >= 60) return null;
     const w = s.wave;
     const bossConfig = this.stage.endless
       ? {
@@ -1435,7 +1097,7 @@ reset() {
       speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
     }
 
-    s.zombies.push({
+    const spawned: Zombie = {
       id: this.nextId++,
       dist: startDist ?? -this.random() * 2,
       hp,
@@ -1444,9 +1106,9 @@ reset() {
       kind,
       boss: isBoss,
       bossEnraged: false,
-      x: PATH[0]!.x,
+      x: this.map.path[0]!.x,
       y: 0,
-      z: PATH[0]!.z,
+      z: this.map.path[0]!.z,
       wobble: this.random() * 10,
       dead: false,
       fade: 0,
@@ -1454,6 +1116,9 @@ reset() {
       slow: 0,
       burn: 0,
       burnTime: 0,
+      stun: 0,
+      markTime: 0,
+      markBonus: 0,
       healTimer: 0,
       healFlash: 0,
       vx: 0,
@@ -1463,10 +1128,12 @@ reset() {
       spin: 0,
       roll: 0,
       gibbed: false,
-    });
+      gibMask: 0,
+    };
+    s.zombies.push(spawned);
+    return spawned;
   }
 
-  /** Shared damage application — used by bullets, splash, chains and burning. */
   /** Shared damage application — used by bullets, splash, chains and burning. */
   private damage(
     z: Zombie,
@@ -1476,6 +1143,18 @@ reset() {
     goreBase: number,
     goldMult = 1,
     crit = false,
+    ability: {
+      stun?: number;
+      markDuration?: number;
+      markBonus?: number;
+      shatterMultiplier?: number;
+      executeThreshold?: number;
+      executeMultiplier?: number;
+      bossDamageMultiplier?: number;
+      closeDamageMultiplier?: number;
+      originX?: number;
+      originZ?: number;
+    } = {},
   ) {
     const s = this.state;
     if (z.dead) return;
@@ -1492,8 +1171,29 @@ reset() {
         ? Math.max(0, 1 - this.stage.bossTrial.variant.traits.bossAuraDamageReduction)
         : 1
       : 1;
+    const guardianShieldBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("guardian-shield")));
+    const markedMultiplier =
+      (z.markTime ?? 0) > 0 ? 1 + Math.max(0, z.markBonus ?? ability.markBonus ?? 0) : 1;
+    const shatterMultiplier = z.slow > 0 ? Math.max(1, ability.shatterMultiplier ?? 1) : 1;
+    const executeMultiplier =
+      ability.executeThreshold && z.hp / Math.max(1, z.maxHp) <= ability.executeThreshold
+        ? Math.max(1, ability.executeMultiplier ?? 1)
+        : 1;
+    const bossMultiplier = z.boss ? Math.max(1, ability.bossDamageMultiplier ?? 1) : 1;
+    const originX = ability.originX ?? fromX;
+    const originZ = ability.originZ ?? fromZ;
+    const closeMultiplier =
+      Math.hypot(z.x - originX, z.z - originZ) <= 3.8
+        ? Math.max(1, ability.closeDamageMultiplier ?? 1)
+        : 1;
     const incomingDamage =
-      (z.kind === 5 ? dmg * 0.68 : dmg) * guardianAura;
+      (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) *
+      guardianAura *
+      markedMultiplier *
+      shatterMultiplier *
+      executeMultiplier *
+      bossMultiplier *
+      closeMultiplier;
     const result = resolveDamage(
       z.hp,
       z.maxHp,
@@ -1502,17 +1202,38 @@ reset() {
       goldMult,
       crit,
     );
+    const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
+    if (!result.killed) {
+      if (ability.stun) z.stun = Math.max(z.stun ?? 0, ability.stun);
+      if (ability.markDuration) {
+        z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
+        z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
+      }
+    }
+    const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
+    const brokenParts = gorePartsBrokenBetween(
+      z.kind,
+      previousRatio,
+      nextRatio,
+      z.gibMask ?? 0,
+    );
+    for (const part of brokenParts) {
+      z.gibMask = (z.gibMask ?? 0) | gorePartBit(part);
+      this.spawnPartGib(z, part, goreBase, result.crit ? 1.15 : 1);
+    }
 
-    if (s.damagePopups.length < 80) {
+    // Numeric damage spam is deliberately suppressed. Only rare crits and
+    // currency rewards create text, while body breakpoints carry the rest.
+    if (!result.killed && result.crit && s.damagePopups.length < 24) {
       s.damagePopups.push({
         id: this.nextId++,
-        x: z.x + (this.random() - 0.5) * 0.45,
-        y: 1.35 + this.random() * 0.35,
-        z: z.z + (this.random() - 0.5) * 0.45,
-        value: result.popupValue,
+        x: z.x,
+        y: 1.65,
+        z: z.z,
+        value: 0,
         life: 0,
-        crit: result.crit,
+        crit: true,
         gold: 0,
       });
     }
@@ -1536,7 +1257,8 @@ reset() {
     s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
     s.maxKillStreak = Math.max(s.maxKillStreak, s.killStreak);
     s.killStreakTimer = 2.25;
-    const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier;
+    const knowledge = profile.fieldKnowledgeEffects();
+    const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier * knowledge.scrapMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
     const bossGoldMultiplier = bossKillGoldMultiplier(z.boss);
     const reward = calculateKillReward(
@@ -1549,6 +1271,7 @@ reset() {
     s.bossBonusGold += reward.bossBonusGold;
     s.gold += reward.totalGold;
     const earnedGold = reward.totalGold;
+    sfx("coin");
     if (isKillStreakMilestone(s.killStreak)) {
       track("kill_streak_milestone", {
         streak: s.killStreak,
@@ -1565,7 +1288,7 @@ reset() {
 
     if (z.boss) {
       s.bossesDefeated += 1;
-      s.waveMessage = `BOSS DOWN! +${earnedGold}G`;
+      s.waveMessage = `BOSS DOWN! +${earnedGold} SCRAP`;
       s.waveMessageLife = 1.8;
       s.waveMessageType = "complete";
       track("boss_defeated", {
@@ -1576,7 +1299,7 @@ reset() {
       sfx("bigHit");
     }
 
-    if (s.damagePopups.length < 80) {
+    if (s.damagePopups.length < 24) {
       s.damagePopups.push({
         id: this.nextId++,
         x: z.x,
@@ -1597,8 +1320,8 @@ reset() {
         ? Math.max(2, Math.floor(trialTraits.bossSplitCount))
         : 2;
       for (let i = 0; i < splitCount; i++) {
-        this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12), false);
-        const child = s.zombies[s.zombies.length - 1]!;
+        const child = this.spawn(7, Math.max(0, z.dist - 0.2 - i * 0.12), false);
+        if (!child) break;
         child.hp *= z.boss && trialTraits?.bossSplitHpMultiplier
           ? Math.max(0.2, trialTraits.bossSplitHpMultiplier)
           : 0.45;
@@ -1625,30 +1348,66 @@ reset() {
     this.emit();
   }
 
-    private spawnGibs(z: Zombie, count: number, force: number) {
+  private spawnPartGib(z: Zombie, part: GorePart, goreBase: number, force = 1) {
     const s = this.state;
-    if (s.gibs.length > 160) return;
+    if (s.gibs.length >= 96) return;
+    const anchor = goreAnchor(part);
+    const angle = this.random() * Math.PI * 2;
+    const speed = (1.25 + this.random() * 2.4) * Math.max(0.7, Math.min(2, goreBase)) * force;
+    s.gibs.push({
+      id: this.nextId++,
+      x: z.x + anchor.x * 0.6,
+      y: Math.max(0.18, anchor.y + (this.random() - 0.5) * 0.12),
+      z: z.z + anchor.z * 0.6,
+      vx: Math.cos(angle) * speed,
+      vy: 2.25 + this.random() * 2.8 * force,
+      vz: Math.sin(angle) * speed,
+      rx: this.random() * 3,
+      ry: this.random() * 3,
+      spin: (this.random() - 0.5) * 13,
+      life: 0,
+      size: anchor.size * (0.85 + this.random() * 0.35),
+      tint: part === "head" ? 0 : part.includes("core") ? 2 : 1,
+      part,
+    });
+  }
+
+  private spawnGibs(z: Zombie, count: number, force: number) {
+    const s = this.state;
+    if (s.gibs.length >= 96) return;
 
     for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
-      const sp = (1.5 + this.random() * 3) * force;
+      const sp = (1.1 + this.random() * 2.1) * force;
+      const debrisPart: GorePart = i % 3 === 0 ? "head" : i % 3 === 1 ? "left-arm" : "splitter-core";
 
       s.gibs.push({
         id: this.nextId++,
         x: z.x,
-        y: 0.6 + this.random() * 0.9,
+        y: 0.55 + this.random() * 0.85,
         z: z.z,
         vx: Math.cos(a) * sp,
-        vy: 2.5 + this.random() * 3.5 * force,
+        vy: 2 + this.random() * 3 * force,
         vz: Math.sin(a) * sp,
         rx: this.random() * 3,
         ry: this.random() * 3,
         spin: (this.random() - 0.5) * 14,
         life: 0,
-        size: 0.12 + this.random() * 0.16,
+        size: 0.08 + this.random() * 0.1,
         tint: i % 3,
+        part: debrisPart,
       });
     }
+  }
+
+  private enemyMobilityMultiplier(z: Zombie) {
+    const mask = z.gibMask ?? 0;
+    const has = (part: GorePart) => (mask & gorePartBit(part)) !== 0;
+    if (z.kind === 1 && (has("left-leg") || has("right-leg"))) return 0.78;
+    if (z.kind === 2 && (has("left-shoulder") || has("right-shoulder"))) return 0.9;
+    if (z.kind === 3 && has("splitter-core")) return 0.84;
+    if (z.kind === 7 && has("swarm-crest")) return 0.8;
+    return 1;
   }
 
   /** Frame-rate independent entry point: runs fixed sim steps for the elapsed time. */
@@ -1672,6 +1431,8 @@ reset() {
   }
 
   private accumulator = 0;
+  private salvageFeedbackBuffer = 0;
+  private salvageFeedbackTimer = 0;
 
   private step(dt: number) {
     const s = this.state;
@@ -1703,12 +1464,30 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 }
 
 
-    // idle income
+    // Passive salvage feeds the same reward language as combat gold.
+    this.salvageFeedbackTimer = Math.max(0, this.salvageFeedbackTimer - dt);
     s.income += incomePerSecond(s.incomeLevel) * dt;
     if (s.income >= 1) {
       const whole = Math.floor(s.income);
       s.gold += whole;
       s.income -= whole;
+      this.salvageFeedbackBuffer += whole;
+    }
+    if (this.salvageFeedbackBuffer > 0 && this.salvageFeedbackTimer <= 0 && s.damagePopups.length < 80) {
+      const amount = this.salvageFeedbackBuffer;
+      this.salvageFeedbackBuffer = 0;
+      this.salvageFeedbackTimer = 0.8;
+      s.damagePopups.push({
+        id: this.nextId++,
+        x: -4,
+        y: 4.25,
+        z: 13.4,
+        value: 0,
+        life: 0,
+        crit: false,
+        gold: amount,
+      });
+      sfx("coin");
     }
 
     // waves
@@ -1789,8 +1568,10 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       if (z.kind === 6) {
         const bossHeal = z.boss && this.stage.bossTrial ? this.stage.bossTrial.variant?.traits : undefined;
+        const auraBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("healer-aura")));
+
         const healInterval = 0.9 * (bossHeal?.bossHealIntervalMultiplier ?? 1);
-        const healAmount = 0.08 * (bossHeal?.bossHealAmountMultiplier ?? 1);
+        const healAmount = 0.08 * (bossHeal?.bossHealAmountMultiplier ?? 1) * (auraBroken ? 0.42 : 1);
         const targetCount = Math.max(1, Math.floor(bossHeal?.bossHealTargetCount ?? 1));
         z.healTimer = (z.healTimer ?? 0) + dt;
         if (z.healTimer >= healInterval) {
@@ -1811,17 +1592,25 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
       const lifecycle = stepLivingEnemy({
         dist: z.dist,
-        speed: z.speed * bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier),
+        speed:
+          z.speed *
+          bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier) *
+          this.enemyMobilityMultiplier(z),
         slow: z.slow,
         burn: z.burn,
         burnTime: z.burnTime,
+        stun: z.stun ?? 0,
+        markTime: z.markTime ?? 0,
         wobble: z.wobble,
         dt,
-        pathLength: PATH_LENGTH,
+        pathLength: this.pathLength,
       });
 
       z.wobble = lifecycle.wobble;
       z.burnTime = lifecycle.burnTime;
+      z.stun = lifecycle.stun;
+      z.markTime = lifecycle.markTime;
+      z.markBonus = lifecycle.markBonus;
 
       if (lifecycle.burnDamage > 0) {
         this.damage(z, lifecycle.burnDamage, z.x, z.z, 1);
@@ -1832,7 +1621,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.dist = lifecycle.dist;
       z.slow = lifecycle.slow;
 
-      const p = pointAt(z.dist);
+      const p = pointAtPath(this.map.path, z.dist);
       z.x = p.x;
       z.z = p.z;
 
@@ -1841,11 +1630,13 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         z.fade = 1.4;
         const baseHit = resolveBaseHit(s.baseHp, z.kind);
         const rawDamage = s.baseHp - baseHit.nextHealth;
+        const bomberPackBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("bomber-pack")));
+        const bomberBaseDamageMultiplier = z.kind === 4 && bomberPackBroken ? 0.55 : 1;
         const bossBaseDamageMultiplier =
           z.boss && this.stage.bossTrial
             ? Math.max(1, this.stage.bossTrial.variant?.traits.bossBaseDamageMultiplier ?? 1)
             : 1;
-        const adjustedDamage = Math.ceil(rawDamage * bossBaseDamageMultiplier);
+        const adjustedDamage = Math.ceil(rawDamage * bossBaseDamageMultiplier * bomberBaseDamageMultiplier);
         const nextHealth = Math.max(0, s.baseHp - adjustedDamage);
         s.waveDamageTaken += adjustedDamage;
         s.baseHp = nextHealth;
@@ -1979,10 +1770,21 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (perfectBonus > 0) {
           s.perfectWaves += 1;
           s.perfectWaveBonusGold += perfectBonus;
+          s.damagePopups.push({
+            id: this.nextId++,
+            x: -4,
+            y: 4.1,
+            z: 13.4,
+            value: 0,
+            life: 0,
+            crit: false,
+            gold: perfectBonus,
+          });
+          sfx("coin");
           track("perfect_wave", { wave: s.wave, bonusGold: perfectBonus });
         }
         s.waveMessage =
-          perfectBonus > 0 ? `PERFECT WAVE! +${perfectBonus}G` : "WAVE COMPLETE!";
+          perfectBonus > 0 ? `PERFECT WAVE! +${perfectBonus} SCRAP` : "WAVE COMPLETE!";
         s.waveMessageLife = Math.max(1.5, s.waveTimer);
         s.waveMessageType = "complete";
         sfx("wave");
@@ -2026,28 +1828,44 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           const rate = towerRate(t) * runEffects.rateMultiplier;
           t.cooldown = 1 / rate;
           t.recoil = 1;
-          const crit = this.random() < towerCrit(t);
-
-          s.bullets.push(
-            createTowerProjectile({
-              id: this.nextId++,
-              x: t.x,
-              z: t.z,
-              tx: best.x,
-              tz: best.z,
-              speed: BULLET_SPEED[t.kind],
-              damage: towerDamage(t) * runEffects.damageMultiplier * (crit ? 2.5 : 1),
-              target: best.id,
-              kind: t.kind,
-              splash: towerSplash(t) * runEffects.splashMultiplier,
-              chain: towerChain(t),
-              slow: towerSlow(t) * runEffects.slowMultiplier,
-              burn: towerBurn(t),
-              gold: towerGold(t),
-              crit,
-              level: t.level,
-            }),
-          );
+          const combat = towerCombatStats(t);
+          const crit = this.random() < combat.crit;
+          const volley = Math.max(1, Math.min(3, combat.volley));
+          const volleyDamageFactor = volley === 3 ? 0.48 : volley === 2 ? 0.68 : 1;
+          for (let shot = 0; shot < volley && s.bullets.length < MAX_ACTIVE_BULLETS; shot++) {
+            s.bullets.push(
+              createTowerProjectile({
+                id: this.nextId++,
+                x: t.x,
+                z: t.z,
+                tx: best.x,
+                tz: best.z,
+                originX: t.x,
+                originZ: t.z,
+                speed: BULLET_SPEED[t.kind],
+                damage: combat.damage * runEffects.damageMultiplier * volleyDamageFactor * (crit ? 2.5 : 1),
+                target: best.id,
+                kind: t.kind,
+                splash: combat.splash * runEffects.splashMultiplier,
+                chain: combat.chain,
+                slow: combat.slow * runEffects.slowMultiplier,
+                burn: combat.burn,
+                gold: combat.gold,
+                crit,
+                level: t.level,
+                stun: combat.stun,
+                markDuration: combat.markDuration,
+                markBonus: combat.markBonus,
+                shatterMultiplier: combat.shatterMultiplier,
+                executeThreshold: combat.executeThreshold,
+                executeMultiplier: combat.executeMultiplier,
+                bossDamageMultiplier: combat.bossDamageMultiplier,
+                closeDamageMultiplier: combat.closeDamageMultiplier,
+                burnDuration: combat.burnDuration,
+              }),
+            );
+            this.projectileEmissions += 1;
+          }
           sfx(SHOOT_SFX[t.kind]);
         }
       }
@@ -2073,6 +1891,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             z,
             b.slow,
             b.burn,
+            b.burnDuration,
           );
           z.slow = z.kind === 5 ? status.slow * 0.45 : status.slow;
           z.burn = status.burn;
@@ -2086,6 +1905,18 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             goreBase,
             b.gold,
             z.id === target.id ? b.crit : false,
+            {
+              stun: b.stun,
+              markDuration: b.markDuration,
+              markBonus: b.markBonus,
+              shatterMultiplier: b.shatterMultiplier,
+              executeThreshold: b.executeThreshold,
+              executeMultiplier: b.executeMultiplier,
+              bossDamageMultiplier: b.bossDamageMultiplier,
+              closeDamageMultiplier: b.closeDamageMultiplier,
+              originX: b.originX,
+              originZ: b.originZ,
+            },
           );
         };
 
@@ -2125,7 +1956,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       s.bullets = s.bullets.filter((b) => b.alive);
     }
     if (s.gibs.length > 0) {
-      s.gibs = s.gibs.filter((g) => g.life < 3.2);
+      s.gibs = s.gibs.filter((g) => g.life < 1.75);
     }
   }
 }

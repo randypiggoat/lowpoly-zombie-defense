@@ -63,16 +63,38 @@ describe("tower stat calculations", () => {
       },
     );
 
-    expect(stats.damage).toBeCloseTo(10 * 3 * 1.22 ** 2 * 1.2);
-    expect(stats.rate).toBeCloseTo(2 * 1.4 * 1.5 * 1.06 ** 2 * 1.1);
-    expect(stats.range).toBeCloseTo(6 * 1.5 * 1.035 ** 2 * 1.04);
+    expect(stats.damage).toBeCloseTo(10 * 3 * 1.04 ** 2 * 1.2);
+    expect(stats.rate).toBeCloseTo(2 * 1.4 * 1.5 * 1.01 ** 2 * 1.1);
+    expect(stats.range).toBeCloseTo(6 * 1.5 * 1.01 ** 2 * 1.04);
     expect(stats.slow).toBe(0.6);
     expect(stats.splash).toBe(1.4);
     expect(stats.chain).toBe(3);
-    expect(stats.burn).toBeCloseTo(5 * 1.22 ** 2 * 1.2);
+    expect(stats.burn).toBeCloseTo(5 * 1.04 ** 2 * 1.2);
     expect(stats.crit).toBe(0.35);
     expect(stats.gore).toBe(2);
     expect(stats.gold).toBe(1.25);
+    expect(stats.volley).toBe(1);
+    expect(stats.stun).toBe(0);
+    expect(stats.markDuration).toBe(0);
+    expect(stats.markBonus).toBe(0);
+    expect(stats.shatterMultiplier).toBe(0);
+    expect(stats.executeThreshold).toBe(0);
+    expect(stats.executeMultiplier).toBe(1);
+    expect(stats.bossDamageMultiplier).toBe(1);
+    expect(stats.closeDamageMultiplier).toBe(1);
+    expect(stats.burnDuration).toBe(2.4);
+  });
+
+  test("global Field Knowledge is the only persistent combat modifier", () => {
+    const stats = getTowerCombatStats(
+      { kind: "test", level: 1, a: 0, b: 0 },
+      definition,
+      paths,
+      profileBonus,
+    );
+    expect(stats.damage).toBe(10);
+    expect(stats.rate).toBe(2);
+    expect(stats.range).toBe(6);
   });
 
   test("preserves base tower stats when no upgrades are purchased", () => {
@@ -94,6 +116,16 @@ describe("tower stat calculations", () => {
       crit: 0,
       gore: 1,
       gold: 1,
+      volley: 1,
+      stun: 0,
+      markDuration: 0,
+      markBonus: 0,
+      shatterMultiplier: 0,
+      executeThreshold: 0,
+      executeMultiplier: 1,
+      bossDamageMultiplier: 1,
+      closeDamageMultiplier: 1,
+      burnDuration: 2.4,
     });
   });
 });

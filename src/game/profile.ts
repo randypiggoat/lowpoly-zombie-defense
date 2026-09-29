@@ -1,11 +1,11 @@
 import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
+import { FIELD_KNOWLEDGE, knowledgeUnlocked, resolveFieldKnowledgeEffects } from "./fieldKnowledge";
 import { TOWER_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
 
 const KEY = "rotwood.profile.v1";
-const PROFILE_VERSION = 3;
-const MAX_TOWER_UPGRADE_LEVEL = 5;
+const PROFILE_VERSION = 4;
 const STARTER_TOWER_KINDS = ["rifleman", "shotgunner", "freezer"] as const;
 
 export type RewardGrant = {
@@ -62,7 +62,7 @@ export const DAILY_MISSION_DEFS: DailyMissionDefinition[] = [
     description: "Kill 100 zombies",
     target: 100,
     event: "zombieKill",
-    reward: { label: "150 coins", coins: 150 },
+    reward: { label: "150 credits", coins: 150 },
   },
   {
     id: "daily-wave-15",
@@ -88,7 +88,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Kill your first zombie.",
     target: 1,
     metric: "totalKills",
-    reward: { label: "50 coins", coins: 50 },
+    reward: { label: "50 credits", coins: 50 },
   },
   {
     id: "zombie-hunter",
@@ -112,7 +112,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Reach Wave 10 in any run.",
     target: 10,
     metric: "highestWave",
-    reward: { label: "150 coins", coins: 150 },
+    reward: { label: "150 credits", coins: 150 },
   },
   {
     id: "wave-25",
@@ -144,7 +144,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Upgrade any tower once.",
     target: 1,
     metric: "towerUpgradeActions",
-    reward: { label: "100 coins", coins: 100 },
+    reward: { label: "100 credits", coins: 100 },
   },
   {
     id: "starter-towers",
@@ -157,21 +157,21 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
 ];
 
 export const DAILY_LOGIN_REWARDS: DailyLoginRewardDefinition[] = [
-  { day: 1, title: "Coins", reward: { label: "120 coins", coins: 120 } },
-  { day: 2, title: "Coins", reward: { label: "180 coins", coins: 180 } },
+  { day: 1, title: "Credits", reward: { label: "120 credits", coins: 120 } },
+  { day: 2, title: "Credits", reward: { label: "180 credits", coins: 180 } },
   { day: 3, title: "Gems", reward: { label: "6 gems", gems: 6 } },
   { day: 4, title: "XP Boost", reward: { label: "220 XP", xp: 220 } },
   {
     day: 5,
     title: "Rare Reward",
-    reward: { label: "Rare cache · 260 coins + 4 gems", coins: 260, gems: 4 },
+    reward: { label: "Rare cache · 260 credits + 4 gems", coins: 260, gems: 4 },
   },
   { day: 6, title: "Gems", reward: { label: "10 gems", gems: 10 } },
   {
     day: 7,
     title: "Special Reward",
     reward: {
-      label: "Special cache · 400 coins + 12 gems + 320 XP",
+      label: "Special cache · 400 credits + 12 gems + 320 XP",
       coins: 400,
       gems: 12,
       xp: 320,
@@ -197,8 +197,10 @@ export type PlayerProfile = {
   lastLoginRewardDayClaimed: number | null;
   /** Date on which the optional rewarded-ad daily bonus was claimed. */
   dailyRewardedBonusDate: string | null;
-  /** Persistent per-tower-kind upgrade data, expandable later. */
+  /** Legacy Workshop data retained only for save compatibility; no longer affects combat. */
   towerUpgrades: Record<string, TowerUpgradeProfile>;
+  /** Permanent account-wide Field Knowledge nodes. */
+  fieldKnowledge: Record<string, number>;
   /** Tower kinds unlocked ahead of their level gate. */
   unlockedTowers: string[];
   achievements: Record<string, AchievementProgress>;
@@ -320,6 +322,7 @@ function blank(): PlayerProfile {
     lastLoginRewardDayClaimed: null,
     dailyRewardedBonusDate: null,
     towerUpgrades: {},
+    fieldKnowledge: {},
     unlockedTowers: [],
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
@@ -550,6 +553,11 @@ function load(): PlayerProfile {
           ? null
           : normalizeDay(parsed.lastLoginRewardDayClaimed),
       towerUpgrades: normalizeTowerUpgrades(parsed.towerUpgrades),
+      fieldKnowledge: isRecord(parsed.fieldKnowledge)
+        ? Object.fromEntries(
+            Object.entries(parsed.fieldKnowledge).filter(([id, rank]) => FIELD_KNOWLEDGE.some((node) => node.id === id) && Number(rank) > 0).map(([id]) => [id, 1]),
+          )
+        : {},
       unlockedTowers: normalizeStringArray(parsed.unlockedTowers),
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
@@ -643,6 +651,33 @@ class ProfileStore {
     return this.revision;
   }
 
+
+  fieldKnowledgeRank(id: string) {
+    return this.profile.fieldKnowledge[id] ?? 0;
+  }
+
+  fieldKnowledgeEffects() {
+    return resolveFieldKnowledgeEffects(this.profile.fieldKnowledge);
+  }
+
+  canUnlockFieldKnowledge(id: string) {
+    const node = FIELD_KNOWLEDGE.find((entry) => entry.id === id);
+    if (!node || this.fieldKnowledgeRank(id) > 0) return false;
+    return knowledgeUnlocked(node, this.profile.fieldKnowledge);
+  }
+
+  unlockFieldKnowledge(id: string) {
+    const node = FIELD_KNOWLEDGE.find((entry) => entry.id === id);
+    const p = this.profile;
+    if (!node || p.fieldKnowledge[id] > 0) return false;
+    if (!knowledgeUnlocked(node, p.fieldKnowledge)) return false;
+    if (p.coins < node.cost) return false;
+    p.coins -= node.cost;
+    p.fieldKnowledge[id] = 1;
+    this.save();
+    return true;
+  }
+
   subscribe(fn: () => void) {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);
@@ -701,15 +736,6 @@ class ProfileStore {
       this.levelUpNotice = { id: this.levelUpNoticeId, level: p.level };
     }
     return { leveledTo: levelsGained > 0 ? p.level : null, levelsGained };
-  }
-
-  private towerUpgrade(kind: string): TowerUpgradeProfile {
-    const p = this.profile;
-    const existing = p.towerUpgrades[kind];
-    if (existing) return existing;
-    const created: TowerUpgradeProfile = { level: 0, points: 0, spentCoins: 0 };
-    p.towerUpgrades[kind] = created;
-    return created;
   }
 
   private awardReward(reward: RewardGrant) {
@@ -1064,35 +1090,12 @@ class ProfileStore {
   }
 
   /** Track in-run upgrade activity separately from permanent upgrade levels. */
-  recordTowerUpgrade(kind: string, points = 1) {
+  recordTowerUpgrade(_kind: string, points = 1) {
     this.refreshRetentionState();
     const p = this.profile;
-    const entry = this.towerUpgrade(kind);
-    entry['points'] += points;
-    p.towerUpgradeActions += points;
+    p.towerUpgradeActions += Math.max(0, points);
     this.syncAchievementProgress();
     this.save();
-  }
-
-  towerUpgradeLevel(kind: string) {
-    return this.profile.towerUpgrades[kind]?.level ?? 0;
-  }
-
-  towerUpgradeCost(baseCost: number, kind: string) {
-    const level = this.towerUpgradeLevel(kind);
-    if (level >= MAX_TOWER_UPGRADE_LEVEL) return Infinity;
-    return Math.round(baseCost * (1.5 + level * 0.85));
-  }
-
-  buyTowerUpgrade(kind: string, cost: number) {
-    const p = this.profile;
-    const entry = this.towerUpgrade(kind);
-    if (entry['level'] >= MAX_TOWER_UPGRADE_LEVEL || p.coins < cost) return false;
-    p.coins -= cost;
-    entry['level'] += 1;
-    entry['spentCoins'] += cost;
-    this.save();
-    return true;
   }
 
   unlockTower(kind: string, cost: number) {
