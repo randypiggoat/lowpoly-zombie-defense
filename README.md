@@ -20,12 +20,11 @@ The project uses **Bun** for installs and scripts.
 
 ### Launch from GitHub
 
-To run the current gameplay branch locally:
+To run the current game locally:
 
 ```sh
 git clone https://github.com/randypiggoat/lowpoly-zombie-defense.git
 cd lowpoly-zombie-defense
-git checkout feat/ui-retention-polish
 bun install
 bun run dev
 ```
