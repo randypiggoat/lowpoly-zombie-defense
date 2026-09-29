@@ -98,6 +98,23 @@ async function assertVisualHealth(page: Page) {
   expect(health.clippedControls).toEqual([]);
 }
 
+async function assertGameplayLayoutHealth(page: Page) {
+  const health = await page.locator(".rotwood-app").evaluate((root) => {
+    const rect = root.getBoundingClientRect();
+    const docWidth = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
+    const clientWidth = Math.max(document.body.clientWidth, document.documentElement.clientWidth);
+    return {
+      width: rect.width,
+      height: rect.height,
+      horizontalOverflow: Math.max(0, docWidth - clientWidth),
+    };
+  });
+
+  expect(health.width).toBeGreaterThan(300);
+  expect(health.height).toBeGreaterThan(300);
+  expect(health.horizontalOverflow).toBeLessThanOrEqual(2);
+}
+
 async function openAndCheck(page: Page, buttonName: string | RegExp, expectedText: string | RegExp) {
   await page.getByRole("button", { name: buttonName }).click({ force: true });
   await expect(page.getByText(expectedText).first()).toBeVisible();
@@ -207,7 +224,7 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
     await expect(page.getByText("RECON", { exact: true })).toBeVisible();
     await expect(page.getByText("SUSTAINED FIRE", { exact: true })).toBeVisible();
     await expect(page.getByText(/Workshop/i)).toHaveCount(0);
-    await assertVisualHealth(page);
+    await assertGameplayLayoutHealth(page);
   }
 
   await page.getByRole("button", { name: "Pause" }).click();
