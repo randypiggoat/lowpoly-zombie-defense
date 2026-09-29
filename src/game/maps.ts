@@ -270,15 +270,16 @@ export function canPlaceTower(
   z: number,
   existing: readonly MapVec2[] = [],
 ): PlacementCheck {
-  const point = snapBuildPosition(map, x, z);
   if (
-    point.x < map.bounds.minX ||
-    point.x > map.bounds.maxX ||
-    point.z < map.bounds.minZ ||
-    point.z > map.bounds.maxZ
+    x < map.bounds.minX ||
+    x > map.bounds.maxX ||
+    z < map.bounds.minZ ||
+    z > map.bounds.maxZ
   ) {
     return { valid: false, reason: "off-map" };
   }
+
+  const point = snapBuildPosition(map, x, z);
 
   if (distanceToPath(map, point) < map.buildClearance) {
     return { valid: false, reason: "road" };
