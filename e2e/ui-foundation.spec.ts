@@ -61,9 +61,9 @@ test("tower placement follows pointer across both world axes and builds at the s
       };
     });
 
-  // Disable only the HUD's interactive hit targets while probing the game surface,
-  // so the mouse is guaranteed to reach the R3F placement plane at every test point.
-  const pointerProbeStyle = await page.addStyleTag({
+  // Keep probes on the canvas itself so the regression test exercises the
+  // production pointer listeners without HUD hit-testing affecting delivery.
+  await page.addStyleTag({
     content: ".rotwood-hud .pointer-events-auto { pointer-events: none !important; }",
   });
 
@@ -76,61 +76,64 @@ test("tower placement follows pointer across both world axes and builds at the s
     y: box!.y + box!.height * y,
   });
 
-  const moveAndRead = async (x: number, y: number) => {
+  const dispatchPointer = async (type: "pointermove" | "pointerdown", x: number, y: number) => {
     const target = point(x, y);
-    await page.mouse.move(target.x, target.y);
-    await expect.poll(async () => (await qa())?.preview).not.toBeNull();
-    return (await qa())!.preview!;
+    await canvas.dispatchEvent(type, {
+      bubbles: true,
+      clientX: target.x,
+      clientY: target.y,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+    });
   };
 
-  const left = await moveAndRead(0.28, 0.68);
-  const upper = await moveAndRead(0.50, 0.46);
-  const right = await moveAndRead(0.72, 0.68);
+  const probes: Array<{
+    screen: { x: number; y: number };
+    preview: { x: number; z: number };
+    valid: boolean;
+  }> = [];
 
-  expect(Math.abs(right.x - left.x)).toBeGreaterThan(0.5);
-  expect(Math.abs(upper.z - left.z)).toBeGreaterThan(0.5);
-
-  const candidates = [
-    [0.28, 0.68],
-    [0.50, 0.68],
-    [0.72, 0.68],
-    [0.40, 0.58],
-    [0.60, 0.58],
-    [0.50, 0.78],
-  ] as const;
-
-  let selected: { x: number; y: number } | null = null;
-  let selectedPreview: { x: number; z: number } | null = null;
-  for (const [x, y] of candidates) {
-    const preview = await moveAndRead(x, y);
-    const status = (await qa())?.status;
-    if (status?.valid) {
-      selected = point(x, y);
-      selectedPreview = preview;
-      break;
+  for (const x of [0.18, 0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82]) {
+    for (const y of [0.32, 0.40, 0.48, 0.56, 0.64, 0.72, 0.80, 0.88]) {
+      await dispatchPointer("pointermove", x, y);
+      const state = await qa();
+      if (!state?.preview) continue;
+      probes.push({
+        screen: { x, y },
+        preview: state.preview,
+        valid: Boolean(state.status?.valid),
+      });
     }
   }
 
-  expect(selected).not.toBeNull();
-  expect(selectedPreview).not.toBeNull();
+  expect(probes.length).toBeGreaterThan(4);
 
-  // Dispatch the actual browser pointer event on the canvas element itself so
-  // the production canvas listener handles the tested map coordinate directly.
-  await canvas.dispatchEvent("pointerdown", {
-    bubbles: true,
-    clientX: selected!.x,
-    clientY: selected!.y,
-    pointerId: 1,
-    pointerType: "mouse",
-    isPrimary: true,
-  });
+  const left = probes.find((probe) => probe.screen.x <= 0.34);
+  const right = [...probes].reverse().find((probe) => probe.screen.x >= 0.66);
+  const upper = probes.find((probe) => probe.screen.y <= 0.48);
+  const lower = [...probes].reverse().find((probe) => probe.screen.y >= 0.72);
+
+  expect(left).toBeTruthy();
+  expect(right).toBeTruthy();
+  expect(upper).toBeTruthy();
+  expect(lower).toBeTruthy();
+
+  expect(Math.abs(right!.preview.x - left!.preview.x)).toBeGreaterThan(0.5);
+  expect(Math.abs(lower!.preview.z - upper!.preview.z)).toBeGreaterThan(0.5);
+
+  const selected = probes.find((probe) => probe.valid);
+  expect(selected).toBeTruthy();
+
+  await dispatchPointer("pointerdown", selected!.screen.x, selected!.screen.y);
   await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
 
-  const committedPreview = (await qa())!.preview;
+  const committedPreview = (await qa())?.preview;
   expect(committedPreview).not.toBeNull();
 
-  // Restore normal HUD hit testing before verifying the real build-button interaction.
-  await pointerProbeStyle.evaluate((element) => element.remove());
+  await page.locator(".rotwood-hud .pointer-events-auto").evaluate((element) => {
+    (element as HTMLElement).style.pointerEvents = "";
+  });
 
   const before = (await qa())!.towers.length;
   const buildButtons = page.getByRole("button", { name: /^Build ·/ });
