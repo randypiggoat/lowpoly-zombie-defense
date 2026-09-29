@@ -830,7 +830,7 @@ export function HUD({
             className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Salvage +{incomePerSecond(state.incomeLevel + 1) - incomePerSecond(state.incomeLevel)}/s
-            <span className="block text-[10px] text-panel-muted">{incCost}g</span>
+            <span className="block text-[10px] text-panel-muted">{incCost} SCRAP</span>
           </button>
           <button
             onClick={() => game.repair()}
