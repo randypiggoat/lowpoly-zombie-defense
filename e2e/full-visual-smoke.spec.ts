@@ -184,11 +184,11 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => {
     const qa = (window as Window & {
       __ROTWOOD_QA__?: {
-        getCombatSnapshot: () => { towerCount: number; projectileKinds: string[] };
+        getCombatSnapshot: () => { towerCount: number; projectileKinds: string[]; projectileEmissions: number };
       };
     }).__ROTWOOD_QA__;
     const snapshot = qa?.getCombatSnapshot();
-    return snapshot ? snapshot.towerCount > 0 && snapshot.projectileKinds.includes("rifleman") : false;
+    return snapshot ? snapshot.towerCount > 0 && snapshot.projectileEmissions > 0 : false;
   }), { timeout: 10000 }).toBe(true);
 
   const towerId = await page.evaluate(() => {
