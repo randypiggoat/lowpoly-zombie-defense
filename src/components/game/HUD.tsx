@@ -127,20 +127,6 @@ function abilityLabel(ability: string | undefined) {
   }
 }
 
-function abilityLabel(ability: string | undefined) {
-  switch (ability) {
-    case "burst": return "BURST";
-    case "stun": return "STUN";
-    case "mark": return "MARK";
-    case "shatter": return "SHATTER";
-    case "execute": return "EXECUTE";
-    case "boss-hunter": return "ELITE HUNTER";
-    case "close-range": return "POINT BLANK";
-    case "burn-duration": return "LONG BURN";
-    default: return "";
-  }
-}
-
 function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scrap: number }) {
   const def = TOWER_PATHS[tower.kind][path];
   const owned = path === "a" ? tower.a : tower.b;
