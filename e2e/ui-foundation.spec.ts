@@ -114,9 +114,16 @@ test("tower placement follows pointer across both world axes and builds at the s
   expect(selected).not.toBeNull();
   expect(selectedPreview).not.toBeNull();
 
-  // Keep the probe layer disabled for the ground-selection click so the canvas
-  // receives the interaction at the tested map coordinate.
-  await page.mouse.click(selected!.x, selected!.y);
+  // Dispatch the actual browser pointer event on the canvas element itself so
+  // the production canvas listener handles the tested map coordinate directly.
+  await canvas.dispatchEvent("pointerdown", {
+    bubbles: true,
+    clientX: selected!.x,
+    clientY: selected!.y,
+    pointerId: 1,
+    pointerType: "mouse",
+    isPrimary: true,
+  });
   await expect(page.getByText("Build a tower", { exact: true })).toBeVisible();
 
   // Restore normal HUD hit testing before verifying the real build-button interaction.
