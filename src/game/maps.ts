@@ -1,3 +1,4 @@
+// Campaign map catalog: twenty authored routes share the same placement/visibility primitives.
 export type MapVec2 = { x: number; z: number };
 
 export type MapRect = {
