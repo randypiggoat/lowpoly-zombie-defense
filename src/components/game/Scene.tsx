@@ -9,6 +9,7 @@ import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, poi
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
+import { StageEnvironment } from "./StageEnvironment";
 import {
   TOWER_INFO,
   MAX_ACTIVE_BULLETS,
@@ -1582,6 +1583,7 @@ export function Scene({
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} map={map} />
+        <StageEnvironment environmentId={map.environmentId} />
         <MapObstacles map={map} />
         <Scenery count={renderQuality.sceneryCount} map={map} />
         <Base position={map.base} />
