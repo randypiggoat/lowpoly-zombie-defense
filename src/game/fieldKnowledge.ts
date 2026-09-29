@@ -4,6 +4,8 @@ export type KnowledgeEffect = {
   scrapMultiplier?: number;
   startingScrap?: number;
   towerCostMultiplier?: number;
+  towerUpgradeCostMultiplier?: number;
+  towerBuildCostMultiplier?: number;
   damageMultiplier?: number;
   rateMultiplier?: number;
   rangeMultiplier?: number;
@@ -42,6 +44,8 @@ export type FieldKnowledgeEffects = {
   scrapMultiplier: number;
   startingScrap: number;
   towerCostMultiplier: number;
+  towerUpgradeCostMultiplier: number;
+  towerBuildCostMultiplier: number;
   damageMultiplier: number;
   rateMultiplier: number;
   rangeMultiplier: number;
@@ -53,6 +57,8 @@ export const DEFAULT_FIELD_KNOWLEDGE_EFFECTS: FieldKnowledgeEffects = {
   scrapMultiplier: 1,
   startingScrap: 0,
   towerCostMultiplier: 1,
+  towerUpgradeCostMultiplier: 1,
+  towerBuildCostMultiplier: 1,
   damageMultiplier: 1,
   rateMultiplier: 1,
   rangeMultiplier: 1,
@@ -68,6 +74,8 @@ export function resolveFieldKnowledgeEffects(ranks: Record<string, number>): Fie
     if (e.scrapMultiplier) out.scrapMultiplier *= e.scrapMultiplier;
     if (e.startingScrap) out.startingScrap += e.startingScrap;
     if (e.towerCostMultiplier) out.towerCostMultiplier *= e.towerCostMultiplier;
+    if (e.towerUpgradeCostMultiplier) out.towerUpgradeCostMultiplier *= e.towerUpgradeCostMultiplier;
+    if (e.towerBuildCostMultiplier) out.towerBuildCostMultiplier *= e.towerBuildCostMultiplier;
     if (e.damageMultiplier) out.damageMultiplier *= e.damageMultiplier;
     if (e.rateMultiplier) out.rateMultiplier *= e.rateMultiplier;
     if (e.rangeMultiplier) out.rangeMultiplier *= e.rangeMultiplier;
