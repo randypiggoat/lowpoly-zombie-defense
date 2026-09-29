@@ -1290,11 +1290,7 @@ export class Game {
   build(spot: number, kind: TowerKind): boolean {
     const pad = BUILD_SPOTS[spot];
     if (!pad || this.towerAtSpot(spot)) return false;
-    const placement = canPlaceTower(this.map, pad.x, pad.z, this.state.towers);
-    if (!placement.valid) {
-      sfx("deny");
-      return false;
-    }
+    // Keep the indexed API for legacy callers/tests. Gameplay now uses buildAt().
     return this.placeTowerAt(pad.x, pad.z, kind, spot);
   }
 
@@ -1681,7 +1677,7 @@ export class Game {
 
     profile.recordZombieKill(z.kind);
 
-    if (z.kind === 3 && !(z.gibMask && (z.gibMask & gorePartBit("splitter-core")))) {
+    if (z.kind === 3) {
       const trialTraits = this.stage.bossTrial?.variant?.traits;
       const splitCount = z.boss && trialTraits?.bossSplitCount
         ? Math.max(2, Math.floor(trialTraits.bossSplitCount))
@@ -1772,6 +1768,7 @@ export class Game {
     const has = (part: GorePart) => (mask & gorePartBit(part)) !== 0;
     if (z.kind === 1 && (has("left-leg") || has("right-leg"))) return 0.78;
     if (z.kind === 2 && (has("left-shoulder") || has("right-shoulder"))) return 0.9;
+    if (z.kind === 3 && has("splitter-core")) return 0.84;
     if (z.kind === 7 && has("swarm-crest")) return 0.8;
     return 1;
   }
