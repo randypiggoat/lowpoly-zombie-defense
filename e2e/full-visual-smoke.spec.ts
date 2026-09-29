@@ -130,10 +130,11 @@ test("full Rotwood visual smoke coverage", async ({ page }) => {
     const qa = (window as Window & {
       __ROTWOOD_QA__?: {
         buildTower: (spot: number, kind: "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser") => boolean;
+        buildTowerAt: (x: number, z: number, kind: "rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser") => boolean;
         getCombatSnapshot: () => { towerCount: number; projectileKinds: Array<"rifleman" | "shotgunner" | "sniper" | "tesla" | "flamethrower" | "freezer" | "rocket" | "laser"> };
       };
     }).__ROTWOOD_QA__;
-    return qa?.buildTower(0, "rifleman") ?? false;
+    return qa?.buildTowerAt(0.1, -21.9, "rifleman") ?? false;
   });
   expect(built).toBe(true);
   await expect.poll(async () => page.evaluate(() => {
