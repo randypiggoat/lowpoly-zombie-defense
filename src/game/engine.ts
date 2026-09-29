@@ -1565,8 +1565,9 @@ export class Game {
         ? Math.max(0, 1 - this.stage.bossTrial.variant.traits.bossAuraDamageReduction)
         : 1
       : 1;
+    const guardianShieldBroken = Boolean(z.gibMask && (z.gibMask & gorePartBit("guardian-shield")));
     const incomingDamage =
-      (z.kind === 5 ? dmg * 0.68 : dmg) * guardianAura;
+      (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) * guardianAura;
     const result = resolveDamage(
       z.hp,
       z.maxHp,
