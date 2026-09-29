@@ -6,25 +6,33 @@ import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
+import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
+import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import {
-  BUILD_SPOTS,
-  PATH,
-  PATH_LENGTH,
   TOWER_INFO,
+  MAX_ACTIVE_BULLETS,
   game,
-  pointAt,
   towerLevel,
   towerRange,
   type Tower,
 } from "@/game/engine";
 
 const MAX_ZOMBIES = 60;
-const MAX_BULLETS = 80;
-const MAX_GIBS = 160;
+const MAX_BULLETS = MAX_ACTIVE_BULLETS;
+const MAX_GIBS = 96;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
+
+const BOSS_SIGNATURE_COLORS: Record<number, string> = {
+  2: "#ef7d43",
+  3: "#f0c75e",
+  4: "#ff8b45",
+  5: "#70d6e3",
+  6: "#d98adf",
+  7: "#9ce06d",
+};
 
 const ZOMBIE_LOOKS = [
   { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
@@ -37,26 +45,29 @@ const ZOMBIE_LOOKS = [
   { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
 ] as const;
 
-export type Selection = { kind: "tower"; id: number } | { kind: "spot"; index: number } | null;
+export type Selection =
+  | { kind: "tower"; id: number }
+  | { kind: "spot"; position: { x: number; z: number } }
+  | null;
 
 /* ---------------- ground, path, props ---------------- */
 
-function Ground({ theme }: { theme: StageTheme }) {
+function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getStageMapByStageId> }) {
   const segments = useMemo(() => {
     const out: { x: number; z: number; rot: number; len: number }[] = [];
-    for (let i = 1; i < PATH.length; i++) {
-      const a = PATH[i - 1]!;
-      const b = PATH[i]!;
+    for (let i = 1; i < map.path.length; i++) {
+      const a = map.path[i - 1]!;
+      const b = map.path[i]!;
       const len = Math.hypot(b.x - a.x, b.z - a.z);
       out.push({
         x: (a.x + b.x) / 2,
         z: (a.z + b.z) / 2,
         rot: Math.atan2(b.x - a.x, b.z - a.z),
-        len: len + 2.6,
+        len: len + map.pathWidth,
       });
     }
     return out;
-  }, []);
+  }, [map]);
 
   const facets = useMemo(
     () =>
@@ -88,11 +99,11 @@ function Ground({ theme }: { theme: StageTheme }) {
       {segments.map((s, i) => (
         <group key={i}>
           <mesh position={[s.x, 0.07, s.z]} rotation-y={s.rot} receiveShadow>
-            <boxGeometry args={[2.6, 0.14, s.len]} />
+            <boxGeometry args={[map.pathWidth, 0.14, s.len]} />
             <meshStandardMaterial color={theme.path} flatShading />
           </mesh>
           <mesh position={[s.x, 0.15, s.z]} rotation-y={s.rot}>
-            <boxGeometry args={[0.18, 0.025, s.len * 0.82]} />
+            <boxGeometry args={[0.18, 0.025, Math.max(1, s.len - 0.7)]} />
             <meshStandardMaterial color={theme.pathEdge} transparent opacity={0.72} flatShading />
           </mesh>
           {Array.from({ length: Math.max(1, Math.floor(s.len / 4)) }, (_, markerIndex) => {
@@ -116,6 +127,71 @@ function Ground({ theme }: { theme: StageTheme }) {
           })}
         </group>
       ))}
+    </group>
+  );
+}
+
+function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+  return (
+    <group>
+      {map.obstacles.map((obstacle) => {
+        const label = obstacle.label.toLowerCase();
+        const warm = label.includes("shop") || label.includes("storefront") || label.includes("station") || label.includes("garage");
+        const accent = warm ? "#8e5542" : "#6f6b63";
+        return (
+          <group key={obstacle.label} position={[obstacle.x, obstacle.height / 2, obstacle.z]}>
+            {label.includes("garden") || label.includes("median") || label.includes("service") || label.includes("evidence") ? (
+              <>
+                <mesh castShadow receiveShadow>
+                  <boxGeometry args={[obstacle.width, obstacle.height, obstacle.depth]} />
+                  <meshStandardMaterial color={accent} flatShading />
+                </mesh>
+                <mesh position={[0, obstacle.height / 2 + 0.06, 0]} castShadow>
+                  <boxGeometry args={[obstacle.width * 0.82, 0.12, obstacle.depth * 0.82]} />
+                  <meshStandardMaterial color="#a29a87" flatShading />
+                </mesh>
+              </>
+            ) : label.includes("pump") ? (
+              <>
+                <mesh castShadow receiveShadow>
+                  <boxGeometry args={[obstacle.width * 0.82, obstacle.height, obstacle.depth * 0.68]} />
+                  <meshStandardMaterial color="#d1c7ae" flatShading />
+                </mesh>
+                {[-0.32, 0.32].map((x) => (
+                  <mesh key={x} position={[x, obstacle.height * 0.72, 0]} castShadow>
+                    <cylinderGeometry args={[0.11, 0.14, 0.42, 5]} />
+                    <meshStandardMaterial color="#a94f3f" flatShading />
+                  </mesh>
+                ))}
+              </>
+            ) : label.includes("canopy") ? (
+              <>
+                <mesh position={[0, obstacle.height, 0]} castShadow>
+                  <boxGeometry args={[obstacle.width, 0.12, obstacle.depth]} />
+                  <meshStandardMaterial color="#d0c7af" flatShading />
+                </mesh>
+                {[-1, 1].map((x) => (
+                  <mesh key={x} position={[x * obstacle.width * 0.38, obstacle.height * 0.48, 0]} castShadow>
+                    <boxGeometry args={[0.11, obstacle.height, 0.11]} />
+                    <meshStandardMaterial color="#8f5545" flatShading />
+                  </mesh>
+                ))}
+              </>
+            ) : (
+              <>
+                <mesh castShadow receiveShadow>
+                  <boxGeometry args={[obstacle.width, obstacle.height, obstacle.depth]} />
+                  <meshStandardMaterial color={accent} flatShading />
+                </mesh>
+                <mesh position={[0, obstacle.height / 2 + 0.22, 0]} rotation-y={Math.PI / 4} castShadow>
+                  <coneGeometry args={[Math.min(obstacle.width, obstacle.depth) * 0.62, 0.34, 4]} />
+                  <meshStandardMaterial color="#4f463c" flatShading />
+                </mesh>
+              </>
+            )}
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -148,7 +224,7 @@ function Rock({ position, scale = 1 }: { position: [number, number, number]; sca
   );
 }
 
-function Scenery({ count = 46 }: { count?: number }) {
+function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof getStageMapByStageId> }) {
   const items = useMemo(() => {
     const trees: [number, number, number][] = [];
     const rocks: [number, number, number][] = [];
@@ -157,29 +233,29 @@ function Scenery({ count = 46 }: { count?: number }) {
     for (let i = 0; i < count; i++) {
       const x = (rnd() - 0.5) * 56;
       const z = (rnd() - 0.5) * 60 - 4;
-      let ok = true;
-      for (let d = 0; d < PATH_LENGTH; d += 1.2) {
-        const p = pointAt(d);
-        if (Math.hypot(p.x - x, p.z - z) < 3.4) ok = false;
-      }
-      for (const s of BUILD_SPOTS) {
-        if (Math.hypot(s.x - x, s.z - z) < 3.4) ok = false;
-      }
-      if (Math.hypot(x + 4, z - 12) < 6) ok = false;
-      if (!ok) continue;
+      const clear =
+        distanceToPath(map, { x, z }) >= 3.4 &&
+        Math.hypot(x - map.base.x, z - map.base.z) >= 6 &&
+        !map.obstacles.some((obstacle) =>
+          x >= obstacle.x - obstacle.width / 2 - 2 &&
+          x <= obstacle.x + obstacle.width / 2 + 2 &&
+          z >= obstacle.z - obstacle.depth / 2 - 2 &&
+          z <= obstacle.z + obstacle.depth / 2 + 2,
+        );
+      if (!clear) continue;
       if (rnd() > 0.25) trees.push([x, 0, z]);
       else rocks.push([x, 0.4, z]);
     }
     return { trees, rocks };
-  }, [count]);
+  }, [count, map]);
 
   return (
     <group>
       {items.trees.map((p, i) => (
-        <Tree key={`t${i}`} position={p} scale={0.85 + ((i * 13) % 5) * 0.12} />
+        <Tree key={'t' + i} position={p} scale={0.85 + ((i * 13) % 5) * 0.12} />
       ))}
       {items.rocks.map((p, i) => (
-        <Rock key={`r${i}`} position={p} scale={0.6 + ((i * 7) % 4) * 0.2} />
+        <Rock key={'r' + i} position={p} scale={0.6 + ((i * 7) % 4) * 0.2} />
       ))}
     </group>
   );
@@ -187,15 +263,22 @@ function Scenery({ count = 46 }: { count?: number }) {
 
 /* ---------------- base ---------------- */
 
-function Base() {
+function Base({ position }: { position: { x: number; z: number } }) {
   const flagRef = useRef<THREE.Mesh>(null);
+  const beaconRef = useRef<THREE.Group>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (flagRef.current) {
       flagRef.current.rotation.z = Math.sin(clock.elapsedTime * 3) * 0.12;
     }
+    if (beaconRef.current) beaconRef.current.rotation.y = clock.elapsedTime * 0.6;
+    if (coreRef.current) {
+      const pulse = 1 + Math.sin(clock.elapsedTime * 4) * 0.1;
+      coreRef.current.scale.setScalar(pulse);
+    }
   });
   return (
-    <group position={[-4, 0, 13.4]}>
+    <group position={[position.x, 0, position.z]}>
       <mesh position={[0, 0.35, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[3.4, 3.8, 0.7, 7]} />
         <meshStandardMaterial color="#9a9083" flatShading />
@@ -212,74 +295,85 @@ function Base() {
         <boxGeometry args={[0.9, 0.55, 0.08]} />
         <meshStandardMaterial color="#e9b44c" flatShading />
       </mesh>
+      <group ref={beaconRef} position={[0, 3.78, 0]}>
+        <mesh rotation-x={Math.PI / 2}>
+          <torusGeometry args={[0.52, 0.06, 5, 10]} />
+          <meshStandardMaterial color="#79c7e3" emissive="#79c7e3" emissiveIntensity={0.45} transparent opacity={0.72} flatShading />
+        </mesh>
+        <mesh ref={coreRef} position={[0, 0, 0]}>
+          <icosahedronGeometry args={[0.18, 0]} />
+          <meshStandardMaterial color="#79c7e3" emissive="#79c7e3" emissiveIntensity={1.1} flatShading />
+        </mesh>
+        <mesh position={[0, 0.18, 0]}>
+          <coneGeometry args={[0.12, 0.42, 5]} />
+          <meshStandardMaterial color="#cfeff4" flatShading />
+        </mesh>
+      </group>
+      <mesh position={[0, 0.74, 1.58]} rotation-z={Math.PI / 2}>
+        <boxGeometry args={[0.12, 0.08, 1.5]} />
+        <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.18} flatShading />
+      </mesh>
     </group>
   );
 }
 
-/* ---------------- build pads ---------------- */
+/* ---------------- free placement ---------------- */
 
-function BuildPads({
-  occupied,
+function BuildSurface({
+  map,
   selection,
-  onSelectSpot,
+  towers,
+  onSelectPosition,
 }: {
-  occupied: Set<number>;
+  map: ReturnType<typeof getStageMapByStageId>;
   selection: Selection;
-  onSelectSpot: (i: number) => void;
+  towers: Tower[];
+  onSelectPosition: (position: { x: number; z: number }) => void;
 }) {
-  const pulse = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (pulse.current) {
-      const s = 1 + Math.sin(clock.elapsedTime * 3) * 0.06;
-      pulse.current.scale.set(s, 1, s);
-    }
-  });
+  const surface = useRef<THREE.Group>(null);
+  const selected = selection?.kind === "spot" ? selection.position : null;
+  const placement = selected
+    ? canPlaceTower(map, selected.x, selected.z, towers)
+    : null;
 
   return (
-    <group>
-      {BUILD_SPOTS.map((p, i) => {
-        if (occupied.has(i)) return null;
-        const active = selection?.kind === "spot" && selection.index === i;
-        return (
-          <group
-            key={i}
-            position={[p.x, 0, p.z]}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              onSelectSpot(i);
-            }}
-          >
-            <mesh position={[0, 0.09, 0]} receiveShadow>
-              <cylinderGeometry args={[1.3, 1.5, 0.18, 6]} />
-              <meshStandardMaterial
-                color={active ? "#e9b44c" : "#7d7568"}
-                transparent
-                opacity={active ? 0.95 : 0.6}
-                flatShading
-              />
+    <group ref={surface}>
+      <mesh
+        position={[
+          (map.bounds.minX + map.bounds.maxX) / 2,
+          0.012,
+          (map.bounds.minZ + map.bounds.maxZ) / 2,
+        ]}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          if (!surface.current) return;
+          const local = surface.current.worldToLocal(e.point.clone());
+          onSelectPosition(snapBuildPosition(map, local.x, local.z));
+        }}
+      >
+        <planeGeometry args={[map.bounds.maxX - map.bounds.minX, map.bounds.maxZ - map.bounds.minZ]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      {selected && placement && (
+        <group position={[selected.x, 0.09, selected.z]}>
+          <mesh rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[0.88, 1.08, 12]} />
+            <meshBasicMaterial
+              color={placement.valid ? "#e9b44c" : "#e24b4b"}
+              transparent
+              opacity={0.9}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          {!placement.valid && (
+            <mesh position={[0, 0.12, 0]}>
+              <boxGeometry args={[0.55, 0.12, 0.55]} />
+              <meshBasicMaterial color="#ff8b7e" />
             </mesh>
-            <group ref={active ? pulse : null}>
-              <mesh rotation-x={-Math.PI / 2} position={[0, 0.2, 0]}>
-                <ringGeometry args={[1.05, 1.25, 6]} />
-                <meshBasicMaterial
-                  color={active ? "#ffe08a" : "#d9d2c4"}
-                  transparent
-                  opacity={active ? 0.9 : 0.45}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-            </group>
-            <mesh position={[0, 0.55, 0]}>
-              <boxGeometry args={[0.12, 0.5, 0.12]} />
-              <meshBasicMaterial color="#f4ead6" transparent opacity={0.7} />
-            </mesh>
-            <mesh position={[0, 0.55, 0]} rotation-z={Math.PI / 2}>
-              <boxGeometry args={[0.12, 0.5, 0.12]} />
-              <meshBasicMaterial color="#f4ead6" transparent opacity={0.7} />
-            </mesh>
-          </group>
-        );
-      })}
+          )}
+        </group>
+      )}
     </group>
   );
 }
@@ -336,18 +430,7 @@ function TowerMesh({
       <group ref={turret} position={[0, 1.18 + level * 0.1, 0]}>
         <TowerModel tower={tower} accent={accent} level={level} bodyColor={bodyColor} />
       </group>
-      {Array.from({ length: tower.a }, (_, i) => (
-        <mesh key={`a${i}`} position={[-0.75, 0.5 + i * 0.24, 1.15]}>
-          <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} flatShading />
-        </mesh>
-      ))}
-      {Array.from({ length: tower.b }, (_, i) => (
-        <mesh key={`b${i}`} position={[0.75, 0.5 + i * 0.24, 1.15]}>
-          <boxGeometry args={[0.2, 0.15, 0.12]} />
-          <meshStandardMaterial color="#f4ead6" emissive="#f4ead6" emissiveIntensity={0.35} flatShading />
-        </mesh>
-      ))}
+
     </group>
   );
 }
@@ -355,7 +438,34 @@ function TowerMesh({
 
 /* ---------------- pooled zombies, gibs & bullets ---------------- */
 
-function Zombies() {
+function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+  const bodyGeometries = useMemo(() => ({
+    0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
+    1: new THREE.BoxGeometry(0.5, 0.9, 0.34),
+    2: new THREE.DodecahedronGeometry(0.55, 0),
+    3: new THREE.OctahedronGeometry(0.52, 0),
+    4: new THREE.BoxGeometry(0.7, 0.8, 0.5),
+    5: new THREE.CylinderGeometry(0.52, 0.62, 0.95, 6),
+    6: new THREE.IcosahedronGeometry(0.5, 0),
+    7: new THREE.TetrahedronGeometry(0.52, 0),
+  } as Record<number, THREE.BufferGeometry>), []);
+  const headGeometries = useMemo(() => ({
+    0: new THREE.BoxGeometry(0.46, 0.46, 0.46),
+    1: new THREE.IcosahedronGeometry(0.3, 0),
+    2: new THREE.DodecahedronGeometry(0.34, 0),
+    3: new THREE.OctahedronGeometry(0.33, 0),
+    4: new THREE.BoxGeometry(0.5, 0.42, 0.44),
+    5: new THREE.OctahedronGeometry(0.34, 0),
+    6: new THREE.IcosahedronGeometry(0.34, 0),
+    7: new THREE.TetrahedronGeometry(0.35, 0),
+  } as Record<number, THREE.BufferGeometry>), []);
+  useEffect(
+    () => () => {
+      Object.values(bodyGeometries).forEach((geometry) => geometry.dispose());
+      Object.values(headGeometries).forEach((geometry) => geometry.dispose());
+    },
+    [bodyGeometries, headGeometries],
+  );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const legs = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
@@ -375,18 +485,53 @@ function Zombies() {
       }
       g.visible = true;
       const look = ZOMBIE_LOOKS[z.kind];
+      const goreMask = z.gibMask ?? 0;
+      const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
+      const statusMark = g.getObjectByName("status-mark");
+      const statusStun = g.getObjectByName("status-stun");
+      if (statusMark) {
+        statusMark.visible = z.markTime > 0 && !z.dead;
+        if (statusMark.visible) {
+          statusMark.rotation.y += 0.03;
+          statusMark.position.y = 1.1 + Math.sin(performance.now() * 0.008 + i) * 0.025;
+        }
+      }
+      if (statusStun) {
+        statusStun.visible = (z.stun ?? 0) > 0 && !z.dead;
+        if (statusStun.visible) {
+          statusStun.rotation.y -= 0.05;
+          statusStun.scale.setScalar(0.85 + Math.sin(performance.now() * 0.012 + i) * 0.08);
+        }
+      }
       const bossChanged = lastBoss.current[i] !== z.boss;
       if (bossChanged || z.boss) {
         const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
         const bossCrown = g.getObjectByName("boss-crown") as THREE.Group | undefined;
         const bossCore = g.getObjectByName("boss-core") as THREE.Mesh | undefined;
+        const bossSignature = g.getObjectByName("boss-signature") as THREE.Group | undefined;
+        const bruteMark = g.getObjectByName("boss-mark-brute") as THREE.Group | undefined;
+        const splitterMark = g.getObjectByName("boss-mark-splitter") as THREE.Group | undefined;
+        const bomberMark = g.getObjectByName("boss-mark-bomber") as THREE.Group | undefined;
+        const guardianMark = g.getObjectByName("boss-mark-guardian") as THREE.Group | undefined;
+        const healerMark = g.getObjectByName("boss-mark-healer") as THREE.Group | undefined;
+        const swarmMark = g.getObjectByName("boss-mark-swarm") as THREE.Group | undefined;
         const now = performance.now();
         if (bossChanged) {
-          if (bossAura) bossAura.visible = z.boss;
-          if (bossCrown) bossCrown.visible = z.boss;
-          if (bossCore) bossCore.visible = z.boss;
           lastBoss.current[i] = z.boss;
         }
+        // These groups are pooled and can be reused for a different enemy.
+        // Set visibility every frame so a former boss cannot leak a signature
+        // onto a normal zombie when the pool slot is recycled.
+        if (bossAura) bossAura.visible = z.boss;
+        if (bossCrown) bossCrown.visible = z.boss;
+        if (bossCore) bossCore.visible = z.boss;
+        if (bossSignature) bossSignature.visible = z.boss;
+        if (bruteMark) bruteMark.visible = z.boss && z.kind === 2;
+        if (splitterMark) splitterMark.visible = z.boss && z.kind === 3;
+        if (bomberMark) bomberMark.visible = z.boss && z.kind === 4;
+        if (guardianMark) guardianMark.visible = z.boss && z.kind === 5;
+        if (healerMark) healerMark.visible = z.boss && z.kind === 6;
+        if (swarmMark) swarmMark.visible = z.boss && z.kind === 7;
         if (z.boss) {
           if (bossAura) {
             bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
@@ -397,11 +542,31 @@ function Zombies() {
             bossCrown.rotation.y += z.bossEnraged ? 0.026 : 0.012;
             bossCrown.position.y = 1.95 + Math.sin(now * 0.004 + i) * 0.025;
           }
+          if (bossSignature) {
+            bossSignature.rotation.y += 0.01 + z.kind * 0.0015;
+            bossSignature.scale.setScalar(1 + Math.sin(now * 0.004 + i) * 0.03);
+          }
+          if (bruteMark) bruteMark.rotation.z = Math.sin(now * 0.004 + i) * 0.16;
+          if (splitterMark) splitterMark.rotation.y += 0.035;
+          if (bomberMark) {
+            bomberMark.rotation.z += 0.026;
+            bomberMark.scale.setScalar(1 + Math.sin(now * 0.009 + i) * 0.09);
+          }
+          if (guardianMark) guardianMark.rotation.y += 0.022;
+          if (healerMark) {
+            healerMark.rotation.z += 0.018;
+            healerMark.scale.setScalar(1 + Math.sin(now * 0.006 + i) * 0.05);
+          }
+          if (swarmMark) {
+            swarmMark.rotation.y += 0.05;
+            swarmMark.rotation.x = Math.sin(now * 0.005 + i) * 0.18;
+          }
           if (bossCore) {
             const material = bossCore.material as THREE.MeshStandardMaterial;
-            const bossColor = z.bossEnraged ? "#ff6b4a" : "#e9b44c";
+            const baseBossColor = BOSS_SIGNATURE_COLORS[z.kind] ?? "#e9b44c";
+            const bossColor = z.bossEnraged ? "#ff6b4a" : baseBossColor;
             material.color.set(bossColor);
-            material.emissive.set(z.bossEnraged ? "#ff4f36" : "#e9b44c");
+            material.emissive.set(z.bossEnraged ? "#ff4f36" : baseBossColor);
             material.emissiveIntensity = z.bossEnraged ? 1.25 : 0.85;
             bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01) * 0.12 : 1);
           }
@@ -440,6 +605,8 @@ function Zombies() {
         const healerAura = g.getObjectByName("healer-aura") as THREE.Mesh | undefined;
         const swarmCrest = g.getObjectByName("swarm-crest") as THREE.Mesh | undefined;
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
+          body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
+          head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
           if (z.kind === 1) {
             body.position.set(0, 0.9, 0.08);
             body.scale.set(0.68, 1.06, 0.72);
@@ -503,7 +670,7 @@ function Zombies() {
         g.rotation.x = 0;
         g.rotation.z = Math.sin(z.wobble) * 0.16;
         g.scale.setScalar(scale * (z.boss ? 1.16 : 1));
-        const nextPoint = pointAt(z.dist + 0.6);
+        const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
         g.rotation.y = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
       }
       // damage flash
@@ -530,6 +697,35 @@ function Zombies() {
           }
         });
       }
+      const hiddenGoreParts: Array<[string, GorePart]> = [
+        ["head", "head"],
+        ["left-arm", "left-arm"],
+        ["right-arm", "right-arm"],
+        ["left-leg", "left-leg"],
+        ["right-leg", "right-leg"],
+        ["left-shoulder", "left-shoulder"],
+        ["right-shoulder", "right-shoulder"],
+        ["runner-crest", "runner-crest"],
+        ["splitter-core", "splitter-core"],
+        ["bomber-pack", "bomber-pack"],
+        ["guardian-shield", "guardian-shield"],
+        ["healer-aura", "healer-aura"],
+        ["swarm-crest", "swarm-crest"],
+      ];
+      for (const [name, part] of hiddenGoreParts) {
+        const object = g.getObjectByName(name);
+        if (!object) continue;
+        const kindRequired =
+          name === "left-shoulder" || name === "right-shoulder" ? z.kind === 2 :
+          name === "runner-crest" ? z.kind === 1 :
+          name === "splitter-core" ? z.kind === 3 :
+          name === "bomber-pack" ? z.kind === 4 :
+          name === "guardian-shield" ? z.kind === 5 :
+          name === "healer-aura" ? z.kind === 6 :
+          name === "swarm-crest" ? z.kind === 7 : true;
+        object.visible = kindRequired && !isBroken(part);
+      }
+
       const hpBackground = g.getObjectByName("hp-background") as THREE.Mesh | undefined;
       const hpFill = g.getObjectByName("hp-fill") as THREE.Mesh | undefined;
       const healthBar = getEnemyHealthBarPresentation(z.kind, z.hp, z.maxHp, z.boss);
@@ -579,9 +775,75 @@ function Zombies() {
               </mesh>
             ))}
           </group>
+          <group name="boss-signature" visible={false}>
+            <group name="boss-mark-brute" position={[0, 1.52, 0]}>
+              <mesh position={[-0.44, 0.1, 0]} rotation-z={-0.22} castShadow>
+                <coneGeometry args={[0.2, 0.62, 5]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[2]} emissive={BOSS_SIGNATURE_COLORS[2]} emissiveIntensity={0.5} flatShading />
+              </mesh>
+              <mesh position={[0.44, 0.1, 0]} rotation-z={0.22} castShadow>
+                <coneGeometry args={[0.2, 0.62, 5]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[2]} emissive={BOSS_SIGNATURE_COLORS[2]} emissiveIntensity={0.5} flatShading />
+              </mesh>
+            </group>
+            <group name="boss-mark-splitter" position={[0, 1.15, 0]}>
+              <mesh rotation-x={Math.PI / 2}>
+                <torusGeometry args={[0.56, 0.065, 5, 8]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[3]} emissive={BOSS_SIGNATURE_COLORS[3]} emissiveIntensity={0.9} flatShading />
+              </mesh>
+              <mesh position={[0, 0, 0.58]}>
+                <octahedronGeometry args={[0.15, 0]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[3]} emissive={BOSS_SIGNATURE_COLORS[3]} emissiveIntensity={0.7} flatShading />
+              </mesh>
+            </group>
+            <group name="boss-mark-bomber" position={[0, 1.25, -0.45]}>
+              {[0, 1, 2].map((index) => (
+                <mesh key={index} position={[Math.cos(index * Math.PI * 2 / 3) * 0.28, Math.sin(index * Math.PI * 2 / 3) * 0.28, 0]}>
+                  <dodecahedronGeometry args={[0.16, 0]} />
+                  <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[4]} emissive={BOSS_SIGNATURE_COLORS[4]} emissiveIntensity={0.55} flatShading />
+                </mesh>
+              ))}
+            </group>
+            <group name="boss-mark-guardian" position={[0, 1.05, 0]}>
+              <mesh rotation-x={Math.PI / 2}>
+                <torusGeometry args={[0.92, 0.1, 6, 12]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[5]} emissive={BOSS_SIGNATURE_COLORS[5]} emissiveIntensity={0.7} transparent opacity={0.72} flatShading />
+              </mesh>
+              <mesh position={[0, 0, 0.78]} rotation-x={Math.PI / 2}>
+                <circleGeometry args={[0.26, 6]} />
+                <meshBasicMaterial color={BOSS_SIGNATURE_COLORS[5]} transparent opacity={0.42} />
+              </mesh>
+            </group>
+            <group name="boss-mark-healer" position={[0, 1.7, 0]}>
+              <mesh rotation-z={Math.PI / 4}>
+                <boxGeometry args={[0.15, 0.8, 0.1]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[6]} emissive={BOSS_SIGNATURE_COLORS[6]} emissiveIntensity={0.65} flatShading />
+              </mesh>
+              <mesh rotation-z={-Math.PI / 4}>
+                <boxGeometry args={[0.15, 0.8, 0.1]} />
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[6]} emissive={BOSS_SIGNATURE_COLORS[6]} emissiveIntensity={0.65} flatShading />
+              </mesh>
+            </group>
+            <group name="boss-mark-swarm" position={[0, 1.55, 0]}>
+              {[-1, 0, 1].map((x) => (
+                <mesh key={x} position={[x * 0.32, Math.abs(x) * 0.08, 0]} rotation-z={x * 0.28}>
+                  <tetrahedronGeometry args={[0.16, 0]} />
+                  <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[7]} emissive={BOSS_SIGNATURE_COLORS[7]} emissiveIntensity={0.7} flatShading />
+                </mesh>
+              ))}
+            </group>
+          </group>
           <mesh name="boss-core" visible={false} position={[0, 1.94, 0.18]}>
             <icosahedronGeometry args={[0.14, 0]} />
             <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.85} flatShading />
+          </mesh>
+          <mesh name="status-mark" visible={false} position={[0, 1.1, 0]} rotation-x={Math.PI / 2}>
+            <torusGeometry args={[0.52, 0.035, 5, 10]} />
+            <meshBasicMaterial color="#e9b44c" transparent opacity={0.8} />
+          </mesh>
+          <mesh name="status-stun" visible={false} position={[0, 2.0, 0]}>
+            <octahedronGeometry args={[0.16, 0]} />
+            <meshBasicMaterial color="#fff1a8" transparent opacity={0.88} />
           </mesh>
           <mesh name="hp-background" position={[0, 2.3, 0.02]} visible={false}>
             <planeGeometry args={[0.9, 0.09]} />
@@ -650,6 +912,18 @@ function Zombies() {
 
 function Gibs() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const geometries = useMemo(() => ({
+    shard: new THREE.TetrahedronGeometry(0.1, 0),
+    head: new THREE.IcosahedronGeometry(0.12, 0),
+    limb: new THREE.BoxGeometry(0.11, 0.28, 0.11),
+    core: new THREE.DodecahedronGeometry(0.12, 0),
+    ring: new THREE.TorusGeometry(0.14, 0.035, 5, 8),
+  }), []);
+  useEffect(
+    () => () => Object.values(geometries).forEach((geometry) => geometry.dispose()),
+    [geometries],
+  );
+
   useFrame(() => {
     const list = game.state.gibs;
     for (let i = 0; i < MAX_GIBS; i++) {
@@ -663,22 +937,37 @@ function Gibs() {
       m.visible = true;
       m.position.set(g.x, g.y, g.z);
       m.rotation.set(g.rx, g.ry, g.rx * 0.6);
-      const fade = Math.max(0, 1 - Math.max(0, g.life - 2.2) / 1);
-      m.scale.setScalar(g.size * 6 * fade);
-      (m.material as THREE.MeshStandardMaterial).color.set(GIB_COLORS[g.tint % 3]!);
+      const fade = Math.max(0, 1 - Math.max(0, g.life - 1.05) / 0.7);
+      m.scale.setScalar(g.size * 5.2 * fade);
+      const part = g.part ?? "splitter-core";
+      m.geometry =
+        part === "head" ? geometries.head :
+        part.includes("arm") || part.includes("leg") ? geometries.limb :
+        part.includes("shield") || part.includes("aura") ? geometries.ring :
+        part.includes("core") ? geometries.core :
+        geometries.shard;
+      const material = m.material as THREE.MeshBasicMaterial;
+      material.color.set(
+        part === "head" ? "#7a2b2f" :
+        part.includes("shield") ? "#70c5d6" :
+        part.includes("core") ? "#d3a452" :
+        GIB_COLORS[g.tint % GIB_COLORS.length]!,
+      );
     }
   });
+
   return (
     <group>
       {Array.from({ length: MAX_GIBS }, (_, i) => (
-        <mesh key={i} ref={(el) => void (meshes.current[i] = el)} visible={false} castShadow>
+        <mesh key={i} ref={(el) => void (meshes.current[i] = el)} visible={false}>
           <tetrahedronGeometry args={[0.1, 0]} />
-          <meshStandardMaterial color="#8c2b2b" flatShading />
+          <meshBasicMaterial color="#8c2b2b" />
         </mesh>
       ))}
     </group>
   );
 }
+
 function DamagePopups() {
   const popups = game.state.damagePopups;
 
@@ -705,49 +994,141 @@ function DamagePopup({
     gold: number;
   };
 }) {
+  const group = useRef<THREE.Group>(null);
+  const coin = useRef<THREE.Mesh>(null);
+  const impact = useRef<THREE.Mesh>(null);
   const text = useRef<THREE.Object3D & {
     text?: string;
     material?: THREE.Material & { opacity?: number; transparent?: boolean };
   }>(null);
 
-  useFrame(() => {
-    const object = text.current;
-    if (!object) return;
+  useFrame(({ clock }) => {
+    const root = group.current;
+    if (!root) return;
 
-    object.position.set(popup.x, popup.y, popup.z);
+    const life = popup.life;
+    const intro = Math.min(1, life / 0.09);
+    const fade = Math.max(0, 1 - life / 0.9);
+    const bob = Math.sin(clock.elapsedTime * 12 + popup.id) * 0.035;
 
-    const age = popup.life / 0.9;
-    const fade = Math.max(0, 1 - age);
+    root.position.set(
+      popup.x,
+      popup.y + Math.min(0.75, life * 1.45) + bob,
+      popup.z,
+    );
 
-    object.scale.setScalar(popup.gold > 0 ? 1.55 : popup.crit ? 1.35 : 1);
-    object.text = popup.gold > 0 ? `+${popup.gold}` : `${popup.value}`;
+    if (impact.current) {
+      const impactAge = Math.min(1, life / 0.18);
+      impact.current.scale.setScalar(0.55 + impactAge * 0.9);
+      const impactMaterial = impact.current.material as THREE.MeshBasicMaterial;
+      impactMaterial.opacity = Math.max(0, 1 - impactAge);
+      impactMaterial.transparent = true;
+      impact.current.visible = popup.gold <= 0 && life < 0.2;
+    }
 
-    const material = object.material;
-    if (material) {
-      material.transparent = true;
-      material.opacity = fade;
+    if (popup.gold > 0) {
+      const coinScale = life < 0.12 ? 0.55 + intro * 0.7 : 1.05 - Math.min(0.2, life * 0.16);
+      if (coin.current) {
+        coin.current.rotation.y += 0.18;
+        coin.current.rotation.z = Math.sin(clock.elapsedTime * 8 + popup.id) * 0.08;
+        coin.current.scale.setScalar(coinScale);
+      }
+      if (text.current) {
+        text.current.position.set(0, 0.02, 0.02);
+        text.current.scale.setScalar(0.82 + intro * 0.28);
+        text.current.text = `+${popup.gold} SCRAP`;
+        const material = text.current.material;
+        if (material) {
+          material.transparent = true;
+          material.opacity = fade;
+        }
+      }
+    } else if (text.current) {
+      text.current.scale.setScalar(popup.crit ? 1.35 : 1);
+      text.current.text = popup.crit ? "CRIT" : "";
+      const material = text.current.material;
+      if (material) {
+        material.transparent = true;
+        material.opacity = fade;
+      }
     }
   });
 
   return (
-    <Text
-      ref={(el) => {
-        text.current = el as typeof text.current;
-      }}
-      fontSize={0.42}
-      color={popup.gold > 0 ? "#ffd86b" : popup.crit ? "#fff3c4" : "#ffffff"}
-      outlineColor="#111111"
-      outlineWidth={0.045}
-      anchorX="center"
-      anchorY="middle"
-      depthOffset={-2}
-    >
-      0
-    </Text>
+    <group ref={group}>
+      {popup.gold <= 0 && (
+        <mesh ref={impact} rotation-x={-Math.PI / 2} position={[0, -0.05, 0]}>
+          <ringGeometry args={[0.12, 0.18, 8]} />
+          <meshBasicMaterial
+            color={popup.crit ? "#fff3c4" : "#ffffff"}
+            transparent
+            opacity={0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
+      {popup.gold > 0 && (
+        <>
+          <mesh ref={coin} position={[0, 0.04, 0]} castShadow>
+            <cylinderGeometry args={[0.22, 0.22, 0.09, 12]} />
+            <meshStandardMaterial
+              color="#e9b44c"
+              emissive="#e9b44c"
+              emissiveIntensity={0.5}
+              metalness={0.3}
+              roughness={0.38}
+              flatShading
+            />
+          </mesh>
+          <mesh position={[0, 0.095, 0]} rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[0.08, 0.13, 10]} />
+            <meshBasicMaterial color="#fff0ae" transparent opacity={0.75} />
+          </mesh>
+        </>
+      )}
+      <Text
+        ref={(el) => {
+          text.current = el as typeof text.current;
+        }}
+        position={popup.gold > 0 ? [0, -0.32, 0] : [0, 0, 0]}
+        fontSize={popup.gold > 0 ? 0.25 : 0.34}
+        color={popup.gold > 0 ? "#ffd86b" : popup.crit ? "#fff3c4" : "#ffffff"}
+        outlineColor="#111111"
+        outlineWidth={0.045}
+        anchorX="center"
+        anchorY="middle"
+        depthOffset={-2}
+      >
+        0
+      </Text>
+    </group>
   );
 }
 function Bullets() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const trailMeshes = useRef<(THREE.Mesh | null)[]>([]);
+  const lastKind = useRef<string[]>([]);
+  const geometries = useMemo(() => {
+    const rocket = new THREE.ConeGeometry(0.14, 0.5, 6);
+    rocket.rotateX(Math.PI / 2);
+    const laser = new THREE.BoxGeometry(0.09, 0.09, 0.5);
+    const sniper = new THREE.BoxGeometry(0.06, 0.06, 0.62);
+    return {
+      rifleman: new THREE.IcosahedronGeometry(0.14, 0),
+      shotgunner: new THREE.OctahedronGeometry(0.16, 0),
+      sniper,
+      tesla: new THREE.DodecahedronGeometry(0.15, 0),
+      flamethrower: new THREE.TetrahedronGeometry(0.18, 0),
+      freezer: new THREE.OctahedronGeometry(0.18, 0),
+      rocket,
+      laser,
+    } as const;
+  }, []);
+  useEffect(() => {
+    return () => {
+      Object.values(geometries).forEach((geometry) => geometry.dispose());
+    };
+  }, [geometries]);
   useFrame(() => {
     const list = game.state.bullets;
     for (let i = 0; i < MAX_BULLETS; i++) {
@@ -756,33 +1137,97 @@ function Bullets() {
       const b = list[i];
       if (!b) {
         m.visible = false;
+        const trail = trailMeshes.current[i];
+        if (trail) trail.visible = false;
         continue;
       }
       m.visible = true;
       m.position.set(b.x, b.y, b.z);
       m.lookAt(b.tx, b.y, b.tz);
+      if (lastKind.current[i] !== b.kind) {
+        lastKind.current[i] = b.kind;
+        m.geometry = geometries[b.kind];
+      }
       const c = TOWER_INFO[b.kind].accent;
+      const distance = Math.max(0.1, Math.hypot(b.tx - b.x, b.tz - b.z));
+      const trail = trailMeshes.current[i];
+      if (trail) {
+        trail.visible = true;
+        trail.position.set(b.x, b.y, b.z);
+        trail.lookAt(b.tx, b.y, b.tz);
+        const trailWidth =
+          b.kind === "laser"
+            ? 0.32
+            : b.kind === "rocket"
+              ? 0.52
+              : b.kind === "shotgunner"
+                ? 0.28
+                : b.kind === "flamethrower"
+                  ? 0.4
+                  : 0.45;
+        trail.scale.set(
+          trailWidth,
+          trailWidth,
+          Math.min(
+            b.kind === "sniper" || b.kind === "laser" ? 1.8 : 1.4,
+            0.18 + distance * 0.085,
+          ),
+        );
+        const trailMaterial = trail.material as THREE.MeshBasicMaterial;
+        trailMaterial.color.set(c);
+        trailMaterial.opacity =
+          b.kind === "laser"
+            ? 0.38
+            : b.kind === "flamethrower"
+              ? 0.32
+              : 0.22;
+      }
       (m.material as THREE.MeshBasicMaterial).color.set(b.crit ? "#fff3c4" : c);
       const critScale = b.crit ? 1.5 : 1;
-      if (b.kind === "shotgunner")
-        m.scale.set(0.28 * critScale, 0.28 * critScale, 0.28 * critScale);
-      else if (b.kind === "rocket")
-        m.scale.set(0.34 * critScale, 0.34 * critScale, 0.8 * critScale);
-      else if (b.kind === "laser")
-        m.scale.set(0.18 * critScale, 0.18 * critScale, 1.15 * critScale);
-      else if (b.kind === "tesla") m.scale.set(0.22 * critScale, 0.22 * critScale, 0.6 * critScale);
-      else if (b.kind === "flamethrower")
-        m.scale.set(0.3 * critScale, 0.16 * critScale, 0.5 * critScale);
-      else m.scale.setScalar(critScale);
+      switch (b.kind) {
+        case "shotgunner":
+          m.scale.setScalar(1.45 * critScale);
+          break;
+        case "sniper":
+          m.scale.set(1.1 * critScale, 1.1 * critScale, 1.35 * critScale);
+          break;
+        case "rocket":
+          m.scale.set(1.35 * critScale, 1.35 * critScale, 1.25 * critScale);
+          break;
+        case "laser":
+          m.scale.set(1.15 * critScale, 1.15 * critScale, 1.5 * critScale);
+          break;
+        case "tesla":
+          m.scale.setScalar(1.35 * critScale);
+          break;
+        case "flamethrower":
+          m.scale.set(1.45 * critScale, 1.05 * critScale, 1.75 * critScale);
+          break;
+        case "freezer":
+          m.scale.setScalar(1.35 * critScale);
+          break;
+        default:
+          m.scale.setScalar(critScale);
+      }
     }
   });
   return (
     <group>
       {Array.from({ length: MAX_BULLETS }, (_, i) => (
-        <mesh key={i} ref={(el) => void (meshes.current[i] = el)} visible={false}>
-          <icosahedronGeometry args={[0.14, 0]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+        <group key={i}>
+          <mesh ref={(el) => void (meshes.current[i] = el)} visible={false}>
+            <icosahedronGeometry args={[0.14, 0]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh
+            ref={(el) => void (trailMeshes.current[i] = el)}
+            visible={false}
+            rotation-x={Math.PI / 2}
+          >
+            <cylinderGeometry args={[0.045, 0.12, 0.7, 5]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.22} />
+          </mesh>
+        </group>
       ))}
     </group>
   );
@@ -838,7 +1283,7 @@ export function Scene({
   towers,
   selection,
   onSelectTower,
-  onSelectSpot,
+  onSelectPosition,
   paused = false,
   reducedMotion = false,
 }: {
@@ -848,14 +1293,14 @@ export function Scene({
   towers: Tower[];
   selection: Selection;
   onSelectTower: (id: number) => void;
-  onSelectSpot: (i: number) => void;
+  onSelectPosition: (position: { x: number; z: number }) => void;
   paused?: boolean;
   reducedMotion?: boolean;
 }) {
-  const occupied = useMemo(() => new Set(towers.map((t) => t.spot)), [towers]);
   const { size } = useThree();
   const renderQuality = useMemo(() => getSceneRenderQuality(size.width), [size.width]);
   const theme = useMemo(() => getStageTheme(stageId, endlessMode, bossTrial), [stageId, endlessMode, bossTrial]);
+  const map = useMemo(() => getStageMapByStageId(stageId), [stageId]);
   return (
     <>
       <color attach="background" args={[theme.sky]} />
@@ -876,10 +1321,11 @@ export function Scene({
       <CameraRig reducedMotion={reducedMotion} />
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
-        <Ground theme={theme} />
-        <Scenery count={renderQuality.sceneryCount} />
-        <Base />
-        <BuildPads occupied={occupied} selection={selection} onSelectSpot={onSelectSpot} />
+        <Ground theme={theme} map={map} />
+        <MapObstacles map={map} />
+        <Scenery count={renderQuality.sceneryCount} map={map} />
+        <Base position={map.base} />
+        <BuildSurface map={map} selection={selection} towers={towers} onSelectPosition={onSelectPosition} />
         {towers.map((t) => (
           <TowerMesh
             key={t.id}
@@ -888,7 +1334,7 @@ export function Scene({
             onSelect={onSelectTower}
           />
         ))}
-        <Zombies />
+        <Zombies map={map} />
         <Gibs />
         <DamagePopups/>
         <Bullets />

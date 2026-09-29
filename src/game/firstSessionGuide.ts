@@ -14,19 +14,19 @@ export function getFirstSessionTip(
   if (towerCount === 0) {
     return {
       title: "BUILD YOUR FIRST TOWER",
-      body: "Tap a glowing pad, then choose a tower to start the defense.",
+      body: "Tap open ground, choose a tower, and place it where its range covers the lane.",
     } satisfies FirstSessionTip;
   }
 
   if (upgradedTowerCount === 0) {
     return {
       title: "UPGRADE YOUR DEFENSE",
-      body: "Tap one of your towers to inspect it, then buy its first upgrade.",
+      body: "Tap one of your towers to inspect it, then choose a path upgrade with SCRAP.",
     } satisfies FirstSessionTip;
   }
 
   return {
     title: "YOU'RE READY",
-    body: "Keep the chain alive, save your gold, and choose a power when the horde pauses.",
+    body: "Keep the chain alive, save your SCRAP, and choose a power when the horde pauses.",
   } satisfies FirstSessionTip;
 }
