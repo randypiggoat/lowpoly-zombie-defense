@@ -887,12 +887,20 @@ export function GameCanvas() {
             <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
             <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Campaign</p>
-              <h2 className="font-display text-2xl tracking-wide">Suburbs</h2>
-              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it.</p>
+              <h2 className="font-display text-2xl tracking-wide">20 Locations · 4 Worlds</h2>
+              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it. Each world introduces a new environment language and tactical rhythm.</p>
             </div>
             <div className="mt-3 space-y-2">
               {stages.map((stage) => (
-                <div key={stage.id} className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}>
+                <div
+                  key={stage.id}
+                  data-stage-id={stage.id}
+                  data-world-id={stage.worldId}
+                  className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}
+                >
+                  <p className="mb-1 text-[9px] uppercase tracking-[0.18em] text-accent">
+                    World {stage.worldId} · {stage.worldName}
+                  </p>
                   <StageRoutePreview stageId={stage.id} />
                   <div className="mt-2 flex items-start justify-between gap-2">
                     <div className="min-w-0">
