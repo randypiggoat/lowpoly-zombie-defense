@@ -260,10 +260,12 @@ const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = 
 };
 
 export function getTowerUpgradeAbilities(kind: TowerKindKey, a: number, b: number): TowerUpgradeAbilities {
+  const pathSet = TOWER_PATHS[kind];
   const out = { ...EMPTY_ABILITIES };
+  if (!pathSet) return out;
   const apply = (path: "a" | "b", count: number) => {
     for (let i = 0; i < count; i++) {
-      const ability = TOWER_PATHS[kind][path].tiers[i]?.ability;
+      const ability = pathSet[path].tiers[i]?.ability;
       if (!ability) continue;
       const effects = ABILITY_EFFECTS[ability];
       if (effects.volley) out.volley = Math.max(out.volley, effects.volley);
