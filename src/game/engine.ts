@@ -1809,6 +1809,36 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           score: trialScore,
           cleared: true,
         });
+      } else if (this.stage.sideMode) {
+        const side = this.stage.sideMode;
+        const score = Math.max(
+          0,
+          Math.round(
+            s.wave * 120 +
+              s.kills * 8 +
+              s.baseHp * 20 +
+              s.maxKillStreak * 6 +
+              s.bossesDefeated * 350 +
+              1200,
+          ),
+        );
+        profile.completeSideModeRun(
+          side.id,
+          Math.max(1, s.wave),
+          s.kills,
+          score,
+          {
+            coins: Math.round(this.stage.rewards.completionCoins * Math.max(0.75, this.stage.rewardMultiplier)),
+            xp: Math.round(this.stage.rewards.completionXp * Math.max(0.75, this.stage.rewardMultiplier)),
+            gems: side.focus === "gems" ? 3 : 0,
+          },
+          {
+            coins: Math.round(this.stage.rewards.firstCompletionBonus.coins * 0.8),
+            xp: Math.round(this.stage.rewards.firstCompletionBonus.xp * 0.8),
+            gems: side.focus === "gems" ? 2 : 0,
+          },
+        );
+        track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: true });
       } else
       profile.completeRun(Math.max(1, s.wave), s.kills, {
         stageId: this.stage.id,
