@@ -214,6 +214,8 @@ export type PlayerProfile = {
   weeklyChallengeBestScore: number;
   bossTrialWeekKey: string | null;
   bossTrialBestScore: number;
+  bossTrialClears: Record<string, number>;
+  bossTrialMastery: Record<string, number>;
   sideModeBestScores: Record<string, number>;
   sideModeClears: Record<string, number>;
   equippedTowerCosmetics: Record<string, string>;
@@ -337,6 +339,8 @@ function blank(): PlayerProfile {
     weeklyChallengeBestScore: 0,
     bossTrialWeekKey: null,
     bossTrialBestScore: 0,
+    bossTrialClears: {},
+    bossTrialMastery: {},
     sideModeBestScores: {},
     sideModeClears: {},
     equippedTowerCosmetics: {},
@@ -574,6 +578,12 @@ function load(): PlayerProfile {
       weeklyChallengeBestScore: Math.max(0, Number(parsed.weeklyChallengeBestScore) || 0),
       bossTrialWeekKey: normalizeDate(parsed.bossTrialWeekKey),
       bossTrialBestScore: Math.max(0, Number(parsed.bossTrialBestScore) || 0),
+      bossTrialClears: isRecord(parsed.bossTrialClears)
+        ? Object.fromEntries(Object.entries(parsed.bossTrialClears).filter(([, value]) => Number(value) >= 0).map(([id, value]) => [id, Math.floor(Number(value))]))
+        : {},
+      bossTrialMastery: isRecord(parsed.bossTrialMastery)
+        ? Object.fromEntries(Object.entries(parsed.bossTrialMastery).filter(([, value]) => Number(value) >= 0).map(([id, value]) => [id, Math.min(3, Math.floor(Number(value)))]))
+        : {},
       sideModeBestScores: isRecord(parsed.sideModeBestScores)
         ? Object.fromEntries(
             Object.entries(parsed.sideModeBestScores).filter(([, score]) => Number(score) >= 0).map(([id, score]) => [id, Math.floor(Number(score))]),
@@ -647,6 +657,7 @@ class ProfileStore {
   }
   private revision = 0;
   private lastRunRewardBoosted = false;
+  private lastBossTrialId: string | null = null;
 
   get canClaimLastRunRewardBoost() {
     return Boolean(this.lastReward) && !this.lastRunRewardBoosted;
@@ -834,6 +845,7 @@ class ProfileStore {
   ): RunReward & { score: number; bestScore: number } {
     this.refreshRetentionState();
     const p = this.profile;
+    this.lastBossTrialId = this.lastBossTrialId ?? null;
     if (p.bossTrialWeekKey !== weekKey) {
       p.bossTrialWeekKey = weekKey;
       p.bossTrialBestScore = 0;
@@ -851,6 +863,11 @@ class ProfileStore {
     p.gems += gems;
     p.gamesPlayed += 1;
     if (newRecord) p.bossTrialBestScore = normalizedScore;
+    if (completed && this.lastBossTrialId) {
+      const clears = (p.bossTrialClears[this.lastBossTrialId] ?? 0) + 1;
+      p.bossTrialClears[this.lastBossTrialId] = clears;
+      p.bossTrialMastery[this.lastBossTrialId] = clears >= 10 ? 3 : clears >= 3 ? 2 : 1;
+    }
 
     const result = this.awardXp(baseXp);
     this.updateDailyMission("gameCompleted", 1);
