@@ -767,6 +767,7 @@ type EnemyRig = {
   mouth: THREE.Mesh | null;
   brow: THREE.Mesh | null;
   faceMark: THREE.Mesh | null;
+  faceRoot: THREE.Group | null;
 };
 
 function cacheEnemyRig(group: THREE.Group): EnemyRig {
@@ -793,6 +794,7 @@ function cacheEnemyRig(group: THREE.Group): EnemyRig {
     mouth: mesh("face-mouth"),
     brow: mesh("face-brow"),
     faceMark: mesh("face-mark"),
+    faceRoot: group.getObjectByName("face-rig") as THREE.Group | null,
   };
   group.userData.rotwoodEnemyRig = rig;
   return rig;
@@ -1026,20 +1028,24 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           rig.mouth.geometry = face.mouthMode === "slit" ? faceGeometries.mouthSlit : face.mouthMode === "open" ? faceGeometries.mouthOpen : faceGeometries.mouthJagged;
           rig.brow.geometry = faceGeometries.brow;
           rig.faceMark.geometry = faceGeometries.mark;
-          rig.leftEye.position.set(-face.eyeGap, face.eyeY - 1.62, face.eyeZ);
-          rig.rightEye.position.set(face.eyeGap, face.eyeY - 1.62, face.eyeZ + (z.kind === 1 ? 0.008 : 0));
+          if (rig.faceRoot) {
+            rig.faceRoot.position.copy(head.position);
+            rig.faceRoot.scale.copy(head.scale);
+          }
+          rig.leftEye.position.set(-face.eyeGap, face.eyeY, face.eyeZ);
+          rig.rightEye.position.set(face.eyeGap, face.eyeY, face.eyeZ + (z.kind === 1 ? 0.008 : 0));
           rig.leftEye.scale.set(...face.eyeScale);
           rig.rightEye.scale.set(...face.eyeScale);
           rig.leftEye.rotation.z = face.eyeTilt;
           rig.rightEye.rotation.z = -face.eyeTilt;
-          rig.mouth.position.set(0, face.mouthY - 1.62, face.mouthZ);
+          rig.mouth.position.set(0, face.mouthY, face.mouthZ);
           rig.mouth.scale.set(...face.mouthScale);
           rig.mouth.rotation.z = face.mouthTilt;
-          rig.brow.position.set(0, face.browY - 1.62, face.browZ);
+          rig.brow.position.set(0, face.browY, face.browZ);
           rig.brow.scale.set(...face.browScale);
           rig.brow.rotation.z = face.browTilt;
           rig.faceMark.visible = face.markVisible;
-          rig.faceMark.position.set(0, face.browY - 1.62 + 0.17, face.browZ + 0.008);
+          rig.faceMark.position.set(0, face.browY + 0.17, face.browZ + 0.008);
           rig.faceMark.scale.setScalar(face.markScale);
           for (const eye of [rig.leftEye, rig.rightEye]) {
             const material = eye.material as THREE.MeshBasicMaterial;
@@ -1097,16 +1103,26 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           rig.rightLeg.rotation.x = stride * motion.legSwing * 0.32;
           rig.rightLeg.rotation.z = counterStride * motion.sway * 0.28;
         }
+        const face = getEnemyFaceProfile(z.kind);
+        if (rig.faceRoot && rig.head) rig.faceRoot.rotation.copy(rig.head.rotation);
         if (rig.leftEye && rig.rightEye) {
           const eyePulse = 1 + Math.sin(phase * 1.8) * 0.035;
-          rig.leftEye.scale.multiplyScalar(eyePulse);
-          rig.rightEye.scale.multiplyScalar(eyePulse);
+          rig.leftEye.scale.set(
+            face.eyeScale[0] * eyePulse,
+            face.eyeScale[1] * eyePulse,
+            face.eyeScale[2],
+          );
+          rig.rightEye.scale.set(
+            face.eyeScale[0] * eyePulse,
+            face.eyeScale[1] * eyePulse,
+            face.eyeScale[2],
+          );
           const lookAhead = z.hitKind === "sniper" ? -0.025 * hit : z.kind === 1 ? 0.018 : 0;
-          rig.leftEye.position.z += lookAhead;
-          rig.rightEye.position.z += lookAhead;
+          rig.leftEye.position.z = face.eyeZ + lookAhead;
+          rig.rightEye.position.z = face.eyeZ + (z.kind === 1 ? 0.008 : 0) + lookAhead;
         }
-        if (rig.mouth) rig.mouth.rotation.z += Math.sin(phase * 0.9) * 0.012 + (z.kind === 3 ? Math.sin(phase * 1.7) * 0.018 : 0);
-        if (rig.brow) rig.brow.rotation.z = (getEnemyFaceProfile(z.kind).browTilt) - z.hitSide * hit * 0.16;
+        if (rig.mouth) rig.mouth.rotation.z = face.mouthTilt + Math.sin(phase * 0.9) * 0.012 + (z.kind === 3 ? Math.sin(phase * 1.7) * 0.018 : 0);
+        if (rig.brow) rig.brow.rotation.z = face.browTilt - z.hitSide * hit * 0.16;
         if (rig.faceMark?.visible) {
           rig.faceMark.rotation.y += 0.02 + motion.signaturePulse * 0.08;
           rig.faceMark.scale.setScalar(getEnemyFaceProfile(z.kind).markScale * (1 + Math.sin(phase * 1.7) * motion.signaturePulse * 0.18));
@@ -1139,6 +1155,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       } else {
         if (rig.body) rig.body.rotation.set(0, 0, 0);
         if (rig.head) rig.head.rotation.set(0, 0, 0);
+        if (rig.faceRoot) rig.faceRoot.rotation.set(0, 0, 0);
         if (rig.leftArm) rig.leftArm.rotation.set(-1.2, 0, 0);
         if (rig.rightArm) rig.rightArm.rotation.set(-1.35, 0, 0);
         if (rig.leftLeg) rig.leftLeg.rotation.set(0, 0, 0);
@@ -1247,26 +1264,28 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
           </mesh>
 
-          <mesh name="face-left-eye" position={[-0.17, 0, 0.24]}>
-            <octahedronGeometry args={[0.075, 0]} />
-            <meshBasicMaterial color="#d9eee0" />
-          </mesh>
-          <mesh name="face-right-eye" position={[0.17, 0, 0.24]}>
-            <octahedronGeometry args={[0.075, 0]} />
-            <meshBasicMaterial color="#d9eee0" />
-          </mesh>
-          <mesh name="face-mouth" position={[0, -0.14, 0.25]}>
-            <boxGeometry args={[0.18, 0.05, 0.025]} />
-            <meshBasicMaterial color="#2a1718" />
-          </mesh>
-          <mesh name="face-brow" position={[0, 0.11, 0.245]}>
-            <boxGeometry args={[0.28, 0.035, 0.035]} />
-            <meshBasicMaterial color="#4b2d2e" />
-          </mesh>
-          <mesh name="face-mark" position={[0, 0.28, 0.255]} visible={false}>
-            <tetrahedronGeometry args={[0.065, 0]} />
-            <meshBasicMaterial color="#e1a04f" />
-          </mesh>
+          <group name="face-rig" position={[0, 1.62, 0]}>
+            <mesh name="face-left-eye" position={[-0.17, 0.02, 0.24]}>
+              <octahedronGeometry args={[0.075, 0]} />
+              <meshBasicMaterial color="#d9eee0" />
+            </mesh>
+            <mesh name="face-right-eye" position={[0.17, 0.02, 0.24]}>
+              <octahedronGeometry args={[0.075, 0]} />
+              <meshBasicMaterial color="#d9eee0" />
+            </mesh>
+            <mesh name="face-mouth" position={[0, -0.14, 0.25]}>
+              <boxGeometry args={[0.18, 0.05, 0.025]} />
+              <meshBasicMaterial color="#2a1718" />
+            </mesh>
+            <mesh name="face-brow" position={[0, 0.11, 0.245]}>
+              <boxGeometry args={[0.28, 0.035, 0.035]} />
+              <meshBasicMaterial color="#4b2d2e" />
+            </mesh>
+            <mesh name="face-mark" position={[0, 0.28, 0.255]} visible={false}>
+              <tetrahedronGeometry args={[0.065, 0]} />
+              <meshBasicMaterial color="#e1a04f" />
+            </mesh>
+          </group>
 
           <group name="boss-aura" visible={false} position={[0, 1.1, 0]}>
             <mesh rotation-x={Math.PI / 2}>
