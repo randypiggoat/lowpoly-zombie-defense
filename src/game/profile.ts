@@ -842,10 +842,11 @@ class ProfileStore {
     weekKey: string,
     completed: boolean,
     rewardMultiplier = 1,
+    trialId?: string,
   ): RunReward & { score: number; bestScore: number } {
     this.refreshRetentionState();
     const p = this.profile;
-    this.lastBossTrialId = this.lastBossTrialId ?? null;
+    this.lastBossTrialId = trialId ?? null;
     if (p.bossTrialWeekKey !== weekKey) {
       p.bossTrialWeekKey = weekKey;
       p.bossTrialBestScore = 0;
