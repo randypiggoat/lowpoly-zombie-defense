@@ -138,9 +138,9 @@ export type Zombie = {
   /** Bit mask of body/signature pieces already broken off by damage. */
   gibMask?: number;
   /** Procedural combat-feel state consumed only by the renderer. */
-  hitReact: number;
-  hitSide: number;
-  hitDepth: number;
+  hitReact?: number;
+  hitSide?: number;
+  hitDepth?: number;
   hitKind?: TowerKind | "burn";
 };
 
