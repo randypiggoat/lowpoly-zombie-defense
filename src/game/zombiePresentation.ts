@@ -16,6 +16,18 @@ export type ZombiePresentation = {
   hitRecoil: number;
   hitTwist: number;
   deathFold: number;
+  bodyY: number;
+  bodyZ: number;
+  bodyScale: readonly [number, number, number];
+  headY: number;
+  headZ: number;
+  headScale: readonly [number, number, number];
+  armSpread: number;
+  armY: number;
+  armZ: number;
+  armScale: readonly [number, number, number];
+  legSpread: number;
+  legScale: readonly [number, number, number];
   faceScale: number;
   faceY: number;
   faceZ: number;
@@ -23,6 +35,10 @@ export type ZombiePresentation = {
 
 export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
   0: {
+    bodyY: 0.95, bodyZ: 0, bodyScale: [1, 1, 1],
+    headY: 1.62, headZ: 0, headScale: [1, 1, 1],
+    armSpread: 0.42, armY: 1.15, armZ: 0.3, armScale: [1, 1, 1],
+    legSpread: 0.17, legScale: [1, 1, 1],
     name: "Walker",
     silhouette: "balanced baseline",
     gait: 4.2,
@@ -43,6 +59,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.235,
   },
   1: {
+    bodyY: 0.9, bodyZ: 0.08, bodyScale: [0.68, 1.06, 0.72],
+    headY: 1.55, headZ: 0.12, headScale: [0.78, 0.86, 0.82],
+    armSpread: 0.3, armY: 1.1, armZ: 0.42, armScale: [0.65, 1.12, 0.65],
+    legSpread: 0.17, legScale: [0.68, 1.15, 0.68],
     name: "Runner",
     silhouette: "forward-leaning sprinter",
     gait: 7.8,
@@ -63,6 +83,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.36,
   },
   2: {
+    bodyY: 1.05, bodyZ: 0, bodyScale: [1.42, 1.28, 1.25],
+    headY: 1.83, headZ: 0.02, headScale: [1.22, 1.1, 1.15],
+    armSpread: 0.58, armY: 1.2, armZ: 0.28, armScale: [1.35, 1.32, 1.35],
+    legSpread: 0.17, legScale: [1.3, 1.12, 1.3],
     name: "Brute",
     silhouette: "heavy shoulders and planted stride",
     gait: 2.8,
@@ -83,6 +107,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.42,
   },
   3: {
+    bodyY: 0.98, bodyZ: 0, bodyScale: [1.05, 1.18, 0.9],
+    headY: 1.62, headZ: 0.02, headScale: [0.92, 1.08, 0.9],
+    armSpread: 0.44, armY: 1.15, armZ: 0.34, armScale: [0.9, 1.08, 0.88],
+    legSpread: 0.16, legScale: [0.92, 1.04, 0.92],
     name: "Splitter",
     silhouette: "asymmetric unstable core",
     gait: 4.7,
@@ -103,6 +131,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.36,
   },
   4: {
+    bodyY: 0.98, bodyZ: -0.04, bodyScale: [1.1, 1, 1.05],
+    headY: 1.64, headZ: 0.03, headScale: [1.08, 0.92, 1.02],
+    armSpread: 0.43, armY: 1.15, armZ: 0.28, armScale: [1.04, 1.04, 1.04],
+    legSpread: 0.17, legScale: [1.02, 1.04, 1.02],
     name: "Bomber",
     silhouette: "unstable pack-heavy body",
     gait: 3.7,
@@ -123,6 +155,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.255,
   },
   5: {
+    bodyY: 1.02, bodyZ: 0, bodyScale: [1.18, 1.16, 1.12],
+    headY: 1.72, headZ: 0.03, headScale: [1.08, 1.02, 1.06],
+    armSpread: 0.5, armY: 1.18, armZ: 0.34, armScale: [1.12, 1.1, 1.12],
+    legSpread: 0.18, legScale: [1.1, 1.08, 1.1],
     name: "Guardian",
     silhouette: "wide defensive stance",
     gait: 2.4,
@@ -143,6 +179,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.36,
   },
   6: {
+    bodyY: 0.95, bodyZ: 0, bodyScale: [0.9, 1.05, 0.94],
+    headY: 1.62, headZ: 0.02, headScale: [1, 1.03, 0.98],
+    armSpread: 0.4, armY: 1.13, armZ: 0.26, armScale: [0.9, 1.08, 0.9],
+    legSpread: 0.17, legScale: [0.9, 1.02, 0.9],
     name: "Healer",
     silhouette: "slender floating support",
     gait: 3.6,
@@ -163,6 +203,10 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.255,
   },
   7: {
+    bodyY: 0.82, bodyZ: 0, bodyScale: [0.78, 0.86, 0.8],
+    headY: 1.43, headZ: 0.02, headScale: [0.94, 0.9, 0.92],
+    armSpread: 0.34, armY: 1.02, armZ: 0.34, armScale: [0.76, 0.9, 0.76],
+    legSpread: 0.14, legScale: [0.72, 0.9, 0.72],
     name: "Swarm",
     silhouette: "small coordinated dart",
     gait: 9.5,
