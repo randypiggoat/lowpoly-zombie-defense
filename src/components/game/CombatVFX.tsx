@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { TOWER_INFO, game } from "@/game/engine";
+import { game } from "@/game/engine";
 
 const MAX_BURSTS = 48;
 const MAX_ZOMBIES = 60;
