@@ -76,7 +76,7 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     accent: "#f28b52",
     body: "#4f332c",
     requirement: "Reach Flamethrower Mastery 2.",
-    unlock: (profile) => profile.towerMasteryLevel("flamethrower") >= 2,
+    unlock: (profile) => ((profile.towerMasteryXp?.flamethrower ?? 0) >= 200),
   },
   {
     id: "ember-rocket",
@@ -87,7 +87,7 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     accent: "#ff7a3d",
     body: "#653027",
     requirement: "Reach Rocket Mastery 4.",
-    unlock: (profile) => profile.towerMasteryLevel("rocket") >= 4,
+    unlock: (profile) => ((profile.towerMasteryXp?.rocket ?? 0) >= 400),
   },
   {
     id: "neon-laser",
@@ -98,7 +98,7 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     accent: "#5effff",
     body: "#264f57",
     requirement: "Reach Laser Mastery 5.",
-    unlock: (profile) => profile.towerMasteryLevel("laser") >= 5,
+    unlock: (profile) => ((profile.towerMasteryXp?.laser ?? 0) >= 500),
   },
 ];
 
