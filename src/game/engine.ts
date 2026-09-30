@@ -1426,7 +1426,7 @@ export class Game {
     if (s.gibs.length >= 96) return;
 
     const allParts = deathGorePartsForKind(z.kind);
-    const intactParts = allParts.filter((part) => (z.gibMask ?? 0 & gorePartBit(part)) === 0);
+    const intactParts = allParts.filter((part) => ((z.gibMask ?? 0) & gorePartBit(part)) === 0);
     const debrisParts = intactParts.length > 0 ? intactParts : allParts;
     const biasX = z.hitX ?? 0;
     const biasZ = z.hitZ ?? 1;
