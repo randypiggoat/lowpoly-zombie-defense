@@ -171,21 +171,3 @@ export const ZOMBIE_COSMETICS: ZombieCosmetic[] = [
   },
 ];
 
-export function cosmeticForZombie(equippedId: string | null | undefined) {
-  const cosmetic = ZOMBIE_COSMETICS.find((entry) => entry.id === equippedId && entry.unlock(profilePlaceholder()));
-  return cosmetic ?? ZOMBIE_COSMETICS[0]!;
-}
-
-// Kept as a tiny adapter so collection definitions remain pure-data and testable.
-function profilePlaceholder(): PlayerProfile {
-  return {
-    version: 0, xp: 0, level: 0, coins: 0, gems: 0, highestWave: 0, totalKills: 0, bruteKills: 0,
-    gamesPlayed: 0, towerUpgradeActions: 0, builtTowerKinds: [], dailyMissionDate: null, loginCycleDay: 1,
-    lastLoginClaimDate: null, lastLoginRewardDayClaimed: null, dailyRewardedBonusDate: null,
-    towerUpgrades: {}, fieldKnowledge: {}, unlockedTowers: [], towerMasteryXp: {}, achievements: {},
-    dailyMissionProgress: {}, stageProgress: {}, endlessBestWave: 0, endlessBestScore: 0,
-    dailyChallengeDate: null, dailyChallengeBestScore: 0, weeklyChallengeKey: null, weeklyChallengeBestScore: 0,
-    bossTrialWeekKey: null, bossTrialBestScore: 0, equippedTowerCosmetics: {}, equippedZombieCosmetic: "zombie-default",
-    seasonalEventCycleKey: "", seasonalEventProgress: 0, seasonalEventClaims: [], reducedMotion: false, adsRemoved: false,
-  };
-}
