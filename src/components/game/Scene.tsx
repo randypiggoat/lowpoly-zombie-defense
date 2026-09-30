@@ -11,8 +11,6 @@ import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
-import { StageEnvironment } from "./StageEnvironment";
-import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
   MAX_ACTIVE_BULLETS,
@@ -270,7 +268,6 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
   return (
     <group>
       {map.obstacles.map((obstacle, index) => {
-      {map.obstacles.map((obstacle, index) => {
         const label = obstacle.label.toLowerCase();
         const x = obstacle.x;
         const z = obstacle.z;
@@ -504,7 +501,6 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         }
 
         return (
-          <mesh key={obstacle.label + "-" + index} position={[x, h / 2, z]} castShadow receiveShadow>
           <mesh key={obstacle.label + "-" + index} position={[x, h / 2, z]} castShadow receiveShadow>
             <boxGeometry args={[w, h, d]} />
             <meshStandardMaterial color="#6f6b63" flatShading />
@@ -1190,14 +1186,6 @@ function Zombies({
         const reactionEnvelope = z.hitReact > 0
           ? z.hitReact * z.hitReact * (3 - 2 * z.hitReact)
           : 0;
-        const hitPulse = Math.max(0, z.flash);
-        const hitDirection = Math.sin(z.id * 12.73);
-        g.scale.set(
-          scale * (z.boss ? 1.16 : 1) * (1 + hitPulse * 0.045),
-          scale * (z.boss ? 1.16 : 1) * (1 - hitPulse * 0.035),
-          scale * (z.boss ? 1.16 : 1) * (1 + hitPulse * 0.045),
-        );
-        g.rotation.y += hitPulse * hitDirection * 0.055;
         const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
         const facingY = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
         g.position.set(
@@ -1892,7 +1880,6 @@ export function Scene({
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} map={map} />
         <StageEnvironment environmentId={map.environmentId} />
-        <StageEnvironment environmentId={map.environmentId} />
         <MapObstacles map={map} />
         <Scenery count={renderQuality.sceneryCount} map={map} />
         <Base position={map.base} />
@@ -1914,9 +1901,8 @@ export function Scene({
         ))}
         <Zombies map={map} reducedMotion={reducedMotion} />
         <Gibs />
-        <DamagePopups />
+        <DamagePopups/>
         <Bullets />
-        <CombatVFX reducedMotion={reducedMotion} />
       </group>
     </>
   );
