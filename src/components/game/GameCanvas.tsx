@@ -57,7 +57,6 @@ import {
   getEndlessSector,
   getEndlessSectorLabel,
   getSeasonalEventRun,
-  getUnlockedSideModeLevels,
   type SideModeLevel,
 } from "@/game/sideModes";
 
