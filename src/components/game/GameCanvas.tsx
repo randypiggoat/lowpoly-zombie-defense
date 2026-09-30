@@ -316,6 +316,10 @@ function StageRoutePreview({ stageId }: { stageId: number }) {
     </div>
   );
 }
+function getEndlessSector(bestWave: number) {
+  return Math.max(1, Math.ceil(Math.max(0, bestWave) / 5));
+}
+
 function seasonalEventProgressTarget(target: number, progress: number) {
   return Math.min(target, Math.max(0, progress));
 }
