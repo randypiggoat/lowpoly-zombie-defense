@@ -1154,6 +1154,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
             hitTwist * 0.55;
         }
         if (face) {
+          face.visible = true;
           face.rotation.copy(head?.rotation ?? new THREE.Euler());
           face.position.y = presentation.faceY;
           face.position.z = presentation.faceZ;
@@ -1276,7 +1277,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           </mesh>
           <mesh name="face" position={[0, 1.62, 0.235]} visible={false}>
             <primitive object={faceGeometries[0]!} attach="geometry" />
-            <meshBasicMaterial vertexColors toneMapped={false} />
+            <meshBasicMaterial vertexColors toneMapped={false} side={THREE.DoubleSide} />
           </mesh>
 
           <group name="boss-aura" visible={false} position={[0, 1.1, 0]}>
