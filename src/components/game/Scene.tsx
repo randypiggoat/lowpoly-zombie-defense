@@ -1381,8 +1381,6 @@ function Zombies({
         }
       }
 
-      const l = legs.current[i];
-      if (l && !z.dead) l.rotation.x = Math.sin(z.wobble * 2) * 0.5;
     }
   });
 
