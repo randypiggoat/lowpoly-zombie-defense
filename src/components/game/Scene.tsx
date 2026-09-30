@@ -1076,9 +1076,10 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       const counterStride = Math.sin(phase * 1.35 + Math.PI);
       const bounce = Math.sin(phase * 0.67);
       const drift = Math.sin(phase * 0.43);
-      const hit = Math.min(1.25, Math.max(0, z.hitReact ?? 0));
-      const hitSide = hitSide ?? 0;
-      const hitDepth = hitDepth ?? 0;
+      const hitMotion = getEnemyHitMotion(z.hitKind);
+      const hit = Math.min(1.25, Math.max(0, z.hitReact ?? 0)) * hitMotion;
+      const hitSide = z.hitSide ?? 0;
+      const hitDepth = z.hitDepth ?? 0;
       if (!z.dead) {
         if (rig.body) {
           rig.body.rotation.x = motion.posturePitch - hitDepth * hit * motion.hitPitch + drift * motion.torsoTwist * 0.35;
