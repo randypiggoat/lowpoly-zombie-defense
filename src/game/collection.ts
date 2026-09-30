@@ -115,3 +115,77 @@ export function cosmeticForTower(
   );
   return cosmetic?.id === "default" ? null : cosmetic ?? null;
 }
+
+
+export type ZombieCosmetic = {
+  id: string;
+  name: string;
+  description: string;
+  skin: string;
+  cloth: string;
+  legs: string;
+  requirement: string;
+  unlock: (profile: PlayerProfile) => boolean;
+};
+
+export const ZOMBIE_COSMETICS: ZombieCosmetic[] = [
+  {
+    id: "zombie-default",
+    name: "Outbreak",
+    description: "The classic Rotwood infected palette.",
+    skin: "#6f9f55",
+    cloth: "#42513f",
+    legs: "#35404a",
+    requirement: "Available from the start.",
+    unlock: () => true,
+  },
+  {
+    id: "zombie-nightfall",
+    name: "Nightfall",
+    description: "A darker infected palette earned through sustained defense.",
+    skin: "#536f63",
+    cloth: "#28333a",
+    legs: "#202932",
+    requirement: "Reach 500 zombie kills.",
+    unlock: (profile) => profile.totalKills >= 500,
+  },
+  {
+    id: "zombie-burnout",
+    name: "Burnout",
+    description: "A scorched palette earned by surviving major threats.",
+    skin: "#9a5a48",
+    cloth: "#4b2927",
+    legs: "#302226",
+    requirement: "Defeat 25 Brutes.",
+    unlock: (profile) => profile.bruteKills >= 25,
+  },
+  {
+    id: "zombie-void",
+    name: "Void",
+    description: "An endgame palette for dedicated endless players.",
+    skin: "#5b5a7a",
+    cloth: "#292840",
+    legs: "#1f2032",
+    requirement: "Reach Endless Wave 50.",
+    unlock: (profile) => profile.endlessBestWave >= 50,
+  },
+];
+
+export function cosmeticForZombie(equippedId: string | null | undefined) {
+  const cosmetic = ZOMBIE_COSMETICS.find((entry) => entry.id === equippedId && entry.unlock(profilePlaceholder()));
+  return cosmetic ?? ZOMBIE_COSMETICS[0]!;
+}
+
+// Kept as a tiny adapter so collection definitions remain pure-data and testable.
+function profilePlaceholder(): PlayerProfile {
+  return {
+    version: 0, xp: 0, level: 0, coins: 0, gems: 0, highestWave: 0, totalKills: 0, bruteKills: 0,
+    gamesPlayed: 0, towerUpgradeActions: 0, builtTowerKinds: [], dailyMissionDate: null, loginCycleDay: 1,
+    lastLoginClaimDate: null, lastLoginRewardDayClaimed: null, dailyRewardedBonusDate: null,
+    towerUpgrades: {}, fieldKnowledge: {}, unlockedTowers: [], towerMasteryXp: {}, achievements: {},
+    dailyMissionProgress: {}, stageProgress: {}, endlessBestWave: 0, endlessBestScore: 0,
+    dailyChallengeDate: null, dailyChallengeBestScore: 0, weeklyChallengeKey: null, weeklyChallengeBestScore: 0,
+    bossTrialWeekKey: null, bossTrialBestScore: 0, equippedTowerCosmetics: {}, equippedZombieCosmetic: "zombie-default",
+    seasonalEventCycleKey: "", seasonalEventProgress: 0, seasonalEventClaims: [], reducedMotion: false, adsRemoved: false,
+  };
+}
