@@ -39,6 +39,10 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const muzzle = useRef<THREE.Mesh>(null);
   const core = useRef<THREE.Mesh>(null);
   const identityCore = useRef<THREE.Mesh>(null);
+  const upgradeRing = useRef<THREE.Mesh>(null);
+  const upgradeCore = useRef<THREE.Mesh>(null);
+  const previousLevel = useRef(level);
+  const upgradeLife = useRef(0);
   const identityHalo = useRef<THREE.Mesh>(null);
   const idleSeed = tower.id * 0.71;
 
@@ -49,6 +53,11 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
+    if (level !== previousLevel.current) {
+      if (previousLevel.current > 0) upgradeLife.current = 0.58;
+      previousLevel.current = level;
+    }
+    upgradeLife.current = Math.max(0, upgradeLife.current - 1 / 60);
     const bob = Math.sin(t * 2.1 + idleSeed) * 0.035;
     if (rig.current) {
       const baseScale = 1 + Math.min(level - 1, 8) * 0.025;
@@ -98,9 +107,24 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04);
     }
     if (muzzle.current) {
-      muzzle.current.visible = tower.recoil > 0.12;
-      const flash = Math.max(0, tower.recoil - 0.12) * 1.4;
-      muzzle.current.scale.setScalar(0.45 + flash);
+      const recoil = Math.max(0, tower.recoil);
+      const flash = Math.max(0, recoil - 0.08);
+      muzzle.current.visible = recoil > 0.08;
+      muzzle.current.scale.setScalar(0.42 + flash * 1.65);
+      const material = muzzle.current.material as THREE.MeshStandardMaterial;
+      material.emissiveIntensity = 0.9 + recoil * 2.1;
+    }
+    if (upgradeRing.current && upgradeCore.current) {
+      const progress = upgradeLife.current > 0 ? 1 - upgradeLife.current / 0.58 : 1;
+      upgradeRing.current.visible = upgradeLife.current > 0;
+      upgradeCore.current.visible = upgradeLife.current > 0;
+      if (upgradeLife.current > 0) {
+        const eased = 1 - Math.pow(1 - progress, 3);
+        upgradeRing.current.scale.setScalar(0.35 + eased * 1.65);
+        upgradeCore.current.scale.setScalar(0.55 + Math.sin(eased * Math.PI) * 0.55);
+        (upgradeRing.current.material as THREE.MeshBasicMaterial).opacity = 0.68 * (1 - progress);
+        (upgradeCore.current.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - progress);
+      }
     }
   });
 
@@ -468,6 +492,14 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           <AccentMaterial color={accent} glow={0.48} />
         </mesh>
       )}
+      <mesh ref={upgradeRing} position={[0, 0.7, 0]} rotation-x={Math.PI / 2} visible={false}>
+        <torusGeometry args={[0.62, 0.045, 5, 14]} />
+        <meshBasicMaterial color={accent} transparent opacity={0.68} />
+      </mesh>
+      <mesh ref={upgradeCore} position={[0, 0.72, 0]} visible={false}>
+        <icosahedronGeometry args={[0.14, 0]} />
+        <meshBasicMaterial color={accent} transparent opacity={0.9} />
+      </mesh>
     </group>
   );
 }
