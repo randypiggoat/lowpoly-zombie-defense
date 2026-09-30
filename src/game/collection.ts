@@ -53,8 +53,8 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     towerKind: "sniper",
     accent: "#b9ecff",
     body: "#365261",
-    requirement: "Reach Sniper Mastery 2.",
-    unlock: (profile) => profile.towerMasteryLevel("sniper") >= 2,
+    requirement: "Reach Wave 25.",
+    unlock: (profile) => profile.highestWave >= 25,
   },
   {
     id: "storm-tesla",
@@ -64,8 +64,8 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     towerKind: "tesla",
     accent: "#72f5dc",
     body: "#294c53",
-    requirement: "Reach Tesla Mastery 3.",
-    unlock: (profile) => profile.towerMasteryLevel("tesla") >= 3,
+    requirement: "Reach Wave 50.",
+    unlock: (profile) => profile.highestWave >= 50,
   },
   {
     id: "ember-flame",
