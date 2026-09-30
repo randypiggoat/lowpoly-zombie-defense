@@ -35,4 +35,14 @@ describe("enemy gore breakpoints", () => {
       expect(gorePartsForKind(kind)).toHaveLength(4);
     }
   });
+
+  test("death debris keeps each special enemy's signature in the destruction language", async () => {
+    const { deathGorePartsForKind } = await import("./enemyGore");
+    expect(deathGorePartsForKind(1)[0]).toBe("runner-crest");
+    expect(deathGorePartsForKind(3)[0]).toBe("splitter-core");
+    expect(deathGorePartsForKind(4)[0]).toBe("bomber-pack");
+    expect(deathGorePartsForKind(5)[0]).toBe("guardian-shield");
+    expect(deathGorePartsForKind(6)[0]).toBe("healer-aura");
+    expect(deathGorePartsForKind(7)[0]).toBe("swarm-crest");
+  });
 });
