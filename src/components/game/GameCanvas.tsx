@@ -319,52 +319,7 @@ function StageRoutePreview({ stageId }: { stageId: number }) {
         />
         <circle cx={start[0]} cy={start[1]} r="1.05" fill={theme.marker} />
         <circle cx={end[0]} cy={end[1]} r="1.05" fill={theme.light} />
-      <svg
-        viewBox={"0 0 " + viewWidth + " " + viewHeight}
-        className="h-24 w-full"
-        role="img"
-        aria-label={"Map preview for " + map.name}
-      >
-        <rect width="100%" height="100%" rx="1.25" fill={theme.ground} />
-        <rect width="100%" height="100%" rx="1.25" fill={theme.groundAlt} opacity="0.3" />
-        {map.obstacles.map((obstacle, index) => {
-          const rect = obstacleRect(obstacle);
-          return (
-            <rect
-              key={obstacle.label + "-" + index}
-              x={rect.x}
-              y={rect.y}
-              width={obstacle.width}
-              height={obstacle.depth}
-              rx="0.35"
-              fill={theme.pathEdge}
-              opacity="0.58"
-            />
-          );
-        })}
-        <path
-          d={d}
-          fill="none"
-          stroke={theme.pathEdge}
-          strokeWidth={Math.max(2.2, map.pathWidth * 0.92)}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.68"
-        />
-        <path
-          d={d}
-          fill="none"
-          stroke={theme.path}
-          strokeWidth={Math.max(1.35, map.pathWidth * 0.54)}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx={start[0]} cy={start[1]} r="1.05" fill={theme.marker} />
-        <circle cx={end[0]} cy={end[1]} r="1.05" fill={theme.light} />
       </svg>
-      <span className="absolute bottom-2 left-2 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-panel-muted">
-        {map.path.length - 1} path segments · blockers shown
-      </span>
       <span className="absolute bottom-2 left-2 rounded-full bg-black/45 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-panel-muted">
         {map.path.length - 1} path segments · blockers shown
       </span>
