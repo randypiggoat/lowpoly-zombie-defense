@@ -170,6 +170,49 @@ describe("Game simulation", () => {
 
 
 
+describe("zombie hit presentation state", () => {
+  test("stores directional weapon hit reaction state without changing gameplay damage math", () => {
+    const game = new Game(createSeededRandom(7));
+    game.startStage(getStageById(1));
+    const z = makeTestZombie({
+      id: 444,
+      x: 0,
+      z: 0,
+      hp: 100,
+      maxHp: 100,
+    });
+    game.state.zombies.push(z);
+
+    const applyDamage = (
+      game as unknown as {
+        damage: (
+          zombie: Zombie,
+          damage: number,
+          fromX: number,
+          fromZ: number,
+          goreBase: number,
+          goldMult?: number,
+          crit?: boolean,
+          ability?: { damageKind?: import("./engine").TowerKind; originX?: number; originZ?: number },
+        ) => void;
+      }
+    ).damage.bind(game);
+
+    applyDamage(z, 10, -3, 0, 1, 1, false, {
+      damageKind: "rocket",
+      originX: -3,
+      originZ: 0,
+    });
+
+    expect(z.hp).toBe(90);
+    expect(z.hitKind).toBe("rocket");
+    expect(z.hitReact).toBe(1);
+    expect(z.hitForce).toBeGreaterThan(0);
+    expect(z.hitX).toBeGreaterThan(0.9);
+    expect(Math.abs(z.hitZ)).toBeLessThan(0.1);
+  });
+});
+
 describe("combat hit semantics", () => {
   test("a high-damage ordinary hit is not treated as a critical hit", async () => {
     const { resolveDamage } = await import("./damage");
