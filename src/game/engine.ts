@@ -1226,6 +1226,22 @@ export class Game {
       Math.hypot(z.x - originX, z.z - originZ) <= 3.8
         ? Math.max(1, ability.closeDamageMultiplier ?? 1)
         : 1;
+    const incomingDamage =
+      (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) *
+      guardianAura *
+      markedMultiplier *
+      shatterMultiplier *
+      executeMultiplier *
+      bossMultiplier *
+      closeMultiplier;
+    const result = resolveDamage(
+      z.hp,
+      z.maxHp,
+      incomingDamage,
+      goreBase,
+      goldMult,
+      crit,
+    );
     const hitDx = z.x - fromX;
     const hitDz = z.z - fromZ;
     const hitLen = Math.hypot(hitDx, hitDz);
@@ -1245,22 +1261,6 @@ export class Game {
     );
     z.hitKind = ability.hitKind;
 
-    const incomingDamage =
-      (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) *
-      guardianAura *
-      markedMultiplier *
-      shatterMultiplier *
-      executeMultiplier *
-      bossMultiplier *
-      closeMultiplier;
-    const result = resolveDamage(
-      z.hp,
-      z.maxHp,
-      incomingDamage,
-      goreBase,
-      goldMult,
-      crit,
-    );
     const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
     if (!result.killed) {
