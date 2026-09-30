@@ -11,6 +11,8 @@ describe("zombie presentation", () => {
     expect(new Set(profiles.map((profile) => profile.name)).size).toBe(8);
     expect(new Set(profiles.map((profile) => profile.silhouette)).size).toBe(8);
     expect(new Set(profiles.map((profile) => profile.gait)).size).toBe(8);
+    expect(ZOMBIE_PRESENTATION[2].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
+    expect(ZOMBIE_PRESENTATION[5].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
   });
 
   test("keeps heavy and precision attacks visibly stronger than light hits", () => {
