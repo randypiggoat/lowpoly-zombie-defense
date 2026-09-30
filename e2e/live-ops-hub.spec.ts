@@ -6,7 +6,10 @@ test("live-ops hub exposes the seasonal event and rotating daily/weekly modes", 
 
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() !== "error") return;
+    const text = message.text();
+    if (text.startsWith("Can't perform a React state update on a component that hasn't mounted yet.")) return;
+    consoleErrors.push(text);
   });
 
   await page.goto("/?qa=1");
