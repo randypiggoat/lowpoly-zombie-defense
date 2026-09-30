@@ -585,6 +585,8 @@ export function GameCanvas() {
   const dailyChallenge = getDailyChallenge(todayKey);
   const weeklyChallenge = getWeeklyChallenge(weekKey);
   const weeklyBossTrial = getWeeklyBossTrial(weekKey);
+  const bossTrialClears = player.bossTrialClears[weeklyBossTrial.id] ?? 0;
+  const bossTrialMastery = player.bossTrialMastery[weeklyBossTrial.id] ?? 0;
   const seasonalEvent = getSeasonalEvent();
   const seasonalCycleKey = getSeasonalEventCycleKey();
   const seasonalEventEnd = getSeasonalEventEnd();
@@ -939,9 +941,9 @@ export function GameCanvas() {
                           {trial.variants.length} variants
                         </span>
                         <p className="mt-1 text-[9px] uppercase tracking-wider text-accent">
-                          Mastery {"★".repeat(mastery)}{"☆".repeat(Math.max(0, 3 - mastery))}
+                          Mastery {"★".repeat(bossTrialMastery)}{"☆".repeat(Math.max(0, 3 - bossTrialMastery))}
                         </p>
-                        <p className="text-[8px] uppercase tracking-wider text-panel-muted">{clears} career clears</p>
+                        <p className="text-[8px] uppercase tracking-wider text-panel-muted">{bossTrialClears} career clears</p>
                       </div>
                     </div>
                     {active && (
