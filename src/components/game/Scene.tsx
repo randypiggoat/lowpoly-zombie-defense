@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
-import { getEnemyAnimationProfile, getEnemyFaceProfile } from "@/game/enemyAnimation";
+import { getEnemyAnimationProfile, getEnemyFaceProfile, getEnemyHitMotion } from "@/game/enemyAnimation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
@@ -1250,7 +1250,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       }
 
       const l = legs.current[i];
-      if (l && !z.dead) l.rotation.x = Math.sin(z.wobble * 2) * 0.5;
+      if (l) l.rotation.x = 0;
     }
   });
 
