@@ -26,6 +26,7 @@ import {
   DAILY_MISSION_DEFS,
   dateKey,
   profile,
+  xpForLevel,
 } from "@/game/profile";
 import { TOWER_COSMETICS } from "@/game/collection";
 import {
@@ -50,6 +51,7 @@ import { getWaveThreatPreview } from "@/game/waveThreatPreview";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { getStageMapByStageId } from "@/game/maps";
 import { getStageTheme } from "@/game/stageThemes";
+import { nextTowerUnlock, towerUnlockRole } from "@/game/progression";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -380,6 +382,9 @@ export function GameCanvas() {
     const progress = player.dailyMissionProgress[mission.id];
     return Boolean(progress?.completed && !progress.claimed);
   }).length;
+  const nextTower = nextTowerUnlock(player.level, player.unlockedTowers);
+  const currentLevelXp = player.xp;
+  const currentLevelTarget = xpForLevel(player.level);
   const readyAchievementCount = ACHIEVEMENT_DEFS.filter((achievement) => {
     const progress = player.achievements[achievement.id];
     return Boolean(progress?.completed && !progress.claimed);
@@ -647,10 +652,12 @@ export function GameCanvas() {
                     <ShieldMark size={24} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Player</p>
-                      <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Defense profile</p>
+                    <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
+                      <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: Math.min(100, (currentLevelXp / Math.max(1, currentLevelTarget)) * 100) + "%" }} />
                     </div>
+                    <p className="mt-1 text-[9px] text-panel-muted">{currentLevelXp} / {currentLevelTarget} XP to the next level</p>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-0.5">
@@ -658,8 +665,20 @@ export function GameCanvas() {
                   <HomeCurrency icon={<Gem size={15} />} value={player.gems} label="Gems" />
                   <HomeMetric label="Best Wave" value={player.highestWave} />
                 </div>
+                {nextTower ? (
+                  <div className="mt-3 rounded-xl border border-accent/20 bg-accent/5 px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-accent">Next tower</p>
+                        <p className="font-display text-sm tracking-wide text-panel-foreground">{TOWER_INFO[nextTower.kind].name}</p>
+                      </div>
+                      <p className="text-right text-[9px] text-panel-muted">LEVEL {nextTower.level}<br />{towerUnlockRole(nextTower.kind)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[10px] uppercase tracking-wider text-accent">Full tower roster unlocked</p>
+                )}
               </div>
-
               <div className="rotwood-card rotwood-card-highlight mt-2 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -749,25 +768,27 @@ export function GameCanvas() {
               )}
 
               <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Modes</p>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Play</p>
                 <div className="space-y-1.5">
-                  <MenuTile title="Campaign" subtitle="Story stages." onClick={() => setScreen("stage-select")} />
-                  <MenuTile title="Endless Siege" subtitle="Survive as long as you can." onClick={() => setScreen("endless-select")} />
-                  <MenuTile title="Boss Trials" subtitle="A weekly boss challenge." onClick={() => setScreen("boss-trial-select")} />
+                  <MenuTile title="Campaign" subtitle="Structured progression, stars, and the main tower-unlock path." onClick={() => setScreen("stage-select")} />
+                  <MenuTile title="Endless Siege" subtitle="Build experimentation, records, and long-run mastery." onClick={() => setScreen("endless-select")} />
+                  <MenuTile title="Boss Trials" subtitle="Recurring boss mastery with rotating variants." onClick={() => setScreen("boss-trial-select")} />
                 </div>
               </div>
 
               <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Progress</p>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Build your collection</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  <HomeShortcut title="Armory" subtitle="Learn your towers" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
-                  <HomeShortcut title="Knowledge" subtitle="Permanent upgrades" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
-                  <HomeShortcut title="Collection" subtitle="Your cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
-                  <HomeShortcut title="Missions" subtitle="Daily goals" icon={<Gift size={18} />} badge={readyMissionCount || undefined} onClick={() => setScreen("missions")} />
-                  <HomeShortcut title="Records" subtitle="Achievements" icon={<Trophy size={18} />} badge={readyAchievementCount || undefined} onClick={() => setScreen("achievements")} />
-                  <HomeShortcut title="Events" subtitle="Limited-time" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
-                  <HomeShortcut title="Market" subtitle="Cosmetics" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
+                  <HomeShortcut title="Armory" subtitle="Towers, roles & mastery" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
+                  <HomeShortcut title="Knowledge" subtitle="Permanent run modifiers" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
+                  <HomeShortcut title="Collection" subtitle="Earned cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
+                  <HomeShortcut title="Goals" subtitle="Missions & achievements" icon={<Trophy size={18} />} badge={(readyMissionCount + readyAchievementCount) || undefined} onClick={() => setScreen("achievements")} />
                 </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-1.5">
+                <HomeShortcut title="Events" subtitle="Rotating challenges" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
+                <HomeShortcut title="Shop" subtitle="Optional extras" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
               </div>
             </ScreenCard>
           </div>
