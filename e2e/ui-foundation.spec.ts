@@ -100,8 +100,8 @@ test("tower placement follows pointer across both world axes and builds at the s
     valid: boolean;
   }> = [];
 
-  for (const x of [0.25, 0.50, 0.75]) {
-    for (const y of [0.42, 0.60, 0.74]) {
+  for (const x of [0.20, 0.32, 0.50, 0.68, 0.80]) {
+    for (const y of [0.38, 0.50, 0.62, 0.74]) {
       await dispatchPointer("pointermove", x, y);
       const state = await qa();
       if (!state?.preview) continue;
