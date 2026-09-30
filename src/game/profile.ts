@@ -3,9 +3,10 @@ import { FIELD_KNOWLEDGE, knowledgeUnlocked, resolveFieldKnowledgeEffects } from
 import { TOWER_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
+import { progressionXpForKill, progressionXpForRun, progressionXpForWave, xpForLevel as progressionXpForLevel } from "./progression";
 
 const KEY = "rotwood.profile.v1";
-const PROFILE_VERSION = 4;
+const PROFILE_VERSION = 5;
 const STARTER_TOWER_KINDS = ["rifleman", "shotgunner", "freezer"] as const;
 
 export type RewardGrant = {
@@ -77,7 +78,7 @@ export const DAILY_MISSION_DEFS: DailyMissionDefinition[] = [
     description: "Play 3 games",
     target: 3,
     event: "gameCompleted",
-    reward: { label: "180 XP", xp: 180 },
+    reward: { label: "80 XP", xp: 80 },
   },
 ];
 
@@ -120,7 +121,7 @@ export const ACHIEVEMENT_DEFS: AchievementDefinition[] = [
     description: "Reach Wave 25 in any run.",
     target: 25,
     metric: "highestWave",
-    reward: { label: "250 XP", xp: 250 },
+    reward: { label: "100 XP", xp: 100 },
   },
   {
     id: "wave-50",
@@ -160,7 +161,7 @@ export const DAILY_LOGIN_REWARDS: DailyLoginRewardDefinition[] = [
   { day: 1, title: "Credits", reward: { label: "120 credits", coins: 120 } },
   { day: 2, title: "Credits", reward: { label: "180 credits", coins: 180 } },
   { day: 3, title: "Gems", reward: { label: "6 gems", gems: 6 } },
-  { day: 4, title: "XP Boost", reward: { label: "220 XP", xp: 220 } },
+  { day: 4, title: "XP Boost", reward: { label: "60 XP", xp: 60 } },
   {
     day: 5,
     title: "Rare Reward",
@@ -609,7 +610,7 @@ function load(): PlayerProfile {
 
 /** XP required to advance from `level` to `level + 1`. */
 export function xpForLevel(level: number): number {
-  return Math.round(100 * Math.pow(1.18, Math.max(0, level - 1)));
+  return progressionXpForLevel(level);
 }
 
 /** XP accumulated inside the current level. */
@@ -796,8 +797,7 @@ class ProfileStore {
     this.addSeasonalEventKillProgress();
     this.refreshRetentionState();
     const p = this.profile;
-    const xp =
-      kind === 2 ? 5 : kind === 1 ? 3 : kind === 4 ? 4 : kind === 5 ? 4 : kind === 6 ? 4 : kind === 3 ? 3 : 2;
+    const xp = progressionXpForKill(kind);
     const coins =
       kind === 2 ? 3 : kind === 1 ? 2 : kind === 4 ? 4 : kind === 5 ? 3 : kind === 6 ? 4 : kind === 3 ? 2 : 1;
     p.totalKills += 1;
@@ -829,7 +829,7 @@ class ProfileStore {
     const normalizedScore = Math.max(0, Math.floor(score));
     const newRecord = normalizedScore > p.bossTrialBestScore;
     const rewardScale = Math.max(1, rewardMultiplier);
-    const baseXp = Math.round((45 + normalizedWave * 20 + Math.floor(kills / 2)) * rewardScale * (completed ? 1.15 : 0.8));
+    const baseXp = Math.round(progressionXpForRun(normalizedWave, kills, rewardScale) * (completed ? 1.15 : 0.8));
     const baseCoins = Math.round((55 + normalizedWave * 8 + Math.floor(kills / 3)) * rewardScale * (completed ? 1.2 : 0.8));
     const gems = completed ? 4 : Math.floor(normalizedWave / 4);
 
@@ -881,7 +881,7 @@ class ProfileStore {
     const score = Math.max(0, Math.round(wave * 100 + kills * 8 + p.level * 10));
     const newWaveRecord = wave > p.endlessBestWave;
     const newScoreRecord = score > p.endlessBestScore;
-    const baseXp = Math.round((25 + wave * 12 + Math.floor(kills / 2)) * multiplier);
+    const baseXp = progressionXpForRun(wave, kills, multiplier);
     const baseCoins = Math.round((15 + wave * 4.5 + Math.floor(kills / 4)) * multiplier);
     const gems = Math.floor(wave / 10) + (newScoreRecord && wave >= 10 ? 2 : 0);
 
@@ -936,7 +936,7 @@ class ProfileStore {
   recordWaveReached(wave: number) {
     this.refreshRetentionState();
     const coins = 5 + wave * 2;
-    const xp = 10 + wave * 4;
+    const xp = progressionXpForWave(wave);
     const p = this.profile;
     p.coins += coins;
     const result = this.awardXp(xp);
@@ -979,7 +979,7 @@ class ProfileStore {
     const stageCompleted = Boolean(options?.stageCompleted);
     const stageId = options?.stageId ?? null;
     const rewardMultiplier = Math.max(0.1, options?.rewardMultiplier ?? 1);
-    const baseXp = Math.round((20 + wave * 10 + Math.floor(kills / 2)) * rewardMultiplier);
+    const baseXp = progressionXpForRun(wave, kills, rewardMultiplier);
     const baseCoins = Math.round((12 + wave * 4 + Math.floor(kills / 4)) * rewardMultiplier);
     const completionXp = stageCompleted ? Math.max(0, options?.bonusXp ?? 0) : 0;
     const completionCoins = stageCompleted ? Math.max(0, options?.bonusCoins ?? 0) : 0;
