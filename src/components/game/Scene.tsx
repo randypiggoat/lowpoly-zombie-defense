@@ -846,7 +846,13 @@ function TowerMesh({
 
 /* ---------------- pooled zombies, gibs & bullets ---------------- */
 
-function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+function Zombies({
+  map,
+  reducedMotion = false,
+}: {
+  map: ReturnType<typeof getStageMapByStageId>;
+  reducedMotion?: boolean;
+}) {
   const bodyGeometries = useMemo(() => ({
     0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
     1: new THREE.BoxGeometry(0.5, 0.9, 0.34),
@@ -1106,9 +1112,10 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         if (rightLeg) rightLeg.rotation.x = deathProgress * 0.55;
       } else {
         const phase = z.wobble + i * 0.43;
-        const gaitWave = Math.sin(phase * presentation.gait);
-        const altGaitWave = Math.sin(phase * presentation.gait + Math.PI);
-        const idleWave = Math.sin(phase * presentation.idleRate);
+        const animationFactor = reducedMotion ? 0.35 : 1;
+        const gaitWave = Math.sin(phase * presentation.gait) * animationFactor;
+        const altGaitWave = Math.sin(phase * presentation.gait + Math.PI) * animationFactor;
+        const idleWave = Math.sin(phase * presentation.idleRate) * animationFactor;
         const hpRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
         const injured = 1 - hpRatio;
         const reactionEnvelope = z.hitReact > 0
@@ -1118,7 +1125,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         const facingY = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
         g.position.set(
           z.x,
-          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) + idleWave * presentation.idleAmp,
+          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp,
           z.z,
         );
         const localHitRight = z.hitX * Math.cos(facingY) - z.hitZ * Math.sin(facingY);
@@ -1184,7 +1191,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         const signature = signatureName ? g.getObjectByName(signatureName) : null;
         if (signature) {
           signature.rotation.y += (z.kind === 7 ? 0.06 : z.kind === 3 ? 0.035 : 0.018);
-          const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
+          const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
           signature.scale.setScalar(signaturePulse);
         }
       }
@@ -1814,7 +1821,7 @@ export function Scene({
             onSelect={onSelectTower}
           />
         ))}
-        <Zombies map={map} />
+        <Zombies map={map} reducedMotion={reducedMotion} />
         <Gibs />
         <DamagePopups/>
         <Bullets />
