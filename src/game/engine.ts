@@ -1393,16 +1393,24 @@ export class Game {
     const s = this.state;
     if (s.gibs.length >= 96) return;
     const anchor = goreAnchor(part);
-    const angle = this.random() * Math.PI * 2;
+    const hitX = z.hitX ?? 0;
+    const hitZ = z.hitZ ?? 1;
+    const tangentX = -hitZ;
+    const tangentZ = hitX;
+    const lateral = (this.random() - 0.5) * 0.9;
+    const directionX = hitX * 0.85 + tangentX * lateral;
+    const directionZ = hitZ * 0.85 + tangentZ * lateral;
+    const directionLength = Math.hypot(directionX, directionZ) || 1;
+    const angle = Math.atan2(directionX / directionLength, directionZ / directionLength);
     const speed = (1.25 + this.random() * 2.4) * Math.max(0.7, Math.min(2, goreBase)) * force;
     s.gibs.push({
       id: this.nextId++,
       x: z.x + anchor.x * 0.6,
       y: Math.max(0.18, anchor.y + (this.random() - 0.5) * 0.12),
       z: z.z + anchor.z * 0.6,
-      vx: Math.cos(angle) * speed,
+      vx: Math.sin(angle) * speed,
       vy: 2.25 + this.random() * 2.8 * force,
-      vz: Math.sin(angle) * speed,
+      vz: Math.cos(angle) * speed,
       rx: this.random() * 3,
       ry: this.random() * 3,
       spin: (this.random() - 0.5) * 13,
@@ -1417,10 +1425,18 @@ export class Game {
     const s = this.state;
     if (s.gibs.length >= 96) return;
 
+    const allParts = deathGorePartsForKind(z.kind);
+    const intactParts = allParts.filter((part) => (z.gibMask ?? 0 & gorePartBit(part)) === 0);
+    const debrisParts = intactParts.length > 0 ? intactParts : allParts;
+    const biasX = z.hitX ?? 0;
+    const biasZ = z.hitZ ?? 1;
+
     for (let i = 0; i < count; i++) {
-      const a = this.random() * Math.PI * 2;
+      const tangent = (this.random() - 0.5) * 1.2;
+      const dirX = biasX * 0.9 - biasZ * tangent;
+      const dirZ = biasZ * 0.9 + biasX * tangent;
+      const length = Math.hypot(dirX, dirZ) || 1;
       const sp = (1.1 + this.random() * 2.1) * force;
-      const debrisParts = deathGorePartsForKind(z.kind);
       const debrisPart = debrisParts[i % debrisParts.length]!;
 
       s.gibs.push({
@@ -1428,9 +1444,9 @@ export class Game {
         x: z.x,
         y: 0.55 + this.random() * 0.85,
         z: z.z,
-        vx: Math.cos(a) * sp,
+        vx: (dirX / length) * sp,
         vy: 2 + this.random() * 3 * force,
-        vz: Math.sin(a) * sp,
+        vz: (dirZ / length) * sp,
         rx: this.random() * 3,
         ry: this.random() * 3,
         spin: (this.random() - 0.5) * 14,
