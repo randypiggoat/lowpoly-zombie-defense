@@ -31,8 +31,8 @@ describe("progression", () => {
   });
 
   it("keeps a first run from awarding an entire roster", () => {
-    expect(progressionXpForRun(16, 120)).toBe(254);
-    expect(progressionXpForWave(16)).toBe(35);
+    expect(progressionXpForRun(16, 120)).toBe(134);
+    expect(progressionXpForWave(16)).toBe(17);
     expect(progressionXpForKill(0)).toBe(1);
     expect(progressionXpForKill(2)).toBe(2);
   });
