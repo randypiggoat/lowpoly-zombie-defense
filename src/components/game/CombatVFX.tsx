@@ -126,10 +126,11 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
       previousDead.current[i] = z.dead;
     }
 
-    for (const state of states.current) {
+    for (let index = 0; index < states.current.length; index++) {
+      const state = states.current[index]!;
       if (!state.active) continue;
       state.life += dt;
-      const root = groups.current[states.current.indexOf(state)];
+      const root = groups.current[index];
       if (!root) continue;
       const progress = Math.min(1, state.life / state.duration);
       const eased = 1 - Math.pow(1 - progress, 3);
@@ -141,8 +142,22 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
 
       const ring = root.getObjectByName("ring") as THREE.Mesh | undefined;
       const core = root.getObjectByName("core") as THREE.Mesh | undefined;
-      if (ring) ring.scale.setScalar(1 + (1 - progress) * 0.12);
-      if (core) core.scale.setScalar(1 + (1 - progress) * 0.45);
+      if (ring) {
+        ring.scale.setScalar(1 + (1 - progress) * 0.12);
+        (ring.material as THREE.MeshBasicMaterial).color.set(state.color);
+        (ring.material as THREE.MeshBasicMaterial).opacity = 0.72 * (1 - progress * 0.85);
+      }
+      if (core) {
+        core.scale.setScalar(1 + (1 - progress) * 0.45);
+        (core.material as THREE.MeshBasicMaterial).color.set(state.color);
+      }
+      for (let shard = 0; shard < 4; shard++) {
+        const spark = root.getObjectByName("spark-" + shard) as THREE.Mesh | undefined;
+        if (spark) {
+          (spark.material as THREE.MeshBasicMaterial).color.set(state.color);
+          (spark.material as THREE.MeshBasicMaterial).opacity = 0.78 * (1 - progress);
+        }
+      }
 
       if (progress >= 1) {
         state.active = false;
@@ -168,6 +183,7 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
             return (
               <mesh
                 key={shard}
+                name={"spark-" + shard}
                 position={[Math.cos(angle) * 0.24, Math.sin(angle) * 0.24, 0]}
                 rotation-z={angle}
                 visible
