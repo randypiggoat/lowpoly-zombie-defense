@@ -30,6 +30,7 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
+import { getEndlessMilestone, getEndlessSector, getEndlessSectorLabel } from "@/game/sideModes";
 
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
@@ -455,6 +456,12 @@ export function HUD({
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>
         </div>
+        {state.gameMode === "endless" && !state.gameOver ? (
+          <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg border border-accent/20 bg-accent/5 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-accent shadow-panel backdrop-blur">
+            <span>Sector {getEndlessSector(state.wave)} · {getEndlessSectorLabel(state.wave)}</span>
+            <span className="text-panel-muted">Next {getEndlessMilestone(state.wave)}</span>
+          </div>
+        ) : null}
         {firstSessionTip && (
           <div className="pointer-events-none max-w-sm rounded-xl border border-accent/20 bg-panel/80 px-3 py-2 shadow-panel backdrop-blur">
             <p className="font-display text-xs tracking-wide text-accent">{firstSessionTip.title}</p>
