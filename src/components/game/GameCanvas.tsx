@@ -1097,40 +1097,6 @@ export function GameCanvas() {
                   <p className="mb-1 text-[9px] uppercase tracking-[0.18em] text-accent">
                     World {stage.worldId} · {stage.worldName}
                   </p>
-             <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 shadow-panel">
-               <p className="text-[9px] uppercase tracking-[0.18em] text-accent">PLAY THE EVENT</p>
-               <p className="mt-1 text-xs text-panel-muted">Turn event progress into a short themed defense instead of only collecting milestone kills.</p>
-               {getSeasonalEventRun(seasonalEvent.id) ? (
-                 <ScreenButton
-                   className="mt-2"
-                   onClick={() => {
-                     const eventRun = getSeasonalEventRun(seasonalEvent.id);
-                     if (eventRun) startSideMode(eventRun);
-                   }}
-                 >
-                   PLAY EVENT RUN
-                 </ScreenButton>
-               ) : null}
-             </div>
-            {state.bossTrial && activeBossTrial
-              ? <p className="mt-1 text-center text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p>
-              : state.endlessMode && activeChallenge
-                ? <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
-                : activeSideMode
-                  ? <p className="mt-1 text-center text-sm text-panel-muted">{activeSideMode.name} · {activeSideMode.category === "resource" ? "Resource Ops" : activeSideMode.category === "challenge" ? "Challenge Gauntlet" : "Seasonal Event"}</p>
-                  : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
-              {state.endlessMode || state.bossTrial || state.sideModeId ? (
-                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">{state.bossTrial ? "Trial score" : state.sideModeId ? "Mode score" : "Score"}</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.bossTrial ? state.bossTrialScore.toLocaleString() : lastReward && "score" in lastReward ? lastReward.score.toLocaleString() : "—"}</p></>
-              {state.stageWon && nextStage ? <ScreenButton onClick={() => startStage(nextStage.id)}>NEXT STAGE</ScreenButton>
-                : activeSideMode ? <ScreenButton onClick={() => { resetGameplayState(); game.startSideMode(activeSideMode, activeSideMode.cycle === "event" ? seasonalCycleKey : todayKey); setScreen("gameplay"); }}>RETRY RUN</ScreenButton>
-                : state.stageWon ? <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton>
-                : state.bossTrial && activeBossTrial ? <ScreenButton onClick={() => { resetGameplayState(); game.startBossTrial(activeBossTrial, weekKey); setScreen("gameplay"); }}>RETRY TRIAL</ScreenButton>
-                : state.endlessMode && activeChallenge ? <ScreenButton onClick={() => { resetGameplayState(); game.startEndless(activeChallenge, activeChallenge.period === "weekly" ? weekKey : todayKey); setScreen("gameplay"); }}>RETRY</ScreenButton>
-                : <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>}
-              {state.stageWon && !activeSideMode ? <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">REPLAY</ScreenButton> : null}
-              <ScreenButton onClick={() => state.sideModeId ? setScreen("side-mode-select") : state.bossTrial ? setScreen("boss-trial-select") : state.endlessMode ? setScreen("endless-select") : setScreen("stage-select")} variant="secondary">{state.sideModeId ? "SIDE MODES" : state.bossTrial ? "BOSS TRIALS" : state.endlessMode ? "ENDLESS" : "CAMPAIGN"}</ScreenButton>
-              <ScreenButton onClick={state.sideModeId ? leaveToSideModes : leaveToStageSelect} variant="secondary">
-                {state.sideModeId ? "SIDE MODES" : "STAGE SELECT"}
 
       {screen === "stage-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
