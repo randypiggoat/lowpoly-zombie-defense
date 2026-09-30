@@ -167,6 +167,34 @@ const FACES: Record<StageEnemyKind, EnemyFaceProfile> = {
   },
 };
 
+
+export type EnemyHitSource =
+  | "rifleman"
+  | "shotgunner"
+  | "sniper"
+  | "tesla"
+  | "flamethrower"
+  | "freezer"
+  | "rocket"
+  | "laser"
+  | "burn";
+
+const HIT_MOTION: Record<EnemyHitSource, number> = {
+  rifleman: 0.86,
+  shotgunner: 1.18,
+  sniper: 1.08,
+  tesla: 1.04,
+  flamethrower: 0.92,
+  freezer: 0.82,
+  rocket: 1.38,
+  laser: 0.96,
+  burn: 0.74,
+};
+
+export function getEnemyHitMotion(source: EnemyHitSource | undefined) {
+  return source ? HIT_MOTION[source] : 1;
+}
+
 export function getEnemyAnimationProfile(kind: StageEnemyKind) {
   return PROFILES[kind];
 }
