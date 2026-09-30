@@ -52,16 +52,6 @@ import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { getStageMapByStageId } from "@/game/maps";
 import { getStageTheme } from "@/game/stageThemes";
 import { nextTowerUnlock, towerUnlockRole } from "@/game/progression";
-import { getStageTheme } from "@/game/stageThemes";
-import {
-  RESOURCE_OPS,
-  CHALLENGE_GAUNTLET,
-  getEndlessMilestone,
-  getEndlessSector,
-  getEndlessSectorLabel,
-  getSeasonalEventRun,
-  type SideModeLevel,
-} from "@/game/sideModes";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -252,7 +242,6 @@ function UpgradeReference({ kind }: { kind: TowerKind }) {
 
 function StageRoutePreview({ stageId }: { stageId: number }) {
   const map = getStageMapByStageId(stageId);
-  const theme = getStageTheme(stageId, false, false);
   const theme = getStageTheme(stageId, false, false);
   const xs = map.path.map((point) => point.x);
   const zs = map.path.map((point) => point.z);
@@ -804,8 +793,6 @@ export function GameCanvas() {
                   <MenuTile title="Campaign" subtitle="Structured progression, stars, and the main tower-unlock path." onClick={() => setScreen("stage-select")} />
                   <MenuTile title="Endless Siege" subtitle="Build experimentation, records, and long-run mastery." onClick={() => setScreen("endless-select")} />
                   <MenuTile title="Boss Trials" subtitle="Recurring boss mastery with rotating variants." onClick={() => setScreen("boss-trial-select")} />
-                  <MenuTile title="Boss Trials" subtitle="Weekly boss mastery." onClick={() => setScreen("boss-trial-select")} />
-                  <MenuTile title="Side Modes" subtitle="Resources & challenges." onClick={() => setScreen("side-mode-select")} />
                 </div>
               </div>
 
@@ -985,119 +972,6 @@ export function GameCanvas() {
         </div>
       )}
 
-      {screen === "side-mode-select" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/65 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
-          <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
-
-            <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 text-panel-foreground shadow-panel">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Repeatable content</p>
-              <h2 className="font-display text-2xl tracking-wide">Side Modes</h2>
-              <p className="mt-1 text-xs text-panel-muted">
-                Short runs for targeted resources and skill challenges. Campaign progression unlocks deeper levels.
-              </p>
-            </div>
-
-            <section className="mt-3">
-              <div className="mb-1.5 flex items-end justify-between gap-2">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-accent">RESOURCE OPS</p>
-                  <h3 className="font-display text-xl tracking-wide text-panel-foreground">Get what you need</h3>
-                </div>
-                <p className="text-[9px] uppercase tracking-wider text-panel-muted">3–7 min</p>
-              </div>
-              <div className="space-y-2">
-                {RESOURCE_OPS.map((level) => {
-                  const unlocked = highestCompletedCampaignStage >= level.unlockStageId - 1;
-                  const clears = player.sideModeClears[level.id] ?? 0;
-                  const best = player.sideModeBestScores[level.id] ?? 0;
-                  const focusLabel = level.focus === "scrap" ? "CREDITS" : level.focus === "xp" ? "XP" : level.focus === "gems" ? "GEMS" : "BALANCED";
-                  return (
-                    <div key={level.id} className={"rounded-2xl border bg-panel/95 p-3 shadow-panel " + (unlocked ? "border-white/10" : "border-white/5 opacity-70")}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-[9px] uppercase tracking-[0.18em] text-accent">{focusLabel} · LEVEL {level.level}</p>
-                          <h4 className="font-display text-lg tracking-wide text-panel-foreground">{level.name}</h4>
-                          <p className="mt-1 text-xs leading-relaxed text-panel-muted">{level.description}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-[9px] uppercase tracking-wider text-panel-muted">{level.duration}</p>
-                          <p className="mt-1 text-[9px] text-panel-muted">Best {best.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="rounded-full bg-accent/10 px-2 py-1 text-[8px] uppercase tracking-wider text-accent">{level.rewardHint}</span>
-                        <span className="rounded-full bg-black/25 px-2 py-1 text-[8px] uppercase tracking-wider text-panel-muted">{clears} CLEARS</span>
-                      </div>
-                      {unlocked ? (
-                        <ScreenButton className="mt-2" onClick={() => startSideMode(level)}>PLAY</ScreenButton>
-                      ) : (
-                        <div className="mt-2 rounded-xl bg-black/25 px-3 py-2 text-center text-[10px] uppercase tracking-wider text-panel-muted">Unlocks after Campaign Stage {Math.max(1, level.unlockStageId - 1)}</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="mt-4">
-              <div className="mb-1.5 flex items-end justify-between gap-2">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-accent">CHALLENGE GAUNTLET</p>
-                  <h3 className="font-display text-xl tracking-wide text-panel-foreground">Try something different</h3>
-                </div>
-                <p className="text-[9px] uppercase tracking-wider text-panel-muted">2–7 min</p>
-              </div>
-              <div className="space-y-2">
-                {CHALLENGE_GAUNTLET.map((level) => {
-                  const unlocked = highestCompletedCampaignStage >= level.unlockStageId - 1;
-                  const clears = player.sideModeClears[level.id] ?? 0;
-                  const best = player.sideModeBestScores[level.id] ?? 0;
-                  return (
-                    <div key={level.id} className={"rounded-2xl border bg-panel/95 p-3 shadow-panel " + (unlocked ? "border-white/10" : "border-white/5 opacity-70")}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-[9px] uppercase tracking-[0.18em] text-accent">GAUNTLET {level.level}</p>
-                          <h4 className="font-display text-lg tracking-wide text-panel-foreground">{level.name}</h4>
-                          <p className="mt-1 text-xs leading-relaxed text-panel-muted">{level.description}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-[9px] uppercase tracking-wider text-panel-muted">{level.duration}</p>
-                          <p className="mt-1 text-[9px] text-panel-muted">Best {best.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 rounded-xl bg-black/20 p-2">
-                        <p className="text-[9px] uppercase tracking-[0.12em] text-panel-muted">Mastery target</p>
-                        <p className="mt-0.5 text-xs text-panel-foreground">{level.masteryHint}</p>
-                      </div>
-                      {level.allowedTowerKinds ? <p className="mt-1.5 text-[9px] uppercase tracking-wider text-panel-muted">Towers: {level.allowedTowerKinds.join(" · ")}</p> : null}
-                      {level.maxTowers !== undefined ? <p className="mt-1 text-[9px] uppercase tracking-wider text-panel-muted">Max towers: {level.maxTowers}</p> : null}
-                      {unlocked ? (
-                        <ScreenButton className="mt-2" onClick={() => startSideMode(level)}>PLAY</ScreenButton>
-                      ) : (
-                        <div className="mt-2 rounded-xl bg-black/25 px-3 py-2 text-center text-[10px] uppercase tracking-wider text-panel-muted">Unlocks after Campaign Stage {Math.max(1, level.unlockStageId - 1)}</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="mt-4 rounded-2xl border border-accent/20 bg-panel/95 p-3 shadow-panel">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-accent">ENDLESS EXPEDITION</p>
-              <h3 className="font-display text-xl tracking-wide text-panel-foreground">Beat your record</h3>
-              <p className="mt-1 text-xs text-panel-muted">Survive sectors, choose run powers, and push the next milestone.</p>
-              <div className="mt-2 grid grid-cols-3 gap-1.5">
-                <div className="rounded-xl bg-black/25 p-2 text-center"><p className="font-display text-lg text-panel-foreground">{getEndlessSector(player.endlessBestWave)}</p><p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Sector</p></div>
-                <div className="rounded-xl bg-black/25 p-2 text-center"><p className="font-display text-lg text-panel-foreground">{player.endlessBestWave}</p><p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Wave</p></div>
-                <div className="rounded-xl bg-black/25 p-2 text-center"><p className="font-display text-lg text-panel-foreground">{player.endlessBestScore.toLocaleString()}</p><p className="text-[8px] uppercase tracking-wider text-panel-muted">Best Score</p></div>
-              </div>
-              <ScreenButton className="mt-2" onClick={() => setScreen("endless-select")}>ENDLESS EXPEDITION</ScreenButton>
-            </section>
-          </div>
-        </div>
-      )}
-
       {screen === "stage-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
@@ -1106,20 +980,9 @@ export function GameCanvas() {
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Campaign</p>
               <h2 className="font-display text-2xl tracking-wide">20 Locations · 4 Worlds</h2>
               <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it. Each world introduces a new environment language and tactical rhythm.</p>
-              <h2 className="font-display text-2xl tracking-wide">20 Locations · 4 Worlds</h2>
-              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it. Each world introduces a new environment language and tactical rhythm.</p>
             </div>
             <div className="mt-3 space-y-2">
               {stages.map((stage) => (
-                <div
-                  key={stage.id}
-                  data-stage-id={stage.id}
-                  data-world-id={stage.worldId}
-                  className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}
-                >
-                  <p className="mb-1 text-[9px] uppercase tracking-[0.18em] text-accent">
-                    World {stage.worldId} · {stage.worldName}
-                  </p>
                 <div
                   key={stage.id}
                   data-stage-id={stage.id}
