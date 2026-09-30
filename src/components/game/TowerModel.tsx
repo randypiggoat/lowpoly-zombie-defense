@@ -51,13 +51,13 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const dark = "#384047";
   const deep = "#252c31";
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime;
     if (level !== previousLevel.current) {
       if (previousLevel.current > 0) upgradeLife.current = 0.58;
       previousLevel.current = level;
     }
-    upgradeLife.current = Math.max(0, upgradeLife.current - 1 / 60);
+    upgradeLife.current = Math.max(0, upgradeLife.current - dt);
     const bob = Math.sin(t * 2.1 + idleSeed) * 0.035;
     if (rig.current) {
       const baseScale = 1 + Math.min(level - 1, 8) * 0.025;
