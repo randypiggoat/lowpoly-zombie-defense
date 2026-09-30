@@ -26,8 +26,9 @@ import {
   DAILY_MISSION_DEFS,
   dateKey,
   profile,
+  xpForLevel,
 } from "@/game/profile";
-import { TOWER_COSMETICS } from "@/game/collection";
+import { TOWER_COSMETICS, ZOMBIE_COSMETICS } from "@/game/collection";
 import {
   createEndlessStage,
   ENDLESS_CHALLENGES,
@@ -50,6 +51,7 @@ import { getWaveThreatPreview } from "@/game/waveThreatPreview";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { getStageMapByStageId } from "@/game/maps";
 import { getStageTheme } from "@/game/stageThemes";
+import { nextTowerUnlock, towerUnlockRole } from "@/game/progression";
 
 function useGameSnapshot() {
   const [, force] = useState(0);
@@ -380,6 +382,9 @@ export function GameCanvas() {
     const progress = player.dailyMissionProgress[mission.id];
     return Boolean(progress?.completed && !progress.claimed);
   }).length;
+  const nextTower = nextTowerUnlock(player.level, player.unlockedTowers);
+  const currentLevelXp = player.xp;
+  const currentLevelTarget = xpForLevel(player.level);
   const readyAchievementCount = ACHIEVEMENT_DEFS.filter((achievement) => {
     const progress = player.achievements[achievement.id];
     return Boolean(progress?.completed && !progress.claimed);
@@ -647,10 +652,12 @@ export function GameCanvas() {
                     <ShieldMark size={24} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Player</p>
-                      <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Defense profile</p>
+                    <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
+                      <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: Math.min(100, (currentLevelXp / Math.max(1, currentLevelTarget)) * 100) + "%" }} />
                     </div>
+                    <p className="mt-1 text-[9px] text-panel-muted">{currentLevelXp} / {currentLevelTarget} XP to the next level</p>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-0.5">
@@ -658,8 +665,20 @@ export function GameCanvas() {
                   <HomeCurrency icon={<Gem size={15} />} value={player.gems} label="Gems" />
                   <HomeMetric label="Best Wave" value={player.highestWave} />
                 </div>
+                {nextTower ? (
+                  <div className="mt-3 rounded-xl border border-accent/20 bg-accent/5 px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-accent">Next tower</p>
+                        <p className="font-display text-sm tracking-wide text-panel-foreground">{TOWER_INFO[nextTower.kind].name}</p>
+                      </div>
+                      <p className="text-right text-[9px] text-panel-muted">LEVEL {nextTower.level}<br />{towerUnlockRole(nextTower.kind)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[10px] uppercase tracking-wider text-accent">Full tower roster unlocked</p>
+                )}
               </div>
-
               <div className="rotwood-card rotwood-card-highlight mt-2 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -749,25 +768,27 @@ export function GameCanvas() {
               )}
 
               <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Modes</p>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Play</p>
                 <div className="space-y-1.5">
-                  <MenuTile title="Campaign" subtitle="Story stages." onClick={() => setScreen("stage-select")} />
-                  <MenuTile title="Endless Siege" subtitle="Survive as long as you can." onClick={() => setScreen("endless-select")} />
-                  <MenuTile title="Boss Trials" subtitle="A weekly boss challenge." onClick={() => setScreen("boss-trial-select")} />
+                  <MenuTile title="Campaign" subtitle="Structured progression, stars, and the main tower-unlock path." onClick={() => setScreen("stage-select")} />
+                  <MenuTile title="Endless Siege" subtitle="Build experimentation, records, and long-run mastery." onClick={() => setScreen("endless-select")} />
+                  <MenuTile title="Boss Trials" subtitle="Recurring boss mastery with rotating variants." onClick={() => setScreen("boss-trial-select")} />
                 </div>
               </div>
 
               <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Progress</p>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Build your collection</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  <HomeShortcut title="Armory" subtitle="Learn your towers" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
-                  <HomeShortcut title="Knowledge" subtitle="Permanent upgrades" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
-                  <HomeShortcut title="Collection" subtitle="Your cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
-                  <HomeShortcut title="Missions" subtitle="Daily goals" icon={<Gift size={18} />} badge={readyMissionCount || undefined} onClick={() => setScreen("missions")} />
-                  <HomeShortcut title="Records" subtitle="Achievements" icon={<Trophy size={18} />} badge={readyAchievementCount || undefined} onClick={() => setScreen("achievements")} />
-                  <HomeShortcut title="Events" subtitle="Limited-time" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
-                  <HomeShortcut title="Market" subtitle="Cosmetics" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
+                  <HomeShortcut title="Armory" subtitle="Towers, roles & mastery" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
+                  <HomeShortcut title="Knowledge" subtitle="Permanent run modifiers" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
+                  <HomeShortcut title="Collection" subtitle="Earned cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
+                  <HomeShortcut title="Goals" subtitle="Missions & achievements" icon={<Trophy size={18} />} badge={(readyMissionCount + readyAchievementCount) || undefined} onClick={() => setScreen("achievements")} />
                 </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-1.5">
+                <HomeShortcut title="Events" subtitle="Rotating challenges" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
+                <HomeShortcut title="Shop" subtitle="Optional extras" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
               </div>
             </ScreenCard>
           </div>
@@ -1007,6 +1028,32 @@ export function GameCanvas() {
                   </div>
                 );
               })}
+            <div className="mt-4 rounded-2xl bg-panel/95 p-3 shadow-panel">
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Enemy collection</p>
+              <h3 className="font-display text-xl tracking-wide text-panel-foreground">Zombie Skins</h3>
+              <p className="mt-1 text-[10px] text-panel-muted">Earn alternate infected palettes through kills, boss defeats, and Endless milestones.</p>
+              <div className="mt-2 space-y-2">
+                {ZOMBIE_COSMETICS.map((cosmetic) => {
+                  const unlocked = cosmetic.unlock(player);
+                  const equipped = profile.equippedZombieCosmetic() === cosmetic.id;
+                  return (
+                    <div key={cosmetic.id} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 shrink-0 rounded-lg border border-white/10" style={{ background: cosmetic.skin }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-display text-base text-panel-foreground">{cosmetic.name}</p>
+                          <p className="text-[10px] text-panel-muted">{cosmetic.description}</p>
+                          <p className="mt-1 text-[9px] text-panel-muted">{unlocked ? "Unlocked" : cosmetic.requirement}</p>
+                        </div>
+                      </div>
+                      <button type="button" disabled={!unlocked} onClick={() => profile.equipZombieCosmetic(cosmetic.id)} className="mt-2 min-h-10 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground disabled:opacity-40">
+                        {equipped ? "Equipped" : "Equip"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             </div>
           </div>
         </div>
@@ -1071,7 +1118,12 @@ export function GameCanvas() {
                       <p className="truncate font-display text-sm tracking-wide text-panel-foreground">{info.name}</p>
                     </div>
                     <p className="mt-1 line-clamp-2 text-[10px] leading-tight text-panel-muted">{info.blurb}</p>
-                    <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-accent">{unlocked ? "AVAILABLE" : "LOCKS LATER"}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.12em]">
+                      <span className={unlocked ? "text-accent" : "text-panel-muted"}>
+                        {unlocked ? "AVAILABLE" : "UNLOCKS LEVEL " + info.unlockLevel}
+                      </span>
+                      <span className="text-panel-muted">Mastery {profile.towerMasteryLevel(kind)}/10</span>
+                    </div>
                   </button>
                 );
               })}
@@ -1080,6 +1132,18 @@ export function GameCanvas() {
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Tower overview</p>
               <h3 className="font-display text-xl tracking-wide text-panel-foreground">{TOWER_INFO[armoryTowerKind].name}</h3>
               <p className="mt-1 text-xs leading-relaxed text-panel-muted">{TOWER_INFO[armoryTowerKind].blurb}</p>
+              <div className="mt-3 rounded-xl border border-accent/15 bg-accent/5 p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-panel-muted">Tower mastery</span>
+                  <span className="font-display text-xs text-accent">{profile.towerMasteryLevel(armoryTowerKind)}/10</span>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
+                  <div className="h-full rounded-full bg-accent" style={{ width: Math.min(100, (profile.towerMasteryProgress(armoryTowerKind).current / Math.max(1, profile.towerMasteryProgress(armoryTowerKind).target)) * 100) + "%" }} />
+                </div>
+                <p className="mt-1 text-[9px] text-panel-muted">
+                  {profile.towerMasteryLevel(armoryTowerKind) >= 10 ? "Mastered · cosmetics are fully unlocked." : "Upgrade this tower in battle to earn mastery and cosmetic milestones."}
+                </p>
+              </div>
               <UpgradeReference kind={armoryTowerKind} />
             </div>
           </div>
@@ -1196,6 +1260,31 @@ export function GameCanvas() {
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">
                 Achievements
               </h2>
+              <div className="mb-3 rounded-xl border border-accent/15 bg-accent/5 p-3">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-accent">Today</p>
+                <p className="font-display text-lg text-panel-foreground">Daily missions</p>
+                <div className="mt-2 space-y-1.5">
+                  {DAILY_MISSION_DEFS.map((mission) => {
+                    const progress = player.dailyMissionProgress[mission.id];
+                    const completed = Boolean(progress?.completed);
+                    const claimed = Boolean(progress?.claimed);
+                    return (
+                      <div key={mission.id} className="rounded-lg bg-black/20 px-2.5 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold text-panel-foreground">{mission.description}</p>
+                            <p className="text-[9px] text-panel-muted">{Math.min(mission.target, progress?.progress ?? 0)}/{mission.target} · {mission.reward.label}</p>
+                          </div>
+                          <button type="button" disabled={!completed || claimed} onClick={() => profile.claimDailyMission(mission.id)} className="min-h-9 shrink-0 rounded-md bg-accent px-2 py-1 text-[9px] font-extrabold text-accent-foreground disabled:opacity-40">
+                            {claimed ? "CLAIMED" : completed ? "CLAIM" : "TRACKING"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="mt-2 space-y-2">
                 {ACHIEVEMENT_DEFS.map((achievement) => {
                   const progress = player.achievements[achievement.id];
@@ -1384,6 +1473,23 @@ export function GameCanvas() {
                 </div>
               </div>
             ) : null}
+            {nextTower ? (
+              <div className="mt-3 rounded-2xl border border-accent/15 bg-accent/5 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-accent">Next unlock</p>
+                    <p className="font-display text-lg text-panel-foreground">{TOWER_INFO[nextTower.kind].name}</p>
+                    <p className="text-[10px] text-panel-muted">{towerUnlockRole(nextTower.kind)}</p>
+                  </div>
+                  <p className="text-right font-display text-sm text-panel-foreground">LEVEL {nextTower.level}<span className="block text-[9px] text-panel-muted">Keep defending</span></p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-2xl border border-accent/15 bg-accent/5 p-3 text-center">
+                <p className="font-display text-lg text-accent">FULL ROSTER</p>
+                <p className="text-[10px] text-panel-muted">All towers unlocked. Chase mastery and cosmetics next.</p>
+              </div>
+            )}
             {!state.stageWon && !state.reviveUsed && state.baseHp <= 0 && rewardedAvailable ? (
               <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("revive"); if (earned && game.reviveRun()) setScreen("gameplay"); }} variant="secondary">SECOND CHANCE · WATCH AD</ScreenButton>
             ) : null}

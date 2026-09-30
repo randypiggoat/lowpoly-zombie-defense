@@ -16,7 +16,7 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
 
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   await expect(page.locator(".rotwood-shell")).toHaveCount(1);
-  await expect(page.locator(".rotwood-menu-tile")).toHaveCount(10);
+  await expect(page.locator(".rotwood-menu-tile")).toHaveCount(9);
 
   const primaryButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
   await expect(primaryButton).toBeVisible();

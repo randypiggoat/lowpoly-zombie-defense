@@ -68,6 +68,17 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     unlock: (profile) => profile.highestWave >= 50,
   },
   {
+    id: "ember-flame",
+    name: "Cinder",
+    description: "A hot forged Flamethrower finish.",
+    kind: "tower",
+    towerKind: "flamethrower",
+    accent: "#f28b52",
+    body: "#4f332c",
+    requirement: "Reach Flamethrower Mastery 2.",
+    unlock: (profile) => ((profile.towerMasteryXp?.flamethrower ?? 0) >= 200),
+  },
+  {
     id: "ember-rocket",
     name: "Hellfire",
     description: "Hot-rod Rocket finish.",
@@ -75,8 +86,8 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     towerKind: "rocket",
     accent: "#ff7a3d",
     body: "#653027",
-    requirement: "Kill 1,000 zombies.",
-    unlock: (profile) => profile.totalKills >= 1000,
+    requirement: "Reach Rocket Mastery 4.",
+    unlock: (profile) => ((profile.towerMasteryXp?.rocket ?? 0) >= 400),
   },
   {
     id: "neon-laser",
@@ -86,8 +97,8 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     towerKind: "laser",
     accent: "#5effff",
     body: "#264f57",
-    requirement: "Reach Endless Wave 50.",
-    unlock: (profile) => profile.endlessBestWave >= 50,
+    requirement: "Reach Laser Mastery 5.",
+    unlock: (profile) => ((profile.towerMasteryXp?.laser ?? 0) >= 500),
   },
 ];
 
@@ -104,3 +115,59 @@ export function cosmeticForTower(
   );
   return cosmetic?.id === "default" ? null : cosmetic ?? null;
 }
+
+
+export type ZombieCosmetic = {
+  id: string;
+  name: string;
+  description: string;
+  skin: string;
+  cloth: string;
+  legs: string;
+  requirement: string;
+  unlock: (profile: PlayerProfile) => boolean;
+};
+
+export const ZOMBIE_COSMETICS: ZombieCosmetic[] = [
+  {
+    id: "zombie-default",
+    name: "Outbreak",
+    description: "The classic Rotwood infected palette.",
+    skin: "#6f9f55",
+    cloth: "#42513f",
+    legs: "#35404a",
+    requirement: "Available from the start.",
+    unlock: () => true,
+  },
+  {
+    id: "zombie-nightfall",
+    name: "Nightfall",
+    description: "A darker infected palette earned through sustained defense.",
+    skin: "#536f63",
+    cloth: "#28333a",
+    legs: "#202932",
+    requirement: "Reach 500 zombie kills.",
+    unlock: (profile) => profile.totalKills >= 500,
+  },
+  {
+    id: "zombie-burnout",
+    name: "Burnout",
+    description: "A scorched palette earned by surviving major threats.",
+    skin: "#9a5a48",
+    cloth: "#4b2927",
+    legs: "#302226",
+    requirement: "Defeat 25 Brutes.",
+    unlock: (profile) => profile.bruteKills >= 25,
+  },
+  {
+    id: "zombie-void",
+    name: "Void",
+    description: "An endgame palette for dedicated endless players.",
+    skin: "#5b5a7a",
+    cloth: "#292840",
+    legs: "#1f2032",
+    requirement: "Reach Endless Wave 50.",
+    unlock: (profile) => profile.endlessBestWave >= 50,
+  },
+];
+

@@ -1,7 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { cosmeticForTower } from "@/game/collection";
+import { cosmeticForTower, ZOMBIE_COSMETICS } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
@@ -896,6 +896,14 @@ function Zombies({
     6: new THREE.IcosahedronGeometry(0.5, 0),
     7: new THREE.TetrahedronGeometry(0.52, 0),
   } as Record<number, THREE.BufferGeometry>), []);
+  const equippedZombieSkin = useMemo(
+    () =>
+      ZOMBIE_COSMETICS.find(
+        (entry) => entry.id === profile.equippedZombieCosmetic() && entry.unlock(profile.profile),
+      ) ?? ZOMBIE_COSMETICS[0]!,
+    [profile.equippedZombieCosmetic()],
+  );
+
   const faceGeometries = useMemo(
     () =>
       Object.fromEntries(
@@ -948,7 +956,7 @@ function Zombies({
         }
         partRefs.current[i] = refs;
       }
-      const look = ZOMBIE_LOOKS[z.kind];
+      const look = ZOMBIE_LOOKS[z.kind] ?? ZOMBIE_LOOKS[0];
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
@@ -1114,11 +1122,11 @@ function Zombies({
             rightLeg.scale.set(1, 1, 1);
           }
           for (const mesh of [head, leftArm, rightArm]) {
-            (mesh.material as THREE.MeshStandardMaterial).color.set(look.skin);
+            (mesh.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.skin);
           }
-          (body.material as THREE.MeshStandardMaterial).color.set(look.cloth);
-          (leftLeg.material as THREE.MeshStandardMaterial).color.set(look.legs);
-          (rightLeg.material as THREE.MeshStandardMaterial).color.set(look.legs);
+          (body.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.cloth);
+          (leftLeg.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.legs);
+          (rightLeg.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.legs);
         }
         if (leftShoulder && rightShoulder) {
           leftShoulder.visible = z.kind === 2;

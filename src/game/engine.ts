@@ -58,6 +58,7 @@ import {
   getTowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
 import { damageReactionMultiplier, hitDirection } from "./zombiePresentation";
+import { isTowerUnlocked as isProgressionTowerUnlocked, towerUnlockLevel } from "./progression";
 
 export type Vec2 = { x: number; z: number };
 
@@ -312,7 +313,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
     cost: 120,
     accent: "#8fb98a",
     upgradeBase: 80,
-    unlockLevel: 2,
+    unlockLevel: 3,
     coinUnlock: 350,
     shape: "long",
   },
@@ -325,7 +326,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
     cost: 90,
     accent: "#b892ff",
     upgradeBase: 60,
-    unlockLevel: 3,
+    unlockLevel: 5,
     coinUnlock: 550,
     chain: 2,
     shape: "orb",
@@ -339,7 +340,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
     cost: 95,
     accent: "#f2703b",
     upgradeBase: 65,
-    unlockLevel: 4,
+    unlockLevel: 7,
     coinUnlock: 800,
     burn: 7,
     splash: 1.3,
@@ -354,7 +355,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
     cost: 130,
     accent: "#e2725b",
     upgradeBase: 90,
-    unlockLevel: 5,
+    unlockLevel: 9,
     coinUnlock: 1100,
     splash: 3,
     shape: "pods",
@@ -368,7 +369,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
     cost: 220,
     accent: "#63e6c3",
     upgradeBase: 150,
-    unlockLevel: 7,
+    unlockLevel: 12,
     coinUnlock: 1600,
     shape: "lens",
   },
@@ -532,8 +533,11 @@ export function towerProfileBonus(_kind: TowerKind) {
 
 /** Whether the player's progression allows building this tower. */
 export function towerUnlocked(kind: TowerKind, playerLevel: number, purchased: string[]) {
-  const def = TOWER_INFO[kind];
-  return def.coinUnlock === 0 || playerLevel >= def.unlockLevel || purchased.includes(kind);
+  return isProgressionTowerUnlocked(kind, playerLevel, purchased);
+}
+
+export function towerUnlockLevelForProgression(kind: TowerKind) {
+  return towerUnlockLevel(kind);
 }
 
 export function incomeCost(level: number) {

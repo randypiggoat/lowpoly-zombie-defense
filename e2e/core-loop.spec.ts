@@ -18,8 +18,9 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
 
   await page.goto("/");
 
-  await expect(page.getByText("Modes", { exact: true })).toBeVisible();
-  await expect(page.getByText("Progress", { exact: true })).toBeVisible();
+  await expect(page.getByText("Play", { exact: true })).toBeVisible();
+  await expect(page.getByText("Build your collection", { exact: true })).toBeVisible();
+  await expect(page.getByText("Next tower", { exact: true })).toBeVisible();
   await expect(page.getByText("Last defense network", { exact: true })).toBeVisible();
   await expect(page.locator(".rotwood-shell")).toHaveCount(1);
   await expect(page.getByText("Daily supply drop", { exact: true })).toBeVisible();
