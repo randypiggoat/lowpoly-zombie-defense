@@ -27,6 +27,11 @@ function zombie(overrides: Partial<Zombie> = {}): Zombie {
     spin: 0,
     roll: 0,
     gibbed: false,
+    hitReact: 0,
+    hitX: 0,
+    hitZ: 0,
+    hitForce: 0,
+    hitKind: undefined,
     ...overrides,
   };
 }
