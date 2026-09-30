@@ -16,7 +16,7 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
 
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   await expect(page.locator(".rotwood-shell")).toHaveCount(1);
-  await expect(page.locator(".rotwood-menu-tile")).toHaveCount(9);
+  await expect(page.locator(".rotwood-menu-tile")).toHaveCount(10);
 
   const primaryButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
   await expect(primaryButton).toBeVisible();
@@ -130,18 +130,17 @@ test("tower placement follows pointer across both world axes and builds at the s
 
   await pointerProbeStyle.evaluate((element) => element.remove());
 
-  const before = (await qa())!.towers.length;
+  const towerCards = page.locator('button[data-tower-id]');
+  const before = await towerCards.count();
   const buildButtons = page.getByRole("button", { name: /^Build ·/ });
   await expect(buildButtons.first()).toBeVisible();
   await expect(buildButtons.first()).toBeEnabled();
   await buildButtons.first().click();
 
-  await expect.poll(async () => (await qa())!.towers.length).toBe(before + 1);
-  const towers = (await qa())!.towers;
-  const built = towers[towers.length - 1]!;
-
-  expect(built.x).toBe(committedPreview!.x);
-  expect(built.z).toBe(committedPreview!.z);
+  await expect(towerCards).toHaveCount(before + 1);
+  const built = towerCards.last();
+  expect(Number(await built.getAttribute("data-tower-x"))).toBe(committedPreview!.x);
+  expect(Number(await built.getAttribute("data-tower-z"))).toBe(committedPreview!.z);
 });
 
 test("tower placement responds to touch coordinates on mobile", async ({ page }, testInfo) => {
