@@ -31,6 +31,18 @@ const PARTS_BY_KIND: Record<number, readonly GorePart[]> = {
   7: ["swarm-crest", "left-arm", "right-arm", "head"],
 };
 
+
+const DEATH_DEBRIS_BY_KIND: Record<number, readonly GorePart[]> = {
+  0: ["head", "left-arm", "right-arm", "left-leg", "right-leg"],
+  1: ["runner-crest", "left-leg", "right-leg", "head", "right-arm"],
+  2: ["left-shoulder", "right-shoulder", "left-arm", "right-arm", "head"],
+  3: ["splitter-core", "left-arm", "right-arm", "head", "right-leg"],
+  4: ["bomber-pack", "head", "left-arm", "right-arm", "left-leg"],
+  5: ["guardian-shield", "left-arm", "right-arm", "head", "left-leg"],
+  6: ["healer-aura", "head", "left-arm", "right-arm", "left-leg"],
+  7: ["swarm-crest", "left-arm", "right-arm", "head", "right-leg"],
+};
+
 const ANCHORS: Record<GorePart, GoreAnchor> = {
   "head": { x: 0, y: 1.62, z: 0.1, size: 0.13 },
   "left-arm": { x: 0.42, y: 1.15, z: 0.34, size: 0.09 },
@@ -49,6 +61,10 @@ const ANCHORS: Record<GorePart, GoreAnchor> = {
 
 export function gorePartsForKind(kind: number) {
   return PARTS_BY_KIND[kind] ?? PARTS_BY_KIND[0]!;
+}
+
+export function deathGorePartsForKind(kind: number) {
+  return DEATH_DEBRIS_BY_KIND[kind] ?? DEATH_DEBRIS_BY_KIND[0]!;
 }
 
 export function gorePartBit(part: GorePart) {
