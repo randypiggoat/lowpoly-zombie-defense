@@ -44,6 +44,11 @@ test("tower placement follows pointer across both world axes and builds at the s
     page.evaluate(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__)),
   ).toBe(true);
 
+  await page.evaluate(() => {
+    const api = (window as Window & { __ROTWOOD_QA__?: { stabilizePlacementTest: () => void } }).__ROTWOOD_QA__;
+    api?.stabilizePlacementTest();
+  });
+
   const qa = () =>
     page.evaluate(() => {
       const api = (window as Window & {
@@ -51,6 +56,7 @@ test("tower placement follows pointer across both world axes and builds at the s
           getPlacementPreview: () => { x: number; z: number } | null;
           getPlacementStatus: () => { valid: boolean; reason: string } | null;
           getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: "rifleman" }>;
+          stabilizePlacementTest: () => void;
         };
       }).__ROTWOOD_QA__;
       if (!api) return null;
