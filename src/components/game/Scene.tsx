@@ -27,6 +27,7 @@ const MAX_GIBS = 96;
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
 
 const BOSS_SIGNATURE_COLORS: Record<number, string> = {
+  1: "#f1c84a",
   2: "#ef7d43",
   3: "#f0c75e",
   4: "#ff8b45",
@@ -1442,8 +1443,11 @@ function Gibs() {
     shard: new THREE.TetrahedronGeometry(0.1, 0),
     head: new THREE.IcosahedronGeometry(0.12, 0),
     limb: new THREE.BoxGeometry(0.11, 0.28, 0.11),
+    shoulder: new THREE.DodecahedronGeometry(0.12, 0),
     core: new THREE.DodecahedronGeometry(0.12, 0),
     ring: new THREE.TorusGeometry(0.14, 0.035, 5, 8),
+    crest: new THREE.ConeGeometry(0.09, 0.26, 5),
+    pack: new THREE.BoxGeometry(0.16, 0.22, 0.12),
   }), []);
   useEffect(
     () => () => Object.values(geometries).forEach((geometry) => geometry.dispose()),
@@ -1465,20 +1469,27 @@ function Gibs() {
       m.rotation.set(g.rx, g.ry, g.rx * 0.6);
       const fade = Math.max(0, 1 - Math.max(0, g.life - 1.05) / 0.7);
       m.scale.setScalar(g.size * 5.2 * fade);
-      const part = g.part ?? "splitter-core";
+      const part = g.part ?? "head";
       m.geometry =
         part === "head" ? geometries.head :
+        part === "runner-crest" || part === "swarm-crest" ? geometries.crest :
+        part === "bomber-pack" ? geometries.pack :
+        part === "guardian-shield" || part === "healer-aura" ? geometries.ring :
+        part === "splitter-core" ? geometries.core :
+        part === "left-shoulder" || part === "right-shoulder" ? geometries.shoulder :
         part.includes("arm") || part.includes("leg") ? geometries.limb :
-        part.includes("shield") || part.includes("aura") ? geometries.ring :
-        part.includes("core") ? geometries.core :
         geometries.shard;
       const material = m.material as THREE.MeshBasicMaterial;
-      material.color.set(
-        part === "head" ? "#7a2b2f" :
-        part.includes("shield") ? "#70c5d6" :
-        part.includes("core") ? "#d3a452" :
-        GIB_COLORS[g.tint % GIB_COLORS.length]!,
-      );
+      const look = ZOMBIE_LOOKS[g.kind] ?? ZOMBIE_LOOKS[0];
+      const signatureColor =
+        part === "runner-crest" ? BOSS_SIGNATURE_COLORS[1] :
+        part === "splitter-core" ? BOSS_SIGNATURE_COLORS[3] :
+        part === "bomber-pack" ? BOSS_SIGNATURE_COLORS[4] :
+        part === "guardian-shield" ? BOSS_SIGNATURE_COLORS[5] :
+        part === "healer-aura" ? BOSS_SIGNATURE_COLORS[6] :
+        part === "swarm-crest" ? BOSS_SIGNATURE_COLORS[7] :
+        null;
+      material.color.set(signatureColor ?? (part === "head" ? look.skin : part.includes("arm") || part.includes("leg") || part.includes("shoulder") ? look.skin : part === "bomber-pack" ? look.cloth : GIB_COLORS[g.tint % GIB_COLORS.length]!));
     }
   });
 
