@@ -336,7 +336,6 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("canopy")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
-            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
               <mesh position={[0, h, 0]} castShadow receiveShadow>
                 <boxGeometry args={[w, 0.14, d]} />
                 <meshStandardMaterial color="#d8d0bd" flatShading />
@@ -357,7 +356,6 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("pump")) {
           return (
-            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
             <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
               <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
                 <boxGeometry args={[w, 0.28, d]} />
