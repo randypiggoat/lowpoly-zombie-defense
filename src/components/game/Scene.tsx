@@ -170,92 +170,6 @@ function createZombieFaceGeometry(kind: number) {
 }
 
 
-type ZombiePartCache = {
-  all: Record<string, THREE.Object3D | undefined>;
-  body?: THREE.Mesh;
-  head?: THREE.Mesh;
-  face?: THREE.Mesh;
-  leftArm?: THREE.Mesh;
-  rightArm?: THREE.Mesh;
-  leftLeg?: THREE.Mesh;
-  rightLeg?: THREE.Mesh;
-  leftShoulder?: THREE.Mesh;
-  rightShoulder?: THREE.Mesh;
-  runnerCrest?: THREE.Mesh;
-  splitterCore?: THREE.Mesh;
-  bomberPack?: THREE.Mesh;
-  guardianShield?: THREE.Mesh;
-  healerAura?: THREE.Mesh;
-  swarmCrest?: THREE.Mesh;
-  statusMark?: THREE.Mesh;
-  statusStun?: THREE.Mesh;
-  bossAura?: THREE.Group;
-  bossCrown?: THREE.Group;
-  bossCore?: THREE.Mesh;
-  bossSignature?: THREE.Group;
-  bruteMark?: THREE.Group;
-  splitterMark?: THREE.Group;
-  bomberMark?: THREE.Group;
-  guardianMark?: THREE.Group;
-  healerMark?: THREE.Group;
-  swarmMark?: THREE.Group;
-  hpBackground?: THREE.Mesh;
-  hpFill?: THREE.Mesh;
-};
-
-function getZombiePartCache(group: THREE.Group): ZombiePartCache {
-  const cached = group.userData.zombiePartCache as ZombiePartCache | undefined;
-  if (cached) return cached;
-
-  const mesh = (name: string) => group.getObjectByName(name) as THREE.Mesh | undefined;
-  const groupFor = (name: string) => group.getObjectByName(name) as THREE.Group | undefined;
-  const names = [
-    "body", "head", "face", "left-arm", "right-arm", "left-leg", "right-leg",
-    "left-shoulder", "right-shoulder", "runner-crest", "splitter-core", "bomber-pack",
-    "guardian-shield", "healer-aura", "swarm-crest", "status-mark", "status-stun",
-    "boss-aura", "boss-crown", "boss-core", "boss-signature", "boss-mark-brute",
-    "boss-mark-splitter", "boss-mark-bomber", "boss-mark-guardian", "boss-mark-healer",
-    "boss-mark-swarm", "hp-background", "hp-fill",
-  ];
-  const all = Object.fromEntries(
-    names.map((name) => [name, group.getObjectByName(name)]),
-  ) as ZombiePartCache["all"];
-
-  const cache: ZombiePartCache = {
-    all,
-    body: mesh("body"),
-    head: mesh("head"),
-    face: mesh("face"),
-    leftArm: mesh("left-arm"),
-    rightArm: mesh("right-arm"),
-    leftLeg: mesh("left-leg"),
-    rightLeg: mesh("right-leg"),
-    leftShoulder: mesh("left-shoulder"),
-    rightShoulder: mesh("right-shoulder"),
-    runnerCrest: mesh("runner-crest"),
-    splitterCore: mesh("splitter-core"),
-    bomberPack: mesh("bomber-pack"),
-    guardianShield: mesh("guardian-shield"),
-    healerAura: mesh("healer-aura"),
-    swarmCrest: mesh("swarm-crest"),
-    statusMark: mesh("status-mark"),
-    statusStun: mesh("status-stun"),
-    bossAura: groupFor("boss-aura"),
-    bossCrown: groupFor("boss-crown"),
-    bossCore: mesh("boss-core"),
-    bossSignature: groupFor("boss-signature"),
-    bruteMark: groupFor("boss-mark-brute"),
-    splitterMark: groupFor("boss-mark-splitter"),
-    bomberMark: groupFor("boss-mark-bomber"),
-    guardianMark: groupFor("boss-mark-guardian"),
-    healerMark: groupFor("boss-mark-healer"),
-    swarmMark: groupFor("boss-mark-swarm"),
-    hpBackground: mesh("hp-background"),
-    hpFill: mesh("hp-fill"),
-  };
-  group.userData.zombiePartCache = cache;
-  return cache;
-}
 const ZOMBIE_LOOKS = [
   { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
   { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
@@ -1072,7 +986,6 @@ function Zombies({
       }
       const look = ZOMBIE_LOOKS[z.kind];
       const presentation = zombiePresentation(z.kind);
-      const parts = getZombiePartCache(g);
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
       const statusMark = refs["status-mark"];
@@ -1373,9 +1286,27 @@ function Zombies({
           z.kind === 7 ? "swarm-crest" : null;
         const signature = signatureName ? refs[signatureName] : null;
         if (signature) {
-          signature.rotation.y += (z.kind === 7 ? 0.06 : z.kind === 3 ? 0.035 : 0.018);
-          const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
-          signature.scale.setScalar(signaturePulse);
+          const lowHealthPulse =
+            1 +
+            (1 - hpRatio) *
+              (z.kind === 4 ? 0.22 : z.kind === 6 ? 0.1 : 0.05);
+          const signaturePulse =
+            1 +
+            Math.sin(phase * (z.kind === 7 ? 2.1 : 1.6)) *
+              presentation.idleAmp *
+              animationFactor *
+              (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
+          signature.scale.setScalar(signaturePulse * lowHealthPulse);
+          signature.rotation.y +=
+            (z.kind === 7 ? 0.06 : z.kind === 3 ? 0.035 : teslaHit ? 0.032 : 0.018) *
+            animationFactor;
+          if (z.kind === 4 && signature instanceof THREE.Mesh) {
+            signature.rotation.z =
+              Math.sin(phase * 2.2) * (0.08 + (1 - hpRatio) * 0.2);
+          }
+          if (z.kind === 5 && signature instanceof THREE.Mesh) {
+            signature.rotation.x = Math.PI / 2 + hitRight * 0.18;
+          }
         }
       }
       // damage flash
