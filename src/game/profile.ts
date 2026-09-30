@@ -204,6 +204,8 @@ export type PlayerProfile = {
   fieldKnowledge: Record<string, number>;
   /** Tower kinds unlocked ahead of their level gate. */
   unlockedTowers: string[];
+  /** Persistent mastery earned by actively upgrading each tower. */
+  towerMasteryXp: Record<string, number>;
   achievements: Record<string, AchievementProgress>;
   dailyMissionProgress: Record<string, DailyMissionProgress>;
   stageProgress: Record<string, StageProgress>;
@@ -325,6 +327,7 @@ function blank(): PlayerProfile {
     towerUpgrades: {},
     fieldKnowledge: {},
     unlockedTowers: [],
+    towerMasteryXp: {},
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
     stageProgress: defaultStageProgress(),
@@ -363,6 +366,13 @@ function normalizeTowerUpgrades(value: unknown): Record<string, TowerUpgradeProf
         },
       ];
     }),
+  );
+}
+
+function normalizeNumberRecord(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).map(([key, raw]) => [key, Math.max(0, Number(raw) || 0)]),
   );
 }
 
@@ -560,6 +570,7 @@ function load(): PlayerProfile {
           )
         : {},
       unlockedTowers: normalizeStringArray(parsed.unlockedTowers),
+      towerMasteryXp: normalizeNumberRecord(parsed.towerMasteryXp),
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
       stageProgress: normalizeStageProgressRecords(parsed.stageProgress),
@@ -1090,12 +1101,29 @@ class ProfileStore {
   }
 
   /** Track in-run upgrade activity separately from permanent upgrade levels. */
-  recordTowerUpgrade(_kind: string, points = 1) {
+  recordTowerUpgrade(kind: string, points = 1) {
     this.refreshRetentionState();
     const p = this.profile;
-    p.towerUpgradeActions += Math.max(0, points);
+    const earned = Math.max(0, points);
+    p.towerUpgradeActions += earned;
+    p.towerMasteryXp[kind] = (p.towerMasteryXp[kind] ?? 0) + earned * 25;
     this.syncAchievementProgress();
     this.save();
+  }
+
+  towerMasteryLevel(kind: string) {
+    return Math.min(10, Math.floor((this.profile.towerMasteryXp[kind] ?? 0) / 100));
+  }
+
+  towerMasteryProgress(kind: string) {
+    const xp = this.profile.towerMasteryXp[kind] ?? 0;
+    const level = this.towerMasteryLevel(kind);
+    return {
+      xp,
+      level,
+      current: xp - level * 100,
+      target: level >= 10 ? 0 : 100,
+    };
   }
 
   unlockTower(kind: string, cost: number) {
