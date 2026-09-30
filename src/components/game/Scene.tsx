@@ -993,7 +993,14 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         g.position.set(z.x, 0.1 + Math.abs(Math.sin(z.wobble)) * 0.14, z.z);
         g.rotation.x = 0;
         g.rotation.z = Math.sin(z.wobble) * 0.16;
-        g.scale.setScalar(scale * (z.boss ? 1.16 : 1));
+        const hitPulse = Math.max(0, z.flash);
+        const hitDirection = Math.sin(z.id * 12.73);
+        g.scale.set(
+          scale * (z.boss ? 1.16 : 1) * (1 + hitPulse * 0.045),
+          scale * (z.boss ? 1.16 : 1) * (1 - hitPulse * 0.035),
+          scale * (z.boss ? 1.16 : 1) * (1 + hitPulse * 0.045),
+        );
+        g.rotation.y += hitPulse * hitDirection * 0.055;
         const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
         g.rotation.y = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
       }
