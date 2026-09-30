@@ -798,6 +798,7 @@ export function GameCanvas() {
                   <MenuTile title="Campaign" subtitle="Structured progression, stars, and the main tower-unlock path." onClick={() => setScreen("stage-select")} />
                   <MenuTile title="Endless Siege" subtitle="Build experimentation, records, and long-run mastery." onClick={() => setScreen("endless-select")} />
                   <MenuTile title="Boss Trials" subtitle="Recurring boss mastery with rotating variants." onClick={() => setScreen("boss-trial-select")} />
+                  <MenuTile title="Side Modes" subtitle="Short resource runs and rotating challenges." onClick={() => setScreen("side-mode-select")} />
                 </div>
               </div>
 
