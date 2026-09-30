@@ -375,6 +375,10 @@ export function GameCanvas() {
     };
   });
 
+  const highestCompletedCampaignStage = Math.max(
+    0,
+    ...STAGE_DEFS.filter((stage) => player.stageProgress[String(stage.id)]?.completed).map((stage) => stage.id),
+  );
   const recommendedStage =
     stages.find((stage) => !stage.completed && !stage.locked) ??
     stages.find((stage) => !stage.locked) ??
@@ -418,10 +422,6 @@ export function GameCanvas() {
   };
 
   const startSideMode = (level: SideModeLevel) => {
-    const highestCompletedCampaignStage = Math.max(
-      0,
-      ...STAGE_DEFS.filter((stage) => player.stageProgress[String(stage.id)]?.completed).map((stage) => stage.id),
-    );
     if (highestCompletedCampaignStage < level.unlockStageId - 1) return;
     resetGameplayState();
     setActiveSideMode(level);
@@ -524,14 +524,14 @@ export function GameCanvas() {
 
   const paused = screen !== "gameplay" || overlay !== null;
   const resultLabel = state.bossTrial
-    ? state.stageWon
-      ? "TRIAL CLEARED"
-      : "TRIAL FAILED"
-    : state.endlessMode
-      ? "SIEGE OVER"
-      : state.stageWon
-        ? "STAGE COMPLETE"
-        : "GAME OVER";
+    ? state.stageWon ? "TRIAL CLEARED" : "TRIAL FAILED"
+    : state.sideModeId
+      ? state.stageWon ? "RUN COMPLETE" : "RUN FAILED"
+      : state.endlessMode
+        ? "SIEGE OVER"
+        : state.stageWon
+          ? "STAGE COMPLETE"
+          : "GAME OVER";
 
   const endlessBestDisplay = state.challengePeriod === "daily"
     ? player.dailyChallengeBestScore
@@ -1166,6 +1166,21 @@ export function GameCanvas() {
               <p className="mt-1 text-xs text-panel-muted">{seasonalEvent.tagline}</p>
               <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-panel-muted">Cycle {seasonalCycleKey} · Ends {seasonalEventEnd.toLocaleDateString()}</p>
             </div>
+             <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 shadow-panel">
+               <p className="text-[9px] uppercase tracking-[0.18em] text-accent">PLAY THE EVENT</p>
+               <p className="mt-1 text-xs text-panel-muted">Turn event progress into a short themed defense instead of only collecting milestone kills.</p>
+               {getSeasonalEventRun(seasonalEvent.id) ? (
+                 <ScreenButton
+                   className="mt-2"
+                   onClick={() => {
+                     const eventRun = getSeasonalEventRun(seasonalEvent.id);
+                     if (eventRun) startSideMode(eventRun);
+                   }}
+                 >
+                   PLAY EVENT RUN
+                 </ScreenButton>
+               ) : null}
+             </div>
             <div className="mt-3 space-y-2">
               {seasonalEvent.milestones.map((milestone) => {
                 const progress = seasonalEventProgressTarget(milestone.target, player.seasonalEventProgress);
@@ -1502,7 +1517,13 @@ export function GameCanvas() {
         <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/70 p-3">
           <ScreenCard>
             <h2 className={"text-center font-display text-3xl tracking-wide " + (state.stageWon ? "text-accent" : state.endlessMode ? "text-accent" : "text-danger")}>{resultLabel}</h2>
-            {state.bossTrial && activeBossTrial ? <p className="mt-1 text-center text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p> : state.endlessMode && activeChallenge ? <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p> : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
+            {state.bossTrial && activeBossTrial
+              ? <p className="mt-1 text-center text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p>
+              : state.endlessMode && activeChallenge
+                ? <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
+                : activeSideMode
+                  ? <p className="mt-1 text-center text-sm text-panel-muted">{activeSideMode.name} · {activeSideMode.category === "resource" ? "Resource Ops" : activeSideMode.category === "challenge" ? "Challenge Gauntlet" : "Seasonal Event"}</p>
+                  : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
             {lastReward ? (
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">+{lastReward.coins}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">Credits</p></div>
@@ -1511,8 +1532,8 @@ export function GameCanvas() {
               </div>
             ) : null}
             <div className="mt-3 rounded-2xl bg-black/25 p-3 text-center">
-              {state.endlessMode || state.bossTrial ? (
-                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">{state.bossTrial ? "Trial score" : "Score"}</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.bossTrial ? state.bossTrialScore.toLocaleString() : lastReward && "score" in lastReward ? lastReward.score.toLocaleString() : "—"}</p></>
+              {state.endlessMode || state.bossTrial || state.sideModeId ? (
+                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">{state.bossTrial ? "Trial score" : state.sideModeId ? "Mode score" : "Score"}</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.bossTrial ? state.bossTrialScore.toLocaleString() : lastReward && "score" in lastReward ? lastReward.score.toLocaleString() : "—"}</p></>
               ) : (
                 <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">Wave reached</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.wave}</p></>
               )}
@@ -1535,9 +1556,14 @@ export function GameCanvas() {
               <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("double-run-rewards"); if (earned) profile.claimLastRunRewardBoost(); }} variant="secondary">DOUBLE REWARDS · WATCH AD</ScreenButton>
             ) : null}
             <div className="mt-4 space-y-2">
-              {state.stageWon && nextStage ? <ScreenButton onClick={() => startStage(nextStage.id)}>NEXT STAGE</ScreenButton> : state.stageWon ? <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton> : state.bossTrial && activeBossTrial ? <ScreenButton onClick={() => { resetGameplayState(); game.startBossTrial(activeBossTrial, weekKey); setScreen("gameplay"); }}>RETRY TRIAL</ScreenButton> : state.endlessMode && activeChallenge ? <ScreenButton onClick={() => { resetGameplayState(); game.startEndless(activeChallenge, activeChallenge.period === "weekly" ? weekKey : todayKey); setScreen("gameplay"); }}>RETRY</ScreenButton> : <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>}
-              {state.stageWon ? <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">REPLAY</ScreenButton> : null}
-              <ScreenButton onClick={() => state.bossTrial ? setScreen("boss-trial-select") : state.endlessMode ? setScreen("endless-select") : setScreen("stage-select")} variant="secondary">{state.bossTrial ? "BOSS TRIALS" : state.endlessMode ? "ENDLESS" : "CAMPAIGN"}</ScreenButton>
+              {state.stageWon && nextStage ? <ScreenButton onClick={() => startStage(nextStage.id)}>NEXT STAGE</ScreenButton>
+                : activeSideMode ? <ScreenButton onClick={() => { resetGameplayState(); game.startSideMode(activeSideMode, activeSideMode.cycle === "event" ? seasonalCycleKey : todayKey); setScreen("gameplay"); }}>RETRY RUN</ScreenButton>
+                : state.stageWon ? <ScreenButton onClick={leaveToStageSelect}>CAMPAIGN</ScreenButton>
+                : state.bossTrial && activeBossTrial ? <ScreenButton onClick={() => { resetGameplayState(); game.startBossTrial(activeBossTrial, weekKey); setScreen("gameplay"); }}>RETRY TRIAL</ScreenButton>
+                : state.endlessMode && activeChallenge ? <ScreenButton onClick={() => { resetGameplayState(); game.startEndless(activeChallenge, activeChallenge.period === "weekly" ? weekKey : todayKey); setScreen("gameplay"); }}>RETRY</ScreenButton>
+                : <ScreenButton onClick={() => startStage(activeStageId)}>RETRY</ScreenButton>}
+              {state.stageWon && !activeSideMode ? <ScreenButton onClick={() => startStage(activeStageId)} variant="secondary">REPLAY</ScreenButton> : null}
+              <ScreenButton onClick={() => state.sideModeId ? setScreen("side-mode-select") : state.bossTrial ? setScreen("boss-trial-select") : state.endlessMode ? setScreen("endless-select") : setScreen("stage-select")} variant="secondary">{state.sideModeId ? "SIDE MODES" : state.bossTrial ? "BOSS TRIALS" : state.endlessMode ? "ENDLESS" : "CAMPAIGN"}</ScreenButton>
               <ScreenButton onClick={leaveToMainMenu} variant="secondary">MAIN MENU</ScreenButton>
             </div>
           </ScreenCard>
@@ -1554,8 +1580,8 @@ export function GameCanvas() {
               <ScreenButton onClick={() => setOverlay("confirm-restart")} variant="secondary">
                 RESTART
               </ScreenButton>
-              <ScreenButton onClick={leaveToStageSelect} variant="secondary">
-                STAGE SELECT
+              <ScreenButton onClick={state.sideModeId ? leaveToSideModes : leaveToStageSelect} variant="secondary">
+                {state.sideModeId ? "SIDE MODES" : "STAGE SELECT"}
               </ScreenButton>
               <ScreenButton onClick={() => openSettings("gameplay")} variant="secondary">
                 SETTINGS
