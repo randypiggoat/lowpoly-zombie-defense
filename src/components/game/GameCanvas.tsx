@@ -1422,6 +1422,23 @@ export function GameCanvas() {
                 </div>
               </div>
             ) : null}
+            {nextTower ? (
+              <div className="mt-3 rounded-2xl border border-accent/15 bg-accent/5 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-accent">Next unlock</p>
+                    <p className="font-display text-lg text-panel-foreground">{TOWER_INFO[nextTower.kind].name}</p>
+                    <p className="text-[10px] text-panel-muted">{towerUnlockRole(nextTower.kind)}</p>
+                  </div>
+                  <p className="text-right font-display text-sm text-panel-foreground">LEVEL {nextTower.level}<span className="block text-[9px] text-panel-muted">Keep defending</span></p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-2xl border border-accent/15 bg-accent/5 p-3 text-center">
+                <p className="font-display text-lg text-accent">FULL ROSTER</p>
+                <p className="text-[10px] text-panel-muted">All towers unlocked. Chase mastery and cosmetics next.</p>
+              </div>
+            )}
             {!state.stageWon && !state.reviveUsed && state.baseHp <= 0 && rewardedAvailable ? (
               <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("revive"); if (earned && game.reviveRun()) setScreen("gameplay"); }} variant="secondary">SECOND CHANCE · WATCH AD</ScreenButton>
             ) : null}
