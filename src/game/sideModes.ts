@@ -394,19 +394,6 @@ export const CHALLENGE_GAUNTLET: SideModeLevel[] = [
   }),
 ];
 
-export const SIDE_MODE_LEVELS = [...RESOURCE_OPS, ...CHALLENGE_GAUNTLET, ...SEASONAL_EVENT_RUNS] as const;
-
-export function getSideModeLevel(id: string) {
-  return SIDE_MODE_LEVELS.find((level) => level.id === id) ?? null;
-}
-
-export function getUnlockedSideModeLevels(
-  levels: readonly SideModeLevel[],
-  highestCompletedCampaignStage: number,
-) {
-  return levels.filter((level) => highestCompletedCampaignStage >= level.unlockStageId - 1);
-}
-
 export function getEndlessSector(wave: number) {
   return Math.max(1, Math.floor(Math.max(1, wave - 1) / 5) + 1);
 }
@@ -475,4 +462,17 @@ export const SEASONAL_EVENT_RUNS: SideModeLevel[] = [
 export function getSeasonalEventRun(eventId: string) {
   const wanted = eventId === "frozen-night" ? "frozen-night-run" : "blood-harvest-run";
   return getSideModeLevel(wanted);
+}
+
+export const SIDE_MODE_LEVELS = [...RESOURCE_OPS, ...CHALLENGE_GAUNTLET, ...SEASONAL_EVENT_RUNS] as const;
+
+export function getSideModeLevel(id: string) {
+  return SIDE_MODE_LEVELS.find((level) => level.id === id) ?? null;
+}
+
+export function getUnlockedSideModeLevels(
+  levels: readonly SideModeLevel[],
+  highestCompletedCampaignStage: number,
+) {
+  return levels.filter((level) => highestCompletedCampaignStage >= level.unlockStageId - 1);
 }
