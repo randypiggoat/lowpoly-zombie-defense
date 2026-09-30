@@ -1092,7 +1092,12 @@ export function GameCanvas() {
                       <p className="truncate font-display text-sm tracking-wide text-panel-foreground">{info.name}</p>
                     </div>
                     <p className="mt-1 line-clamp-2 text-[10px] leading-tight text-panel-muted">{info.blurb}</p>
-                    <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-accent">{unlocked ? "AVAILABLE" : "LOCKS LATER"}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.12em]">
+                      <span className={unlocked ? "text-accent" : "text-panel-muted"}>
+                        {unlocked ? "AVAILABLE" : "UNLOCKS LEVEL " + info.unlockLevel}
+                      </span>
+                      <span className="text-panel-muted">Mastery {profile.towerMasteryLevel(kind)}/10</span>
+                    </div>
                   </button>
                 );
               })}
@@ -1101,6 +1106,18 @@ export function GameCanvas() {
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Tower overview</p>
               <h3 className="font-display text-xl tracking-wide text-panel-foreground">{TOWER_INFO[armoryTowerKind].name}</h3>
               <p className="mt-1 text-xs leading-relaxed text-panel-muted">{TOWER_INFO[armoryTowerKind].blurb}</p>
+              <div className="mt-3 rounded-xl border border-accent/15 bg-accent/5 p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-panel-muted">Tower mastery</span>
+                  <span className="font-display text-xs text-accent">{profile.towerMasteryLevel(armoryTowerKind)}/10</span>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
+                  <div className="h-full rounded-full bg-accent" style={{ width: Math.min(100, (profile.towerMasteryProgress(armoryTowerKind).current / Math.max(1, profile.towerMasteryProgress(armoryTowerKind).target)) * 100) + "%" }} />
+                </div>
+                <p className="mt-1 text-[9px] text-panel-muted">
+                  {profile.towerMasteryLevel(armoryTowerKind) >= 10 ? "Mastered · cosmetics are fully unlocked." : "Upgrade this tower in battle to earn mastery and cosmetic milestones."}
+                </p>
+              </div>
               <UpgradeReference kind={armoryTowerKind} />
             </div>
           </div>
