@@ -10,7 +10,7 @@ import {
 } from "react";
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
-import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
+import { isMuted, setMuted, setMusicMode, sfx, unlockAudio } from "@/game/audio";
 import { TOWER_INFO, TOWER_KINDS, TOWER_PATHS, game, type TowerKind } from "@/game/engine";
 import {
   STAGE_DEFS,
@@ -445,6 +445,14 @@ export function GameCanvas() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (screen !== "gameplay") {
+      setMusicMode("menu");
+      return;
+    }
+    setMusicMode(state.waveMessageType === "boss" || state.bossesRemaining > 0 ? "boss" : "combat");
+  }, [screen, state.bossesRemaining, state.waveMessageType]);
 
   useEffect(() => {
     if (screen === "gameplay" && state.gameOver) {
