@@ -281,7 +281,6 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("house")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#b96d52" flatShading />
