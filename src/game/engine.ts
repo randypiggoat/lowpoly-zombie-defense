@@ -37,7 +37,7 @@ import { bossKillGoldMultiplier } from "./bossRewards";
 import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
 import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
-import { createEndlessStage, type EndlessChallenge } from "./endless";
+import { createEndlessStage, getEndlessEnemyPool, type EndlessChallenge } from "./endless";
 import {
   canPlaceTower,
   getPathLength,
