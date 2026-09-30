@@ -385,11 +385,16 @@ export function GameCanvas() {
     return Boolean(progress?.completed && !progress.claimed);
   }).length;
 
+  const updatePlacementPreview = useCallback((position: { x: number; z: number } | null) => {
+    placementPreviewRef.current = position;
+    setPlacementPreview(position);
+  }, []);
+
   const resetGameplayState = () => {
     profile.clearReward();
     game.reset();
     setSelection(null);
-    setPlacementPreview(null);
+    updatePlacementPreview(null);
     setOverlay(null);
   };
 
@@ -619,7 +624,7 @@ export function GameCanvas() {
               setPlacementPreview(position);
               setSelection({ kind: "spot", position });
             }}
-            onPreviewPosition={setPlacementPreview}
+            onPreviewPosition={updatePlacementPreview}
           />
         </Canvas>
       )}
