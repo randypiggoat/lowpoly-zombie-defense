@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { getEnemyAnimationProfile, getEnemyFaceProfile, getEnemySignatureName } from "./enemyAnimation";
+import { getEnemyAnimationProfile, getEnemyFaceProfile, getEnemyHitMotion, getEnemySignatureName } from "./enemyAnimation";
 
 describe("enemy animation profiles", () => {
   test("every enemy type has a distinct motion profile", () => {
@@ -20,3 +20,9 @@ describe("enemy animation profiles", () => {
     expect(getEnemyFaceProfile(0).markVisible).toBe(false);
   });
 });
+
+  test("weapon impacts have a readable force hierarchy", () => {
+    expect(getEnemyHitMotion("rocket")).toBeGreaterThan(getEnemyHitMotion("rifleman"));
+    expect(getEnemyHitMotion("rifleman")).toBeGreaterThan(getEnemyHitMotion("burn"));
+    expect(getEnemyHitMotion("freezer")).toBeLessThan(getEnemyHitMotion("shotgunner"));
+  });
