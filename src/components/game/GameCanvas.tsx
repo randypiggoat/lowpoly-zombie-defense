@@ -1030,6 +1030,84 @@ export function GameCanvas() {
               <p className="mt-1 text-xs text-panel-muted">{seasonalEvent.tagline}</p>
               <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-panel-muted">Cycle {seasonalCycleKey} · Ends {seasonalEventEnd.toLocaleDateString()}</p>
             </div>
+            <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Live rotation</p>
+                  <h3 className="font-display text-xl tracking-wide text-panel-foreground">Play what changes</h3>
+                </div>
+                <span className="rounded-full bg-black/25 px-2 py-1 text-[9px] uppercase tracking-wider text-panel-muted">Daily · Weekly</span>
+              </div>
+              <div className="mt-2 grid gap-2">
+                <div className="rounded-xl border border-white/10 bg-black/20 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] text-accent">Today · Endless Siege</p>
+                      <p className="font-display text-base tracking-wide text-panel-foreground">{dailyChallenge.name}</p>
+                      <p className="text-[10px] leading-tight text-panel-muted">{dailyChallenge.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[9px] text-panel-muted">Best {player.dailyChallengeDate === todayKey ? player.dailyChallengeBestScore.toLocaleString() : "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGameplayState();
+                      setActiveChallenge(dailyChallenge);
+                      game.startEndless(dailyChallenge, todayKey);
+                      setScreen("gameplay");
+                    }}
+                    className="mt-2 min-h-10 w-full rounded-lg bg-accent px-3 py-2 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                  >
+                    PLAY TODAY'S SIEGE
+                  </button>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/20 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] text-accent">This week · Endless Siege</p>
+                      <p className="font-display text-base tracking-wide text-panel-foreground">{weeklyChallenge.name}</p>
+                      <p className="text-[10px] leading-tight text-panel-muted">{weeklyChallenge.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[9px] text-panel-muted">Best {player.weeklyChallengeKey === weekKey ? player.weeklyChallengeBestScore.toLocaleString() : "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGameplayState();
+                      setActiveChallenge(weeklyChallenge);
+                      game.startEndless(weeklyChallenge, weekKey);
+                      setScreen("gameplay");
+                    }}
+                    className="mt-2 min-h-10 w-full rounded-lg border border-accent/35 bg-accent/10 px-3 py-2 font-display text-xs tracking-wide text-accent transition active:scale-[0.98]"
+                  >
+                    PLAY WEEKLY SIEGE
+                  </button>
+                </div>
+                <div className="rounded-xl border border-accent/20 bg-accent/5 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] text-accent">Weekly boss trial</p>
+                      <p className="font-display text-base tracking-wide text-panel-foreground">{weeklyBossTrial.bossName} · {weeklyBossTrial.title}</p>
+                      <p className="text-[10px] leading-tight text-panel-muted">{weeklyBossTrial.variant?.name} · {weeklyBossTrial.variant?.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[9px] text-panel-muted">Best {player.bossTrialWeekKey === weekKey ? player.bossTrialBestScore.toLocaleString() : "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGameplayState();
+                      setActiveBossTrial(weeklyBossTrial);
+                      game.startBossTrial(weeklyBossTrial, weekKey);
+                      setScreen("gameplay");
+                    }}
+                    className="mt-2 min-h-10 w-full rounded-lg border border-accent/35 bg-accent/10 px-3 py-2 font-display text-xs tracking-wide text-accent transition active:scale-[0.98]"
+                  >
+                    ENTER BOSS TRIAL
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-3 space-y-2">
               {seasonalEvent.milestones.map((milestone) => {
                 const progress = seasonalEventProgressTarget(milestone.target, player.seasonalEventProgress);
