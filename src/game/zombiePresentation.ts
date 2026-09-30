@@ -60,7 +60,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     deathFold: 1.1,
     faceScale: 0.84,
     faceY: 1.56,
-    faceZ: 0.255,
+    faceZ: 0.36,
   },
   2: {
     name: "Brute",
@@ -80,7 +80,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     deathFold: 0.72,
     faceScale: 1.15,
     faceY: 1.8,
-    faceZ: 0.29,
+    faceZ: 0.42,
   },
   3: {
     name: "Splitter",
@@ -100,7 +100,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     deathFold: 1.2,
     faceScale: 0.98,
     faceY: 1.62,
-    faceZ: 0.275,
+    faceZ: 0.36,
   },
   4: {
     name: "Bomber",
@@ -140,7 +140,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     deathFold: 0.65,
     faceScale: 1.08,
     faceY: 1.67,
-    faceZ: 0.265,
+    faceZ: 0.36,
   },
   6: {
     name: "Healer",
