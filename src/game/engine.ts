@@ -1712,6 +1712,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               this.stage.bossTrialKey ?? new Date().toISOString().slice(0, 10),
               false,
               this.stage.rewardMultiplier,
+              this.stage.bossTrial.id,
             );
             track("boss_trial_completed", {
               trial: this.stage.bossTrial.id,
@@ -1802,6 +1803,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           this.stage.bossTrialKey ?? new Date().toISOString().slice(0, 10),
           true,
           this.stage.rewardMultiplier,
+          this.stage.bossTrial.id,
         );
         track("boss_trial_completed", {
           trial: this.stage.bossTrial.id,
