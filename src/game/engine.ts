@@ -50,6 +50,8 @@ import {
   goreAnchor,
   gorePartBit,
   gorePartsBrokenBetween,
+  gorePartsForKind,
+  GORE_SIGNATURE_PARTS,
   type GorePart,
 } from "./enemyGore";
 import {
@@ -136,10 +138,16 @@ export type Zombie = {
   gibbed: boolean;
   /** Bit mask of body/signature pieces already broken off by damage. */
   gibMask?: number;
+  /** Procedural combat-feel state consumed only by the renderer. */
+  hitReact?: number;
+  hitSide?: number;
+  hitDepth?: number;
+  hitKind?: TowerKind | "burn";
 };
 
 export type Gib = {
   id: number;
+  kind: StageEnemyKind;
   x: number;
   y: number;
   z: number;
@@ -1157,6 +1165,10 @@ export class Game {
       roll: 0,
       gibbed: false,
       gibMask: 0,
+      hitReact: 0,
+      hitSide: 0,
+      hitDepth: 0,
+      hitKind: undefined,
     };
     s.zombies.push(spawned);
     return spawned;
@@ -1182,6 +1194,7 @@ export class Game {
       closeDamageMultiplier?: number;
       originX?: number;
       originZ?: number;
+      hitKind?: TowerKind | "burn";
     } = {},
   ) {
     const s = this.state;
@@ -1230,6 +1243,25 @@ export class Game {
       goldMult,
       crit,
     );
+    const hitDx = z.x - fromX;
+    const hitDz = z.z - fromZ;
+    const hitLen = Math.hypot(hitDx, hitDz);
+    const impactX = hitLen > 0.001 ? hitDx / hitLen : 0;
+    const impactZ = hitLen > 0.001 ? hitDz / hitLen : 0;
+    const nextPathPoint = pointAtPath(this.map.path, Math.min(this.pathLength, z.dist + 0.7));
+    const forwardDx = nextPathPoint.x - z.x;
+    const forwardDz = nextPathPoint.z - z.z;
+    const forwardLen = Math.hypot(forwardDx, forwardDz);
+    const forwardX = forwardLen > 0.001 ? forwardDx / forwardLen : 0;
+    const forwardZ = forwardLen > 0.001 ? forwardDz / forwardLen : 1;
+    z.hitSide = Math.max(-1, Math.min(1, forwardZ * impactX - forwardX * impactZ));
+    z.hitDepth = Math.max(-1, Math.min(1, forwardX * impactX + forwardZ * impactZ));
+    z.hitReact = Math.min(
+      1.25,
+      Math.max(z.hitReact, 0.28 + Math.min(0.65, result.force * 0.14) + (result.crit ? 0.18 : 0)),
+    );
+    z.hitKind = ability.hitKind;
+
     const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
     if (!result.killed) {
@@ -1316,6 +1348,7 @@ export class Game {
     if (s.damagePopups.length < 24) {
       s.damagePopups.push({
         id: this.nextId++,
+        kind: z.kind,
         x: z.x,
         y: 1.65,
         z: z.z,
@@ -1345,14 +1378,18 @@ export class Game {
 
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
     const force = result.force;
-    z.vx = Math.sin(away) * 2.2 * force;
-    z.vz = Math.cos(away) * 2.2 * force;
-    z.vy = 2.5 + this.random() * 2 * force;
-    z.spin = (this.random() - 0.5) * 9 * force;
+    const deathForce =
+      ability.hitKind === "rocket" ? force * 1.35 :
+      ability.hitKind === "shotgunner" ? force * 1.18 :
+      ability.hitKind === "sniper" ? force * 1.08 : force;
+    z.vx = Math.sin(away) * 2.2 * deathForce;
+    z.vz = Math.cos(away) * 2.2 * deathForce;
+    z.vy = (ability.hitKind === "rocket" ? 3.2 : ability.hitKind === "shotgunner" ? 2.9 : 2.5) + this.random() * 2 * deathForce;
+    z.spin = (this.random() - 0.5) * (9 + (ability.hitKind === "rocket" ? 4 : 0)) * deathForce;
 
     if (result.explode) {
       z.gibbed = true;
-      this.spawnGibs(z, 8, Math.min(2.2, force));
+      this.spawnGibs(z, 8, Math.min(2.2, force * (ability.hitKind === "rocket" ? 1.18 : 1)));
       sfx("gib");
     } else {
       this.spawnGibs(z, 3, 0.8);
@@ -1370,6 +1407,7 @@ export class Game {
     const speed = (1.25 + this.random() * 2.4) * Math.max(0.7, Math.min(2, goreBase)) * force;
     s.gibs.push({
       id: this.nextId++,
+      kind: z.kind,
       x: z.x + anchor.x * 0.6,
       y: Math.max(0.18, anchor.y + (this.random() - 0.5) * 0.12),
       z: z.z + anchor.z * 0.6,
@@ -1390,10 +1428,12 @@ export class Game {
     const s = this.state;
     if (s.gibs.length >= 96) return;
 
+    const parts = gorePartsForKind(z.kind);
     for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
       const sp = (1.1 + this.random() * 2.1) * force;
-      const debrisPart: GorePart = i % 3 === 0 ? "head" : i % 3 === 1 ? "left-arm" : "splitter-core";
+      const debrisPart = parts[i % parts.length]!;
+      const signature = debrisPart !== "head" && debrisPart.includes("-") && debrisPart !== "left-arm" && debrisPart !== "right-arm" && debrisPart !== "left-leg" && debrisPart !== "right-leg" && debrisPart !== "left-shoulder" && debrisPart !== "right-shoulder";
 
       s.gibs.push({
         id: this.nextId++,
@@ -1407,7 +1447,7 @@ export class Game {
         ry: this.random() * 3,
         spin: (this.random() - 0.5) * 14,
         life: 0,
-        size: 0.08 + this.random() * 0.1,
+        size: (signature ? 1.2 : 1) * (0.08 + this.random() * 0.1),
         tint: i % 3,
         part: debrisPart,
       });
@@ -1508,6 +1548,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     // zombies
     for (const z of s.zombies) {
       if (z.flash > 0) z.flash = Math.max(0, z.flash - dt * 4);
+      if (z.hitReact > 0) z.hitReact = Math.max(0, z.hitReact - dt * 7);
 
       if (z.dead) {
         const ragdoll = stepEnemyRagdoll(
@@ -1607,7 +1648,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.markBonus = lifecycle.markBonus;
 
       if (lifecycle.burnDamage > 0) {
-        this.damage(z, lifecycle.burnDamage, z.x, z.z, 1);
+        this.damage(z, lifecycle.burnDamage, z.x, z.z, 1, 1, false, { hitKind: "burn" });
         if (z.dead) continue;
       }
 
@@ -1905,6 +1946,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               closeDamageMultiplier: b.closeDamageMultiplier,
               originX: b.originX,
               originZ: b.originZ,
+              hitKind: b.kind,
             },
           );
         };

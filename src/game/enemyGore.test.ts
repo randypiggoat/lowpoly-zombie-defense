@@ -3,6 +3,7 @@ import {
   gorePartBit,
   gorePartsBrokenBetween,
   gorePartsForKind,
+  GORE_SIGNATURE_PARTS,
 } from "./enemyGore";
 
 describe("enemy gore breakpoints", () => {
@@ -25,3 +26,15 @@ describe("enemy gore breakpoints", () => {
     }
   });
 });
+
+  test("special enemy breakpoints stay tied to their own signature parts", () => {
+    expect(GORE_SIGNATURE_PARTS).toContain("runner-crest");
+    expect(gorePartsForKind(1)).toContain("runner-crest");
+    expect(gorePartsForKind(3)).toContain("splitter-core");
+    expect(gorePartsForKind(4)).toContain("bomber-pack");
+    expect(gorePartsForKind(5)).toContain("guardian-shield");
+    expect(gorePartsForKind(6)).toContain("healer-aura");
+    expect(gorePartsForKind(7)).toContain("swarm-crest");
+    expect(gorePartsForKind(0)).not.toContain("splitter-core");
+    expect(gorePartsForKind(0)).not.toContain("bomber-pack");
+  });

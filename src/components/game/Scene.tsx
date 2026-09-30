@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { cosmeticForTower } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
+import { getEnemyAnimationProfile, getEnemyFaceProfile, getEnemyHitMotion } from "@/game/enemyAnimation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
@@ -26,6 +27,7 @@ const MAX_GIBS = 96;
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
 
 const BOSS_SIGNATURE_COLORS: Record<number, string> = {
+  1: "#f1c84a",
   2: "#ef7d43",
   3: "#f0c75e",
   4: "#ff8b45",
@@ -746,6 +748,60 @@ function TowerMesh({
 
 /* ---------------- pooled zombies, gibs & bullets ---------------- */
 
+type EnemyRig = {
+  body: THREE.Mesh | null;
+  head: THREE.Mesh | null;
+  leftArm: THREE.Mesh | null;
+  rightArm: THREE.Mesh | null;
+  leftLeg: THREE.Mesh | null;
+  rightLeg: THREE.Mesh | null;
+  leftShoulder: THREE.Mesh | null;
+  rightShoulder: THREE.Mesh | null;
+  runnerCrest: THREE.Mesh | null;
+  splitterCore: THREE.Mesh | null;
+  bomberPack: THREE.Mesh | null;
+  guardianShield: THREE.Mesh | null;
+  healerAura: THREE.Mesh | null;
+  swarmCrest: THREE.Mesh | null;
+  leftEye: THREE.Mesh | null;
+  rightEye: THREE.Mesh | null;
+  mouth: THREE.Mesh | null;
+  brow: THREE.Mesh | null;
+  faceMark: THREE.Mesh | null;
+  faceRoot: THREE.Group | null;
+};
+
+function cacheEnemyRig(group: THREE.Group): EnemyRig {
+  const cached = group.userData.rotwoodEnemyRig as EnemyRig | undefined;
+  if (cached) return cached;
+  const mesh = (name: string) => group.getObjectByName(name) as THREE.Mesh | null;
+  const rig: EnemyRig = {
+    body: mesh("body"),
+    head: mesh("head"),
+    leftArm: mesh("left-arm"),
+    rightArm: mesh("right-arm"),
+    leftLeg: mesh("left-leg"),
+    rightLeg: mesh("right-leg"),
+    leftShoulder: mesh("left-shoulder"),
+    rightShoulder: mesh("right-shoulder"),
+    runnerCrest: mesh("runner-crest"),
+    splitterCore: mesh("splitter-core"),
+    bomberPack: mesh("bomber-pack"),
+    guardianShield: mesh("guardian-shield"),
+    healerAura: mesh("healer-aura"),
+    swarmCrest: mesh("swarm-crest"),
+    leftEye: mesh("face-left-eye"),
+    rightEye: mesh("face-right-eye"),
+    mouth: mesh("face-mouth"),
+    brow: mesh("face-brow"),
+    faceMark: mesh("face-mark"),
+    faceRoot: group.getObjectByName("face-rig") as THREE.Group | null,
+  };
+  group.userData.rotwoodEnemyRig = rig;
+  return rig;
+}
+
+
 function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
   const bodyGeometries = useMemo(() => ({
     0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
@@ -767,12 +823,21 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
     6: new THREE.IcosahedronGeometry(0.34, 0),
     7: new THREE.TetrahedronGeometry(0.35, 0),
   } as Record<number, THREE.BufferGeometry>), []);
+  const faceGeometries = useMemo(() => ({
+    eye: new THREE.OctahedronGeometry(0.075, 0),
+    mouthSlit: new THREE.BoxGeometry(0.18, 0.05, 0.025),
+    mouthOpen: new THREE.TorusGeometry(0.075, 0.018, 4, 8),
+    mouthJagged: new THREE.OctahedronGeometry(0.07, 0),
+    brow: new THREE.BoxGeometry(0.28, 0.035, 0.035),
+    mark: new THREE.TetrahedronGeometry(0.065, 0),
+  }), []);
   useEffect(
     () => () => {
       Object.values(bodyGeometries).forEach((geometry) => geometry.dispose());
       Object.values(headGeometries).forEach((geometry) => geometry.dispose());
+      Object.values(faceGeometries).forEach((geometry) => geometry.dispose());
     },
-    [bodyGeometries, headGeometries],
+    [bodyGeometries, headGeometries, faceGeometries],
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const legs = useRef<(THREE.Group | null)[]>([]);
@@ -780,10 +845,20 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
   const lastBoss = useRef<boolean[]>([]);
+  const previousZombieCount = useRef(0);
 
   useFrame(() => {
     const list = game.state.zombies;
-    for (let i = 0; i < MAX_ZOMBIES; i++) {
+    const activeCount = Math.min(list.length, MAX_ZOMBIES);
+    if (activeCount === 0) {
+      for (let i = 0; i < previousZombieCount.current; i++) {
+        const stale = groups.current[i];
+        if (stale) stale.visible = false;
+      }
+      previousZombieCount.current = 0;
+      return;
+    }
+    for (let i = 0; i < activeCount; i++) {
       const g = groups.current[i];
       if (!g) continue;
       const z = list[i];
@@ -898,20 +973,21 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
                       : 1;
       if (lastKind.current[i] !== z.kind) {
         lastKind.current[i] = z.kind;
-        const body = g.getObjectByName("body") as THREE.Mesh | undefined;
-        const head = g.getObjectByName("head") as THREE.Mesh | undefined;
-        const leftArm = g.getObjectByName("left-arm") as THREE.Mesh | undefined;
-        const rightArm = g.getObjectByName("right-arm") as THREE.Mesh | undefined;
-        const leftLeg = g.getObjectByName("left-leg") as THREE.Mesh | undefined;
-        const rightLeg = g.getObjectByName("right-leg") as THREE.Mesh | undefined;
-        const leftShoulder = g.getObjectByName("left-shoulder") as THREE.Mesh | undefined;
-        const rightShoulder = g.getObjectByName("right-shoulder") as THREE.Mesh | undefined;
-        const runnerCrest = g.getObjectByName("runner-crest") as THREE.Mesh | undefined;
-        const splitterCore = g.getObjectByName("splitter-core") as THREE.Mesh | undefined;
-        const bomberPack = g.getObjectByName("bomber-pack") as THREE.Mesh | undefined;
-        const guardianShield = g.getObjectByName("guardian-shield") as THREE.Mesh | undefined;
-        const healerAura = g.getObjectByName("healer-aura") as THREE.Mesh | undefined;
-        const swarmCrest = g.getObjectByName("swarm-crest") as THREE.Mesh | undefined;
+        const rig = cacheEnemyRig(g);
+        const body = rig.body ?? undefined;
+        const head = rig.head ?? undefined;
+        const leftArm = rig.leftArm ?? undefined;
+        const rightArm = rig.rightArm ?? undefined;
+        const leftLeg = rig.leftLeg ?? undefined;
+        const rightLeg = rig.rightLeg ?? undefined;
+        const leftShoulder = rig.leftShoulder ?? undefined;
+        const rightShoulder = rig.rightShoulder ?? undefined;
+        const runnerCrest = rig.runnerCrest ?? undefined;
+        const splitterCore = rig.splitterCore ?? undefined;
+        const bomberPack = rig.bomberPack ?? undefined;
+        const guardianShield = rig.guardianShield ?? undefined;
+        const healerAura = rig.healerAura ?? undefined;
+        const swarmCrest = rig.swarmCrest ?? undefined;
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
           body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
           head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
@@ -956,6 +1032,42 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           (leftLeg.material as THREE.MeshStandardMaterial).color.set(look.legs);
           (rightLeg.material as THREE.MeshStandardMaterial).color.set(look.legs);
         }
+        const face = getEnemyFaceProfile(z.kind);
+        if (rig.leftEye && rig.rightEye && rig.mouth && rig.brow && rig.faceMark && head) {
+          rig.leftEye.geometry = faceGeometries.eye;
+          rig.rightEye.geometry = faceGeometries.eye;
+          rig.mouth.geometry = face.mouthMode === "slit" ? faceGeometries.mouthSlit : face.mouthMode === "open" ? faceGeometries.mouthOpen : faceGeometries.mouthJagged;
+          rig.brow.geometry = faceGeometries.brow;
+          rig.faceMark.geometry = faceGeometries.mark;
+          if (rig.faceRoot) {
+            rig.faceRoot.position.copy(head.position);
+            rig.faceRoot.scale.copy(head.scale);
+          }
+          rig.leftEye.position.set(-face.eyeGap, face.eyeY, face.eyeZ);
+          rig.rightEye.position.set(face.eyeGap, face.eyeY, face.eyeZ + (z.kind === 1 ? 0.008 : 0));
+          rig.leftEye.scale.set(...face.eyeScale);
+          rig.rightEye.scale.set(...face.eyeScale);
+          rig.leftEye.rotation.z = face.eyeTilt;
+          rig.rightEye.rotation.z = -face.eyeTilt;
+          rig.mouth.position.set(0, face.mouthY, face.mouthZ);
+          rig.mouth.scale.set(...face.mouthScale);
+          rig.mouth.rotation.z = face.mouthTilt;
+          rig.brow.position.set(0, face.browY, face.browZ);
+          rig.brow.scale.set(...face.browScale);
+          rig.brow.rotation.z = face.browTilt;
+          rig.faceMark.visible = face.markVisible;
+          rig.faceMark.position.set(0, face.browY + 0.17, face.browZ + 0.008);
+          rig.faceMark.scale.setScalar(face.markScale);
+          for (const eye of [rig.leftEye, rig.rightEye]) {
+            const material = eye.material as THREE.MeshBasicMaterial;
+            material.color.set(face.eyeColor);
+          }
+          (rig.leftEye.material as THREE.MeshBasicMaterial).toneMapped = false;
+          (rig.rightEye.material as THREE.MeshBasicMaterial).toneMapped = false;
+          (rig.mouth.material as THREE.MeshBasicMaterial).color.set(face.mouthColor);
+          (rig.brow.material as THREE.MeshBasicMaterial).color.set(face.browColor);
+          (rig.faceMark.material as THREE.MeshBasicMaterial).color.set(face.markColor);
+        }
         if (leftShoulder && rightShoulder) {
           leftShoulder.visible = z.kind === 2;
           rightShoulder.visible = z.kind === 2;
@@ -967,6 +1079,103 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         if (healerAura) healerAura.visible = z.kind === 6;
         if (swarmCrest) swarmCrest.visible = z.kind === 7;
       }
+      const rig = cacheEnemyRig(g);
+      const motion = getEnemyAnimationProfile(z.kind);
+      const phase = z.wobble + motion.phaseOffset;
+      const stride = Math.sin(phase * 1.35);
+      const counterStride = Math.sin(phase * 1.35 + Math.PI);
+      const bounce = Math.sin(phase * 0.67);
+      const drift = Math.sin(phase * 0.43);
+      const hitMotion = getEnemyHitMotion(z.hitKind);
+      const hit = Math.min(1.25, Math.max(0, z.hitReact ?? 0)) * hitMotion;
+      const hitSide = z.hitSide ?? 0;
+      const hitDepth = z.hitDepth ?? 0;
+      if (!z.dead) {
+        if (rig.body) {
+          rig.body.rotation.x = motion.posturePitch - hitDepth * hit * motion.hitPitch + drift * motion.torsoTwist * 0.35;
+          rig.body.rotation.y = Math.sin(phase * 0.58) * motion.torsoTwist + hitSide * hit * motion.hitYaw;
+          rig.body.rotation.z = Math.sin(phase * 0.86) * motion.sway + hitSide * hit * motion.hitRoll;
+        }
+        if (rig.head) {
+          rig.head.rotation.x = bounce * motion.headBob + hitDepth * hit * motion.hitPitch * 0.55;
+          rig.head.rotation.y = Math.sin(phase * 0.49) * motion.headYaw - hitSide * hit * motion.hitYaw * 0.7;
+          rig.head.rotation.z = -hitSide * hit * motion.hitRoll * 0.7;
+        }
+        if (rig.leftArm) {
+          rig.leftArm.rotation.x = -1.2 + counterStride * motion.armSwing * 0.18 + hit * motion.hitPitch * 0.35;
+          rig.leftArm.rotation.z = counterStride * motion.armSwing * 0.1 - hitSide * hit * 0.1;
+        }
+        if (rig.rightArm) {
+          rig.rightArm.rotation.x = -1.35 + stride * motion.armSwing * 0.18 + hit * motion.hitPitch * 0.35;
+          rig.rightArm.rotation.z = stride * motion.armSwing * 0.1 - hitSide * hit * 0.1;
+        }
+        if (rig.leftLeg) {
+          rig.leftLeg.rotation.x = counterStride * motion.legSwing * 0.32;
+          rig.leftLeg.rotation.z = stride * motion.sway * 0.28;
+        }
+        if (rig.rightLeg) {
+          rig.rightLeg.rotation.x = stride * motion.legSwing * 0.32;
+          rig.rightLeg.rotation.z = counterStride * motion.sway * 0.28;
+        }
+        const face = getEnemyFaceProfile(z.kind);
+        if (rig.faceRoot && rig.head) rig.faceRoot.rotation.copy(rig.head.rotation);
+        if (rig.leftEye && rig.rightEye) {
+          const eyePulse = 1 + Math.sin(phase * 1.8) * 0.035;
+          rig.leftEye.scale.set(
+            face.eyeScale[0] * eyePulse,
+            face.eyeScale[1] * eyePulse,
+            face.eyeScale[2],
+          );
+          rig.rightEye.scale.set(
+            face.eyeScale[0] * eyePulse,
+            face.eyeScale[1] * eyePulse,
+            face.eyeScale[2],
+          );
+          const lookAhead = z.hitKind === "sniper" ? -0.025 * hit : z.kind === 1 ? 0.018 : 0;
+          rig.leftEye.position.z = face.eyeZ + lookAhead;
+          rig.rightEye.position.z = face.eyeZ + (z.kind === 1 ? 0.008 : 0) + lookAhead;
+        }
+        if (rig.mouth) rig.mouth.rotation.z = face.mouthTilt + Math.sin(phase * 0.9) * 0.012 + (z.kind === 3 ? Math.sin(phase * 1.7) * 0.018 : 0);
+        if (rig.brow) rig.brow.rotation.z = face.browTilt - hitSide * hit * 0.16;
+        if (rig.faceMark?.visible) {
+          rig.faceMark.rotation.y += 0.02 + motion.signaturePulse * 0.08;
+          rig.faceMark.scale.setScalar(getEnemyFaceProfile(z.kind).markScale * (1 + Math.sin(phase * 1.7) * motion.signaturePulse * 0.18));
+        }
+        if (rig.runnerCrest?.visible) {
+          rig.runnerCrest.rotation.z = Math.sin(phase * 2.1) * 0.14;
+          rig.runnerCrest.position.y = 1.93 + Math.sin(phase * 1.8) * motion.signaturePulse * 0.22;
+        }
+        if (rig.splitterCore?.visible) {
+          rig.splitterCore.rotation.y += 0.03;
+          rig.splitterCore.scale.setScalar(1 + Math.sin(phase * 2.2) * motion.signaturePulse * 0.32);
+        }
+        if (rig.bomberPack?.visible) {
+          rig.bomberPack.rotation.z = Math.sin(phase * 3) * 0.06;
+          rig.bomberPack.scale.setScalar(1 + Math.sin(phase * 3.2) * motion.signaturePulse * 0.55 + hit * 0.08);
+        }
+        if (rig.guardianShield?.visible) {
+          rig.guardianShield.rotation.z = Math.sin(phase * 0.8) * 0.04;
+          rig.guardianShield.rotation.y += 0.008;
+          rig.guardianShield.scale.setScalar(1 + hit * 0.08);
+        }
+        if (rig.healerAura?.visible) {
+          rig.healerAura.scale.setScalar(1 + Math.sin(phase * 2.5) * motion.signaturePulse * 0.42);
+          rig.healerAura.rotation.z += 0.012;
+        }
+        if (rig.swarmCrest?.visible) {
+          rig.swarmCrest.rotation.x = Math.sin(phase * 2.4) * 0.15;
+          rig.swarmCrest.rotation.y += 0.025;
+        }
+      } else {
+        if (rig.body) rig.body.rotation.set(0, 0, 0);
+        if (rig.head) rig.head.rotation.set(0, 0, 0);
+        if (rig.faceRoot) rig.faceRoot.rotation.set(0, 0, 0);
+        if (rig.leftArm) rig.leftArm.rotation.set(-1.2, 0, 0);
+        if (rig.rightArm) rig.rightArm.rotation.set(-1.35, 0, 0);
+        if (rig.leftLeg) rig.leftLeg.rotation.set(0, 0, 0);
+        if (rig.rightLeg) rig.rightLeg.rotation.set(0, 0, 0);
+      }
+
       if (z.dead) {
         const f = Math.min(1, z.fade);
         g.position.set(z.x, 0.1 + z.y, z.z);
@@ -1005,6 +1214,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           }
         });
       }
+      previousZombieCount.current = activeCount;
       const hiddenGoreParts: Array<[string, GorePart]> = [
         ["head", "head"],
         ["left-arm", "left-arm"],
@@ -1052,7 +1262,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       }
 
       const l = legs.current[i];
-      if (l && !z.dead) l.rotation.x = Math.sin(z.wobble * 2) * 0.5;
+      if (l) l.rotation.x = 0;
     }
   });
 
@@ -1068,6 +1278,29 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
             <boxGeometry args={[0.46, 0.46, 0.46]} />
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
           </mesh>
+
+          <group name="face-rig" position={[0, 1.62, 0]}>
+            <mesh name="face-left-eye" position={[-0.17, 0.02, 0.24]}>
+              <octahedronGeometry args={[0.075, 0]} />
+              <meshBasicMaterial color="#d9eee0" />
+            </mesh>
+            <mesh name="face-right-eye" position={[0.17, 0.02, 0.24]}>
+              <octahedronGeometry args={[0.075, 0]} />
+              <meshBasicMaterial color="#d9eee0" />
+            </mesh>
+            <mesh name="face-mouth" position={[0, -0.14, 0.25]}>
+              <boxGeometry args={[0.18, 0.05, 0.025]} />
+              <meshBasicMaterial color="#2a1718" />
+            </mesh>
+            <mesh name="face-brow" position={[0, 0.11, 0.245]}>
+              <boxGeometry args={[0.28, 0.035, 0.035]} />
+              <meshBasicMaterial color="#4b2d2e" />
+            </mesh>
+            <mesh name="face-mark" position={[0, 0.28, 0.255]} visible={false}>
+              <tetrahedronGeometry args={[0.065, 0]} />
+              <meshBasicMaterial color="#e1a04f" />
+            </mesh>
+          </group>
 
           <group name="boss-aura" visible={false} position={[0, 1.1, 0]}>
             <mesh rotation-x={Math.PI / 2}>
@@ -1224,8 +1457,11 @@ function Gibs() {
     shard: new THREE.TetrahedronGeometry(0.1, 0),
     head: new THREE.IcosahedronGeometry(0.12, 0),
     limb: new THREE.BoxGeometry(0.11, 0.28, 0.11),
+    shoulder: new THREE.DodecahedronGeometry(0.12, 0),
     core: new THREE.DodecahedronGeometry(0.12, 0),
     ring: new THREE.TorusGeometry(0.14, 0.035, 5, 8),
+    crest: new THREE.ConeGeometry(0.09, 0.26, 5),
+    pack: new THREE.BoxGeometry(0.16, 0.22, 0.12),
   }), []);
   useEffect(
     () => () => Object.values(geometries).forEach((geometry) => geometry.dispose()),
@@ -1247,20 +1483,27 @@ function Gibs() {
       m.rotation.set(g.rx, g.ry, g.rx * 0.6);
       const fade = Math.max(0, 1 - Math.max(0, g.life - 1.05) / 0.7);
       m.scale.setScalar(g.size * 5.2 * fade);
-      const part = g.part ?? "splitter-core";
+      const part = g.part ?? "head";
       m.geometry =
         part === "head" ? geometries.head :
+        part === "runner-crest" || part === "swarm-crest" ? geometries.crest :
+        part === "bomber-pack" ? geometries.pack :
+        part === "guardian-shield" || part === "healer-aura" ? geometries.ring :
+        part === "splitter-core" ? geometries.core :
+        part === "left-shoulder" || part === "right-shoulder" ? geometries.shoulder :
         part.includes("arm") || part.includes("leg") ? geometries.limb :
-        part.includes("shield") || part.includes("aura") ? geometries.ring :
-        part.includes("core") ? geometries.core :
         geometries.shard;
       const material = m.material as THREE.MeshBasicMaterial;
-      material.color.set(
-        part === "head" ? "#7a2b2f" :
-        part.includes("shield") ? "#70c5d6" :
-        part.includes("core") ? "#d3a452" :
-        GIB_COLORS[g.tint % GIB_COLORS.length]!,
-      );
+      const look = ZOMBIE_LOOKS[g.kind] ?? ZOMBIE_LOOKS[0];
+      const signatureColor =
+        part === "runner-crest" ? BOSS_SIGNATURE_COLORS[1] :
+        part === "splitter-core" ? BOSS_SIGNATURE_COLORS[3] :
+        part === "bomber-pack" ? BOSS_SIGNATURE_COLORS[4] :
+        part === "guardian-shield" ? BOSS_SIGNATURE_COLORS[5] :
+        part === "healer-aura" ? BOSS_SIGNATURE_COLORS[6] :
+        part === "swarm-crest" ? BOSS_SIGNATURE_COLORS[7] :
+        null;
+      material.color.set(signatureColor ?? (part === "head" ? look.skin : part.includes("arm") || part.includes("leg") || part.includes("shoulder") ? look.skin : part === "bomber-pack" ? look.cloth : GIB_COLORS[g.tint % GIB_COLORS.length]!));
     }
   });
 

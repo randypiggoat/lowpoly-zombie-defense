@@ -10,7 +10,7 @@ import {
 } from "react";
 import { HUD } from "./HUD";
 import { Scene, type Selection } from "./Scene";
-import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
+import { isMuted, setMuted, setMusicMode, sfx, unlockAudio } from "@/game/audio";
 import { TOWER_INFO, TOWER_KINDS, TOWER_PATHS, game, type TowerKind } from "@/game/engine";
 import {
   STAGE_DEFS,
@@ -385,11 +385,16 @@ export function GameCanvas() {
     return Boolean(progress?.completed && !progress.claimed);
   }).length;
 
+  const updatePlacementPreview = useCallback((position: { x: number; z: number } | null) => {
+    placementPreviewRef.current = position;
+    setPlacementPreview(position);
+  }, []);
+
   const resetGameplayState = () => {
     profile.clearReward();
     game.reset();
     setSelection(null);
-    setPlacementPreview(null);
+    updatePlacementPreview(null);
     setOverlay(null);
   };
 
@@ -445,6 +450,14 @@ export function GameCanvas() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (screen !== "gameplay") {
+      setMusicMode("menu");
+      return;
+    }
+    setMusicMode(state.waveMessageType === "boss" || state.bossesRemaining > 0 ? "boss" : "combat");
+  }, [screen, state.bossesRemaining, state.waveMessageType]);
 
   useEffect(() => {
     if (screen === "gameplay" && state.gameOver) {
@@ -519,6 +532,7 @@ export function GameCanvas() {
       getPlacementStatus: () => { valid: boolean; reason: string } | null;
       getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: TowerKind }>;
       getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
+      stabilizePlacementTest: () => void;
     };
 
     const qaWindow = window as Window & { __ROTWOOD_QA__?: QaApi };
@@ -544,6 +558,18 @@ export function GameCanvas() {
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
         projectileEmissions: game.getProjectileEmissionCount(),
       }),
+      stabilizePlacementTest: () => {
+        game.state.gameOver = false;
+        game.state.stageWon = false;
+        game.state.baseHp = game.state.baseMaxHp = 9999;
+        game.state.zombies = [];
+        game.state.bullets = [];
+        game.state.gibs = [];
+        game.state.spawnQueue = 0;
+        game.state.waveTimer = 9999;
+        game.state.waveMessageLife = 0;
+        game.state.runModifierOffer = [];
+      },
     };
 
     return () => {
@@ -598,7 +624,7 @@ export function GameCanvas() {
               setPlacementPreview(position);
               setSelection({ kind: "spot", position });
             }}
-            onPreviewPosition={setPlacementPreview}
+            onPreviewPosition={updatePlacementPreview}
           />
         </Canvas>
       )}
@@ -1022,13 +1048,91 @@ export function GameCanvas() {
               <p className="mt-1 text-xs text-panel-muted">{seasonalEvent.tagline}</p>
               <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-panel-muted">Cycle {seasonalCycleKey} · Ends {seasonalEventEnd.toLocaleDateString()}</p>
             </div>
+            <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Live rotation</p>
+                  <h3 className="font-display text-xl tracking-wide text-panel-foreground">Play what changes</h3>
+                </div>
+                <span className="rounded-full bg-black/25 px-2 py-1 text-[9px] uppercase tracking-wider text-panel-muted">Daily · Weekly</span>
+              </div>
+              <div className="mt-2 grid gap-2">
+                <div className="rounded-xl border border-white/10 bg-black/20 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] text-accent">Today · Endless Siege</p>
+                      <p className="font-display text-base tracking-wide text-panel-foreground">{dailyChallenge.name}</p>
+                      <p className="text-[10px] leading-tight text-panel-muted">{dailyChallenge.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[9px] text-panel-muted">Best {player.dailyChallengeDate === todayKey ? player.dailyChallengeBestScore.toLocaleString() : "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGameplayState();
+                      setActiveChallenge(dailyChallenge);
+                      game.startEndless(dailyChallenge, todayKey);
+                      setScreen("gameplay");
+                    }}
+                    className="mt-2 min-h-10 w-full rounded-lg bg-accent px-3 py-2 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98]"
+                  >
+                    PLAY TODAY'S SIEGE
+                  </button>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/20 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] text-accent">This week · Endless Siege</p>
+                      <p className="font-display text-base tracking-wide text-panel-foreground">{weeklyChallenge.name}</p>
+                      <p className="text-[10px] leading-tight text-panel-muted">{weeklyChallenge.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[9px] text-panel-muted">Best {player.weeklyChallengeKey === weekKey ? player.weeklyChallengeBestScore.toLocaleString() : "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGameplayState();
+                      setActiveChallenge(weeklyChallenge);
+                      game.startEndless(weeklyChallenge, weekKey);
+                      setScreen("gameplay");
+                    }}
+                    className="mt-2 min-h-10 w-full rounded-lg border border-accent/35 bg-accent/10 px-3 py-2 font-display text-xs tracking-wide text-accent transition active:scale-[0.98]"
+                  >
+                    PLAY WEEKLY SIEGE
+                  </button>
+                </div>
+                <div className="rounded-xl border border-accent/20 bg-accent/5 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.18em] text-accent">Weekly boss trial</p>
+                      <p className="font-display text-base tracking-wide text-panel-foreground">{weeklyBossTrial.bossName} · {weeklyBossTrial.title}</p>
+                      <p className="text-[10px] leading-tight text-panel-muted">{weeklyBossTrial.variant?.name} · {weeklyBossTrial.variant?.description}</p>
+                    </div>
+                    <span className="shrink-0 text-[9px] text-panel-muted">Best {player.bossTrialWeekKey === weekKey ? player.bossTrialBestScore.toLocaleString() : "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetGameplayState();
+                      setActiveBossTrial(weeklyBossTrial);
+                      game.startBossTrial(weeklyBossTrial, weekKey);
+                      setScreen("gameplay");
+                    }}
+                    className="mt-2 min-h-10 w-full rounded-lg border border-accent/35 bg-accent/10 px-3 py-2 font-display text-xs tracking-wide text-accent transition active:scale-[0.98]"
+                  >
+                    ENTER BOSS TRIAL
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-3 space-y-2">
               {seasonalEvent.milestones.map((milestone) => {
                 const progress = seasonalEventProgressTarget(milestone.target, player.seasonalEventProgress);
                 const claimed = player.seasonalEventClaims.includes(milestone.id);
                 const pct = Math.min(1, progress / milestone.target);
                 return (
-                  <div key={milestone.id} className="rounded-2xl bg-panel/95 p-3 shadow-panel">
+                  <div key={milestone.id} data-seasonal-milestone className="rounded-2xl bg-panel/95 p-3 shadow-panel">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-display text-lg tracking-wide text-panel-foreground">{milestone.title}</p>

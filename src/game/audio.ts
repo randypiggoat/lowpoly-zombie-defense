@@ -30,7 +30,23 @@ function ensure(): Ctx {
 
 export function unlockAudio() {
   const c = ensure();
-  if (c && c.state === "suspended") void c.resume();
+  if (c && c.state === "suspended") {
+    void c.resume().then(() => {
+      if (musicMode !== "off" && musicTimer === null) startMusic();
+    }).catch(() => undefined);
+  } else if (c?.state === "running" && musicMode !== "off" && musicTimer === null) {
+    startMusic();
+  }
+}
+
+export function setMusicMode(mode: MusicMode) {
+  musicMode = mode;
+  if (mode === "off") {
+    stopMusic();
+    return;
+  }
+  const c = ensure();
+  if (c?.state === "running") startMusic();
 }
 
 export function setMuted(v: boolean) {
@@ -107,6 +123,86 @@ export type SfxName =
   | "bigHit"
   | "coin"
   | "uiClick";
+
+type MusicMode = "off" | "menu" | "combat" | "boss";
+
+let musicMode: MusicMode = "off";
+let musicTimer: ReturnType<typeof setInterval> | null = null;
+let musicStep = 0;
+let musicGain: GainNode | null = null;
+
+const MUSIC_SCALES = {
+  menu: [0, 3, 5, 7, 10, 12, 15, 17],
+  combat: [0, 2, 3, 5, 7, 10, 12, 14],
+  boss: [0, 1, 3, 6, 7, 8, 10, 13],
+} as const;
+
+function stopMusic() {
+  if (musicTimer !== null) {
+    clearInterval(musicTimer);
+    musicTimer = null;
+  }
+  if (musicGain) {
+    try {
+      musicGain.gain.cancelScheduledValues(ensure()?.currentTime ?? 0);
+      musicGain.gain.setTargetAtTime(0.0001, ensure()?.currentTime ?? 0, 0.04);
+    } catch {
+      // Music is optional feedback and must never interrupt gameplay.
+    }
+    musicGain = null;
+  }
+}
+
+function musicTick() {
+  const c = ensure();
+  if (!c || !master || muted || musicMode === "off" || c.state !== "running") return;
+  if (!musicGain) {
+    musicGain = c.createGain();
+    musicGain.gain.value = 0.0001;
+    musicGain.connect(master);
+  }
+
+  const scale = MUSIC_SCALES[musicMode];
+  const root = musicMode === "boss" ? 98 : musicMode === "combat" ? 110 : 123;
+  const semitone = scale[musicStep % scale.length]!;
+  const octave = musicMode === "menu" ? 0 : Math.floor(musicStep / scale.length) % 2;
+  const freq = root * Math.pow(2, (semitone + octave * 12) / 12);
+  const now = c.currentTime + 0.01;
+  const note = c.createOscillator();
+  const noteGain = c.createGain();
+  note.type = musicMode === "boss" ? "sawtooth" : "triangle";
+  note.frequency.setValueAtTime(freq, now);
+  noteGain.gain.setValueAtTime(0.0001, now);
+  noteGain.gain.exponentialRampToValueAtTime(musicMode === "boss" ? 0.026 : 0.018, now + 0.018);
+  noteGain.gain.exponentialRampToValueAtTime(0.0001, now + (musicMode === "menu" ? 0.26 : 0.18));
+  note.connect(noteGain).connect(musicGain);
+  note.start(now);
+  note.stop(now + 0.3);
+
+  if (musicStep % 4 === 0) {
+    const bass = c.createOscillator();
+    const bassGain = c.createGain();
+    bass.type = "sine";
+    bass.frequency.setValueAtTime(root / 2, now);
+    bassGain.gain.setValueAtTime(0.0001, now);
+    bassGain.gain.exponentialRampToValueAtTime(musicMode === "boss" ? 0.028 : 0.014, now + 0.02);
+    bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+    bass.connect(bassGain).connect(musicGain);
+    bass.start(now);
+    bass.stop(now + 0.42);
+  }
+  musicStep += 1;
+}
+
+function startMusic() {
+  stopMusic();
+  if (musicMode === "off") return;
+  const c = ensure();
+  if (!c) return;
+  musicStep = 0;
+  musicTimer = setInterval(musicTick, musicMode === "menu" ? 430 : 320);
+  musicTick();
+}
 
 let lastShot = 0;
 let lastImpact = -Infinity;
