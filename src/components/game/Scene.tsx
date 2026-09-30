@@ -705,7 +705,15 @@ function TowerMesh({
       let diff = target - cur;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      turret.current.rotation.y = cur + diff * (1 - Math.exp(-10 * dt));
+      const turnStep = diff * (1 - Math.exp(-10 * dt));
+      turret.current.rotation.y = cur + turnStep;
+      const turnRate = THREE.MathUtils.clamp(turnStep / Math.max(dt, 1 / 120), -1.6, 1.6);
+      turret.current.rotation.z = THREE.MathUtils.damp(
+        turret.current.rotation.z,
+        -turnRate * 0.035,
+        11,
+        dt,
+      );
     }
     if (ring.current) {
       ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 3.2 + tower.id) * 0.035);
