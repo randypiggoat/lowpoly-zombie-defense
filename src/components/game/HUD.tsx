@@ -616,8 +616,6 @@ export function HUD({
                 const unlocked = towerUnlocked(k, player.level, player.unlockedTowers);
                 const buildCost = towerBuildCost(k);
                 const canBuild = unlocked && state.gold >= buildCost && Boolean(placement?.valid);
-                const unlockAffordable =
-                  !unlocked && info.coinUnlock > 0 && player.coins >= info.coinUnlock;
                 return (
                   <div
                     key={k}
@@ -649,15 +647,7 @@ export function HUD({
                         ? `Build · ${buildCost} scrap`
                         : `Unlocks Lv ${info.unlockLevel}`}
                     </button>
-                    {!unlocked && info.coinUnlock > 0 && (
-                      <button
-                        onClick={() => game.unlockTower(k)}
-                        disabled={!unlockAffordable}
-                        className="mt-1 w-full rounded-md bg-black/30 px-1.5 py-1.5 text-[9px] font-semibold text-panel-foreground transition active:scale-[0.98] disabled:opacity-40"
-                      >
-                        Early unlock · {info.coinUnlock}
-                      </button>
-                    )}
+
                   </div>
                 );
               })}
