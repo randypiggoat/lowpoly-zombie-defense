@@ -586,7 +586,12 @@ waveMessageType: "start" | "complete" | "boss" | "";
   bossTrialKey: string | null;
   bossTrialBossKind: StageEnemyKind | null;
   bossTrialScore: number;
-towers: Tower[];
+  gameMode: "campaign" | "endless" | "boss-trial" | "resource-ops" | "challenge" | "event";
+  sideModeId: string | null;
+  sideModeName: string | null;
+  sideModeLevel: number | null;
+  sideModeCycleKey: string | null;
+  towers: Tower[];
   gameOver: boolean;
   stageWon: boolean;
   flash: number;
@@ -715,6 +720,21 @@ waveMessageType: "",
     bossTrialKey: stage.bossTrialKey ?? null,
     bossTrialBossKind: stage.bossTrial?.bossKind ?? null,
     bossTrialScore: 0,
+    gameMode: stage.sideMode?.category === "resource"
+      ? "resource-ops"
+      : stage.sideMode?.category === "challenge"
+        ? "challenge"
+        : stage.sideMode?.category === "event"
+          ? "event"
+          : stage.bossTrial
+            ? "boss-trial"
+            : stage.endless
+              ? "endless"
+              : "campaign",
+    sideModeId: stage.sideMode?.id ?? null,
+    sideModeName: stage.sideMode?.name ?? null,
+    sideModeLevel: stage.sideMode?.level ?? null,
+    sideModeCycleKey: stage.sideModeCycleKey ?? null,
     towers: [],
     gameOver: false,
     stageWon: false,
@@ -1699,6 +1719,28 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               score: trialScore,
               cleared: false,
             });
+          } else if (this.stage.sideMode) {
+            const side = this.stage.sideMode;
+            const score = Math.max(0, Math.round(
+              s.wave * 120 + s.kills * 8 + s.baseHp * 20 + s.maxKillStreak * 6 + s.bossesDefeated * 350,
+            ));
+            profile.completeSideModeRun(
+              side.id,
+              Math.max(1, s.wave),
+              s.kills,
+              score,
+              {
+                coins: Math.round(this.stage.rewards.completionCoins * Math.max(0.75, this.stage.rewardMultiplier)),
+                xp: Math.round(this.stage.rewards.completionXp * Math.max(0.75, this.stage.rewardMultiplier)),
+                gems: side.focus === "gems" ? 3 : 0,
+              },
+              {
+                coins: Math.round(this.stage.rewards.firstCompletionBonus.coins * 0.8),
+                xp: Math.round(this.stage.rewards.firstCompletionBonus.xp * 0.8),
+                gems: side.focus === "gems" ? 2 : 0,
+              },
+            );
+            track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: false });
           } else if (this.stage.endless) {
             profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
               challengeId: this.stage.challenge?.id,
