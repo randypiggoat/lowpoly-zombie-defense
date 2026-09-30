@@ -123,3 +123,19 @@ export function createEndlessStage(challenge: EndlessChallenge): StageDefinition
     endless: true,
   };
 }
+
+
+export function getEndlessEnemyPool(wave: number, basePool: StageDefinition["enemyPool"]): StageDefinition["enemyPool"] {
+  const sector = Math.min(6, Math.max(1, Math.floor(Math.max(1, wave - 1) / 5) + 1));
+  const allowedBySector: Record<number, number[]> = {
+    1: [0, 1],
+    2: [0, 1, 2, 7],
+    3: [0, 1, 2, 3, 7],
+    4: [0, 1, 2, 3, 4, 5, 7],
+    5: [0, 1, 2, 3, 4, 5, 6, 7],
+    6: [0, 1, 2, 3, 4, 5, 6, 7],
+  };
+  const allowed = new Set(allowedBySector[sector] ?? allowedBySector[6]!);
+  const normalKinds = basePool.normalKinds.filter((kind) => allowed.has(kind));
+  return { ...basePool, normalKinds: normalKinds.length > 0 ? normalKinds : basePool.normalKinds };
+}
