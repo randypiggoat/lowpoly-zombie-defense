@@ -214,6 +214,8 @@ export type PlayerProfile = {
   weeklyChallengeBestScore: number;
   bossTrialWeekKey: string | null;
   bossTrialBestScore: number;
+  sideModeBestScores: Record<string, number>;
+  sideModeClears: Record<string, number>;
   equippedTowerCosmetics: Record<string, string>;
   seasonalEventCycleKey: string;
   seasonalEventProgress: number;
@@ -335,6 +337,8 @@ function blank(): PlayerProfile {
     weeklyChallengeBestScore: 0,
     bossTrialWeekKey: null,
     bossTrialBestScore: 0,
+    sideModeBestScores: {},
+    sideModeClears: {},
     equippedTowerCosmetics: {},
     seasonalEventCycleKey: getSeasonalEventCycleKey(),
     seasonalEventProgress: 0,
@@ -570,6 +574,16 @@ function load(): PlayerProfile {
       weeklyChallengeBestScore: Math.max(0, Number(parsed.weeklyChallengeBestScore) || 0),
       bossTrialWeekKey: normalizeDate(parsed.bossTrialWeekKey),
       bossTrialBestScore: Math.max(0, Number(parsed.bossTrialBestScore) || 0),
+      sideModeBestScores: isRecord(parsed.sideModeBestScores)
+        ? Object.fromEntries(
+            Object.entries(parsed.sideModeBestScores).filter(([, score]) => Number(score) >= 0).map(([id, score]) => [id, Math.floor(Number(score))]),
+          )
+        : {},
+      sideModeClears: isRecord(parsed.sideModeClears)
+        ? Object.fromEntries(
+            Object.entries(parsed.sideModeClears).filter(([, clears]) => Number(clears) >= 0).map(([id, clears]) => [id, Math.floor(Number(clears))]),
+          )
+        : {},
       equippedTowerCosmetics: isRecord(parsed.equippedTowerCosmetics)
         ? Object.fromEntries(
             Object.entries(parsed.equippedTowerCosmetics).filter(
@@ -863,6 +877,66 @@ class ProfileStore {
     this.lastReward = reward;
     this.save();
     return reward;
+  }
+
+  completeSideModeRun(
+    levelId: string,
+    wave: number,
+    kills: number,
+    score: number,
+    reward: { coins: number; xp: number; gems?: number },
+    firstClearBonus?: { coins?: number; xp?: number; gems?: number },
+  ): RunReward & { score: number; bestScore: number; clears: number; firstClear: boolean } {
+    this.refreshRetentionState();
+    const p = this.profile;
+    const normalizedWave = Math.max(1, Math.floor(wave));
+    const normalizedScore = Math.max(0, Math.floor(score));
+    const previousBest = p.sideModeBestScores[levelId] ?? 0;
+    const firstClear = (p.sideModeClears[levelId] ?? 0) === 0;
+    const clearReward = {
+      coins: Math.max(0, Math.floor(reward.coins)),
+      xp: Math.max(0, Math.floor(reward.xp)),
+      gems: Math.max(0, Math.floor(reward.gems ?? 0)),
+    };
+    const bonus = firstClear ? {
+      coins: Math.max(0, Math.floor(firstClearBonus?.coins ?? 0)),
+      xp: Math.max(0, Math.floor(firstClearBonus?.xp ?? 0)),
+      gems: Math.max(0, Math.floor(firstClearBonus?.gems ?? 0)),
+    } : { coins: 0, xp: 0, gems: 0 };
+    const coins = clearReward.coins + bonus.coins;
+    const gems = clearReward.gems + bonus.gems;
+    const xp = clearReward.xp + bonus.xp;
+    p.coins += coins;
+    p.gems += gems;
+    p.gamesPlayed += 1;
+    p.sideModeBestScores[levelId] = Math.max(previousBest, normalizedScore);
+    p.sideModeClears[levelId] = (p.sideModeClears[levelId] ?? 0) + 1;
+    const result = this.awardXp(xp);
+    this.updateDailyMission("gameCompleted", 1);
+    this.syncAchievementProgress();
+    const rewardResult: RunReward & { score: number; bestScore: number; clears: number; firstClear: boolean } = {
+      wave: normalizedWave,
+      kills: Math.max(0, kills),
+      xp,
+      coins,
+      gems: gems + result.levelsGained,
+      leveledTo: result.leveledTo,
+      newRecord: normalizedScore > previousBest,
+      stageId: null,
+      stageCompleted: true,
+      starsEarned: firstClear ? 1 : 0,
+      firstCompletionBonusApplied: firstClear,
+      bestStars: firstClear ? 1 : 1,
+      previousBestWave: 0,
+      previousBestStars: 0,
+      score: normalizedScore,
+      bestScore: p.sideModeBestScores[levelId],
+      clears: p.sideModeClears[levelId],
+      firstClear,
+    };
+    this.lastReward = rewardResult;
+    this.save();
+    return rewardResult;
   }
 
   completeEndlessRun(
