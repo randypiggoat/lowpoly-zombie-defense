@@ -527,6 +527,7 @@ export function GameCanvas() {
       getPlacementStatus: () => { valid: boolean; reason: string } | null;
       getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: TowerKind }>;
       getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
+      stabilizePlacementTest: () => void;
     };
 
     const qaWindow = window as Window & { __ROTWOOD_QA__?: QaApi };
@@ -552,6 +553,18 @@ export function GameCanvas() {
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
         projectileEmissions: game.getProjectileEmissionCount(),
       }),
+      stabilizePlacementTest: () => {
+        game.state.gameOver = false;
+        game.state.stageWon = false;
+        game.state.baseHp = game.state.baseMaxHp = 9999;
+        game.state.zombies = [];
+        game.state.bullets = [];
+        game.state.gibs = [];
+        game.state.spawnQueue = 0;
+        game.state.waveTimer = 9999;
+        game.state.waveMessageLife = 0;
+        game.state.runModifierOffer = [];
+      },
     };
 
     return () => {
