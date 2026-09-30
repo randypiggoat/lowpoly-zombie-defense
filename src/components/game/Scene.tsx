@@ -11,6 +11,8 @@ import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
+import { StageEnvironment } from "./StageEnvironment";
+import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
   MAX_ACTIVE_BULLETS,
@@ -268,6 +270,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
   return (
     <group>
       {map.obstacles.map((obstacle, index) => {
+      {map.obstacles.map((obstacle, index) => {
         const label = obstacle.label.toLowerCase();
         const x = obstacle.x;
         const z = obstacle.z;
@@ -277,6 +280,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("house")) {
           return (
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
@@ -297,6 +301,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("garage")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#7a7e83" flatShading />
@@ -316,6 +321,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("garden")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d * 0.55]} />
                 <meshStandardMaterial color="#a29a87" flatShading />
@@ -332,6 +338,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("canopy")) {
           return (
+            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
             <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
               <mesh position={[0, h, 0]} castShadow receiveShadow>
                 <boxGeometry args={[w, 0.14, d]} />
@@ -353,6 +360,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("pump")) {
           return (
+            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
             <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
               <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
                 <boxGeometry args={[w, 0.28, d]} />
@@ -377,6 +385,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("storefront") || label.includes("shop") || label.includes("kiosk") || label.includes("food court")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#66747d" flatShading />
@@ -399,6 +408,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("police station")) {
           return (
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
@@ -423,6 +433,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("impound")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#6d6f70" flatShading />
@@ -443,6 +454,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("evidence")) {
           return (
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
@@ -465,6 +477,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         if (label.includes("median") || label.includes("jersey")) {
           return (
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#8e9394" flatShading />
@@ -481,6 +494,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
         if (label.includes("service depot")) {
           return (
+            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
             <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
               <mesh castShadow receiveShadow>
                 <boxGeometry args={[w, h, d]} />
@@ -501,6 +515,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
         }
 
         return (
+          <mesh key={obstacle.label + "-" + index} position={[x, h / 2, z]} castShadow receiveShadow>
           <mesh key={obstacle.label + "-" + index} position={[x, h / 2, z]} castShadow receiveShadow>
             <boxGeometry args={[w, h, d]} />
             <meshStandardMaterial color="#6f6b63" flatShading />
@@ -821,6 +836,7 @@ function TowerMesh({
 }) {
   const turret = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
+  const selectedCore = useRef<THREE.Mesh>(null);
   const equippedCosmetic = cosmeticForTower(
     tower.kind,
     profile.equippedTowerCosmetic(tower.kind),
@@ -836,10 +852,24 @@ function TowerMesh({
       let diff = target - cur;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      turret.current.rotation.y = cur + diff * (1 - Math.exp(-10 * dt));
+      const turnStep = diff * (1 - Math.exp(-10 * dt));
+      turret.current.rotation.y = cur + turnStep;
+      const turnRate = THREE.MathUtils.clamp(turnStep / Math.max(dt, 1 / 120), -1.6, 1.6);
+      turret.current.rotation.z = THREE.MathUtils.damp(
+        turret.current.rotation.z,
+        -turnRate * 0.035,
+        11,
+        dt,
+      );
     }
     if (ring.current) {
-      ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025);
+      ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 3.2 + tower.id) * 0.035);
+      const material = ring.current.material as THREE.MeshBasicMaterial;
+      material.opacity = 0.28 + Math.sin(clock.elapsedTime * 4 + tower.id) * 0.07;
+    }
+    if (selectedCore.current) {
+      const pulse = 1 + Math.sin(clock.elapsedTime * 5 + tower.id) * 0.12;
+      selectedCore.current.scale.setScalar(pulse);
     }
   });
 
@@ -862,7 +892,7 @@ function TowerMesh({
             <ringGeometry args={[0.66, 0.78, 20]} />
             <meshBasicMaterial color={accent} transparent opacity={0.9} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[0, 0.2, 0]}>
+          <mesh ref={selectedCore} position={[0, 0.2, 0]}>
             <octahedronGeometry args={[0.12, 0]} />
             <meshBasicMaterial color={accent} transparent opacity={0.95} />
           </mesh>
@@ -1171,6 +1201,14 @@ function Zombies({
         const reactionEnvelope = z.hitReact > 0
           ? z.hitReact * z.hitReact * (3 - 2 * z.hitReact)
           : 0;
+        const hitPulse = Math.max(0, z.flash);
+        const hitDirection = Math.sin(z.id * 12.73);
+        g.scale.set(
+          scale * (z.boss ? 1.16 : 1) * (1 + hitPulse * 0.045),
+          scale * (z.boss ? 1.16 : 1) * (1 - hitPulse * 0.035),
+          scale * (z.boss ? 1.16 : 1) * (1 + hitPulse * 0.045),
+        );
+        g.rotation.y += hitPulse * hitDirection * 0.055;
         const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
         const facingY = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
         g.position.set(
@@ -1635,12 +1673,14 @@ function GoldPickup({
 
 function Bullets() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const glowMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const trailMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const lastKind = useRef<string[]>([]);
   const geometries = useMemo(() => {
     const rocket = new THREE.ConeGeometry(0.14, 0.5, 6);
     rocket.rotateX(Math.PI / 2);
-    const laser = new THREE.BoxGeometry(0.09, 0.09, 0.5);
+    const laser = new THREE.CylinderGeometry(0.07, 0.07, 0.62, 6);
+    laser.rotateX(Math.PI / 2);
     const sniper = new THREE.BoxGeometry(0.06, 0.06, 0.62);
     return {
       rifleman: new THREE.IcosahedronGeometry(0.14, 0),
@@ -1658,7 +1698,7 @@ function Bullets() {
       Object.values(geometries).forEach((geometry) => geometry.dispose());
     };
   }, [geometries]);
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const list = game.state.bullets;
     for (let i = 0; i < MAX_BULLETS; i++) {
       const m = meshes.current[i];
@@ -1747,6 +1787,13 @@ function Bullets() {
           <mesh ref={(el) => void (meshes.current[i] = el)} visible={false}>
             <icosahedronGeometry args={[0.14, 0]} />
             <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh
+            ref={(el) => void (glowMeshes.current[i] = el)}
+            visible={false}
+          >
+            <sphereGeometry args={[0.18, 6, 6]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.14} depthWrite={false} />
           </mesh>
           <mesh
             ref={(el) => void (trailMeshes.current[i] = el)}
@@ -1856,6 +1903,7 @@ export function Scene({
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} map={map} />
         <StageEnvironment environmentId={map.environmentId} />
+        <StageEnvironment environmentId={map.environmentId} />
         <MapObstacles map={map} />
         <Scenery count={renderQuality.sceneryCount} map={map} />
         <Base position={map.base} />
@@ -1877,8 +1925,9 @@ export function Scene({
         ))}
         <Zombies map={map} reducedMotion={reducedMotion} />
         <Gibs />
-        <DamagePopups/>
+        <DamagePopups />
         <Bullets />
+        <CombatVFX reducedMotion={reducedMotion} />
       </group>
     </>
   );
