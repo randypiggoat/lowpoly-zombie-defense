@@ -25,6 +25,7 @@ import {
 import { selectTowerTarget } from "./targeting";
 import { profile } from "./profile";
 import { createBossTrialStage, type BossTrialDefinition } from "./bossTrials";
+import type { SideModeLevel } from "./sideModes";
 import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
@@ -612,6 +613,8 @@ type StageRunConfig = Pick<
   bossTrial?: BossTrialDefinition;
   bossTrialKey?: string;
   allowRunModifiers?: boolean;
+  sideMode?: SideModeLevel;
+  sideModeCycleKey?: string;
 };
 
 
@@ -800,6 +803,24 @@ export class Game {
     this.emit();
   }
 
+  startSideMode(level: SideModeLevel, cycleKey = new Date().toISOString().slice(0, 10)) {
+    this.projectileEmissions = 0;
+    this.stage = {
+      ...level.stage,
+      sideMode: level,
+      sideModeCycleKey: cycleKey,
+      allowRunModifiers: false,
+    };
+    this.map = getStageMap(level.stage.mapId);
+    this.pathLength = getPathLength(this.map.path);
+    this.nextId = 1;
+    this.resetTransientState();
+    this.state = makeState(this.stage);
+    track("side_mode_started", { mode: level.category, levelId: level.id, cycleKey });
+    this.emit();
+  }
+
+
   reviveRun(): boolean {
     const state = this.state;
     if (!state.gameOver || state.stageWon || state.reviveUsed || state.baseHp > 0) return false;
@@ -899,6 +920,14 @@ export class Game {
     const s = this.state;
     const p = profile.profile;
     if (!towerUnlocked(kind, p.level, p.unlockedTowers)) {
+      sfx("deny");
+      return false;
+    }
+    if (this.stage.sideMode?.allowedTowerKinds && !this.stage.sideMode.allowedTowerKinds.includes(kind)) {
+      sfx("deny");
+      return false;
+    }
+    if (this.stage.sideMode?.maxTowers !== undefined && s.towers.length >= this.stage.sideMode.maxTowers) {
       sfx("deny");
       return false;
     }
