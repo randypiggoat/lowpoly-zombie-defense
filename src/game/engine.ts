@@ -51,6 +51,7 @@ import {
   gorePartBit,
   gorePartsBrokenBetween,
   gorePartsForKind,
+  GORE_SIGNATURE_PARTS,
   type GorePart,
 } from "./enemyGore";
 import {
