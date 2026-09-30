@@ -205,3 +205,16 @@ export function zombiePresentation(kind: StageEnemyKind) {
 export function damageReactionMultiplier(kind?: string) {
   return kind ? DAMAGE_REACTION_MULTIPLIER[kind] ?? 1 : 1;
 }
+
+export function hitDirection(
+  targetX: number,
+  targetZ: number,
+  sourceX: number,
+  sourceZ: number,
+) {
+  const x = targetX - sourceX;
+  const z = targetZ - sourceZ;
+  const length = Math.hypot(x, z);
+  if (length <= 0.001) return { x: 0, z: 0 };
+  return { x: x / length, z: z / length };
+}
