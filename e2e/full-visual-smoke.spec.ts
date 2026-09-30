@@ -44,10 +44,9 @@ test("Rotwood menu and settings visual smoke", async ({ page }) => {
     "Armory",
     "Knowledge",
     "Collection",
-    "Missions",
-    "Records",
+    "Goals",
     "Events",
-    "Market",
+    "Shop",
   ]) {
     await expect(page.getByRole("button", { name })).toBeVisible();
   }
