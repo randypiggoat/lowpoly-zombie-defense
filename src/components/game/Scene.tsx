@@ -1148,13 +1148,44 @@ function Zombies({
         const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
         const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
         const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
-        if (body) body.rotation.x = -presentation.deathFold * deathProgress;
-        if (head) head.rotation.z = presentation.hitTwist * deathProgress * 0.65;
+        const deathAccent =
+          z.kind === 1 ? -0.22 :
+          z.kind === 2 ? 0.12 :
+          z.kind === 3 ? 0.28 :
+          z.kind === 5 ? -0.08 :
+          z.kind === 7 ? 0.34 : 0;
+        const deathWave = Math.sin(deathProgress * Math.PI * 0.5);
+        g.rotation.x = -1.4 - z.tilt + deathAccent * deathProgress;
+        g.rotation.z = z.roll + deathWave * deathAccent * 0.7;
+        if (body) {
+          body.rotation.x = -presentation.deathFold * deathProgress;
+          body.rotation.z = deathWave * (z.kind === 2 ? 0.12 : z.kind === 3 ? 0.22 : 0);
+        }
+        if (head) {
+          head.rotation.z =
+            presentation.hitTwist * deathProgress * 0.65 +
+            deathWave * (z.kind === 3 ? 0.55 : z.kind === 7 ? 0.35 : 0.12);
+          head.rotation.y = deathWave * (z.kind === 1 ? 0.22 : z.kind === 3 ? -0.3 : 0);
+        }
         if (face) face.visible = false;
-        if (leftArm) leftArm.rotation.x = -1.2 - deathProgress * 0.8;
-        if (rightArm) rightArm.rotation.x = -1.35 + deathProgress * 0.8;
-        if (leftLeg) leftLeg.rotation.x = -deathProgress * 0.45;
-        if (rightLeg) rightLeg.rotation.x = deathProgress * 0.55;
+        if (leftArm) {
+          leftArm.rotation.x = -1.2 - deathProgress * (z.kind === 2 ? 0.45 : 0.8);
+          leftArm.rotation.z = z.kind === 2 ? -deathWave * 0.18 : -deathWave * 0.08;
+        }
+        if (rightArm) {
+          rightArm.rotation.x = -1.35 + deathProgress * (z.kind === 2 ? 0.45 : 0.8);
+          rightArm.rotation.z = z.kind === 2 ? deathWave * 0.18 : deathWave * 0.08;
+        }
+        if (leftLeg) {
+          leftLeg.rotation.x =
+            -deathProgress * (z.kind === 1 ? 0.72 : 0.45) +
+            (z.kind === 7 ? deathWave * 0.25 : 0);
+        }
+        if (rightLeg) {
+          rightLeg.rotation.x =
+            deathProgress * (z.kind === 1 ? 0.72 : 0.55) +
+            (z.kind === 7 ? -deathWave * 0.2 : 0);
+        }
       } else {
         const phase = z.wobble + i * 0.43;
         const animationFactor = reducedMotion ? 0.35 : 1;
@@ -1300,6 +1331,9 @@ function Zombies({
             m.emissiveIntensity = Math.max(f * 1.6, heal * 0.8);
           }
         });
+      }
+      if (refs["face"]) {
+        refs["face"].visible = !z.dead && !isBroken("head");
       }
       const hiddenGoreParts: Array<[string, GorePart]> = [
         ["head", "head"],
