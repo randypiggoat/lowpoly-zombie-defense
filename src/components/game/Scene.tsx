@@ -952,8 +952,8 @@ function Zombies({
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
-      const statusMark = g.getObjectByName("status-mark");
-      const statusStun = g.getObjectByName("status-stun");
+      const statusMark = refs["status-mark"];
+      const statusStun = refs["status-stun"];
       if (statusMark) {
         statusMark.visible = z.markTime > 0 && !z.dead;
         if (statusMark.visible) {
