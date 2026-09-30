@@ -1251,7 +1251,9 @@ function Zombies({
           if (laserHit) head.rotation.y += Math.sin(phase * 2.8) * 0.022;
         }
         if (face) {
-          face.visible = true;
+          face.visible =
+            !isBroken("head") &&
+            (z.boss || z.dist < 9);
           face.rotation.copy(head?.rotation ?? new THREE.Euler());
           face.position.y = presentation.faceY;
           face.position.z = presentation.faceZ;
@@ -1333,7 +1335,14 @@ function Zombies({
         });
       }
       if (refs["face"]) {
-        refs["face"].visible = !z.dead && !isBroken("head");
+        // Face geometry is intentionally LOD-gated. At normal mobile gameplay
+        // distance the silhouette/signature carries identity; the face appears
+        // only on readable enemies or bosses, avoiding 60 extra draw calls in
+        // crowded waves.
+        refs["face"].visible =
+          !z.dead &&
+          !isBroken("head") &&
+          (z.boss || z.dist < 9);
       }
       const hiddenGoreParts: Array<[string, GorePart]> = [
         ["head", "head"],
