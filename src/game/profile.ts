@@ -1124,6 +1124,7 @@ class ProfileStore {
     const p = this.profile;
     const earned = Math.max(0, points);
     p.towerUpgradeActions += earned;
+    p.towerMasteryXp ??= {};
     p.towerMasteryXp[kind] = (p.towerMasteryXp[kind] ?? 0) + earned * 25;
     this.syncAchievementProgress();
     this.save();
