@@ -694,6 +694,9 @@ export function HUD({
                   onClick={() => onSelect({ kind: "tower", id: t.id })}
                   className="rounded-lg border border-white/10 bg-panel/85 px-1 py-1 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:bg-panel"
                   data-active={active}
+                  data-tower-id={t.id}
+                  data-tower-x={t.x}
+                  data-tower-z={t.z}
                 >
                   <span
                     className="mx-auto mb-0.5 block h-1.5 w-1.5 rounded-full"
