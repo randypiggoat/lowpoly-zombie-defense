@@ -1,6 +1,6 @@
 import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked, resolveFieldKnowledgeEffects } from "./fieldKnowledge";
-import { TOWER_COSMETICS } from "./collection";
+import { TOWER_COSMETICS, ZOMBIE_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
 import { progressionXpForKill, progressionXpForRun, progressionXpForWave, xpForLevel as progressionXpForLevel } from "./progression";
@@ -206,6 +206,7 @@ export type PlayerProfile = {
   unlockedTowers: string[];
   /** Persistent mastery earned by actively upgrading each tower. */
   towerMasteryXp: Record<string, number>;
+  equippedZombieCosmetic: string;
   achievements: Record<string, AchievementProgress>;
   dailyMissionProgress: Record<string, DailyMissionProgress>;
   stageProgress: Record<string, StageProgress>;
@@ -328,6 +329,7 @@ function blank(): PlayerProfile {
     fieldKnowledge: {},
     unlockedTowers: [],
     towerMasteryXp: {},
+    equippedZombieCosmetic: "zombie-default",
     achievements: {},
     dailyMissionProgress: blankDailyProgress(today),
     stageProgress: defaultStageProgress(),
@@ -571,6 +573,7 @@ function load(): PlayerProfile {
         : {},
       unlockedTowers: normalizeStringArray(parsed.unlockedTowers),
       towerMasteryXp: normalizeNumberRecord(parsed.towerMasteryXp),
+      equippedZombieCosmetic: typeof parsed.equippedZombieCosmetic === "string" ? parsed.equippedZombieCosmetic : "zombie-default",
       achievements: normalizeClaimProgressRecords(parsed.achievements),
       dailyMissionProgress: normalizeClaimProgressRecords(parsed.dailyMissionProgress),
       stageProgress: normalizeStageProgressRecords(parsed.stageProgress),
@@ -802,6 +805,21 @@ class ProfileStore {
 
   equippedTowerCosmetic(kind: string) {
     return this.profile.equippedTowerCosmetics[kind] ?? "default";
+  }
+
+
+  equippedZombieCosmetic() {
+    return this.profile.equippedZombieCosmetic;
+  }
+
+  equipZombieCosmetic(cosmeticId: string) {
+    const cosmetic = ZOMBIE_COSMETICS.find(
+      (entry) => entry.id === cosmeticId && entry.unlock(this.profile),
+    );
+    if (!cosmetic) return false;
+    this.profile.equippedZombieCosmetic = cosmetic.id;
+    this.save();
+    return true;
   }
 
   recordZombieKill(kind: number) {
