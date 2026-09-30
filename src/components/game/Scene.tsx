@@ -1,7 +1,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { cosmeticForTower } from "@/game/collection";
+import { cosmeticForTower, ZOMBIE_COSMETICS } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
 import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
@@ -948,7 +948,9 @@ function Zombies({
         }
         partRefs.current[i] = refs;
       }
-      const look = ZOMBIE_LOOKS[z.kind];
+      const baseLook = ZOMBIE_LOOKS[z.kind] ?? ZOMBIE_LOOKS[0];
+      const zombieSkin = ZOMBIE_COSMETICS.find((entry) => entry.id === profile.equippedZombieCosmetic() && entry.unlock(profile.profile)) ?? ZOMBIE_COSMETICS[0]!;
+      const look = { ...baseLook, skin: zombieSkin.skin, cloth: zombieSkin.cloth, legs: zombieSkin.legs };
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
