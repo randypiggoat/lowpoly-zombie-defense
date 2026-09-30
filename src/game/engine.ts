@@ -57,6 +57,7 @@ import {
   TOWER_PATHS as DESIGNED_TOWER_PATHS,
   getTowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
+import { damageReactionMultiplier, hitDirection } from "./zombiePresentation";
 
 export type Vec2 = { x: number; z: number };
 
@@ -1252,24 +1253,18 @@ export class Game {
         z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
       }
     }
-    const reactionDx = z.x - originX;
-    const reactionDz = z.z - originZ;
-    const reactionLength = Math.hypot(reactionDx, reactionDz);
-    if (reactionLength > 0.001) {
-      z.hitX = reactionDx / reactionLength;
-      z.hitZ = reactionDz / reactionLength;
+    const hit = hitDirection(z.x, z.z, originX, originZ);
+    if (hit.x !== 0 || hit.z !== 0) {
+      z.hitX = hit.x;
+      z.hitZ = hit.z;
     }
     const damageRatio = incomingDamage / Math.max(1, z.maxHp);
-    const kindMultiplier =
-      ability.damageKind === "rocket" ? 1.45 :
-      ability.damageKind === "sniper" ? 1.3 :
-      ability.damageKind === "shotgunner" ? 1.05 :
-      ability.damageKind === "flamethrower" ? 0.75 :
-      ability.damageKind === "freezer" ? 0.68 :
-      ability.damageKind === "tesla" ? 0.8 :
-      ability.damageKind === "laser" ? 0.82 : 0.7;
     z.hitReact = 1;
-    z.hitForce = Math.min(1.75, (0.28 + damageRatio * 2.2) * kindMultiplier);
+    z.hitForce = Math.min(
+      1.75,
+      (0.28 + damageRatio * 2.2) * damageReactionMultiplier(ability.damageKind),
+    );
+    z.hitKind = ability.damageKind;
 
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
