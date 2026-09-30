@@ -1086,18 +1086,6 @@ export function GameCanvas() {
         </div>
       )}
 
-              <h2 className="font-display text-2xl tracking-wide">20 Locations · 4 Worlds</h2>
-              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it. Each world introduces a new environment language and tactical rhythm.</p>
-                <div
-                  key={stage.id}
-                  data-stage-id={stage.id}
-                  data-world-id={stage.worldId}
-                  className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}
-                >
-                  <p className="mb-1 text-[9px] uppercase tracking-[0.18em] text-accent">
-                    World {stage.worldId} · {stage.worldName}
-                  </p>
-
       {screen === "stage-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
