@@ -1377,10 +1377,14 @@ export class Game {
 
     const away = Math.atan2(z.x - fromX, z.z - fromZ);
     const force = result.force;
-    z.vx = Math.sin(away) * 2.2 * force;
-    z.vz = Math.cos(away) * 2.2 * force;
-    z.vy = 2.5 + this.random() * 2 * force;
-    z.spin = (this.random() - 0.5) * 9 * force;
+    const deathForce =
+      ability.hitKind === "rocket" ? force * 1.35 :
+      ability.hitKind === "shotgunner" ? force * 1.18 :
+      ability.hitKind === "sniper" ? force * 1.08 : force;
+    z.vx = Math.sin(away) * 2.2 * deathForce;
+    z.vz = Math.cos(away) * 2.2 * deathForce;
+    z.vy = (ability.hitKind === "rocket" ? 3.2 : ability.hitKind === "shotgunner" ? 2.9 : 2.5) + this.random() * 2 * deathForce;
+    z.spin = (this.random() - 0.5) * (9 + (ability.hitKind === "rocket" ? 4 : 0)) * deathForce;
 
     if (result.explode) {
       z.gibbed = true;
@@ -1402,6 +1406,7 @@ export class Game {
     const speed = (1.25 + this.random() * 2.4) * Math.max(0.7, Math.min(2, goreBase)) * force;
     s.gibs.push({
       id: this.nextId++,
+      kind: z.kind,
       x: z.x + anchor.x * 0.6,
       y: Math.max(0.18, anchor.y + (this.random() - 0.5) * 0.12),
       z: z.z + anchor.z * 0.6,
