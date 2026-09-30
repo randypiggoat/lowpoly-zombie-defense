@@ -46,52 +46,87 @@ type FaceFeature = {
 };
 
 const ZOMBIE_FACE_FEATURES: Record<number, readonly FaceFeature[]> = {
+  // A single combined mesh keeps expressive eyes, brows, mouths and teeth cheap.
   0: [
-    { x: -0.085, y: 0.045, w: 0.055, h: 0.05, rotation: -0.08, color: "#252322" },
-    { x: 0.075, y: 0.055, w: 0.055, h: 0.045, rotation: 0.08, color: "#252322" },
-    { x: -0.07, y: -0.07, w: 0.14, h: 0.025, rotation: 0.06, color: "#3f2c2b" },
+    { x: -0.078, y: 0.052, w: 0.095, h: 0.085, rotation: -0.08, color: "#e4dfc7" },
+    { x: 0.078, y: 0.055, w: 0.082, h: 0.074, rotation: 0.08, color: "#e4dfc7" },
+    { x: -0.06, y: 0.05, w: 0.028, h: 0.038, color: "#2a2725" },
+    { x: 0.092, y: 0.053, w: 0.026, h: 0.036, color: "#2a2725" },
+    { x: -0.078, y: 0.126, w: 0.13, h: 0.024, rotation: 0.08, color: "#4b352f" },
+    { x: 0.075, y: 0.119, w: 0.115, h: 0.022, rotation: -0.06, color: "#4b352f" },
+    { x: 0, y: -0.085, w: 0.205, h: 0.07, rotation: 0.01, color: "#351f22" },
+    { x: -0.045, y: -0.074, w: 0.052, h: 0.018, color: "#efd8aa" },
+    { x: 0.025, y: -0.072, w: 0.048, h: 0.017, color: "#efd8aa" },
   ],
   1: [
-    { x: -0.09, y: 0.055, w: 0.07, h: 0.04, rotation: 0.22, color: "#2b2420" },
-    { x: 0.065, y: 0.045, w: 0.07, h: 0.04, rotation: -0.22, color: "#2b2420" },
-    { x: -0.075, y: -0.06, w: 0.16, h: 0.035, rotation: -0.14, color: "#412421" },
-    { x: -0.02, y: -0.055, w: 0.035, h: 0.025, rotation: 0.2, color: "#efe1b6" },
+    { x: -0.074, y: 0.055, w: 0.12, h: 0.065, rotation: -0.18, color: "#f0e6c8" },
+    { x: 0.074, y: 0.055, w: 0.12, h: 0.065, rotation: 0.18, color: "#f0e6c8" },
+    { x: -0.068, y: 0.053, w: 0.031, h: 0.03, color: "#332621" },
+    { x: 0.068, y: 0.053, w: 0.031, h: 0.03, color: "#332621" },
+    { x: -0.074, y: 0.13, w: 0.16, h: 0.026, rotation: -0.22, color: "#3d2624" },
+    { x: 0.074, y: 0.13, w: 0.16, h: 0.026, rotation: 0.22, color: "#3d2624" },
+    { x: 0, y: -0.09, w: 0.245, h: 0.105, rotation: -0.02, color: "#341d20" },
+    { x: 0, y: -0.058, w: 0.185, h: 0.024, rotation: -0.02, color: "#f1d9a7" },
   ],
   2: [
-    { x: -0.14, y: 0.075, w: 0.095, h: 0.035, rotation: 0.2, color: "#24191a" },
-    { x: 0.045, y: 0.075, w: 0.095, h: 0.035, rotation: -0.2, color: "#24191a" },
-    { x: -0.11, y: 0.015, w: 0.075, h: 0.055, color: "#171617" },
-    { x: 0.035, y: 0.015, w: 0.075, h: 0.055, color: "#171617" },
-    { x: -0.12, y: -0.09, w: 0.23, h: 0.04, rotation: 0.02, color: "#efe1b6" },
+    { x: -0.11, y: 0.045, w: 0.11, h: 0.062, rotation: -0.16, color: "#ddd4bb" },
+    { x: 0.11, y: 0.045, w: 0.11, h: 0.062, rotation: 0.16, color: "#ddd4bb" },
+    { x: -0.105, y: 0.045, w: 0.03, h: 0.028, color: "#20191a" },
+    { x: 0.105, y: 0.045, w: 0.03, h: 0.028, color: "#20191a" },
+    { x: -0.11, y: 0.125, w: 0.19, h: 0.036, rotation: 0.2, color: "#322324" },
+    { x: 0.11, y: 0.125, w: 0.19, h: 0.036, rotation: -0.2, color: "#322324" },
+    { x: 0, y: -0.115, w: 0.3, h: 0.12, color: "#2f1d20" },
+    { x: -0.045, y: -0.098, w: 0.25, h: 0.035, color: "#f0d8a8" },
   ],
   3: [
-    { x: -0.095, y: 0.06, w: 0.065, h: 0.045, rotation: -0.3, color: "#2a2220" },
-    { x: 0.055, y: 0.035, w: 0.06, h: 0.05, rotation: 0.26, color: "#2a2220" },
-    { x: -0.005, y: 0.02, w: 0.025, h: 0.15, rotation: 0.52, color: "#5a2928" },
-    { x: -0.075, y: -0.085, w: 0.15, h: 0.03, rotation: -0.05, color: "#2d1b1b" },
+    { x: -0.075, y: 0.058, w: 0.11, h: 0.09, rotation: -0.1, color: "#e8dfc6" },
+    { x: 0.09, y: 0.035, w: 0.145, h: 0.07, rotation: 0.2, color: "#e8dfc6" },
+    { x: -0.055, y: 0.055, w: 0.024, h: 0.034, color: "#2b211f" },
+    { x: 0.115, y: 0.035, w: 0.04, h: 0.028, color: "#2b211f" },
+    { x: -0.02, y: 0.005, w: 0.026, h: 0.16, rotation: 0.45, color: "#7a3534" },
+    { x: -0.09, y: 0.125, w: 0.13, h: 0.024, rotation: 0.28, color: "#49302b" },
+    { x: 0.095, y: 0.12, w: 0.14, h: 0.022, rotation: -0.06, color: "#49302b" },
+    { x: 0.03, y: -0.095, w: 0.26, h: 0.07, rotation: 0.13, color: "#331d20" },
+    { x: 0.07, y: -0.074, w: 0.13, h: 0.018, rotation: 0.13, color: "#e9d0a2" },
   ],
   4: [
-    { x: -0.095, y: 0.055, w: 0.075, h: 0.065, rotation: 0.05, color: "#201b1b" },
-    { x: 0.025, y: 0.055, w: 0.075, h: 0.065, rotation: -0.05, color: "#201b1b" },
-    { x: -0.04, y: -0.07, w: 0.09, h: 0.065, color: "#201716" },
+    { x: -0.095, y: 0.055, w: 0.15, h: 0.13, color: "#eee4c8" },
+    { x: 0.095, y: 0.055, w: 0.15, h: 0.13, color: "#eee4c8" },
+    { x: -0.095, y: 0.052, w: 0.04, h: 0.052, color: "#372323" },
+    { x: 0.095, y: 0.052, w: 0.04, h: 0.052, color: "#372323" },
+    { x: 0, y: -0.115, w: 0.24, h: 0.16, color: "#24191a" },
+    { x: 0, y: -0.07, w: 0.12, h: 0.028, color: "#dca889" },
   ],
   5: [
-    { x: -0.105, y: 0.075, w: 0.09, h: 0.035, rotation: 0.1, color: "#1e2224" },
-    { x: 0.02, y: 0.075, w: 0.09, h: 0.035, rotation: -0.1, color: "#1e2224" },
-    { x: -0.09, y: 0.02, w: 0.07, h: 0.045, color: "#172023" },
-    { x: 0.025, y: 0.02, w: 0.07, h: 0.045, color: "#172023" },
-    { x: -0.1, y: -0.08, w: 0.2, h: 0.03, rotation: 0.04, color: "#c5d0cb" },
+    { x: -0.098, y: 0.055, w: 0.11, h: 0.065, rotation: 0.15, color: "#e5eee7" },
+    { x: 0.098, y: 0.055, w: 0.11, h: 0.065, rotation: -0.15, color: "#e5eee7" },
+    { x: -0.098, y: 0.053, w: 0.028, h: 0.024, color: "#213033" },
+    { x: 0.098, y: 0.053, w: 0.028, h: 0.024, color: "#213033" },
+    { x: -0.1, y: 0.13, w: 0.18, h: 0.042, rotation: -0.18, color: "#263338" },
+    { x: 0.1, y: 0.13, w: 0.18, h: 0.042, rotation: 0.18, color: "#263338" },
+    { x: 0, y: -0.108, w: 0.27, h: 0.09, color: "#242127" },
+    { x: 0, y: -0.084, w: 0.2, h: 0.022, color: "#c8d5ca" },
   ],
   6: [
-    { x: -0.075, y: 0.06, w: 0.055, h: 0.075, rotation: 0.06, color: "#302028" },
-    { x: 0.025, y: 0.06, w: 0.055, h: 0.075, rotation: -0.06, color: "#302028" },
-    { x: -0.045, y: -0.085, w: 0.09, h: 0.045, color: "#251b22" },
+    { x: -0.078, y: 0.06, w: 0.12, h: 0.055, rotation: -0.18, color: "#e7d5d1" },
+    { x: 0.078, y: 0.055, w: 0.11, h: 0.065, rotation: -0.02, color: "#e7d5d1" },
+    { x: -0.055, y: 0.058, w: 0.025, h: 0.02, color: "#46303d" },
+    { x: 0.092, y: 0.055, w: 0.024, h: 0.022, color: "#46303d" },
+    { x: -0.075, y: 0.125, w: 0.145, h: 0.022, rotation: 0.16, color: "#533747" },
+    { x: 0.078, y: 0.12, w: 0.13, h: 0.02, rotation: -0.05, color: "#533747" },
+    { x: 0, y: -0.09, w: 0.17, h: 0.065, rotation: -0.02, color: "#2c2028" },
+    { x: 0, y: -0.073, w: 0.105, h: 0.015, color: "#e8cda7" },
   ],
   7: [
-    { x: -0.1, y: 0.055, w: 0.05, h: 0.05, rotation: 0.1, color: "#1b2619" },
-    { x: -0.025, y: 0.075, w: 0.05, h: 0.05, rotation: -0.08, color: "#1b2619" },
-    { x: 0.05, y: 0.055, w: 0.05, h: 0.05, rotation: 0.12, color: "#1b2619" },
-    { x: -0.06, y: -0.075, w: 0.125, h: 0.03, rotation: 0.1, color: "#293a20" },
+    { x: -0.075, y: 0.06, w: 0.085, h: 0.08, rotation: -0.08, color: "#e3e7c9" },
+    { x: 0.0, y: 0.075, w: 0.075, h: 0.075, rotation: 0.02, color: "#e3e7c9" },
+    { x: 0.072, y: 0.058, w: 0.09, h: 0.082, rotation: 0.1, color: "#e3e7c9" },
+    { x: -0.075, y: 0.058, w: 0.022, h: 0.03, color: "#263019" },
+    { x: 0.0, y: 0.075, w: 0.022, h: 0.028, color: "#263019" },
+    { x: 0.072, y: 0.058, w: 0.022, h: 0.03, color: "#263019" },
+    { x: -0.012, y: 0.145, w: 0.14, h: 0.022, rotation: 0.02, color: "#39502c" },
+    { x: 0, y: -0.085, w: 0.19, h: 0.06, color: "#2c1d21" },
+    { x: 0, y: -0.074, w: 0.11, h: 0.016, color: "#efd4a7" },
   ],
 };
 
@@ -134,6 +169,93 @@ function createZombieFaceGeometry(kind: number) {
   return geometry;
 }
 
+
+type ZombiePartCache = {
+  all: Record<string, THREE.Object3D | undefined>;
+  body?: THREE.Mesh;
+  head?: THREE.Mesh;
+  face?: THREE.Mesh;
+  leftArm?: THREE.Mesh;
+  rightArm?: THREE.Mesh;
+  leftLeg?: THREE.Mesh;
+  rightLeg?: THREE.Mesh;
+  leftShoulder?: THREE.Mesh;
+  rightShoulder?: THREE.Mesh;
+  runnerCrest?: THREE.Mesh;
+  splitterCore?: THREE.Mesh;
+  bomberPack?: THREE.Mesh;
+  guardianShield?: THREE.Mesh;
+  healerAura?: THREE.Mesh;
+  swarmCrest?: THREE.Mesh;
+  statusMark?: THREE.Mesh;
+  statusStun?: THREE.Mesh;
+  bossAura?: THREE.Group;
+  bossCrown?: THREE.Group;
+  bossCore?: THREE.Mesh;
+  bossSignature?: THREE.Group;
+  bruteMark?: THREE.Group;
+  splitterMark?: THREE.Group;
+  bomberMark?: THREE.Group;
+  guardianMark?: THREE.Group;
+  healerMark?: THREE.Group;
+  swarmMark?: THREE.Group;
+  hpBackground?: THREE.Mesh;
+  hpFill?: THREE.Mesh;
+};
+
+function getZombiePartCache(group: THREE.Group): ZombiePartCache {
+  const cached = group.userData.zombiePartCache as ZombiePartCache | undefined;
+  if (cached) return cached;
+
+  const mesh = (name: string) => group.getObjectByName(name) as THREE.Mesh | undefined;
+  const groupFor = (name: string) => group.getObjectByName(name) as THREE.Group | undefined;
+  const names = [
+    "body", "head", "face", "left-arm", "right-arm", "left-leg", "right-leg",
+    "left-shoulder", "right-shoulder", "runner-crest", "splitter-core", "bomber-pack",
+    "guardian-shield", "healer-aura", "swarm-crest", "status-mark", "status-stun",
+    "boss-aura", "boss-crown", "boss-core", "boss-signature", "boss-mark-brute",
+    "boss-mark-splitter", "boss-mark-bomber", "boss-mark-guardian", "boss-mark-healer",
+    "boss-mark-swarm", "hp-background", "hp-fill",
+  ];
+  const all = Object.fromEntries(
+    names.map((name) => [name, group.getObjectByName(name)]),
+  ) as ZombiePartCache["all"];
+
+  const cache: ZombiePartCache = {
+    all,
+    body: mesh("body"),
+    head: mesh("head"),
+    face: mesh("face"),
+    leftArm: mesh("left-arm"),
+    rightArm: mesh("right-arm"),
+    leftLeg: mesh("left-leg"),
+    rightLeg: mesh("right-leg"),
+    leftShoulder: mesh("left-shoulder"),
+    rightShoulder: mesh("right-shoulder"),
+    runnerCrest: mesh("runner-crest"),
+    splitterCore: mesh("splitter-core"),
+    bomberPack: mesh("bomber-pack"),
+    guardianShield: mesh("guardian-shield"),
+    healerAura: mesh("healer-aura"),
+    swarmCrest: mesh("swarm-crest"),
+    statusMark: mesh("status-mark"),
+    statusStun: mesh("status-stun"),
+    bossAura: groupFor("boss-aura"),
+    bossCrown: groupFor("boss-crown"),
+    bossCore: mesh("boss-core"),
+    bossSignature: groupFor("boss-signature"),
+    bruteMark: groupFor("boss-mark-brute"),
+    splitterMark: groupFor("boss-mark-splitter"),
+    bomberMark: groupFor("boss-mark-bomber"),
+    guardianMark: groupFor("boss-mark-guardian"),
+    healerMark: groupFor("boss-mark-healer"),
+    swarmMark: groupFor("boss-mark-swarm"),
+    hpBackground: mesh("hp-background"),
+    hpFill: mesh("hp-fill"),
+  };
+  group.userData.zombiePartCache = cache;
+  return cache;
+}
 const ZOMBIE_LOOKS = [
   { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
   { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
@@ -950,6 +1072,7 @@ function Zombies({
       }
       const look = ZOMBIE_LOOKS[z.kind];
       const presentation = zombiePresentation(z.kind);
+      const parts = getZombiePartCache(g);
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
       const statusMark = refs["status-mark"];
@@ -1176,9 +1299,19 @@ function Zombies({
         const damageSag = injured * presentation.damageLean * 0.35;
         const hitTwist = localHitRight * reactionEnvelope * z.hitForce * presentation.hitTwist;
         const hitRecoil = localHitForward * reactionEnvelope * z.hitForce * presentation.hitRecoil;
+        const motionScale = reducedMotion ? 0.35 : 1;
+        const weaponScale = damageReactionMultiplier(z.hitKind) * motionScale;
+        const hitRight = localHitRight * reactionEnvelope * z.hitForce * weaponScale;
+        const hitForward = localHitForward * reactionEnvelope * z.hitForce * weaponScale;
+        const rocketHit = z.hitKind === "rocket";
+        const shotgunHit = z.hitKind === "shotgunner";
+        const sniperHit = z.hitKind === "sniper";
+        const teslaHit = z.hitKind === "tesla";
+        const flameHit = z.hitKind === "flamethrower";
+        const laserHit = z.hitKind === "laser";
         g.rotation.y = facingY;
-        g.rotation.x = presentation.forwardLean + damageSag - hitRecoil * 0.18;
-        g.rotation.z = movementSway + hitTwist;
+        g.rotation.x = presentation.forwardLean + damageSag - hitRecoil * 0.18 * motionScale;
+        g.rotation.z = movementSway + hitTwist * motionScale;
 
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
@@ -1190,7 +1323,9 @@ function Zombies({
 
         if (body) {
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
-          body.rotation.y = localHitRight * reactionEnvelope * z.hitForce * 0.22;
+          body.rotation.y = hitRight * (teslaHit ? 0.34 : rocketHit ? 0.3 : 0.22);
+          body.rotation.z = rocketHit ? hitRight * 0.16 : shotgunHit ? hitRight * 0.1 : 0;
+          body.scale.z = 1 + Math.abs(hitForward) * (rocketHit ? 0.08 : 0.025);
           const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
           body.scale.y = baseBodyScaleY * (1 + Math.abs(gaitWave) * 0.018);
         }
@@ -1200,27 +1335,34 @@ function Zombies({
             hitRecoil * 0.12;
           head.rotation.z =
             Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45 -
-            hitTwist * 0.55;
+            hitRight * (shotgunHit ? 0.7 : teslaHit ? 0.9 : 0.55);
+          if (flameHit) head.rotation.x -= Math.sin(phase * 2.1) * 0.025;
+          if (laserHit) head.rotation.y += Math.sin(phase * 2.8) * 0.022;
         }
         if (face) {
           face.visible = true;
           face.rotation.copy(head?.rotation ?? new THREE.Euler());
           face.position.y = presentation.faceY;
           face.position.z = presentation.faceZ;
+          face.position.x = hitRight * (0.06 + (shotgunHit ? 0.025 : 0));
         }
         if (leftArm) {
-          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing - hitRecoil * 0.35;
+          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing - hitForward * (rocketHit ? 0.5 : 0.35);
+          leftArm.rotation.y = hitRight * (teslaHit ? 0.22 : shotgunHit ? 0.16 : 0.08);
           leftArm.rotation.z = -hitTwist * 0.7 + idleWave * 0.04;
         }
         if (rightArm) {
-          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing + hitRecoil * 0.35;
+          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing + hitForward * (rocketHit ? 0.5 : 0.35);
+          rightArm.rotation.y = -hitRight * (teslaHit ? 0.22 : shotgunHit ? 0.16 : 0.08);
           rightArm.rotation.z = hitTwist * 0.7 - idleWave * 0.04;
         }
         if (leftLeg) {
-          leftLeg.rotation.x = altGaitWave * presentation.stride + hitRecoil * 0.12;
+          leftLeg.rotation.x = altGaitWave * presentation.stride + hitForward * 0.18;
+          leftLeg.rotation.z = hitRight * 0.12;
         }
         if (rightLeg) {
-          rightLeg.rotation.x = gaitWave * presentation.stride - hitRecoil * 0.12;
+          rightLeg.rotation.x = gaitWave * presentation.stride - hitForward * 0.18;
+          rightLeg.rotation.z = -hitRight * 0.12;
         }
 
         const signatureName =
