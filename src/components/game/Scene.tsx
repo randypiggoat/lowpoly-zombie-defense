@@ -115,12 +115,16 @@ function createZombieFaceGeometry(kind: number) {
       positions.push(x * cos - y * sin + feature.x, x * sin + y * cos + feature.y, 0.008);
       colors.push(color.r, color.g, color.b);
     };
-    pushVertex(...corners[0]!);
-    pushVertex(...corners[1]!);
-    pushVertex(...corners[2]!);
-    pushVertex(...corners[0]!);
-    pushVertex(...corners[2]!);
-    pushVertex(...corners[3]!);
+    const [x0, y0] = corners[0]!;
+    const [x1, y1] = corners[1]!;
+    const [x2, y2] = corners[2]!;
+    const [x3, y3] = corners[3]!;
+    pushVertex(x0, y0);
+    pushVertex(x1, y1);
+    pushVertex(x2, y2);
+    pushVertex(x0, y0);
+    pushVertex(x2, y2);
+    pushVertex(x3, y3);
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -1138,7 +1142,8 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         if (body) {
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
           body.rotation.y = localHitRight * reactionEnvelope * z.hitForce * 0.22;
-          body.scale.y = 1 + Math.abs(gaitWave) * 0.018;
+          const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
+          body.scale.y = baseBodyScaleY * (1 + Math.abs(gaitWave) * 0.018);
         }
         if (head) {
           head.rotation.x =
@@ -1269,7 +1274,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
             <boxGeometry args={[0.46, 0.46, 0.46]} />
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
           </mesh>
-          <mesh name="face" position={[0, 1.62, 0.235]} visible={false} frustumCulled={false}>
+          <mesh name="face" position={[0, 1.62, 0.235]} visible={false}>
             <primitive object={faceGeometries[0]!} attach="geometry" />
             <meshBasicMaterial vertexColors toneMapped={false} />
           </mesh>
