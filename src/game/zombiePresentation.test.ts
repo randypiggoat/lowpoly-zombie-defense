@@ -25,5 +25,15 @@ describe("zombie presentation", () => {
     expect(DAMAGE_REACTION_MULTIPLIER.rocket).toBeGreaterThan(DAMAGE_REACTION_MULTIPLIER.rifleman);
     expect(DAMAGE_REACTION_MULTIPLIER.sniper).toBeGreaterThan(DAMAGE_REACTION_MULTIPLIER.rifleman);
     expect(DAMAGE_REACTION_MULTIPLIER.shotgunner).toBeGreaterThan(DAMAGE_REACTION_MULTIPLIER.flamethrower);
+    for (const multiplier of Object.values(DAMAGE_REACTION_MULTIPLIER)) {
+      expect(Number.isFinite(multiplier)).toBe(true);
+      expect(multiplier).toBeGreaterThan(0);
+    }
+    for (const profile of Object.values(ZOMBIE_PRESENTATION)) {
+      expect(Number.isFinite(profile.hitRecoil)).toBe(true);
+      expect(profile.hitRecoil).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(profile.deathFold)).toBe(true);
+      expect(profile.deathFold).toBeGreaterThan(0);
+    }
   });
 });
