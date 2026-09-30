@@ -917,9 +917,15 @@ export function GameCanvas() {
                         </h3>
                         <p className="mt-1 text-xs text-panel-muted">{trial.description}</p>
                       </div>
-                      <span className="rounded-full bg-black/30 px-2 py-1 text-[10px] text-panel-muted">
-                        {trial.variants.length} variants
-                      </span>
+                      <div className="shrink-0 text-right">
+                        <span className="rounded-full bg-black/30 px-2 py-1 text-[10px] text-panel-muted">
+                          {trial.variants.length} variants
+                        </span>
+                        <p className="mt-1 text-[9px] uppercase tracking-wider text-accent">
+                          Mastery {"★".repeat(mastery)}{"☆".repeat(Math.max(0, 3 - mastery))}
+                        </p>
+                        <p className="text-[8px] uppercase tracking-wider text-panel-muted">{clears} career clears</p>
+                      </div>
                     </div>
                     {active && (
                       <>
