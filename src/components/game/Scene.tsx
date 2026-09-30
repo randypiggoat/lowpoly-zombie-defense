@@ -7,7 +7,7 @@ import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
-import { zombiePresentation } from "@/game/zombiePresentation";
+import { damageReactionMultiplier, zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
@@ -1325,7 +1325,6 @@ function Zombies({
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
           body.rotation.y = hitRight * (teslaHit ? 0.34 : rocketHit ? 0.3 : 0.22);
           body.rotation.z = rocketHit ? hitRight * 0.16 : shotgunHit ? hitRight * 0.1 : 0;
-          body.scale.z = 1 + Math.abs(hitForward) * (rocketHit ? 0.08 : 0.025);
           const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
           body.scale.y = baseBodyScaleY * (1 + Math.abs(gaitWave) * 0.018);
         }
