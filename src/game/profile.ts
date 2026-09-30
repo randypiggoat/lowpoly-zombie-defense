@@ -904,17 +904,19 @@ class ProfileStore {
     score: number,
     reward: { coins: number; xp: number; gems?: number },
     firstClearBonus?: { coins?: number; xp?: number; gems?: number },
+    completed = true,
   ): RunReward & { score: number; bestScore: number; clears: number; firstClear: boolean } {
     this.refreshRetentionState();
     const p = this.profile;
     const normalizedWave = Math.max(1, Math.floor(wave));
     const normalizedScore = Math.max(0, Math.floor(score));
     const previousBest = p.sideModeBestScores[levelId] ?? 0;
-    const firstClear = (p.sideModeClears[levelId] ?? 0) === 0;
+    const firstClear = completed && (p.sideModeClears[levelId] ?? 0) === 0;
+    const completionScale = completed ? 1 : 0.35;
     const clearReward = {
-      coins: Math.max(0, Math.floor(reward.coins)),
-      xp: Math.max(0, Math.floor(reward.xp)),
-      gems: Math.max(0, Math.floor(reward.gems ?? 0)),
+      coins: Math.max(0, Math.floor(reward.coins * completionScale)),
+      xp: Math.max(0, Math.floor(reward.xp * completionScale)),
+      gems: completed ? Math.max(0, Math.floor(reward.gems ?? 0)) : 0,
     };
     const bonus = firstClear ? {
       coins: Math.max(0, Math.floor(firstClearBonus?.coins ?? 0)),
@@ -928,7 +930,7 @@ class ProfileStore {
     p.gems += gems;
     p.gamesPlayed += 1;
     p.sideModeBestScores[levelId] = Math.max(previousBest, normalizedScore);
-    p.sideModeClears[levelId] = (p.sideModeClears[levelId] ?? 0) + 1;
+    if (completed) p.sideModeClears[levelId] = (p.sideModeClears[levelId] ?? 0) + 1;
     const result = this.awardXp(xp);
     this.updateDailyMission("gameCompleted", 1);
     this.syncAchievementProgress();
@@ -941,10 +943,10 @@ class ProfileStore {
       leveledTo: result.leveledTo,
       newRecord: normalizedScore > previousBest,
       stageId: null,
-      stageCompleted: true,
+      stageCompleted: completed,
       starsEarned: firstClear ? 1 : 0,
       firstCompletionBonusApplied: firstClear,
-      bestStars: firstClear ? 1 : 1,
+      bestStars: completed ? 1 : 0,
       previousBestWave: 0,
       previousBestStars: 0,
       score: normalizedScore,
