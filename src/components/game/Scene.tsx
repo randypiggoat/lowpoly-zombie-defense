@@ -845,10 +845,20 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
   const lastBoss = useRef<boolean[]>([]);
+  const previousZombieCount = useRef(0);
 
   useFrame(() => {
     const list = game.state.zombies;
-    for (let i = 0; i < MAX_ZOMBIES; i++) {
+    const activeCount = Math.min(list.length, MAX_ZOMBIES);
+    if (activeCount === 0) {
+      for (let i = 0; i < previousZombieCount.current; i++) {
+        const stale = groups.current[i];
+        if (stale) stale.visible = false;
+      }
+      previousZombieCount.current = 0;
+      return;
+    }
+    for (let i = 0; i < activeCount; i++) {
       const g = groups.current[i];
       if (!g) continue;
       const z = list[i];
@@ -1204,6 +1214,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           }
         });
       }
+      previousZombieCount.current = activeCount;
       const hiddenGoreParts: Array<[string, GorePart]> = [
         ["head", "head"],
         ["left-arm", "left-arm"],
