@@ -47,6 +47,7 @@ import {
   pointAtPath,
 } from "./maps";
 import {
+  deathGorePartsForKind,
   goreAnchor,
   gorePartBit,
   gorePartsBrokenBetween,
@@ -136,6 +137,12 @@ export type Zombie = {
   gibbed: boolean;
   /** Bit mask of body/signature pieces already broken off by damage. */
   gibMask?: number;
+  /** Lightweight render-facing combat reaction state. */
+  hitReact: number;
+  hitX: number;
+  hitZ: number;
+  hitForce: number;
+  hitKind?: TowerKind;
 };
 
 export type Gib = {
@@ -1157,6 +1164,11 @@ export class Game {
       roll: 0,
       gibbed: false,
       gibMask: 0,
+      hitReact: 0,
+      hitX: 0,
+      hitZ: 0,
+      hitForce: 0,
+      hitKind: undefined,
     };
     s.zombies.push(spawned);
     return spawned;
@@ -1182,6 +1194,7 @@ export class Game {
       closeDamageMultiplier?: number;
       originX?: number;
       originZ?: number;
+      damageKind?: TowerKind;
     } = {},
   ) {
     const s = this.state;
@@ -1239,6 +1252,25 @@ export class Game {
         z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
       }
     }
+    const reactionDx = z.x - originX;
+    const reactionDz = z.z - originZ;
+    const reactionLength = Math.hypot(reactionDx, reactionDz);
+    if (reactionLength > 0.001) {
+      z.hitX = reactionDx / reactionLength;
+      z.hitZ = reactionDz / reactionLength;
+    }
+    const damageRatio = incomingDamage / Math.max(1, z.maxHp);
+    const kindMultiplier =
+      ability.damageKind === "rocket" ? 1.45 :
+      ability.damageKind === "sniper" ? 1.3 :
+      ability.damageKind === "shotgunner" ? 1.05 :
+      ability.damageKind === "flamethrower" ? 0.75 :
+      ability.damageKind === "freezer" ? 0.68 :
+      ability.damageKind === "tesla" ? 0.8 :
+      ability.damageKind === "laser" ? 0.82 : 0.7;
+    z.hitReact = 1;
+    z.hitForce = Math.min(1.75, (0.28 + damageRatio * 2.2) * kindMultiplier);
+
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
       z.kind,
@@ -1393,7 +1425,8 @@ export class Game {
     for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
       const sp = (1.1 + this.random() * 2.1) * force;
-      const debrisPart: GorePart = i % 3 === 0 ? "head" : i % 3 === 1 ? "left-arm" : "splitter-core";
+      const debrisParts = deathGorePartsForKind(z.kind);
+      const debrisPart = debrisParts[i % debrisParts.length]!;
 
       s.gibs.push({
         id: this.nextId++,
@@ -1508,6 +1541,10 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     // zombies
     for (const z of s.zombies) {
       if (z.flash > 0) z.flash = Math.max(0, z.flash - dt * 4);
+      if (z.hitReact > 0) {
+        z.hitReact = Math.max(0, z.hitReact - dt * 7);
+        z.hitForce *= Math.exp(-dt * 8);
+      }
 
       if (z.dead) {
         const ragdoll = stepEnemyRagdoll(
@@ -1607,7 +1644,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.markBonus = lifecycle.markBonus;
 
       if (lifecycle.burnDamage > 0) {
-        this.damage(z, lifecycle.burnDamage, z.x, z.z, 1);
+        this.damage(z, lifecycle.burnDamage, z.x, z.z, 1, 1, false, {
+          damageKind: "flamethrower",
+        });
         if (z.dead) continue;
       }
 
@@ -1903,6 +1942,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               executeMultiplier: b.executeMultiplier,
               bossDamageMultiplier: b.bossDamageMultiplier,
               closeDamageMultiplier: b.closeDamageMultiplier,
+              damageKind: b.kind,
               originX: b.originX,
               originZ: b.originZ,
             },
