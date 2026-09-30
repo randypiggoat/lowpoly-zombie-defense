@@ -5,6 +5,7 @@ import {
   getWeeklyChallenge,
   getWeekKey,
   hashString,
+  getEndlessEnemyPool,
 } from "./endless";
 
 describe("endless challenge rotation", () => {
@@ -32,3 +33,11 @@ describe("endless challenge rotation", () => {
     expect(stage.enemyPool.normalKinds).toContain(7);
   });
 });
+
+  test("endless phases add special enemies as the expedition deepens", () => {
+    const base = { normalKinds: [0, 1, 2, 3, 4, 5, 6, 7] as const };
+    const early = getEndlessEnemyPool(2, base).normalKinds;
+    const late = getEndlessEnemyPool(26, base).normalKinds;
+    expect(early).toEqual([0, 1]);
+    expect(late).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  });
