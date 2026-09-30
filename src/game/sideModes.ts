@@ -394,7 +394,7 @@ export const CHALLENGE_GAUNTLET: SideModeLevel[] = [
   }),
 ];
 
-export const SIDE_MODE_LEVELS = [...RESOURCE_OPS, ...CHALLENGE_GAUNTLET] as const;
+export const SIDE_MODE_LEVELS = [...RESOURCE_OPS, ...CHALLENGE_GAUNTLET, ...SEASONAL_EVENT_RUNS] as const;
 
 export function getSideModeLevel(id: string) {
   return SIDE_MODE_LEVELS.find((level) => level.id === id) ?? null;
@@ -420,4 +420,59 @@ export function getEndlessSectorLabel(wave: number) {
 export function getEndlessMilestone(wave: number) {
   const next = Math.ceil(Math.max(1, wave + 0.01) / 5) * 5;
   return next;
+}
+
+export const SEASONAL_EVENT_RUNS: SideModeLevel[] = [
+  buildLevel({
+    id: "blood-harvest-run",
+    category: "event",
+    name: "Blood Harvest: Red Tide",
+    shortName: "RED TIDE",
+    description: "A dense five-wave sprint where kill streaks drive the event faster.",
+    purpose: "Active Blood Harvest event run",
+    duration: "2–4 min",
+    unlockStageId: 1,
+    level: 1,
+    focus: "scrap",
+    sourceStageId: 3,
+    rewardHint: "Event progress + credits + XP",
+    masteryHint: "Reach a 15-kill streak",
+    cycle: "event",
+    stageOverrides: {
+      waveCount: 5,
+      startingCoins: 260,
+      rewardMultiplier: 1.05,
+      rewards: { completionCoins: 180, completionXp: 120, completionStars: 0, firstCompletionBonus: { coins: 60, xp: 40, stars: 0 } },
+      gameplay: { ...getStageById(3).gameplay, waveSizeMultiplier: 1.25, enemyHealthMultiplier: 0.86, spawnIntervalMultiplier: 0.76 },
+    },
+  }),
+  buildLevel({
+    id: "frozen-night-run",
+    category: "event",
+    name: "Frozen Night: Deep Freeze",
+    shortName: "DEEP FREEZE",
+    description: "A short cold-front defense tuned around slow effects and sustained control.",
+    purpose: "Active Frozen Night event run",
+    duration: "2–4 min",
+    unlockStageId: 1,
+    level: 1,
+    focus: "xp",
+    sourceStageId: 10,
+    rewardHint: "Event progress + XP + credits",
+    masteryHint: "Finish with 50%+ base health",
+    cycle: "event",
+    stageOverrides: {
+      waveCount: 5,
+      startingCoins: 260,
+      rewardMultiplier: 1.08,
+      rewards: { completionCoins: 160, completionXp: 150, completionStars: 0, firstCompletionBonus: { coins: 50, xp: 65, stars: 0 } },
+      gameplay: { ...getStageById(10).gameplay, waveSizeMultiplier: 1.1, enemySpeedMultiplier: 0.96, enemyHealthMultiplier: 0.9, spawnIntervalMultiplier: 0.82 },
+      enemyPool: { normalKinds: [0, 1, 5, 7], weights: { walker: 0.18, runner: 0.16, guardian: 0.24, swarm: 0.42 } },
+    },
+  }),
+];
+
+export function getSeasonalEventRun(eventId: string) {
+  const wanted = eventId === "frozen-night" ? "frozen-night-run" : "blood-harvest-run";
+  return getSideModeLevel(wanted);
 }
