@@ -136,7 +136,9 @@ test("tower placement follows pointer across both world axes and builds at the s
   await expect(buildButtons.first()).toBeEnabled();
   await buildButtons.first().click();
 
-  await expect.poll(async () => (await qa())!.towers.length).toBe(before + 1);
+  // The build click is the production UI path; wait on the rendered HUD state rather than polling an internal singleton.
+  await expect(page.getByRole("button", { name: "Rifleman Lv 1" })).toHaveCount(before + 1);
+  await expect.poll(async () => (await qa())?.towers.length ?? 0).toBe(before + 1);
   const towers = (await qa())!.towers;
   const built = towers[towers.length - 1]!;
 
