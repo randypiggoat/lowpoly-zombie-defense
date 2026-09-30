@@ -7,6 +7,7 @@ import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
+import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
@@ -34,6 +35,105 @@ const BOSS_SIGNATURE_COLORS: Record<number, string> = {
   7: "#9ce06d",
 };
 
+
+type FaceFeature = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotation?: number;
+  color: string;
+};
+
+const ZOMBIE_FACE_FEATURES: Record<number, readonly FaceFeature[]> = {
+  0: [
+    { x: -0.085, y: 0.045, w: 0.055, h: 0.05, rotation: -0.08, color: "#252322" },
+    { x: 0.075, y: 0.055, w: 0.055, h: 0.045, rotation: 0.08, color: "#252322" },
+    { x: -0.07, y: -0.07, w: 0.14, h: 0.025, rotation: 0.06, color: "#3f2c2b" },
+  ],
+  1: [
+    { x: -0.09, y: 0.055, w: 0.07, h: 0.04, rotation: 0.22, color: "#2b2420" },
+    { x: 0.065, y: 0.045, w: 0.07, h: 0.04, rotation: -0.22, color: "#2b2420" },
+    { x: -0.075, y: -0.06, w: 0.16, h: 0.035, rotation: -0.14, color: "#412421" },
+    { x: -0.02, y: -0.055, w: 0.035, h: 0.025, rotation: 0.2, color: "#efe1b6" },
+  ],
+  2: [
+    { x: -0.14, y: 0.075, w: 0.095, h: 0.035, rotation: 0.2, color: "#24191a" },
+    { x: 0.045, y: 0.075, w: 0.095, h: 0.035, rotation: -0.2, color: "#24191a" },
+    { x: -0.11, y: 0.015, w: 0.075, h: 0.055, color: "#171617" },
+    { x: 0.035, y: 0.015, w: 0.075, h: 0.055, color: "#171617" },
+    { x: -0.12, y: -0.09, w: 0.23, h: 0.04, rotation: 0.02, color: "#efe1b6" },
+  ],
+  3: [
+    { x: -0.095, y: 0.06, w: 0.065, h: 0.045, rotation: -0.3, color: "#2a2220" },
+    { x: 0.055, y: 0.035, w: 0.06, h: 0.05, rotation: 0.26, color: "#2a2220" },
+    { x: -0.005, y: 0.02, w: 0.025, h: 0.15, rotation: 0.52, color: "#5a2928" },
+    { x: -0.075, y: -0.085, w: 0.15, h: 0.03, rotation: -0.05, color: "#2d1b1b" },
+  ],
+  4: [
+    { x: -0.095, y: 0.055, w: 0.075, h: 0.065, rotation: 0.05, color: "#201b1b" },
+    { x: 0.025, y: 0.055, w: 0.075, h: 0.065, rotation: -0.05, color: "#201b1b" },
+    { x: -0.04, y: -0.07, w: 0.09, h: 0.065, color: "#201716" },
+  ],
+  5: [
+    { x: -0.105, y: 0.075, w: 0.09, h: 0.035, rotation: 0.1, color: "#1e2224" },
+    { x: 0.02, y: 0.075, w: 0.09, h: 0.035, rotation: -0.1, color: "#1e2224" },
+    { x: -0.09, y: 0.02, w: 0.07, h: 0.045, color: "#172023" },
+    { x: 0.025, y: 0.02, w: 0.07, h: 0.045, color: "#172023" },
+    { x: -0.1, y: -0.08, w: 0.2, h: 0.03, rotation: 0.04, color: "#c5d0cb" },
+  ],
+  6: [
+    { x: -0.075, y: 0.06, w: 0.055, h: 0.075, rotation: 0.06, color: "#302028" },
+    { x: 0.025, y: 0.06, w: 0.055, h: 0.075, rotation: -0.06, color: "#302028" },
+    { x: -0.045, y: -0.085, w: 0.09, h: 0.045, color: "#251b22" },
+  ],
+  7: [
+    { x: -0.1, y: 0.055, w: 0.05, h: 0.05, rotation: 0.1, color: "#1b2619" },
+    { x: -0.025, y: 0.075, w: 0.05, h: 0.05, rotation: -0.08, color: "#1b2619" },
+    { x: 0.05, y: 0.055, w: 0.05, h: 0.05, rotation: 0.12, color: "#1b2619" },
+    { x: -0.06, y: -0.075, w: 0.125, h: 0.03, rotation: 0.1, color: "#293a20" },
+  ],
+};
+
+function createZombieFaceGeometry(kind: number) {
+  const features = ZOMBIE_FACE_FEATURES[kind] ?? ZOMBIE_FACE_FEATURES[0]!;
+  const positions: number[] = [];
+  const colors: number[] = [];
+
+  for (const feature of features) {
+    const rotation = feature.rotation ?? 0;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    const corners = [
+      [-feature.w / 2, -feature.h / 2],
+      [feature.w / 2, -feature.h / 2],
+      [feature.w / 2, feature.h / 2],
+      [-feature.w / 2, feature.h / 2],
+    ];
+    const color = new THREE.Color(feature.color);
+    const pushVertex = (x: number, y: number) => {
+      positions.push(x * cos - y * sin + feature.x, x * sin + y * cos + feature.y, 0.008);
+      colors.push(color.r, color.g, color.b);
+    };
+    const [x0, y0] = corners[0]!;
+    const [x1, y1] = corners[1]!;
+    const [x2, y2] = corners[2]!;
+    const [x3, y3] = corners[3]!;
+    pushVertex(x0, y0);
+    pushVertex(x1, y1);
+    pushVertex(x2, y2);
+    pushVertex(x0, y0);
+    pushVertex(x2, y2);
+    pushVertex(x3, y3);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 const ZOMBIE_LOOKS = [
   { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
   { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
@@ -43,6 +143,39 @@ const ZOMBIE_LOOKS = [
   { skin: "#9bb4b7", cloth: "#3f5960", legs: "#2e3c43" },
   { skin: "#d49aa5", cloth: "#6a4d63", legs: "#40384d" },
   { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
+] as const;
+
+
+const ZOMBIE_PART_NAMES = [
+  "status-mark",
+  "status-stun",
+  "boss-aura",
+  "boss-crown",
+  "boss-core",
+  "boss-signature",
+  "boss-mark-brute",
+  "boss-mark-splitter",
+  "boss-mark-bomber",
+  "boss-mark-guardian",
+  "boss-mark-healer",
+  "boss-mark-swarm",
+  "body",
+  "head",
+  "face",
+  "left-arm",
+  "right-arm",
+  "left-leg",
+  "right-leg",
+  "left-shoulder",
+  "right-shoulder",
+  "runner-crest",
+  "splitter-core",
+  "bomber-pack",
+  "guardian-shield",
+  "healer-aura",
+  "swarm-crest",
+  "hp-background",
+  "hp-fill",
 ] as const;
 
 export type Selection =
@@ -746,7 +879,13 @@ function TowerMesh({
 
 /* ---------------- pooled zombies, gibs & bullets ---------------- */
 
-function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+function Zombies({
+  map,
+  reducedMotion = false,
+}: {
+  map: ReturnType<typeof getStageMapByStageId>;
+  reducedMotion?: boolean;
+}) {
   const bodyGeometries = useMemo(() => ({
     0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
     1: new THREE.BoxGeometry(0.5, 0.9, 0.34),
@@ -757,6 +896,13 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
     6: new THREE.IcosahedronGeometry(0.5, 0),
     7: new THREE.TetrahedronGeometry(0.52, 0),
   } as Record<number, THREE.BufferGeometry>), []);
+  const faceGeometries = useMemo(
+    () =>
+      Object.fromEntries(
+        Array.from({ length: 8 }, (_, kind) => [kind, createZombieFaceGeometry(kind)]),
+      ) as Record<number, THREE.BufferGeometry>,
+    [],
+  );
   const headGeometries = useMemo(() => ({
     0: new THREE.BoxGeometry(0.46, 0.46, 0.46),
     1: new THREE.IcosahedronGeometry(0.3, 0),
@@ -771,14 +917,16 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
     () => () => {
       Object.values(bodyGeometries).forEach((geometry) => geometry.dispose());
       Object.values(headGeometries).forEach((geometry) => geometry.dispose());
+      Object.values(faceGeometries).forEach((geometry) => geometry.dispose());
     },
-    [bodyGeometries, headGeometries],
+    [bodyGeometries, headGeometries, faceGeometries],
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const legs = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
+  const partRefs = useRef<Array<Record<string, THREE.Object3D | undefined> | null>>([]);
   const lastBoss = useRef<boolean[]>([]);
 
   useFrame(() => {
@@ -792,11 +940,20 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         continue;
       }
       g.visible = true;
+      let refs = partRefs.current[i];
+      if (!refs) {
+        refs = {};
+        for (const name of ZOMBIE_PART_NAMES) {
+          refs[name] = g.getObjectByName(name) ?? undefined;
+        }
+        partRefs.current[i] = refs;
+      }
       const look = ZOMBIE_LOOKS[z.kind];
+      const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
       const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
-      const statusMark = g.getObjectByName("status-mark");
-      const statusStun = g.getObjectByName("status-stun");
+      const statusMark = refs["status-mark"];
+      const statusStun = refs["status-stun"];
       if (statusMark) {
         statusMark.visible = z.markTime > 0 && !z.dead;
         if (statusMark.visible) {
@@ -813,16 +970,16 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       }
       const bossChanged = lastBoss.current[i] !== z.boss;
       if (bossChanged || z.boss) {
-        const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
-        const bossCrown = g.getObjectByName("boss-crown") as THREE.Group | undefined;
-        const bossCore = g.getObjectByName("boss-core") as THREE.Mesh | undefined;
-        const bossSignature = g.getObjectByName("boss-signature") as THREE.Group | undefined;
-        const bruteMark = g.getObjectByName("boss-mark-brute") as THREE.Group | undefined;
-        const splitterMark = g.getObjectByName("boss-mark-splitter") as THREE.Group | undefined;
-        const bomberMark = g.getObjectByName("boss-mark-bomber") as THREE.Group | undefined;
-        const guardianMark = g.getObjectByName("boss-mark-guardian") as THREE.Group | undefined;
-        const healerMark = g.getObjectByName("boss-mark-healer") as THREE.Group | undefined;
-        const swarmMark = g.getObjectByName("boss-mark-swarm") as THREE.Group | undefined;
+        const bossAura = refs["boss-aura"] as THREE.Group | undefined;
+        const bossCrown = refs["boss-crown"] as THREE.Group | undefined;
+        const bossCore = refs["boss-core"] as THREE.Mesh | undefined;
+        const bossSignature = refs["boss-signature"] as THREE.Group | undefined;
+        const bruteMark = refs["boss-mark-brute"] as THREE.Group | undefined;
+        const splitterMark = refs["boss-mark-splitter"] as THREE.Group | undefined;
+        const bomberMark = refs["boss-mark-bomber"] as THREE.Group | undefined;
+        const guardianMark = refs["boss-mark-guardian"] as THREE.Group | undefined;
+        const healerMark = refs["boss-mark-healer"] as THREE.Group | undefined;
+        const swarmMark = refs["boss-mark-swarm"] as THREE.Group | undefined;
         const now = performance.now();
         if (bossChanged) {
           lastBoss.current[i] = z.boss;
@@ -898,23 +1055,30 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
                       : 1;
       if (lastKind.current[i] !== z.kind) {
         lastKind.current[i] = z.kind;
-        const body = g.getObjectByName("body") as THREE.Mesh | undefined;
-        const head = g.getObjectByName("head") as THREE.Mesh | undefined;
-        const leftArm = g.getObjectByName("left-arm") as THREE.Mesh | undefined;
-        const rightArm = g.getObjectByName("right-arm") as THREE.Mesh | undefined;
-        const leftLeg = g.getObjectByName("left-leg") as THREE.Mesh | undefined;
-        const rightLeg = g.getObjectByName("right-leg") as THREE.Mesh | undefined;
-        const leftShoulder = g.getObjectByName("left-shoulder") as THREE.Mesh | undefined;
-        const rightShoulder = g.getObjectByName("right-shoulder") as THREE.Mesh | undefined;
-        const runnerCrest = g.getObjectByName("runner-crest") as THREE.Mesh | undefined;
-        const splitterCore = g.getObjectByName("splitter-core") as THREE.Mesh | undefined;
-        const bomberPack = g.getObjectByName("bomber-pack") as THREE.Mesh | undefined;
-        const guardianShield = g.getObjectByName("guardian-shield") as THREE.Mesh | undefined;
-        const healerAura = g.getObjectByName("healer-aura") as THREE.Mesh | undefined;
-        const swarmCrest = g.getObjectByName("swarm-crest") as THREE.Mesh | undefined;
+        const body = refs["body"] as THREE.Mesh | undefined;
+        const head = refs["head"] as THREE.Mesh | undefined;
+        const face = refs["face"] as THREE.Mesh | undefined;
+        const leftArm = refs["left-arm"] as THREE.Mesh | undefined;
+        const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
+        const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
+        const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
+        const leftShoulder = refs["left-shoulder"] as THREE.Mesh | undefined;
+        const rightShoulder = refs["right-shoulder"] as THREE.Mesh | undefined;
+        const runnerCrest = refs["runner-crest"] as THREE.Mesh | undefined;
+        const splitterCore = refs["splitter-core"] as THREE.Mesh | undefined;
+        const bomberPack = refs["bomber-pack"] as THREE.Mesh | undefined;
+        const guardianShield = refs["guardian-shield"] as THREE.Mesh | undefined;
+        const healerAura = refs["healer-aura"] as THREE.Mesh | undefined;
+        const swarmCrest = refs["swarm-crest"] as THREE.Mesh | undefined;
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
           body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
           head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
+          if (face) {
+            face.geometry = faceGeometries[z.kind] ?? faceGeometries[0]!;
+            face.position.set(0, presentation.faceY, presentation.faceZ);
+            face.scale.setScalar(presentation.faceScale);
+            face.visible = true;
+          }
           if (z.kind === 1) {
             body.position.set(0, 0.9, 0.08);
             body.scale.set(0.68, 1.06, 0.72);
@@ -969,17 +1133,109 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       }
       if (z.dead) {
         const f = Math.min(1, z.fade);
+        const deathProgress = Math.min(1, f * 2.6);
         g.position.set(z.x, 0.1 + z.y, z.z);
         g.rotation.x = -1.4 - z.tilt;
         g.rotation.z = z.roll;
         g.scale.setScalar(scale * (z.boss ? 1.16 : 1) * (1 - f * 0.35));
+        const body = refs["body"] as THREE.Mesh | undefined;
+        const head = refs["head"] as THREE.Mesh | undefined;
+        const face = refs["face"] as THREE.Mesh | undefined;
+        const leftArm = refs["left-arm"] as THREE.Mesh | undefined;
+        const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
+        const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
+        const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
+        if (body) body.rotation.x = -presentation.deathFold * deathProgress;
+        if (head) head.rotation.z = presentation.hitTwist * deathProgress * 0.65;
+        if (face) face.visible = false;
+        if (leftArm) leftArm.rotation.x = -1.2 - deathProgress * 0.8;
+        if (rightArm) rightArm.rotation.x = -1.35 + deathProgress * 0.8;
+        if (leftLeg) leftLeg.rotation.x = -deathProgress * 0.45;
+        if (rightLeg) rightLeg.rotation.x = deathProgress * 0.55;
       } else {
-        g.position.set(z.x, 0.1 + Math.abs(Math.sin(z.wobble)) * 0.14, z.z);
-        g.rotation.x = 0;
-        g.rotation.z = Math.sin(z.wobble) * 0.16;
-        g.scale.setScalar(scale * (z.boss ? 1.16 : 1));
+        const phase = z.wobble + i * 0.43;
+        const animationFactor = reducedMotion ? 0.35 : 1;
+        const gaitWave = Math.sin(phase * presentation.gait) * animationFactor;
+        const altGaitWave = Math.sin(phase * presentation.gait + Math.PI) * animationFactor;
+        const idleWave = Math.sin(phase * presentation.idleRate) * animationFactor;
+        const hpRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
+        const injured = 1 - hpRatio;
+        const reactionEnvelope = z.hitReact > 0
+          ? z.hitReact * z.hitReact * (3 - 2 * z.hitReact)
+          : 0;
         const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
-        g.rotation.y = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
+        const facingY = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
+        g.position.set(
+          z.x,
+          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp,
+          z.z,
+        );
+        const localHitRight = z.hitX * Math.cos(facingY) - z.hitZ * Math.sin(facingY);
+        const localHitForward = z.hitX * Math.sin(facingY) + z.hitZ * Math.cos(facingY);
+        const movementSway = idleWave * presentation.bodySway;
+        const damageSag = injured * presentation.damageLean * 0.35;
+        const hitTwist = localHitRight * reactionEnvelope * z.hitForce * presentation.hitTwist;
+        const hitRecoil = localHitForward * reactionEnvelope * z.hitForce * presentation.hitRecoil;
+        g.rotation.y = facingY;
+        g.rotation.x = presentation.forwardLean + damageSag - hitRecoil * 0.18;
+        g.rotation.z = movementSway + hitTwist;
+
+        const body = refs["body"] as THREE.Mesh | undefined;
+        const head = refs["head"] as THREE.Mesh | undefined;
+        const face = refs["face"] as THREE.Mesh | undefined;
+        const leftArm = refs["left-arm"] as THREE.Mesh | undefined;
+        const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
+        const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
+        const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
+
+        if (body) {
+          body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
+          body.rotation.y = localHitRight * reactionEnvelope * z.hitForce * 0.22;
+          const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
+          body.scale.y = baseBodyScaleY * (1 + Math.abs(gaitWave) * 0.018);
+        }
+        if (head) {
+          head.rotation.x =
+            Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75 -
+            hitRecoil * 0.12;
+          head.rotation.z =
+            Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45 -
+            hitTwist * 0.55;
+        }
+        if (face) {
+          face.visible = true;
+          face.rotation.copy(head?.rotation ?? new THREE.Euler());
+          face.position.y = presentation.faceY;
+          face.position.z = presentation.faceZ;
+        }
+        if (leftArm) {
+          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing - hitRecoil * 0.35;
+          leftArm.rotation.z = -hitTwist * 0.7 + idleWave * 0.04;
+        }
+        if (rightArm) {
+          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing + hitRecoil * 0.35;
+          rightArm.rotation.z = hitTwist * 0.7 - idleWave * 0.04;
+        }
+        if (leftLeg) {
+          leftLeg.rotation.x = altGaitWave * presentation.stride + hitRecoil * 0.12;
+        }
+        if (rightLeg) {
+          rightLeg.rotation.x = gaitWave * presentation.stride - hitRecoil * 0.12;
+        }
+
+        const signatureName =
+          z.kind === 1 ? "runner-crest" :
+          z.kind === 3 ? "splitter-core" :
+          z.kind === 4 ? "bomber-pack" :
+          z.kind === 5 ? "guardian-shield" :
+          z.kind === 6 ? "healer-aura" :
+          z.kind === 7 ? "swarm-crest" : null;
+        const signature = signatureName ? refs[signatureName] : null;
+        if (signature) {
+          signature.rotation.y += (z.kind === 7 ? 0.06 : z.kind === 3 ? 0.035 : 0.018);
+          const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
+          signature.scale.setScalar(signaturePulse);
+        }
       }
       // damage flash
       const f = z.dead ? 0 : z.flash;
@@ -1021,7 +1277,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         ["swarm-crest", "swarm-crest"],
       ];
       for (const [name, part] of hiddenGoreParts) {
-        const object = g.getObjectByName(name);
+        const object = refs[name];
         if (!object) continue;
         const kindRequired =
           name === "left-shoulder" || name === "right-shoulder" ? z.kind === 2 :
@@ -1034,8 +1290,8 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
         object.visible = kindRequired && !isBroken(part);
       }
 
-      const hpBackground = g.getObjectByName("hp-background") as THREE.Mesh | undefined;
-      const hpFill = g.getObjectByName("hp-fill") as THREE.Mesh | undefined;
+      const hpBackground = refs["hp-background"] as THREE.Mesh | undefined;
+      const hpFill = refs["hp-fill"] as THREE.Mesh | undefined;
       const healthBar = getEnemyHealthBarPresentation(z.kind, z.hp, z.maxHp, z.boss);
       const showHealth = healthBar.show && !z.dead;
       if (hpBackground && hpFill) {
@@ -1067,6 +1323,10 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           <mesh name="head" position={[0, 1.62, 0]} castShadow>
             <boxGeometry args={[0.46, 0.46, 0.46]} />
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
+          </mesh>
+          <mesh name="face" position={[0, 1.62, 0.235]} visible={false}>
+            <primitive object={faceGeometries[0]!} attach="geometry" />
+            <meshBasicMaterial vertexColors toneMapped={false} side={THREE.DoubleSide} />
           </mesh>
 
           <group name="boss-aura" visible={false} position={[0, 1.1, 0]}>
@@ -1603,7 +1863,7 @@ export function Scene({
             onSelect={onSelectTower}
           />
         ))}
-        <Zombies map={map} />
+        <Zombies map={map} reducedMotion={reducedMotion} />
         <Gibs />
         <DamagePopups/>
         <Bullets />

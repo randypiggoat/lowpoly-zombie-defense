@@ -61,6 +61,11 @@ describe("enemy counterplay", () => {
       spin: 0,
       roll: 0,
       gibbed: false,
+    hitReact: 0,
+    hitX: 0,
+    hitZ: 0,
+    hitForce: 0,
+    hitKind: undefined,
     });
 
     for (let i = 0; i < 20; i++) game.tick(1 / 60);
