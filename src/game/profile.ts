@@ -1130,11 +1130,11 @@ class ProfileStore {
   }
 
   towerMasteryLevel(kind: string) {
-    return Math.min(10, Math.floor((this.profile.towerMasteryXp[kind] ?? 0) / 100));
+    return Math.min(10, Math.floor(((this.profile.towerMasteryXp ?? {})[kind] ?? 0) / 100));
   }
 
   towerMasteryProgress(kind: string) {
-    const xp = this.profile.towerMasteryXp[kind] ?? 0;
+    const xp = (this.profile.towerMasteryXp ?? {})[kind] ?? 0;
     const level = this.towerMasteryLevel(kind);
     return {
       xp,
