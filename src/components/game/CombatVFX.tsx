@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useRef } from "react";
 import * as THREE from "three";
 import { game } from "@/game/engine";
 
@@ -55,16 +55,6 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
   const previousFlash = useRef<number[]>([]);
   const previousHeal = useRef<number[]>([]);
   const previousDead = useRef<boolean[]>([]);
-
-  const geometry = useMemo(() => ({
-    ring: new THREE.TorusGeometry(0.42, 0.055, 5, 14),
-    core: new THREE.IcosahedronGeometry(0.13, 0),
-    shard: new THREE.OctahedronGeometry(0.085, 0),
-  }), []);
-
-  useEffect(() => () => {
-    Object.values(geometry).forEach((g) => g.dispose());
-  }, [geometry]);
 
   function spawn(x: number, y: number, z: number, kind: BurstState["kind"], size: number, color: string) {
     if (reducedMotion) return;
@@ -171,11 +161,11 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
       {Array.from({ length: MAX_BURSTS }, (_, i) => (
         <group key={i} ref={(el) => void (groups.current[i] = el)} visible={false}>
           <mesh name="ring" rotation-x={Math.PI / 2}>
-            <primitive object={geometry.ring} attach="geometry" />
+            <torusGeometry args={[0.42, 0.055, 5, 14]} />
             <meshBasicMaterial color="#fff1c7" transparent opacity={0.72} />
           </mesh>
           <mesh name="core">
-            <primitive object={geometry.core} attach="geometry" />
+            <icosahedronGeometry args={[0.13, 0]} />
             <meshBasicMaterial color="#fff1c7" />
           </mesh>
           {[0, 1, 2, 3].map((shard) => {
@@ -188,7 +178,7 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
                 rotation-z={angle}
                 visible
               >
-                <primitive object={geometry.shard} attach="geometry" />
+                <octahedronGeometry args={[0.085, 0]} />
                 <meshBasicMaterial color="#fff1c7" transparent opacity={0.78} />
               </mesh>
             );
