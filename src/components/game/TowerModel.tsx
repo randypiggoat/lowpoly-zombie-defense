@@ -92,9 +92,10 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
     }
     if (core.current) {
       const pulse = 1 + Math.sin(t * 5 + idleSeed) * 0.1;
-      core.current.scale.setScalar(pulse);
+      const preFire = tower.cooldown > 0 && tower.cooldown < 0.11 ? (1 - tower.cooldown / 0.11) : 0;
+      core.current.scale.setScalar(pulse * (1 + preFire * 0.16));
       const material = core.current.material as THREE.MeshStandardMaterial;
-      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8;
+      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8 + preFire * 0.55;
     }
     if (identityCore.current) {
       const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08;
