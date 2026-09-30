@@ -145,6 +145,39 @@ const ZOMBIE_LOOKS = [
   { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
 ] as const;
 
+
+const ZOMBIE_PART_NAMES = [
+  "status-mark",
+  "status-stun",
+  "boss-aura",
+  "boss-crown",
+  "boss-core",
+  "boss-signature",
+  "boss-mark-brute",
+  "boss-mark-splitter",
+  "boss-mark-bomber",
+  "boss-mark-guardian",
+  "boss-mark-healer",
+  "boss-mark-swarm",
+  "body",
+  "head",
+  "face",
+  "left-arm",
+  "right-arm",
+  "left-leg",
+  "right-leg",
+  "left-shoulder",
+  "right-shoulder",
+  "runner-crest",
+  "splitter-core",
+  "bomber-pack",
+  "guardian-shield",
+  "healer-aura",
+  "swarm-crest",
+  "hp-background",
+  "hp-fill",
+] as const;
+
 export type Selection =
   | { kind: "tower"; id: number }
   | { kind: "spot"; position: { x: number; z: number } }
@@ -893,6 +926,7 @@ function Zombies({
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
+  const partRefs = useRef<Array<Record<string, THREE.Object3D | undefined> | null>>([]);
   const lastBoss = useRef<boolean[]>([]);
 
   useFrame(() => {
@@ -906,6 +940,14 @@ function Zombies({
         continue;
       }
       g.visible = true;
+      let refs = partRefs.current[i];
+      if (!refs) {
+        refs = {};
+        for (const name of ZOMBIE_PART_NAMES) {
+          refs[name] = g.getObjectByName(name) ?? undefined;
+        }
+        partRefs.current[i] = refs;
+      }
       const look = ZOMBIE_LOOKS[z.kind];
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
@@ -928,16 +970,16 @@ function Zombies({
       }
       const bossChanged = lastBoss.current[i] !== z.boss;
       if (bossChanged || z.boss) {
-        const bossAura = g.getObjectByName("boss-aura") as THREE.Group | undefined;
-        const bossCrown = g.getObjectByName("boss-crown") as THREE.Group | undefined;
-        const bossCore = g.getObjectByName("boss-core") as THREE.Mesh | undefined;
-        const bossSignature = g.getObjectByName("boss-signature") as THREE.Group | undefined;
-        const bruteMark = g.getObjectByName("boss-mark-brute") as THREE.Group | undefined;
-        const splitterMark = g.getObjectByName("boss-mark-splitter") as THREE.Group | undefined;
-        const bomberMark = g.getObjectByName("boss-mark-bomber") as THREE.Group | undefined;
-        const guardianMark = g.getObjectByName("boss-mark-guardian") as THREE.Group | undefined;
-        const healerMark = g.getObjectByName("boss-mark-healer") as THREE.Group | undefined;
-        const swarmMark = g.getObjectByName("boss-mark-swarm") as THREE.Group | undefined;
+        const bossAura = refs["boss-aura"] as THREE.Group | undefined;
+        const bossCrown = refs["boss-crown"] as THREE.Group | undefined;
+        const bossCore = refs["boss-core"] as THREE.Mesh | undefined;
+        const bossSignature = refs["boss-signature"] as THREE.Group | undefined;
+        const bruteMark = refs["boss-mark-brute"] as THREE.Group | undefined;
+        const splitterMark = refs["boss-mark-splitter"] as THREE.Group | undefined;
+        const bomberMark = refs["boss-mark-bomber"] as THREE.Group | undefined;
+        const guardianMark = refs["boss-mark-guardian"] as THREE.Group | undefined;
+        const healerMark = refs["boss-mark-healer"] as THREE.Group | undefined;
+        const swarmMark = refs["boss-mark-swarm"] as THREE.Group | undefined;
         const now = performance.now();
         if (bossChanged) {
           lastBoss.current[i] = z.boss;
@@ -1013,21 +1055,21 @@ function Zombies({
                       : 1;
       if (lastKind.current[i] !== z.kind) {
         lastKind.current[i] = z.kind;
-        const body = g.getObjectByName("body") as THREE.Mesh | undefined;
-        const head = g.getObjectByName("head") as THREE.Mesh | undefined;
-        const face = g.getObjectByName("face") as THREE.Mesh | undefined;
-        const leftArm = g.getObjectByName("left-arm") as THREE.Mesh | undefined;
-        const rightArm = g.getObjectByName("right-arm") as THREE.Mesh | undefined;
-        const leftLeg = g.getObjectByName("left-leg") as THREE.Mesh | undefined;
-        const rightLeg = g.getObjectByName("right-leg") as THREE.Mesh | undefined;
-        const leftShoulder = g.getObjectByName("left-shoulder") as THREE.Mesh | undefined;
-        const rightShoulder = g.getObjectByName("right-shoulder") as THREE.Mesh | undefined;
-        const runnerCrest = g.getObjectByName("runner-crest") as THREE.Mesh | undefined;
-        const splitterCore = g.getObjectByName("splitter-core") as THREE.Mesh | undefined;
-        const bomberPack = g.getObjectByName("bomber-pack") as THREE.Mesh | undefined;
-        const guardianShield = g.getObjectByName("guardian-shield") as THREE.Mesh | undefined;
-        const healerAura = g.getObjectByName("healer-aura") as THREE.Mesh | undefined;
-        const swarmCrest = g.getObjectByName("swarm-crest") as THREE.Mesh | undefined;
+        const body = refs["body"] as THREE.Mesh | undefined;
+        const head = refs["head"] as THREE.Mesh | undefined;
+        const face = refs["face"] as THREE.Mesh | undefined;
+        const leftArm = refs["left-arm"] as THREE.Mesh | undefined;
+        const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
+        const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
+        const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
+        const leftShoulder = refs["left-shoulder"] as THREE.Mesh | undefined;
+        const rightShoulder = refs["right-shoulder"] as THREE.Mesh | undefined;
+        const runnerCrest = refs["runner-crest"] as THREE.Mesh | undefined;
+        const splitterCore = refs["splitter-core"] as THREE.Mesh | undefined;
+        const bomberPack = refs["bomber-pack"] as THREE.Mesh | undefined;
+        const guardianShield = refs["guardian-shield"] as THREE.Mesh | undefined;
+        const healerAura = refs["healer-aura"] as THREE.Mesh | undefined;
+        const swarmCrest = refs["swarm-crest"] as THREE.Mesh | undefined;
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
           body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
           head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
@@ -1096,13 +1138,13 @@ function Zombies({
         g.rotation.x = -1.4 - z.tilt;
         g.rotation.z = z.roll;
         g.scale.setScalar(scale * (z.boss ? 1.16 : 1) * (1 - f * 0.35));
-        const body = g.getObjectByName("body") as THREE.Mesh | undefined;
-        const head = g.getObjectByName("head") as THREE.Mesh | undefined;
-        const face = g.getObjectByName("face") as THREE.Mesh | undefined;
-        const leftArm = g.getObjectByName("left-arm") as THREE.Mesh | undefined;
-        const rightArm = g.getObjectByName("right-arm") as THREE.Mesh | undefined;
-        const leftLeg = g.getObjectByName("left-leg") as THREE.Mesh | undefined;
-        const rightLeg = g.getObjectByName("right-leg") as THREE.Mesh | undefined;
+        const body = refs["body"] as THREE.Mesh | undefined;
+        const head = refs["head"] as THREE.Mesh | undefined;
+        const face = refs["face"] as THREE.Mesh | undefined;
+        const leftArm = refs["left-arm"] as THREE.Mesh | undefined;
+        const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
+        const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
+        const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
         if (body) body.rotation.x = -presentation.deathFold * deathProgress;
         if (head) head.rotation.z = presentation.hitTwist * deathProgress * 0.65;
         if (face) face.visible = false;
@@ -1138,13 +1180,13 @@ function Zombies({
         g.rotation.x = presentation.forwardLean + damageSag - hitRecoil * 0.18;
         g.rotation.z = movementSway + hitTwist;
 
-        const body = g.getObjectByName("body") as THREE.Mesh | undefined;
-        const head = g.getObjectByName("head") as THREE.Mesh | undefined;
-        const face = g.getObjectByName("face") as THREE.Mesh | undefined;
-        const leftArm = g.getObjectByName("left-arm") as THREE.Mesh | undefined;
-        const rightArm = g.getObjectByName("right-arm") as THREE.Mesh | undefined;
-        const leftLeg = g.getObjectByName("left-leg") as THREE.Mesh | undefined;
-        const rightLeg = g.getObjectByName("right-leg") as THREE.Mesh | undefined;
+        const body = refs["body"] as THREE.Mesh | undefined;
+        const head = refs["head"] as THREE.Mesh | undefined;
+        const face = refs["face"] as THREE.Mesh | undefined;
+        const leftArm = refs["left-arm"] as THREE.Mesh | undefined;
+        const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
+        const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
+        const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
 
         if (body) {
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
@@ -1235,7 +1277,7 @@ function Zombies({
         ["swarm-crest", "swarm-crest"],
       ];
       for (const [name, part] of hiddenGoreParts) {
-        const object = g.getObjectByName(name);
+        const object = refs[name];
         if (!object) continue;
         const kindRequired =
           name === "left-shoulder" || name === "right-shoulder" ? z.kind === 2 :
@@ -1248,8 +1290,8 @@ function Zombies({
         object.visible = kindRequired && !isBroken(part);
       }
 
-      const hpBackground = g.getObjectByName("hp-background") as THREE.Mesh | undefined;
-      const hpFill = g.getObjectByName("hp-fill") as THREE.Mesh | undefined;
+      const hpBackground = refs["hp-background"] as THREE.Mesh | undefined;
+      const hpFill = refs["hp-fill"] as THREE.Mesh | undefined;
       const healthBar = getEnemyHealthBarPresentation(z.kind, z.hp, z.maxHp, z.boss);
       const showHealth = healthBar.show && !z.dead;
       if (hpBackground && hpFill) {
