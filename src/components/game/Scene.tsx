@@ -1230,7 +1230,7 @@ function Zombies({
           z.kind === 5 ? "guardian-shield" :
           z.kind === 6 ? "healer-aura" :
           z.kind === 7 ? "swarm-crest" : null;
-        const signature = signatureName ? g.getObjectByName(signatureName) : null;
+        const signature = signatureName ? refs[signatureName] : null;
         if (signature) {
           signature.rotation.y += (z.kind === 7 ? 0.06 : z.kind === 3 ? 0.035 : 0.018);
           const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
