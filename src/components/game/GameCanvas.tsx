@@ -28,7 +28,7 @@ import {
   profile,
   xpForLevel,
 } from "@/game/profile";
-import { TOWER_COSMETICS } from "@/game/collection";
+import { TOWER_COSMETICS, ZOMBIE_COSMETICS } from "@/game/collection";
 import {
   createEndlessStage,
   ENDLESS_CHALLENGES,
@@ -1028,6 +1028,32 @@ export function GameCanvas() {
                   </div>
                 );
               })}
+            <div className="mt-4 rounded-2xl bg-panel/95 p-3 shadow-panel">
+              <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Enemy collection</p>
+              <h3 className="font-display text-xl tracking-wide text-panel-foreground">Zombie Skins</h3>
+              <p className="mt-1 text-[10px] text-panel-muted">Earn alternate infected palettes through kills, boss defeats, and Endless milestones.</p>
+              <div className="mt-2 space-y-2">
+                {ZOMBIE_COSMETICS.map((cosmetic) => {
+                  const unlocked = cosmetic.unlock(player);
+                  const equipped = profile.equippedZombieCosmetic() === cosmetic.id;
+                  return (
+                    <div key={cosmetic.id} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 shrink-0 rounded-lg border border-white/10" style={{ background: cosmetic.skin }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-display text-base text-panel-foreground">{cosmetic.name}</p>
+                          <p className="text-[10px] text-panel-muted">{cosmetic.description}</p>
+                          <p className="mt-1 text-[9px] text-panel-muted">{unlocked ? "Unlocked" : cosmetic.requirement}</p>
+                        </div>
+                      </div>
+                      <button type="button" disabled={!unlocked} onClick={() => profile.equipZombieCosmetic(cosmetic.id)} className="mt-2 min-h-10 w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-semibold text-accent-foreground disabled:opacity-40">
+                        {equipped ? "Equipped" : "Equip"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             </div>
           </div>
         </div>
