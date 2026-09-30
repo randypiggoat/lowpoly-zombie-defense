@@ -92,7 +92,6 @@ test("tower placement follows pointer across both world axes and builds at the s
       pointerType: "mouse",
       isPrimary: true,
     });
-    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
   };
 
   const probes: Array<{
