@@ -57,7 +57,7 @@ import {
   TOWER_PATHS as DESIGNED_TOWER_PATHS,
   getTowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
-import { damageReactionMultiplier, hitDirection } from "./zombiePresentation";
+import { hitDirection } from "./zombiePresentation";
 
 export type Vec2 = { x: number; z: number };
 
@@ -1260,10 +1260,7 @@ export class Game {
     }
     const damageRatio = incomingDamage / Math.max(1, z.maxHp);
     z.hitReact = 1;
-    z.hitForce = Math.min(
-      1.75,
-      (0.28 + damageRatio * 2.2) * damageReactionMultiplier(ability.damageKind),
-    );
+    z.hitForce = Math.min(1.75, 0.28 + damageRatio * 2.2);
     z.hitKind = ability.damageKind;
 
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
