@@ -1073,22 +1073,6 @@ function Zombies({
           }
         }
       }
-      const scale =
-        z.kind === 2
-          ? 1.24
-          : z.kind === 1
-            ? 0.88
-            : z.kind === 5
-              ? 1.18
-              : z.kind === 7
-                ? 0.72
-                : z.kind === 4
-                  ? 1.06
-                  : z.kind === 3
-                    ? 1.02
-                    : z.kind === 6
-                      ? 0.9
-                      : 1;
       if (lastKind.current[i] !== z.kind) {
         lastKind.current[i] = z.kind;
         const body = refs["body"] as THREE.Mesh | undefined;
@@ -1106,49 +1090,30 @@ function Zombies({
         const guardianShield = refs["guardian-shield"] as THREE.Mesh | undefined;
         const healerAura = refs["healer-aura"] as THREE.Mesh | undefined;
         const swarmCrest = refs["swarm-crest"] as THREE.Mesh | undefined;
+
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
           body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
           head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
+          body.position.set(0, presentation.bodyY, presentation.bodyZ);
+          body.scale.set(...presentation.bodyScale);
+          head.position.set(0, presentation.headY, presentation.headZ);
+          head.scale.set(...presentation.headScale);
+          leftArm.position.set(presentation.armSpread, presentation.armY, presentation.armZ);
+          rightArm.position.set(-presentation.armSpread, presentation.armY, presentation.armZ);
+          leftArm.scale.set(...presentation.armScale);
+          rightArm.scale.copy(leftArm.scale);
+          leftLeg.position.x = presentation.legSpread;
+          rightLeg.position.x = -presentation.legSpread;
+          leftLeg.scale.set(...presentation.legScale);
+          rightLeg.scale.copy(leftLeg.scale);
+
           if (face) {
             face.geometry = faceGeometries[z.kind] ?? faceGeometries[0]!;
             face.position.set(0, presentation.faceY, presentation.faceZ);
             face.scale.setScalar(presentation.faceScale);
             face.visible = true;
           }
-          if (z.kind === 1) {
-            body.position.set(0, 0.9, 0.08);
-            body.scale.set(0.68, 1.06, 0.72);
-            head.position.set(0, 1.55, 0.12);
-            head.scale.set(0.78, 0.86, 0.82);
-            leftArm.position.set(0.3, 1.1, 0.42);
-            rightArm.position.set(-0.3, 1.1, 0.42);
-            leftArm.scale.set(0.65, 1.12, 0.65);
-            rightArm.scale.copy(leftArm.scale);
-            leftLeg.scale.set(0.68, 1.15, 0.68);
-            rightLeg.scale.copy(leftLeg.scale);
-          } else if (z.kind === 2) {
-            body.position.set(0, 1.05, 0);
-            body.scale.set(1.42, 1.28, 1.25);
-            head.position.set(0, 1.83, 0.02);
-            head.scale.set(1.22, 1.1, 1.15);
-            leftArm.position.set(0.58, 1.2, 0.28);
-            rightArm.position.set(-0.58, 1.2, 0.28);
-            leftArm.scale.set(1.35, 1.32, 1.35);
-            rightArm.scale.copy(leftArm.scale);
-            leftLeg.scale.set(1.3, 1.12, 1.3);
-            rightLeg.scale.copy(leftLeg.scale);
-          } else {
-            body.position.set(0, 0.95, 0);
-            body.scale.set(1, 1, 1);
-            head.position.set(0, 1.62, 0);
-            head.scale.set(1, 1, 1);
-            leftArm.position.set(0.42, 1.15, 0.3);
-            rightArm.position.set(-0.42, 1.15, 0.3);
-            leftArm.scale.set(1, 1, 1);
-            rightArm.scale.set(1, 1, 1);
-            leftLeg.scale.set(1, 1, 1);
-            rightLeg.scale.set(1, 1, 1);
-          }
+
           for (const mesh of [head, leftArm, rightArm]) {
             (mesh.material as THREE.MeshStandardMaterial).color.set(look.skin);
           }
@@ -1156,9 +1121,12 @@ function Zombies({
           (leftLeg.material as THREE.MeshStandardMaterial).color.set(look.legs);
           (rightLeg.material as THREE.MeshStandardMaterial).color.set(look.legs);
         }
+
         if (leftShoulder && rightShoulder) {
           leftShoulder.visible = z.kind === 2;
           rightShoulder.visible = z.kind === 2;
+          leftShoulder.scale.setScalar(presentation.shoulderScale);
+          rightShoulder.scale.setScalar(presentation.shoulderScale);
         }
         if (runnerCrest) runnerCrest.visible = z.kind === 1;
         if (splitterCore) splitterCore.visible = z.kind === 3;
@@ -1173,7 +1141,7 @@ function Zombies({
         g.position.set(z.x, 0.1 + z.y, z.z);
         g.rotation.x = -1.4 - z.tilt;
         g.rotation.z = z.roll;
-        g.scale.setScalar(scale * (z.boss ? 1.16 : 1) * (1 - f * 0.35));
+        g.scale.setScalar((z.boss ? 1.16 : 1) * (1 - f * 0.35));
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
         const face = refs["face"] as THREE.Mesh | undefined;
@@ -1225,6 +1193,7 @@ function Zombies({
         g.rotation.y = facingY;
         g.rotation.x = presentation.forwardLean + damageSag - hitRecoil * 0.18 * motionScale;
         g.rotation.z = movementSway + hitTwist * motionScale;
+        g.scale.setScalar((z.boss ? 1.16 : 1) * (1 + injured * 0.01));
 
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
