@@ -10,6 +10,7 @@ import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
+import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
   MAX_ACTIVE_BULLETS,
@@ -688,6 +689,7 @@ function TowerMesh({
 }) {
   const turret = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
+  const selectedCore = useRef<THREE.Mesh>(null);
   const equippedCosmetic = cosmeticForTower(
     tower.kind,
     profile.equippedTowerCosmetic(tower.kind),
@@ -706,7 +708,13 @@ function TowerMesh({
       turret.current.rotation.y = cur + diff * (1 - Math.exp(-10 * dt));
     }
     if (ring.current) {
-      ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025);
+      ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 3.2 + tower.id) * 0.035);
+      const material = ring.current.material as THREE.MeshBasicMaterial;
+      material.opacity = 0.28 + Math.sin(clock.elapsedTime * 4 + tower.id) * 0.07;
+    }
+    if (selectedCore.current) {
+      const pulse = 1 + Math.sin(clock.elapsedTime * 5 + tower.id) * 0.12;
+      selectedCore.current.scale.setScalar(pulse);
     }
   });
 
@@ -729,7 +737,7 @@ function TowerMesh({
             <ringGeometry args={[0.66, 0.78, 20]} />
             <meshBasicMaterial color={accent} transparent opacity={0.9} side={THREE.DoubleSide} />
           </mesh>
-          <mesh position={[0, 0.2, 0]}>
+          <mesh ref={selectedCore} position={[0, 0.2, 0]}>
             <octahedronGeometry args={[0.12, 0]} />
             <meshBasicMaterial color={accent} transparent opacity={0.95} />
           </mesh>
@@ -1363,12 +1371,14 @@ function GoldPickup({
 
 function Bullets() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const glowMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const trailMeshes = useRef<(THREE.Mesh | null)[]>([]);
   const lastKind = useRef<string[]>([]);
   const geometries = useMemo(() => {
     const rocket = new THREE.ConeGeometry(0.14, 0.5, 6);
     rocket.rotateX(Math.PI / 2);
-    const laser = new THREE.BoxGeometry(0.09, 0.09, 0.5);
+    const laser = new THREE.CylinderGeometry(0.07, 0.07, 0.62, 6);
+    laser.rotateX(Math.PI / 2);
     const sniper = new THREE.BoxGeometry(0.06, 0.06, 0.62);
     return {
       rifleman: new THREE.IcosahedronGeometry(0.14, 0),
@@ -1386,7 +1396,7 @@ function Bullets() {
       Object.values(geometries).forEach((geometry) => geometry.dispose());
     };
   }, [geometries]);
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const list = game.state.bullets;
     for (let i = 0; i < MAX_BULLETS; i++) {
       const m = meshes.current[i];
@@ -1475,6 +1485,13 @@ function Bullets() {
           <mesh ref={(el) => void (meshes.current[i] = el)} visible={false}>
             <icosahedronGeometry args={[0.14, 0]} />
             <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh
+            ref={(el) => void (glowMeshes.current[i] = el)}
+            visible={false}
+          >
+            <sphereGeometry args={[0.18, 6, 6]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.14} depthWrite={false} />
           </mesh>
           <mesh
             ref={(el) => void (trailMeshes.current[i] = el)}
@@ -1605,8 +1622,9 @@ export function Scene({
         ))}
         <Zombies map={map} />
         <Gibs />
-        <DamagePopups/>
+        <DamagePopups />
         <Bullets />
+        <CombatVFX reducedMotion={reducedMotion} />
       </group>
     </>
   );
