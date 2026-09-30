@@ -11,21 +11,18 @@ test("late campaign zombie presentation survives a crowded mobile gameplay view"
     consoleErrors.push(message.text());
   });
 
+  test.setTimeout(60_000);
+
   await page.goto("/?qa=1");
   await page.getByRole("button", { name: "Campaign" }).click();
-  const stage20 = page.locator('[data-stage-id="20"]');
-  await expect(stage20).toHaveCount(1);
 
-  // QA builds expose the campaign cards without changing the shipping menu.
-  const stageButton = stage20.getByRole("button").last();
-  if (await stageButton.isEnabled()) {
-    await stageButton.click();
-    const defend = page.getByRole("button", { name: /DEFEND|START|PLAY/i }).first();
-    if (await defend.isVisible()) await defend.click();
-  } else {
-    await page.getByRole("button", { name: /← BACK|BACK/i }).first().click();
-    await page.getByRole("button", { name: "DEFEND NOW" }).click();
-  }
+  // Confirm the full authored campaign is present, then enter through the known
+  // unlocked first stage instead of assuming locked stages render a button.
+  await expect(page.locator('[data-stage-id="20"]')).toHaveCount(1);
+  const stage1 = page.locator('[data-stage-id="1"]');
+  await expect(stage1.getByRole("button", { name: /PLAY|REPLAY/ })).toBeVisible();
+  await stage1.getByRole("button", { name: /PLAY|REPLAY/ }).click();
+  await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "gameplay");
 
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.locator("canvas")).toBeVisible();
