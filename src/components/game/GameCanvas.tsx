@@ -1114,7 +1114,7 @@ export function GameCanvas() {
                 const claimed = player.seasonalEventClaims.includes(milestone.id);
                 const pct = Math.min(1, progress / milestone.target);
                 return (
-                  <div key={milestone.id} className="rounded-2xl bg-panel/95 p-3 shadow-panel">
+                  <div key={milestone.id} data-seasonal-milestone className="rounded-2xl bg-panel/95 p-3 shadow-panel">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-display text-lg tracking-wide text-panel-foreground">{milestone.title}</p>
