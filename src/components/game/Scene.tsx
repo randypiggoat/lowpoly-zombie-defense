@@ -1398,8 +1398,12 @@ function Zombies({
             <boxGeometry args={[0.46, 0.46, 0.46]} />
             <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
           </mesh>
-          <mesh name="face" position={[0, 1.62, 0.235]} visible={false}>
-            <primitive object={faceGeometries[0]!} attach="geometry" />
+          <mesh
+            name="face"
+            position={[0, 1.62, 0.235]}
+            visible={false}
+            geometry={faceGeometries[0]!}
+          >
             <meshBasicMaterial vertexColors toneMapped={false} side={THREE.DoubleSide} />
           </mesh>
 
