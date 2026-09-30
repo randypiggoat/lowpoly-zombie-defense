@@ -274,10 +274,6 @@ function StageRoutePreview({ stageId }: { stageId: number }) {
     x: obstacle.x - minX + pad - obstacle.width / 2,
     y: maxZ - obstacle.z + pad - obstacle.depth / 2,
   });
-  const obstacleRect = (obstacle: { x: number; z: number; width: number; depth: number }) => ({
-    x: obstacle.x - minX + pad - obstacle.width / 2,
-    y: maxZ - obstacle.z + pad - obstacle.depth / 2,
-  });
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2">
