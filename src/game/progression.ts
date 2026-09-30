@@ -70,8 +70,8 @@ export function towerUnlockProgress(
 export const PROGRESSION_XP = {
   kill: 1,
   specialKill: 2,
-  waveBase: 3,
-  wavePerWave: 2,
+  waveBase: 1,
+  wavePerWave: 1,
   runBase: 40,
   runPerWave: 4,
   runPerKill: 0.25,
@@ -100,4 +100,9 @@ export function progressionXpForKill(kind: number) {
   return kind === 2 || kind === 4 || kind === 5 || kind === 6
     ? PROGRESSION_XP.specialKill
     : PROGRESSION_XP.kill;
+}
+
+/** Account XP curve: quick onboarding, then progressively larger milestones. */
+export function xpForLevel(level: number): number {
+  return Math.round(120 * Math.pow(1.22, Math.max(0, level - 1)));
 }
