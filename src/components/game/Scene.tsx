@@ -958,7 +958,6 @@ function Zombies({
     [bodyGeometries, headGeometries, faceGeometries],
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
-  const legs = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
@@ -1207,7 +1206,7 @@ function Zombies({
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
           body.rotation.y = hitRight * (teslaHit ? 0.34 : rocketHit ? 0.3 : 0.22);
           body.rotation.z = rocketHit ? hitRight * 0.16 : shotgunHit ? hitRight * 0.1 : 0;
-          const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
+          const baseBodyScaleY = presentation.bodyScale[1];
           body.scale.y = baseBodyScaleY * (1 + Math.abs(gaitWave) * 0.018);
         }
         if (head) {
@@ -1503,7 +1502,7 @@ function Zombies({
             <coneGeometry args={[0.16, 0.5, 5]} />
             <meshStandardMaterial color="#9ce06d" flatShading />
           </mesh>
-          <group ref={(el) => void (legs.current[i] = el)} position={[0, 0.5, 0]}>
+          <group position={[0, 0.5, 0]}>
             <mesh name="left-leg" position={[0.17, -0.25, 0]} castShadow>
               <boxGeometry args={[0.22, 0.6, 0.22]} />
               <meshStandardMaterial color={ZOMBIE_LOOKS[0].legs} flatShading />
