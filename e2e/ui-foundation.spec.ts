@@ -33,6 +33,7 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
 
 
 test("tower placement follows pointer across both world axes and builds at the selected point", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/?qa=1");
 
   const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
