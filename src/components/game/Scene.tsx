@@ -1076,25 +1076,27 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
       const counterStride = Math.sin(phase * 1.35 + Math.PI);
       const bounce = Math.sin(phase * 0.67);
       const drift = Math.sin(phase * 0.43);
-      const hit = Math.min(1.25, Math.max(0, z.hitReact));
+      const hit = Math.min(1.25, Math.max(0, z.hitReact ?? 0));
+      const hitSide = hitSide ?? 0;
+      const hitDepth = hitDepth ?? 0;
       if (!z.dead) {
         if (rig.body) {
-          rig.body.rotation.x = motion.posturePitch - z.hitDepth * hit * motion.hitPitch + drift * motion.torsoTwist * 0.35;
-          rig.body.rotation.y = Math.sin(phase * 0.58) * motion.torsoTwist + z.hitSide * hit * motion.hitYaw;
-          rig.body.rotation.z = Math.sin(phase * 0.86) * motion.sway + z.hitSide * hit * motion.hitRoll;
+          rig.body.rotation.x = motion.posturePitch - hitDepth * hit * motion.hitPitch + drift * motion.torsoTwist * 0.35;
+          rig.body.rotation.y = Math.sin(phase * 0.58) * motion.torsoTwist + hitSide * hit * motion.hitYaw;
+          rig.body.rotation.z = Math.sin(phase * 0.86) * motion.sway + hitSide * hit * motion.hitRoll;
         }
         if (rig.head) {
-          rig.head.rotation.x = bounce * motion.headBob + z.hitDepth * hit * motion.hitPitch * 0.55;
-          rig.head.rotation.y = Math.sin(phase * 0.49) * motion.headYaw - z.hitSide * hit * motion.hitYaw * 0.7;
-          rig.head.rotation.z = -z.hitSide * hit * motion.hitRoll * 0.7;
+          rig.head.rotation.x = bounce * motion.headBob + hitDepth * hit * motion.hitPitch * 0.55;
+          rig.head.rotation.y = Math.sin(phase * 0.49) * motion.headYaw - hitSide * hit * motion.hitYaw * 0.7;
+          rig.head.rotation.z = -hitSide * hit * motion.hitRoll * 0.7;
         }
         if (rig.leftArm) {
           rig.leftArm.rotation.x = -1.2 + counterStride * motion.armSwing * 0.18 + hit * motion.hitPitch * 0.35;
-          rig.leftArm.rotation.z = counterStride * motion.armSwing * 0.1 - z.hitSide * hit * 0.1;
+          rig.leftArm.rotation.z = counterStride * motion.armSwing * 0.1 - hitSide * hit * 0.1;
         }
         if (rig.rightArm) {
           rig.rightArm.rotation.x = -1.35 + stride * motion.armSwing * 0.18 + hit * motion.hitPitch * 0.35;
-          rig.rightArm.rotation.z = stride * motion.armSwing * 0.1 - z.hitSide * hit * 0.1;
+          rig.rightArm.rotation.z = stride * motion.armSwing * 0.1 - hitSide * hit * 0.1;
         }
         if (rig.leftLeg) {
           rig.leftLeg.rotation.x = counterStride * motion.legSwing * 0.32;
@@ -1123,7 +1125,7 @@ function Zombies({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
           rig.rightEye.position.z = face.eyeZ + (z.kind === 1 ? 0.008 : 0) + lookAhead;
         }
         if (rig.mouth) rig.mouth.rotation.z = face.mouthTilt + Math.sin(phase * 0.9) * 0.012 + (z.kind === 3 ? Math.sin(phase * 1.7) * 0.018 : 0);
-        if (rig.brow) rig.brow.rotation.z = face.browTilt - z.hitSide * hit * 0.16;
+        if (rig.brow) rig.brow.rotation.z = face.browTilt - hitSide * hit * 0.16;
         if (rig.faceMark?.visible) {
           rig.faceMark.rotation.y += 0.02 + motion.signaturePulse * 0.08;
           rig.faceMark.scale.setScalar(getEnemyFaceProfile(z.kind).markScale * (1 + Math.sin(phase * 1.7) * motion.signaturePulse * 0.18));
