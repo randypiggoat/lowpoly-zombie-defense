@@ -1234,6 +1234,31 @@ export function GameCanvas() {
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">
                 Achievements
               </h2>
+              <div className="mb-3 rounded-xl border border-accent/15 bg-accent/5 p-3">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-accent">Today</p>
+                <p className="font-display text-lg text-panel-foreground">Daily missions</p>
+                <div className="mt-2 space-y-1.5">
+                  {DAILY_MISSION_DEFS.map((mission) => {
+                    const progress = player.dailyMissionProgress[mission.id];
+                    const completed = Boolean(progress?.completed);
+                    const claimed = Boolean(progress?.claimed);
+                    return (
+                      <div key={mission.id} className="rounded-lg bg-black/20 px-2.5 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold text-panel-foreground">{mission.description}</p>
+                            <p className="text-[9px] text-panel-muted">{Math.min(mission.target, progress?.progress ?? 0)}/{mission.target} · {mission.reward.label}</p>
+                          </div>
+                          <button type="button" disabled={!completed || claimed} onClick={() => profile.claimDailyMission(mission.id)} className="min-h-9 shrink-0 rounded-md bg-accent px-2 py-1 text-[9px] font-extrabold text-accent-foreground disabled:opacity-40">
+                            {claimed ? "CLAIMED" : completed ? "CLAIM" : "TRACKING"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="mt-2 space-y-2">
                 {ACHIEVEMENT_DEFS.map((achievement) => {
                   const progress = player.achievements[achievement.id];
