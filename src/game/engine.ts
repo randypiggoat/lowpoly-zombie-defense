@@ -58,6 +58,7 @@ import {
   getTowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
 import { damageReactionMultiplier, hitDirection } from "./zombiePresentation";
+import { isTowerUnlocked as isProgressionTowerUnlocked, towerUnlockLevel } from "./progression";
 
 export type Vec2 = { x: number; z: number };
 
