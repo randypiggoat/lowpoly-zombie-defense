@@ -1840,9 +1840,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             xp: Math.round(this.stage.rewards.firstCompletionBonus.xp * 0.8),
             gems: side.focus === "gems" ? 2 : 0,
           },
-        ,
           true,
-        );        track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: true });
+        );
+        track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: true });
       } else
       profile.completeRun(Math.max(1, s.wave), s.kills, {
         stageId: this.stage.id,
