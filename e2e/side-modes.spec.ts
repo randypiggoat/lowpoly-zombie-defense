@@ -18,7 +18,7 @@ test("side modes expose resource and challenge progression", async ({ page }) =>
   await expect(page.getByText("CHALLENGE GAUNTLET", { exact: true })).toBeVisible();
   await expect(page.getByText("Scrap Run I", { exact: true })).toBeVisible();
   await expect(page.getByText("One Tower", { exact: true })).toBeVisible();
-  await expect(page.getByText("ENDLESS EXPEDITION", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ENDLESS EXPEDITION" })).toBeVisible();
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
