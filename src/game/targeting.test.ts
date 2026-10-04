@@ -106,6 +106,16 @@ describe("tower targeting rules", () => {
     expect(selectTowerTarget(zombies, tower, 10, "first")?.id).toBe(11);
   });
 
+  test("keeps the first eligible candidate for tied last and strongest scores", () => {
+    const zombies = [
+      zombie({ id: 11, dist: 7, hp: 100 }),
+      zombie({ id: 22, dist: 7, hp: 100 }),
+    ];
+
+    expect(selectTowerTarget(zombies, tower, 10, "last")?.id).toBe(11);
+    expect(selectTowerTarget(zombies, tower, 10, "strongest")?.id).toBe(11);
+  });
+
   test("respects line-of-sight blockers when a map is supplied", () => {
     const zombies = [
       zombie({ id: 1, x: 3.8, z: -19, dist: 8 }),

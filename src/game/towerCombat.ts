@@ -45,18 +45,32 @@ export type ProjectileState = {
   bossDamageMultiplier: number;
   closeDamageMultiplier: number;
   burnDuration: number;
+  markedDamageMultiplier: number;
+  slowedDamageMultiplier: number;
 };
 
-export type ProjectileLaunchInput = Omit<ProjectileState, "alive" | "y"> & {
+export type ProjectileLaunchInput = Omit<
+  ProjectileState,
+  "alive" | "y" | "markedDamageMultiplier" | "slowedDamageMultiplier"
+> & {
   level: number;
+  markedDamageMultiplier?: number;
+  slowedDamageMultiplier?: number;
 };
 
 export function createTowerProjectile(
   input: ProjectileLaunchInput,
 ): ProjectileState {
-  const { level, ...projectile } = input;
+  const {
+    level,
+    markedDamageMultiplier = 1,
+    slowedDamageMultiplier = 1,
+    ...projectile
+  } = input;
   return {
     ...projectile,
+    markedDamageMultiplier,
+    slowedDamageMultiplier,
     y: 1.6 + level * 0.03,
     alive: true,
   };

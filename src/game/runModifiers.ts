@@ -12,7 +12,9 @@ export type RunModifierId =
   | "shrapnel"
   | "cryo-reserve"
   | "scavenger"
-  | "execution-order";
+  | "execution-order"
+  | "hunter's-mark"
+  | "cold-front";
 
 export type RunModifierDefinition = {
   id: RunModifierId;
@@ -25,6 +27,8 @@ export type RunModifierDefinition = {
     goldMultiplier?: number;
     splashMultiplier?: number;
     slowMultiplier?: number;
+    markedDamageMultiplier?: number;
+    slowedDamageMultiplier?: number;
   };
 };
 
@@ -71,6 +75,18 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
     description: "+22% damage, −10% range",
     effects: { damageMultiplier: 1.22, rangeMultiplier: 0.9 },
   },
+  {
+    id: "hunter's-mark",
+    name: "Hunter's Mark",
+    description: "+25% damage to already-marked targets, −10% range",
+    effects: { markedDamageMultiplier: 1.25, rangeMultiplier: 0.9 },
+  },
+  {
+    id: "cold-front",
+    name: "Cold Front",
+    description: "+20% damage to already-slowed targets, −10% fire rate",
+    effects: { slowedDamageMultiplier: 1.2, rateMultiplier: 0.9 },
+  },
 ];
 
 export type RunModifierEffects = {
@@ -80,6 +96,8 @@ export type RunModifierEffects = {
   goldMultiplier: number;
   splashMultiplier: number;
   slowMultiplier: number;
+  markedDamageMultiplier: number;
+  slowedDamageMultiplier: number;
 };
 
 export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects {
@@ -90,6 +108,8 @@ export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects 
     goldMultiplier: 1,
     splashMultiplier: 1,
     slowMultiplier: 1,
+    markedDamageMultiplier: 1,
+    slowedDamageMultiplier: 1,
   };
 
   for (const id of ids) {
@@ -102,9 +122,22 @@ export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects 
     if (mods.goldMultiplier) effects.goldMultiplier *= mods.goldMultiplier;
     if (mods.splashMultiplier) effects.splashMultiplier *= mods.splashMultiplier;
     if (mods.slowMultiplier) effects.slowMultiplier *= mods.slowMultiplier;
+    if (mods.markedDamageMultiplier) effects.markedDamageMultiplier *= mods.markedDamageMultiplier;
+    if (mods.slowedDamageMultiplier) effects.slowedDamageMultiplier *= mods.slowedDamageMultiplier;
   }
 
   return effects;
+}
+
+export function getRunModifierDamageMultiplier(
+  effects: Pick<RunModifierEffects, "markedDamageMultiplier" | "slowedDamageMultiplier">,
+  marked: boolean,
+  slowed: boolean,
+) {
+  return (
+    (marked ? effects.markedDamageMultiplier : 1) *
+    (slowed ? effects.slowedDamageMultiplier : 1)
+  );
 }
 
 export function createRunModifierOffer(
