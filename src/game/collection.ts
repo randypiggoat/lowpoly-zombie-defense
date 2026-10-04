@@ -100,6 +100,17 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     requirement: "Reach Laser Mastery 5.",
     unlock: (profile) => ((profile.towerMasteryXp?.laser ?? 0) >= 500),
   },
+  {
+    id: "seasonal-vanguard",
+    name: "Vanguard",
+    description: "A frost-and-crimson finish for Freezer.",
+    kind: "tower",
+    towerKind: "freezer",
+    accent: "#a9d9e8",
+    body: "#563b49",
+    requirement: "Claim a seasonal event finale.",
+    unlock: (profile) => profile.seasonalEventUnlocks?.includes("seasonal-vanguard") ?? false,
+  },
 ];
 
 export function unlockedTowerCosmetics(profile: PlayerProfile) {
@@ -170,4 +181,3 @@ export const ZOMBIE_COSMETICS: ZombieCosmetic[] = [
     unlock: (profile) => profile.endlessBestWave >= 50,
   },
 ];
-

@@ -3,13 +3,21 @@ export type FirstSessionTip = {
   body: string;
 };
 
+export type FirstSessionContext = {
+  pathUpgradeCount?: number;
+  specialEnemyLabel?: string | null;
+  modifierChoiceAvailable?: boolean;
+  progressionTarget?: { label: string; detail: string } | null;
+};
+
 export function getFirstSessionTip(
   gamesPlayed: number,
   wave: number,
   towerCount: number,
   upgradedTowerCount: number,
+  context: FirstSessionContext = {},
 ) {
-  if (gamesPlayed > 0 || wave > 2) return null;
+  if (gamesPlayed > 0) return null;
 
   if (towerCount === 0) {
     return {
@@ -22,6 +30,38 @@ export function getFirstSessionTip(
     return {
       title: "UPGRADE YOUR DEFENSE",
       body: "Tap one of your towers to inspect it, then choose a path upgrade with SCRAP.",
+    } satisfies FirstSessionTip;
+  }
+
+  if (context.pathUpgradeCount === 1) {
+    return {
+      title: "TOWER PATHS",
+      body: "Each path has a different focus. Compare both before spending SCRAP on the next tier.",
+    } satisfies FirstSessionTip;
+  }
+
+  if (context.specialEnemyLabel && wave > 0) {
+    const body =
+      context.specialEnemyLabel === "BRUTE"
+        ? "Brutes hit the base hard. Keep one in range and focus it before it breaks through."
+        : "This special threat has its own behavior. Watch its health bar and match a tower to the threat.";
+    return {
+      title: `SPOT THE ${context.specialEnemyLabel}`,
+      body,
+    } satisfies FirstSessionTip;
+  }
+
+  if (context.modifierChoiceAvailable) {
+    return {
+      title: "CHOOSE A RUN MODIFIER",
+      body: "Compare the bonus and drawback; your choice stays active for the rest of this run.",
+    } satisfies FirstSessionTip;
+  }
+
+  if (context.progressionTarget) {
+    return {
+      title: "NEXT PROGRESSION TARGET",
+      body: `${context.progressionTarget.label} · ${context.progressionTarget.detail}`,
     } satisfies FirstSessionTip;
   }
 

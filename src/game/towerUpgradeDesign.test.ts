@@ -16,6 +16,8 @@ describe("tower upgrade design", () => {
     expect(getTowerUpgradeAbilities("rifleman", 0, 1).volley).toBe(2);
     expect(getTowerUpgradeAbilities("rifleman", 2, 1).markDuration).toBeGreaterThan(0);
     expect(TOWER_PATHS.freezer.b.tiers[0]?.ability).toBe("shatter");
+    expect(getTowerUpgradeAbilities("freezer", 2, 0).shatterMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("rocket", 2, 0).markBonus).toBeGreaterThan(0);
   });
 });
 

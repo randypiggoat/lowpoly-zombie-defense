@@ -2,7 +2,13 @@
 // No React, no three.js — just numbers the renderer reads each frame.
 
 import { sfx } from "./audio";
-import { evaluateStageObjectives, type StageDefinition, type StageEnemyKind } from "./navigation";
+import {
+  campaignReplayProgressKey,
+  evaluateStageObjectives,
+  type CampaignReplayChallengeDefinition,
+  type StageDefinition,
+  type StageEnemyKind,
+} from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { resolveDamage } from "./damage";
 import { getTowerCombatStats } from "./towerStats";
@@ -630,6 +636,7 @@ type StageRunConfig = Pick<
   bossTrial?: BossTrialDefinition;
   bossTrialKey?: string;
   allowRunModifiers?: boolean;
+  campaignReplayChallenge?: CampaignReplayChallengeDefinition;
   sideMode?: SideModeLevel;
   sideModeCycleKey?: string;
 };
@@ -783,6 +790,33 @@ export class Game {
   private resetTransientState() {
     this.accumulator = 0;
     this.waveEndNotified = false;
+  }
+
+  private completeCampaignReplayChallenge(completed: boolean) {
+    const challenge = this.stage.campaignReplayChallenge;
+    if (!challenge) return;
+    const s = this.state;
+    const score = Math.max(
+      0,
+      Math.round(
+        s.wave * 120 +
+          s.kills * 8 +
+          s.baseHp * 20 +
+          s.maxKillStreak * 6 +
+          s.bossesDefeated * 350 +
+          1200,
+      ),
+    );
+    const progressKey = campaignReplayProgressKey(this.stage.id, challenge.id);
+    profile.completeSideModeRun(
+      progressKey,
+      Math.max(1, s.wave),
+      s.kills,
+      score,
+      challenge.reward,
+      challenge.firstClearBonus,
+      completed,
+    );
   }
 
   reset() {
@@ -955,11 +989,14 @@ export class Game {
       sfx("deny");
       return false;
     }
-    if (this.stage.sideMode?.allowedTowerKinds && !this.stage.sideMode.allowedTowerKinds.includes(kind)) {
+    const allowedTowerKinds =
+      this.stage.campaignReplayChallenge?.allowedTowerKinds ?? this.stage.sideMode?.allowedTowerKinds;
+    if (allowedTowerKinds && !allowedTowerKinds.includes(kind)) {
       sfx("deny");
       return false;
     }
-    if (this.stage.sideMode?.maxTowers !== undefined && s.towers.length >= this.stage.sideMode.maxTowers) {
+    const maxTowers = this.stage.campaignReplayChallenge?.maxTowers ?? this.stage.sideMode?.maxTowers;
+    if (maxTowers !== undefined && s.towers.length >= maxTowers) {
       sfx("deny");
       return false;
     }
@@ -1107,7 +1144,11 @@ export class Game {
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
 
-    if (this.stage.allowRunModifiers !== false && shouldOfferRunModifier(s.wave)) {
+    if (
+      this.stage.campaignReplayChallenge?.allowRunModifiers !== false &&
+      this.stage.allowRunModifiers !== false &&
+      shouldOfferRunModifier(s.wave)
+    ) {
       s.runModifierOffer = createRunModifierOffer(this.random, s.activeRunModifiers);
       if (s.runModifierOffer.length > 0) {
         s.waveMessage = "CHOOSE YOUR POWER";
@@ -1758,6 +1799,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               score: trialScore,
               cleared: false,
             });
+          } else if (this.stage.campaignReplayChallenge) {
+            this.completeCampaignReplayChallenge(false);
           } else if (this.stage.sideMode) {
             const side = this.stage.sideMode;
             const score = Math.max(0, Math.round(
@@ -1850,6 +1893,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           score: trialScore,
           cleared: true,
         });
+      } else if (this.stage.campaignReplayChallenge) {
+        this.completeCampaignReplayChallenge(true);
       } else if (this.stage.sideMode) {
         const side = this.stage.sideMode;
         const score = Math.max(

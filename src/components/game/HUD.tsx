@@ -34,6 +34,7 @@ import { getEndlessMilestone, getEndlessSector, getEndlessSectorLabel } from "@/
 
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
+import { enemyThreatLabel } from "@/game/enemyPresentation";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -280,11 +281,18 @@ export function HUD({
   const claimedLoginToday = player.lastLoginClaimDate === today;
   const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
   const bossHealth = getBossHealthSummary(state.zombies);
+  const visibleSpecialEnemy = state.zombies.find((zombie) => !zombie.dead && (zombie.kind >= 2 || zombie.boss));
   const firstSessionTip = getFirstSessionTip(
     player.gamesPlayed,
     state.wave,
     state.towers.length,
     state.towers.filter((tower) => tower.level > 1).length,
+    {
+      pathUpgradeCount: state.towers.reduce((total, tower) => total + tower.a + tower.b, 0),
+      specialEnemyLabel: visibleSpecialEnemy ? enemyThreatLabel(visibleSpecialEnemy.kind) : null,
+      modifierChoiceAvailable: state.runModifierOffer.length > 0,
+      progressionTarget: nextTarget,
+    },
   );
   const baseDanger = getBaseDangerLevel(state.baseHp, state.baseMaxHp);
 
@@ -321,6 +329,9 @@ export function HUD({
             <p className="text-center text-[10px] uppercase tracking-[0.24em] text-accent">Wave {state.wave} reward</p>
             <h2 className="mt-1 text-center font-display text-3xl tracking-wide text-panel-foreground">Choose Your Power</h2>
             <p className="mt-1 text-center text-xs text-panel-muted">This choice lasts for the rest of the run.</p>
+            {firstSessionTip?.title === "CHOOSE A RUN MODIFIER" && (
+              <p className="mt-2 text-center text-[10px] leading-tight text-accent">{firstSessionTip.body}</p>
+            )}
             <div className="mt-4 space-y-2">
               {state.runModifierOffer.map((modifier) => (
                 <button

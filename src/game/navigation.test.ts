@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  CAMPAIGN_REPLAY_CHALLENGES,
   STAGE_DEFS,
+  campaignReplayProgressKey,
   evaluateStageObjectives,
   getNextStageId,
   getStageById,
@@ -31,6 +33,16 @@ describe("campaign progression", () => {
       stage.objectives.map((objective) => objective.type).join("|"),
     );
     expect(new Set(signatures).size).toBeGreaterThan(3);
+  });
+
+  test("campaign replay challenges have distinct restrictions and stable stage keys", () => {
+    const [thinLine, noPowers] = CAMPAIGN_REPLAY_CHALLENGES;
+    expect(CAMPAIGN_REPLAY_CHALLENGES).toHaveLength(2);
+    expect(thinLine?.maxTowers).toBe(4);
+    expect(noPowers?.allowRunModifiers).toBe(false);
+    expect(campaignReplayProgressKey(3, thinLine!.id)).not.toBe(
+      campaignReplayProgressKey(4, thinLine!.id),
+    );
   });
 
   test("kill streak mastery reads the run's maximum streak", () => {
