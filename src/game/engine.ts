@@ -159,6 +159,9 @@ export type Zombie = {
   hitZ: number;
   hitForce: number;
   hitKind?: TowerKind;
+  stun?: number;
+  markTime?: number;
+  markBonus?: number;
 };
 
 export type Gib = {
@@ -253,6 +256,8 @@ export type Bullet = {
   bossDamageMultiplier: number;
   closeDamageMultiplier: number;
   burnDuration: number;
+  markedDamageMultiplier: number;
+  slowedDamageMultiplier: number;
 };
 
 export type TowerDef = {
