@@ -102,7 +102,13 @@ export function progressionXpForKill(kind: number) {
     : PROGRESSION_XP.kill;
 }
 
-/** Account XP curve: quick onboarding, then progressively larger milestones. */
+/**
+ * Account XP curve: quick onboarding, then progressively larger milestones.
+ * Early-run flow (stage 1 first clear: ~16 waves, ~150 kills) awards roughly 650 XP:
+ * kills ~170 + waves ~152 + run ~141 + stage completion/first-clear bonus 200.
+ * The old curve (120 * 1.22^n) put that at level 5 (sniper + tesla in one run); this curve
+ * puts it at level 3 (sniper only), with later towers needing more sessions.
+ */
 export function xpForLevel(level: number): number {
-  return Math.round(120 * Math.pow(1.22, Math.max(0, level - 1)));
+  return Math.round(250 * Math.pow(1.2, Math.max(0, level - 1)));
 }
