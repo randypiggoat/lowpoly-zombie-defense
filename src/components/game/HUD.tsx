@@ -340,7 +340,16 @@ export function HUD({
                   onClick={() => game.chooseRunModifier(modifier.id)}
                   className="w-full rounded-2xl border border-white/10 bg-black/25 p-3 text-left transition active:scale-[0.98] hover:border-accent/50"
                 >
-                  <p className="font-display text-lg tracking-wide text-panel-foreground">{modifier.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-display text-lg tracking-wide text-panel-foreground">{modifier.name}</p>
+                    <div className="flex shrink-0 gap-1">
+                      {modifier.tags?.map((tag) => (
+                        <span key={tag} className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                   <p className="mt-0.5 text-xs text-panel-muted">{modifier.description}</p>
                 </button>
               ))}

@@ -36,7 +36,7 @@ import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "./combatRewards";
-import { createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
+import { applyRunModifiersToCombat, createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { perfectWaveGoldBonus } from "./waveRewards";
 import { bossKillGoldMultiplier } from "./bossRewards";
@@ -1226,6 +1226,7 @@ export class Game {
       hp *= Math.max(0.5, traits.bossHealthMultiplier ?? 1);
       speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
     }
+    hp *= getRunModifierEffects(this.state.activeRunModifiers).enemyHealthMultiplier;
 
     const spawned: Zombie = {
       id: this.nextId++,
@@ -1287,6 +1288,8 @@ export class Game {
       executeMultiplier?: number;
       bossDamageMultiplier?: number;
       closeDamageMultiplier?: number;
+      stunnedMultiplier?: number;
+      burningMultiplier?: number;
       originX?: number;
       originZ?: number;
       damageKind?: TowerKind;
@@ -1315,6 +1318,10 @@ export class Game {
       ability.executeThreshold && z.hp / Math.max(1, z.maxHp) <= ability.executeThreshold
         ? Math.max(1, ability.executeMultiplier ?? 1)
         : 1;
+    // A stunning hit counts as already stunning: the stun lands first, so stun→burst pays off immediately.
+    const stunnedMultiplier =
+      (z.stun ?? 0) > 0 || (ability.stun ?? 0) > 0 ? Math.max(1, ability.stunnedMultiplier ?? 1) : 1;
+    const burningMultiplier = z.burn > 0 ? Math.max(1, ability.burningMultiplier ?? 1) : 1;
     const bossMultiplier = z.boss ? Math.max(1, ability.bossDamageMultiplier ?? 1) : 1;
     const originX = ability.originX ?? fromX;
     const originZ = ability.originZ ?? fromZ;
@@ -1329,6 +1336,8 @@ export class Game {
       shatterMultiplier *
       executeMultiplier *
       bossMultiplier *
+      stunnedMultiplier *
+      burningMultiplier *
       closeMultiplier;
     const result = resolveDamage(
       z.hp,
@@ -2005,7 +2014,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           const rate = towerRate(t) * runEffects.rateMultiplier;
           t.cooldown = 1 / rate;
           t.recoil = 1;
-          const combat = towerCombatStats(t);
+          const combat = applyRunModifiersToCombat(towerCombatStats(t), runEffects);
           const crit = this.random() < combat.crit;
           const volley = Math.max(1, Math.min(3, combat.volley));
           const volleyDamageFactor = volley === 3 ? 0.48 : volley === 2 ? 0.68 : 1;
@@ -2020,12 +2029,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 originX: t.x,
                 originZ: t.z,
                 speed: BULLET_SPEED[t.kind],
-                damage: combat.damage * runEffects.damageMultiplier * volleyDamageFactor * (crit ? 2.5 : 1),
+                damage: combat.damage * volleyDamageFactor * (crit ? 2.5 : 1),
                 target: best.id,
                 kind: t.kind,
-                splash: combat.splash * runEffects.splashMultiplier,
+                splash: combat.splash,
                 chain: combat.chain,
-                slow: combat.slow * runEffects.slowMultiplier,
+                slow: combat.slow,
                 burn: combat.burn,
                 gold: combat.gold,
                 crit,
@@ -2039,6 +2048,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 bossDamageMultiplier: combat.bossDamageMultiplier,
                 closeDamageMultiplier: combat.closeDamageMultiplier,
                 burnDuration: combat.burnDuration,
+                stunnedMultiplier: combat.stunnedMultiplier,
+                burningMultiplier: combat.burningMultiplier,
+                swarmMultiplier: combat.swarmMultiplier,
               }),
             );
             this.projectileEmissions += 1;
@@ -2091,6 +2103,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               executeMultiplier: b.executeMultiplier,
               bossDamageMultiplier: b.bossDamageMultiplier,
               closeDamageMultiplier: b.closeDamageMultiplier,
+              stunnedMultiplier: b.stunnedMultiplier,
+              burningMultiplier: b.burningMultiplier,
               damageKind: b.kind,
               originX: b.originX,
               originZ: b.originZ,
@@ -2108,7 +2122,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           b.splash,
         );
         for (const z of splashTargets) {
-          hit(z, b.damage * PROJECTILE_SPLASH_DAMAGE_MULTIPLIER);
+          hit(
+            z,
+            b.damage *
+              PROJECTILE_SPLASH_DAMAGE_MULTIPLIER *
+              (splashTargets.length >= 2 ? b.swarmMultiplier ?? 1 : 1),
+          );
         }
 
         const chainTargets = getChainTargets(

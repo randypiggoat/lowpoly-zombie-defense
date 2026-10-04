@@ -21,6 +21,20 @@ describe("tower upgrade design", () => {
   });
 });
 
+describe("behavioral upgrades", () => {
+  test("new abilities change how towers are used", () => {
+    expect(getTowerUpgradeAbilities("rifleman", 0, 4).volley).toBe(3);
+    expect(getTowerUpgradeAbilities("tesla", 0, 3).stunnedMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("tesla", 4, 0).stunnedMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("flamethrower", 2, 0).burningMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("flamethrower", 3, 0).swarmMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("flamethrower", 4, 0).executeThreshold).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("rocket", 3, 0).swarmMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("freezer", 0, 3).shatterMultiplier).toBeGreaterThan(1.42);
+    expect(getTowerUpgradeAbilities("laser", 0, 3).burningMultiplier).toBeGreaterThan(1);
+  });
+});
+
 describe("field knowledge", () => {
   test("knowledge forms three readable prerequisite branches", () => {
     for (const category of ["ARSENAL", "FIELDCRAFT", "SALVAGE"] as const) {

@@ -45,6 +45,9 @@ export type ProjectileState = {
   bossDamageMultiplier: number;
   closeDamageMultiplier: number;
   burnDuration: number;
+  stunnedMultiplier?: number;
+  burningMultiplier?: number;
+  swarmMultiplier?: number;
 };
 
 export type ProjectileLaunchInput = Omit<ProjectileState, "alive" | "y"> & {

@@ -125,6 +125,9 @@ describe("tower stat calculations", () => {
       executeMultiplier: 1,
       bossDamageMultiplier: 1,
       closeDamageMultiplier: 1,
+      stunnedMultiplier: 1,
+      burningMultiplier: 1,
+      swarmMultiplier: 1,
       burnDuration: 2.4,
     });
   });

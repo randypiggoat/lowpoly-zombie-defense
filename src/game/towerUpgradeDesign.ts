@@ -6,7 +6,12 @@ export type UpgradeAbility =
   | "execute"
   | "boss-hunter"
   | "close-range"
-  | "burn-duration";
+  | "burn-duration"
+  | "barrage"
+  | "stun-burst"
+  | "burn-pressure"
+  | "swarm"
+  | "brittle";
 
 export type UpgradeTier = {
   name: string;
@@ -60,7 +65,7 @@ export const TOWER_PATHS = {
         tier("Double Tap", "Each attack fires a second round at reduced power.", 50, {}, "burst"),
         tier("Fast Magazine", "Shorter cycle between volleys.", 105, { rate: 1.28 }),
         tier("Suppressing Burst", "Burst rounds briefly disrupt the target.", 235, { rate: 1.12 }, "stun"),
-        tier("Overwatch", "Three-round volleys turn long sightlines into kill lanes.", 520, { rate: 1.16, dmg: 1.12 }, "burst"),
+        tier("Overwatch", "Three-round volleys turn long sightlines into kill lanes.", 520, { rate: 1.16, dmg: 1.12 }, "barrage"),
       ],
     },
   },
@@ -71,8 +76,8 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Wide Choke", "Broader impact zone makes tight bends dangerous.", 55, { splash: 0.72 }),
         tier("Buckshot", "Each blast throws a second close-range shell.", 120, { dmg: 1.18 }, "burst"),
-        tier("Dragon Breath", "Pellets ignite anything they touch.", 270, { burn: 10 }, undefined),
-        tier("Riot Storm", "Point-blank volleys shred packed lanes.", 560, { splash: 0.9, gore: 2.1 }, "burst"),
+        tier("Dragon Breath", "Pellets ignite targets, and burning zombies take extra damage from the shotgun.", 270, { burn: 10 }, "burn-pressure"),
+        tier("Riot Storm", "Blasts that catch two or more zombies hit the whole pack much harder.", 560, { splash: 0.9, gore: 2.1 }, "swarm"),
       ],
     },
     b: {
@@ -116,7 +121,7 @@ export const TOWER_PATHS = {
         tier("Extra Arc", "Arc one additional target.", 95, { chain: 1 }),
         tier("Conductors", "Arcs reach a wider pocket.", 195, { range: 1.2, chain: 1 }),
         tier("Storm Net", "Arcs briefly stun secondary targets.", 390, { chain: 2 }, "stun"),
-        tier("Tempest", "The entire circuit becomes a multi-target lockdown.", 820, { chain: 2, range: 1.25 }, "stun"),
+        tier("Tempest", "Stunned zombies are overloaded and take 50% more damage from every arc.", 820, { chain: 2, range: 1.25 }, "stun-burst"),
       ],
     },
     b: {
@@ -125,7 +130,7 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Charged Core", "Heavy current bites deeper into elites.", 90, { dmg: 1.22 }, "boss-hunter"),
         tier("Arc Furnace", "Big discharges briefly stagger the target.", 195, { dmg: 1.12 }, "stun"),
-        tier("Critical Surge", "A charged discharge can spike into a critical.", 400, { crit: 0.25 }),
+        tier("Critical Surge", "Staggered targets take 50% more damage and can spike into criticals.", 400, { crit: 0.25 }, "stun-burst"),
         tier("Annihilator", "Elites and bosses take a devastating bonus.", 840, { dmg: 1.4, gore: 3 }, "boss-hunter"),
       ],
     },
@@ -136,9 +141,9 @@ export const TOWER_PATHS = {
       focus: "Make burn damage persist through the horde",
       tiers: [
         tier("Hot Fuel", "Burns persist longer after the first hit.", 65, { burn: 5 }, "burn-duration"),
-        tier("Sticky Napalm", "Burning targets stay aflame longer.", 145, { burn: 7, splash: 0.45 }, "burn-duration"),
-        tier("Firestorm", "A wider cone spreads heat through the pack.", 310, { range: 1.2, splash: 0.55 }),
-        tier("Hellmouth", "Deep burn turns crowded lanes into a moving furnace.", 650, { burn: 14, splash: 0.65, gore: 2.2 }, "burn-duration"),
+        tier("Sticky Napalm", "Burning targets stay aflame longer and take 35% more flame damage.", 145, { burn: 7, splash: 0.45 }, "burn-pressure"),
+        tier("Firestorm", "A wider cone; blasts that catch a pack hit it much harder.", 310, { range: 1.2, splash: 0.55 }, "swarm"),
+        tier("Hellmouth", "Deep burn; badly wounded targets are cremated outright.", 650, { burn: 14, splash: 0.65, gore: 2.2 }, "execute"),
       ],
     },
     b: {
@@ -169,7 +174,7 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Ice Shards", "Frozen flesh takes a heavier hit.", 65, { dmg: 1.2 }, "shatter"),
         tier("Frostbite", "Brittle targets can take devastating critical hits.", 145, { crit: 0.18 }, "shatter"),
-        tier("Brittle Bones", "Shatter damage jumps again when the target is slowed.", 300, { dmg: 1.22 }, "shatter"),
+        tier("Brittle Bones", "Slowed targets shatter for 75% extra damage.", 300, { dmg: 1.22 }, "brittle"),
         tier("Shatterstorm", "Killing a brittle target sends a violent final burst.", 620, { dmg: 1.28, gore: 2.3, splash: 0.7 }, "shatter"),
       ],
     },
@@ -181,7 +186,7 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Long Gun", "Reach the next bend from a safer perch.", 75, { range: 1.2 }),
         tier("Tar Shells", "Explosions slow and mark their target for the whole defense.", 160, { slow: 0.32, splash: 0.4 }, "mark"),
-        tier("Cluster Shot", "The blast breaks into a wider crowd hit.", 320, { splash: 1.15 }),
+        tier("Cluster Shot", "A wider blast that hits packs of two or more far harder.", 320, { splash: 1.15 }, "swarm"),
         tier("Bombardier", "Large shells dominate long sightlines and bends.", 690, { range: 1.25, splash: 1.2, slow: 0.5 }, "stun"),
       ],
     },
@@ -213,8 +218,8 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Beam Splitter", "The beam jumps to one nearby body.", 155, { chain: 1 }),
         tier("Refraction", "The beam can keep bouncing.", 330, { chain: 2, range: 1.12 }),
-        tier("Thermal Bloom", "Refractions ignite the crowd.", 650, { burn: 14, splash: 0.5 }),
-        tier("Starfall", "A cascade of chained pulses clears packed lanes.", 1280, { chain: 3, dmg: 1.22, rate: 1.12 }, "burst"),
+        tier("Thermal Bloom", "Refractions ignite the crowd; burning zombies take extra beam damage.", 650, { burn: 14, splash: 0.5 }, "burn-pressure"),
+        tier("Starfall", "A cascade of chained pulses clears packed lanes.", 1280, { chain: 3, dmg: 1.22, rate: 1.12 }, "swarm"),
       ],
     },
   },
@@ -233,6 +238,9 @@ export type TowerUpgradeAbilities = {
   bossDamageMultiplier: number;
   closeDamageMultiplier: number;
   burnDuration: number;
+  stunnedMultiplier: number;
+  burningMultiplier: number;
+  swarmMultiplier: number;
 };
 
 const EMPTY_ABILITIES: TowerUpgradeAbilities = {
@@ -246,6 +254,9 @@ const EMPTY_ABILITIES: TowerUpgradeAbilities = {
   bossDamageMultiplier: 1,
   closeDamageMultiplier: 1,
   burnDuration: 2.4,
+  stunnedMultiplier: 1,
+  burningMultiplier: 1,
+  swarmMultiplier: 1,
 };
 
 const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = {
@@ -257,6 +268,11 @@ const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = 
   "boss-hunter": { bossDamageMultiplier: 1.35 },
   "close-range": { closeDamageMultiplier: 1.28 },
   "burn-duration": { burnDuration: 4.2 },
+  barrage: { volley: 3 },
+  "stun-burst": { stun: 0.22, stunnedMultiplier: 1.5 },
+  "burn-pressure": { burningMultiplier: 1.35 },
+  swarm: { swarmMultiplier: 1.6 },
+  brittle: { shatterMultiplier: 1.75 },
 };
 
 export function getTowerUpgradeAbilities(kind: TowerKindKey, a: number, b: number): TowerUpgradeAbilities {
@@ -278,6 +294,9 @@ export function getTowerUpgradeAbilities(kind: TowerKindKey, a: number, b: numbe
       if (effects.bossDamageMultiplier) out.bossDamageMultiplier = Math.max(out.bossDamageMultiplier, effects.bossDamageMultiplier);
       if (effects.closeDamageMultiplier) out.closeDamageMultiplier = Math.max(out.closeDamageMultiplier, effects.closeDamageMultiplier);
       if (effects.burnDuration) out.burnDuration = Math.max(out.burnDuration, effects.burnDuration);
+      if (effects.stunnedMultiplier) out.stunnedMultiplier = Math.max(out.stunnedMultiplier, effects.stunnedMultiplier);
+      if (effects.burningMultiplier) out.burningMultiplier = Math.max(out.burningMultiplier, effects.burningMultiplier);
+      if (effects.swarmMultiplier) out.swarmMultiplier = Math.max(out.swarmMultiplier, effects.swarmMultiplier);
     }
   };
   apply("a", Math.min(4, a));
