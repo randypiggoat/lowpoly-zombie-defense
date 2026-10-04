@@ -1,9 +1,10 @@
 import type { StageDefinition, StageEnemyKind } from "./navigation";
-import { enemyThreatLabel } from "./enemyPresentation";
+import { enemyThreatLabel, enemyThreatRole } from "./enemyPresentation";
 
 export type WaveThreatPreview = {
   boss: boolean;
   threats: string[];
+  threatRoles: string[];
   enemyKinds: StageEnemyKind[];
 };
 
@@ -43,12 +44,6 @@ export function getWaveThreatPreview(
     .sort((a, b) => b.score - a.score || a.kind - b.kind)
     .slice(0, 3);
 
-  const rankedThreats = ranked.map(({ kind }) => enemyThreatLabel(kind));
-  const bossThreat =
-    isBossWave && stage.boss.kind !== null
-      ? [enemyThreatLabel(stage.boss.kind)]
-      : [];
-
   const threatKinds = [
     ...new Set([
       ...(isBossWave && stage.boss.kind !== null ? [stage.boss.kind] : []),
@@ -58,7 +53,8 @@ export function getWaveThreatPreview(
 
   return {
     boss: isBossWave,
-    threats: [...new Set([...bossThreat, ...rankedThreats])].slice(0, 3),
+    threats: threatKinds.map(enemyThreatLabel),
+    threatRoles: threatKinds.map(enemyThreatRole),
     enemyKinds: threatKinds,
   };
 }

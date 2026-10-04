@@ -14,6 +14,8 @@ describe("wave threat preview", () => {
     const preview = getWaveThreatPreview(getStageById(4), 28);
     expect(preview.boss).toBe(true);
     expect(preview.threats[0]).toBe("BRUTE");
+    expect(preview.threatRoles[0]).toBe("TANK");
+    expect(preview.threatRoles).toHaveLength(preview.threats.length);
   });
 
   test("flags recurring endless boss waves", () => {
