@@ -1312,7 +1312,7 @@ function Zombies({
           hpFill.scale.x = ratio * healthBar.widthMultiplier;
           hpFill.position.x = (ratio - 1) * 0.45 * healthBar.widthMultiplier;
           const material = hpFill.material as THREE.MeshBasicMaterial;
-          material.color.set(z.boss ? "#e9b44c" : "#e24b4b");
+          material.color.set(healthBar.color);
         }
       }
 

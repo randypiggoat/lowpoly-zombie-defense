@@ -408,8 +408,15 @@ export function HUD({
             <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">
               {waveThreatPreview.boss ? "BOSS THREAT" : "THREATS THIS WAVE"}
             </p>
-            <p className="mt-0.5 font-display text-xs tracking-wide text-panel-foreground">
-              {waveThreatPreview.threats.join(" · ")}
+            <p className="mt-0.5 flex flex-wrap justify-center gap-x-2 font-display text-xs tracking-wide text-panel-foreground">
+              {waveThreatPreview.threats.map((threat, index) => (
+                <span key={`${threat}-${index}`} className="whitespace-nowrap">
+                  {threat}
+                  <span className="ml-1 font-sans text-[9px] tracking-normal text-panel-muted">
+                    {waveThreatPreview.threatRoles[index]}
+                  </span>
+                </span>
+              ))}
             </p>
           </div>
         )}

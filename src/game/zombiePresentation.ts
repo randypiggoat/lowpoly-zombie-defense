@@ -1,4 +1,5 @@
 import type { StageEnemyKind } from "./navigation";
+import { enemyIdentity } from "./enemyPresentation";
 
 export type ZombiePresentation = {
   name: string;
@@ -23,7 +24,7 @@ export type ZombiePresentation = {
 
 export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
   0: {
-    name: "Walker",
+    name: enemyIdentity(0).name,
     silhouette: "balanced baseline",
     gait: 4.2,
     stride: 0.22,
@@ -43,7 +44,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.235,
   },
   1: {
-    name: "Runner",
+    name: enemyIdentity(1).name,
     silhouette: "forward-leaning sprinter",
     gait: 7.8,
     stride: 0.5,
@@ -63,7 +64,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.36,
   },
   2: {
-    name: "Brute",
+    name: enemyIdentity(2).name,
     silhouette: "heavy shoulders and planted stride",
     gait: 2.8,
     stride: 0.16,
@@ -83,7 +84,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.42,
   },
   3: {
-    name: "Splitter",
+    name: enemyIdentity(3).name,
     silhouette: "asymmetric unstable core",
     gait: 4.7,
     stride: 0.27,
@@ -103,7 +104,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.36,
   },
   4: {
-    name: "Bomber",
+    name: enemyIdentity(4).name,
     silhouette: "unstable pack-heavy body",
     gait: 3.7,
     stride: 0.2,
@@ -123,7 +124,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.255,
   },
   5: {
-    name: "Guardian",
+    name: enemyIdentity(5).name,
     silhouette: "wide defensive stance",
     gait: 2.4,
     stride: 0.1,
@@ -143,7 +144,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.36,
   },
   6: {
-    name: "Healer",
+    name: enemyIdentity(6).name,
     silhouette: "slender floating support",
     gait: 3.6,
     stride: 0.12,
@@ -163,7 +164,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     faceZ: 0.255,
   },
   7: {
-    name: "Swarm",
+    name: enemyIdentity(7).name,
     silhouette: "small coordinated dart",
     gait: 9.5,
     stride: 0.36,

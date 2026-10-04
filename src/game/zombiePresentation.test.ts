@@ -4,6 +4,8 @@ import {
   ZOMBIE_PRESENTATION,
   hitDirection,
 } from "./zombiePresentation";
+import { enemyIdentity } from "./enemyPresentation";
+import type { StageEnemyKind } from "./navigation";
 
 describe("zombie presentation", () => {
   test("defines eight distinct enemy animation profiles", () => {
@@ -12,6 +14,10 @@ describe("zombie presentation", () => {
     expect(new Set(profiles.map((profile) => profile.name)).size).toBe(8);
     expect(new Set(profiles.map((profile) => profile.silhouette)).size).toBe(8);
     expect(new Set(profiles.map((profile) => profile.gait)).size).toBe(8);
+    const kinds: StageEnemyKind[] = [0, 1, 2, 3, 4, 5, 6, 7];
+    expect(profiles.map((profile) => profile.name)).toEqual(
+      kinds.map((kind) => enemyIdentity(kind).name),
+    );
     expect(ZOMBIE_PRESENTATION[2].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
     expect(ZOMBIE_PRESENTATION[5].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
   });
