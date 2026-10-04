@@ -139,8 +139,8 @@ test("tower placement follows pointer across both world axes and builds at the s
 
   await expect(towerCards).toHaveCount(before + 1);
   const built = towerCards.last();
-  expect(Number(await built.getAttribute("data-tower-x"))).toBe(committedPreview!.x);
-  expect(Number(await built.getAttribute("data-tower-z"))).toBe(committedPreview!.z);
+  expect(Math.abs(Number(await built.getAttribute("data-tower-x")) - committedPreview!.x)).toBe(0);
+  expect(Math.abs(Number(await built.getAttribute("data-tower-z")) - committedPreview!.z)).toBe(0);
 });
 
 test("tower placement responds to touch coordinates on mobile", async ({ page }, testInfo) => {
