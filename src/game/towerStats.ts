@@ -32,6 +32,12 @@ export type TowerCombatStats = {
   stunnedMultiplier: number;
   burningMultiplier: number;
   swarmMultiplier: number;
+  killRush: number;
+  burnSpread: number;
+  chainEscalation: number;
+  eliteDamageMultiplier: number;
+  precisionMultiplier: number;
+  fastDamageMultiplier: number;
 };
 
 export function getTowerMods(

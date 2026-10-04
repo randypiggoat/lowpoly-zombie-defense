@@ -18,7 +18,9 @@ import { applyProjectileStatusEffects } from "./projectileEffects";
 import {
   advanceTowerCooldown,
   createTowerProjectile,
-  PROJECTILE_CHAIN_DAMAGE_MULTIPLIER,
+  KILL_RUSH_DURATION,
+  chainJumpMultiplier,
+  conditionalDamageMultiplier,
   PROJECTILE_SPLASH_DAMAGE_MULTIPLIER,
   stepProjectile,
 } from "./towerCombat";
@@ -43,7 +45,7 @@ import { bossKillGoldMultiplier } from "./bossRewards";
 import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
 import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
-import { createEndlessStage, getEndlessEnemyPool, type EndlessChallenge } from "./endless";
+import { createEndlessStage, type EndlessChallenge } from "./endless";
 import {
   canPlaceTower,
   getPathLength,
@@ -134,6 +136,12 @@ export type Zombie = {
   slow: number;
   burn: number;
   burnTime: number;
+  /** Seconds of remaining stun (zombie holds position) and mark (extra damage taken). */
+  stun?: number;
+  markTime?: number;
+  markBonus?: number;
+  /** Radius a burning death spreads fire across (set by Wildfire / Scald). */
+  burnSpread?: number;
   healTimer?: number;
   healFlash?: number;
   // ragdoll
@@ -204,6 +212,8 @@ export type Tower = {
   cooldown: number;
   aim: number;
   recoil: number;
+  /** Seconds left of a kill-rush fire-rate surge. */
+  surge?: number;
 };
 
 export const TOWER_KINDS: TowerKind[] = [
@@ -808,6 +818,7 @@ export class Game {
       ),
     );
     const progressKey = campaignReplayProgressKey(this.stage.id, challenge.id);
+    this.flushMasteryKills();
     profile.completeSideModeRun(
       progressKey,
       Math.max(1, s.wave),
@@ -1178,6 +1189,7 @@ export class Game {
     s.spawnTimer = 0;
     s.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
     profile.recordWaveReached(s.wave);
+    this.flushMasteryKills();
     sfx("wave");
     this.emit();
   }
@@ -1226,7 +1238,7 @@ export class Game {
       hp *= Math.max(0.5, traits.bossHealthMultiplier ?? 1);
       speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
     }
-    hp *= getRunModifierEffects(this.state.activeRunModifiers).enemyHealthMultiplier;
+    hp *= this.runEffects().enemyHealthMultiplier;
 
     const spawned: Zombie = {
       id: this.nextId++,
@@ -1270,6 +1282,27 @@ export class Game {
     return spawned;
   }
 
+  private cachedEffectsKey: RunModifierId[] | null = null;
+  private cachedEffects = getRunModifierEffects([]);
+  private kindKills: Record<string, number> = {};
+
+  /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
+  private runEffects() {
+    const active = this.state.activeRunModifiers;
+    if (this.cachedEffectsKey !== active) {
+      this.cachedEffectsKey = active;
+      this.cachedEffects = getRunModifierEffects(active);
+    }
+    return this.cachedEffects;
+  }
+
+  /** Flush per-tower kill counts into persistent tower mastery (once per wave, not per kill). */
+  private flushMasteryKills() {
+    if (Object.keys(this.kindKills).length === 0) return;
+    profile.recordTowerKills(this.kindKills);
+    this.kindKills = {};
+  }
+
   /** Shared damage application — used by bullets, splash, chains and burning. */
   private damage(
     z: Zombie,
@@ -1290,6 +1323,10 @@ export class Game {
       closeDamageMultiplier?: number;
       stunnedMultiplier?: number;
       burningMultiplier?: number;
+      eliteDamageMultiplier?: number;
+      precisionMultiplier?: number;
+      fastDamageMultiplier?: number;
+      killRush?: number;
       originX?: number;
       originZ?: number;
       damageKind?: TowerKind;
@@ -1329,6 +1366,14 @@ export class Game {
       Math.hypot(z.x - originX, z.z - originZ) <= 3.8
         ? Math.max(1, ability.closeDamageMultiplier ?? 1)
         : 1;
+    const conditionalMultiplier = conditionalDamageMultiplier({
+      enemyKind: z.kind,
+      boss: z.boss,
+      distanceFromTower: Math.hypot(z.x - originX, z.z - originZ),
+      ...(ability.eliteDamageMultiplier !== undefined && { eliteDamageMultiplier: ability.eliteDamageMultiplier }),
+      ...(ability.precisionMultiplier !== undefined && { precisionMultiplier: ability.precisionMultiplier }),
+      ...(ability.fastDamageMultiplier !== undefined && { fastDamageMultiplier: ability.fastDamageMultiplier }),
+    });
     const incomingDamage =
       (z.kind === 5 ? dmg * (guardianShieldBroken ? 0.84 : 0.68) : dmg) *
       guardianAura *
@@ -1338,6 +1383,7 @@ export class Game {
       bossMultiplier *
       stunnedMultiplier *
       burningMultiplier *
+      conditionalMultiplier *
       closeMultiplier;
     const result = resolveDamage(
       z.hp,
@@ -1398,11 +1444,27 @@ export class Game {
     z.dead = true;
     z.fade = 0;
     s.kills += 1;
+    if (ability.damageKind && ability.originX !== undefined) {
+      this.kindKills[ability.damageKind] = (this.kindKills[ability.damageKind] ?? 0) + (z.boss ? 10 : 1);
+      if (ability.killRush && ability.killRush > 1) {
+        for (const tower of s.towers) {
+          if (tower.kind === ability.damageKind) tower.surge = KILL_RUSH_DURATION;
+        }
+      }
+    }
+    if (z.burn > 0 && z.burnSpread) {
+      for (const other of s.zombies) {
+        if (other.dead || other.id === z.id) continue;
+        if (Math.hypot(other.x - z.x, other.z - z.z) > z.burnSpread) continue;
+        other.burn = Math.max(other.burn, z.burn);
+        other.burnTime = Math.max(other.burnTime, 2.4);
+      }
+    }
     s.killStreak = s.killStreakTimer > 0 ? s.killStreak + 1 : 1;
     s.maxKillStreak = Math.max(s.maxKillStreak, s.killStreak);
     s.killStreakTimer = 2.25;
     const knowledge = profile.fieldKnowledgeEffects();
-    const runGoldMultiplier = getRunModifierEffects(s.activeRunModifiers).goldMultiplier * knowledge.scrapMultiplier;
+    const runGoldMultiplier = this.runEffects().goldMultiplier * knowledge.scrapMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
     const bossGoldMultiplier = bossKillGoldMultiplier(z.boss);
     const reward = calculateKillReward(
@@ -1793,6 +1855,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               ),
             );
             s.bossTrialScore = trialScore;
+            this.flushMasteryKills();
             profile.completeBossTrial(
               Math.max(1, s.wave),
               s.kills,
@@ -1815,6 +1878,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             const score = Math.max(0, Math.round(
               s.wave * 120 + s.kills * 8 + s.baseHp * 20 + s.maxKillStreak * 6 + s.bossesDefeated * 350,
             ));
+            this.flushMasteryKills();
             profile.completeSideModeRun(
               side.id,
               Math.max(1, s.wave),
@@ -1834,6 +1898,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             );
             track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: false });
           } else if (this.stage.endless) {
+            this.flushMasteryKills();
             profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
               challengeId: this.stage.challenge?.id,
               challengePeriod: this.stage.challenge?.period,
@@ -1841,6 +1906,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               rewardMultiplier: this.stage.rewardMultiplier,
             });
           } else {
+            this.flushMasteryKills();
             profile.completeRun(Math.max(1, s.wave), s.kills, {
               stageId: this.stage.id,
               stageCompleted: false,
@@ -1887,6 +1953,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           ),
         );
         s.bossTrialScore = trialScore;
+        this.flushMasteryKills();
         profile.completeBossTrial(
           Math.max(1, s.wave),
           s.kills,
@@ -1917,6 +1984,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               1200,
           ),
         );
+        this.flushMasteryKills();
         profile.completeSideModeRun(
           side.id,
           Math.max(1, s.wave),
@@ -1936,6 +2004,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         );
         track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: true });
       } else
+      this.flushMasteryKills();
       profile.completeRun(Math.max(1, s.wave), s.kills, {
         stageId: this.stage.id,
         stageCompleted: true,
@@ -1995,11 +2064,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
     }
     // towers
-    const runEffects = getRunModifierEffects(s.activeRunModifiers);
+    const runEffects = this.runEffects();
     for (const t of s.towers) {
       const cooldown = advanceTowerCooldown(t.cooldown, dt);
       t.cooldown = cooldown.cooldown;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
+      if ((t.surge ?? 0) > 0) t.surge = Math.max(0, (t.surge ?? 0) - dt);
 
       const best = selectTowerTarget(
         s.zombies,
@@ -2011,10 +2081,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (cooldown.ready) {
-          const rate = towerRate(t) * runEffects.rateMultiplier;
+          const combat = applyRunModifiersToCombat(towerCombatStats(t), runEffects);
+          const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
+          const rate = towerRate(t) * runEffects.rateMultiplier * surgeRate;
           t.cooldown = 1 / rate;
           t.recoil = 1;
-          const combat = applyRunModifiersToCombat(towerCombatStats(t), runEffects);
           const crit = this.random() < combat.crit;
           const volley = Math.max(1, Math.min(3, combat.volley));
           const volleyDamageFactor = volley === 3 ? 0.48 : volley === 2 ? 0.68 : 1;
@@ -2051,6 +2122,12 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 stunnedMultiplier: combat.stunnedMultiplier,
                 burningMultiplier: combat.burningMultiplier,
                 swarmMultiplier: combat.swarmMultiplier,
+                burnSpread: combat.burnSpread,
+                chainEscalation: combat.chainEscalation,
+                eliteDamageMultiplier: combat.eliteDamageMultiplier,
+                precisionMultiplier: combat.precisionMultiplier,
+                fastDamageMultiplier: combat.fastDamageMultiplier,
+                killRush: combat.killRush,
               }),
             );
             this.projectileEmissions += 1;
@@ -2085,6 +2162,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           z.slow = z.kind === 5 ? status.slow * 0.45 : status.slow;
           z.burn = status.burn;
           z.burnTime = status.burnTime;
+          if (z.burn > 0 && b.burnSpread) z.burnSpread = Math.max(z.burnSpread ?? 0, b.burnSpread);
           const counterplayMultiplier = towerEnemyDamageMultiplier(b.kind, z.kind);
           this.damage(
             z,
@@ -2105,6 +2183,10 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               closeDamageMultiplier: b.closeDamageMultiplier,
               stunnedMultiplier: b.stunnedMultiplier,
               burningMultiplier: b.burningMultiplier,
+              ...(b.eliteDamageMultiplier !== undefined && { eliteDamageMultiplier: b.eliteDamageMultiplier }),
+              ...(b.precisionMultiplier !== undefined && { precisionMultiplier: b.precisionMultiplier }),
+              ...(b.fastDamageMultiplier !== undefined && { fastDamageMultiplier: b.fastDamageMultiplier }),
+              ...(b.killRush !== undefined && { killRush: b.killRush }),
               damageKind: b.kind,
               originX: b.originX,
               originZ: b.originZ,
@@ -2137,9 +2219,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           target.z,
           b.chain,
         );
-        for (const z of chainTargets) {
-          hit(z, b.damage * PROJECTILE_CHAIN_DAMAGE_MULTIPLIER);
-        }
+        chainTargets.forEach((z, jump) => {
+          hit(z, b.damage * chainJumpMultiplier(jump, b.chainEscalation ?? 0));
+        });
       }
     }
 

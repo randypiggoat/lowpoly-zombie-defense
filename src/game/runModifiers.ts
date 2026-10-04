@@ -21,7 +21,12 @@ export type RunModifierId =
   | "brittle-frost"
   | "bunker-doctrine"
   | "hazard-pay"
-  | "scattershot";
+  | "scattershot"
+  | "adrenaline"
+  | "wildfire"
+  | "pest-control"
+  | "eagle-eye"
+  | "heavy-hunter";
 
 export type RunModifierTag = "damage" | "control" | "economy" | "range" | "crowd" | "boss" | "synergy";
 
@@ -60,6 +65,13 @@ export type RunModifierEffectSpec = {
   burnBonus?: number;
   /** Minimum shatter multiplier against slowed targets for every tower. */
   shatterMultiplier?: number;
+  /** Fire-rate multiplier for a tower kind right after it scores a kill. */
+  killRush?: number;
+  /** Radius kills spread burning to neighbours. */
+  burnSpread?: number;
+  fastDamageMultiplier?: number;
+  eliteDamageMultiplier?: number;
+  precisionMultiplier?: number;
 };
 
 export type RunModifierDefinition = {
@@ -188,6 +200,41 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
     tags: ["crowd"],
     effects: { splashTowerDamageMultiplier: 1.3, singleTargetDamageMultiplier: 0.85 },
   },
+  {
+    id: "adrenaline",
+    name: "Adrenaline",
+    description: "Every kill gives that tower type +30% fire rate for 2s; −12% range",
+    tags: ["damage", "synergy"],
+    effects: { killRush: 1.3, rangeMultiplier: 0.88 },
+  },
+  {
+    id: "wildfire",
+    name: "Wildfire",
+    description: "Burning kills spread fire to nearby zombies; −10% damage",
+    tags: ["crowd", "synergy"],
+    effects: { burnSpread: 2.6, damageMultiplier: 0.9 },
+  },
+  {
+    id: "pest-control",
+    name: "Pest Control",
+    description: "+45% damage to runners and swarms, −6% damage to everything else",
+    tags: ["crowd"],
+    effects: { fastDamageMultiplier: 1.45, damageMultiplier: 0.94 },
+  },
+  {
+    id: "eagle-eye",
+    name: "Eagle Eye",
+    description: "+35% damage to far targets (6+ tiles), +12% range, −10% fire rate",
+    tags: ["range", "damage"],
+    effects: { precisionMultiplier: 1.35, rangeMultiplier: 1.12, rateMultiplier: 0.9 },
+  },
+  {
+    id: "heavy-hunter",
+    name: "Heavy Hunter",
+    description: "+35% damage to brutes, guardians, healers and bosses, −8% damage to the rest",
+    tags: ["boss"],
+    effects: { eliteDamageMultiplier: 1.35, damageMultiplier: 0.92 },
+  },
 ];
 
 export type RunModifierEffects = {
@@ -213,9 +260,17 @@ export type RunModifierEffects = {
   executeThresholdBonus: number;
   burnBonus: number;
   shatterMultiplier: number;
+  killRush: number;
+  burnSpread: number;
+  fastDamageMultiplier: number;
+  eliteDamageMultiplier: number;
+  precisionMultiplier: number;
 };
 
 const MULTIPLICATIVE_EFFECTS = [
+  "fastDamageMultiplier",
+  "eliteDamageMultiplier",
+  "precisionMultiplier",
   "rateMultiplier",
   "rangeMultiplier",
   "damageMultiplier",
@@ -232,7 +287,7 @@ const MULTIPLICATIVE_EFFECTS = [
   "enemyHealthMultiplier",
 ] as const;
 const ADDITIVE_EFFECTS = ["chainBonus", "stunBonus", "critBonus", "executeThresholdBonus"] as const;
-const MAX_EFFECTS = ["markDuration", "markBonus", "burnBonus", "shatterMultiplier"] as const;
+const MAX_EFFECTS = ["markDuration", "markBonus", "burnBonus", "shatterMultiplier", "killRush", "burnSpread"] as const;
 
 export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects {
   const effects: RunModifierEffects = {
@@ -258,6 +313,11 @@ export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects 
     executeThresholdBonus: 0,
     burnBonus: 0,
     shatterMultiplier: 1,
+    killRush: 1,
+    burnSpread: 0,
+    fastDamageMultiplier: 1,
+    eliteDamageMultiplier: 1,
+    precisionMultiplier: 1,
   };
 
   for (const id of ids) {
@@ -298,7 +358,18 @@ export type RunModifierCombatInput = {
   closeDamageMultiplier: number;
   stunnedMultiplier: number;
   burningMultiplier: number;
+  killRush: number;
+  burnSpread: number;
+  eliteDamageMultiplier: number;
+  precisionMultiplier: number;
+  fastDamageMultiplier: number;
 };
+
+/** Hard ceilings so upgrade + modifier stacking stays exciting without runaway damage. */
+const MAX_CRIT = 0.75;
+const MAX_EXECUTE_THRESHOLD = 0.5;
+const MODIFIER_EXECUTE_MULTIPLIER = 2;
+const MAX_STATUS_BONUS = 2.4;
 
 /** Folds run modifiers into one tower's combat stats so every shot picks up build-shaping effects. */
 export function applyRunModifiersToCombat<T extends RunModifierCombatInput>(
@@ -311,7 +382,7 @@ export function applyRunModifiersToCombat<T extends RunModifierCombatInput>(
       : combat.chain <= 0
         ? effects.singleTargetDamageMultiplier
         : 1;
-  const executeThreshold = Math.min(0.5, combat.executeThreshold + effects.executeThresholdBonus);
+  const executeThreshold = Math.min(MAX_EXECUTE_THRESHOLD, combat.executeThreshold + effects.executeThresholdBonus);
   return {
     ...combat,
     damage: combat.damage * effects.damageMultiplier * role,
@@ -319,17 +390,22 @@ export function applyRunModifiersToCombat<T extends RunModifierCombatInput>(
     chain: combat.chain + effects.chainBonus,
     slow: combat.slow * effects.slowMultiplier,
     burn: Math.max(combat.burn, effects.burnBonus) * effects.burnMultiplier,
-    crit: Math.min(0.75, combat.crit + effects.critBonus),
+    crit: Math.min(MAX_CRIT, combat.crit + effects.critBonus),
     stun: Math.max(combat.stun, effects.stunBonus),
     markDuration: Math.max(combat.markDuration, effects.markDuration),
     markBonus: Math.max(combat.markBonus, effects.markBonus),
     shatterMultiplier: Math.max(combat.shatterMultiplier, effects.shatterMultiplier),
     executeThreshold,
-    executeMultiplier: executeThreshold > 0 ? Math.max(combat.executeMultiplier, 2) : combat.executeMultiplier,
+    executeMultiplier: executeThreshold > 0 ? Math.max(combat.executeMultiplier, MODIFIER_EXECUTE_MULTIPLIER) : combat.executeMultiplier,
     bossDamageMultiplier: combat.bossDamageMultiplier * effects.bossDamageMultiplier,
     closeDamageMultiplier: combat.closeDamageMultiplier * effects.closeDamageMultiplier,
-    stunnedMultiplier: combat.stunnedMultiplier * effects.stunnedDamageMultiplier,
-    burningMultiplier: combat.burningMultiplier * effects.burningDamageMultiplier,
+    stunnedMultiplier: Math.min(MAX_STATUS_BONUS, combat.stunnedMultiplier * effects.stunnedDamageMultiplier),
+    burningMultiplier: Math.min(MAX_STATUS_BONUS, combat.burningMultiplier * effects.burningDamageMultiplier),
+    killRush: Math.max(combat.killRush, effects.killRush),
+    burnSpread: Math.max(combat.burnSpread, effects.burnSpread),
+    eliteDamageMultiplier: combat.eliteDamageMultiplier * effects.eliteDamageMultiplier,
+    precisionMultiplier: combat.precisionMultiplier * effects.precisionMultiplier,
+    fastDamageMultiplier: combat.fastDamageMultiplier * effects.fastDamageMultiplier,
   };
 }
 

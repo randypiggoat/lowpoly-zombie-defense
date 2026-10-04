@@ -1286,6 +1286,20 @@ class ProfileStore {
     this.save();
   }
 
+  /** Kills made by each tower kind earn mastery XP (1 per kill, 10 per boss), flushed once per wave. */
+  recordTowerKills(kills: Record<string, number>) {
+    const p = this.profile;
+    p.towerMasteryXp ??= {};
+    let changed = false;
+    for (const [kind, count] of Object.entries(kills)) {
+      const earned = Math.max(0, Math.floor(count));
+      if (earned <= 0) continue;
+      p.towerMasteryXp[kind] = (p.towerMasteryXp[kind] ?? 0) + earned;
+      changed = true;
+    }
+    if (changed) this.save();
+  }
+
   towerMasteryLevel(kind: string) {
     return Math.min(10, Math.floor(((this.profile.towerMasteryXp ?? {})[kind] ?? 0) / 100));
   }

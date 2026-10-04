@@ -38,8 +38,8 @@ describe("run modifiers", () => {
   });
 
   test("pool offers roughly twenty distinct, tradeoff-bearing modifiers", () => {
-    expect(RUN_MODIFIER_DEFS.length).toBeGreaterThanOrEqual(18);
-    expect(RUN_MODIFIER_DEFS.length).toBeLessThanOrEqual(22);
+    expect(RUN_MODIFIER_DEFS.length).toBeGreaterThanOrEqual(24);
+    expect(RUN_MODIFIER_DEFS.length).toBeLessThanOrEqual(28);
     expect(new Set(RUN_MODIFIER_DEFS.map((entry) => entry.id)).size).toBe(RUN_MODIFIER_DEFS.length);
     for (const entry of RUN_MODIFIER_DEFS) expect(Object.keys(entry.effects).length).toBeGreaterThan(0);
   });
@@ -48,7 +48,8 @@ describe("run modifiers", () => {
     damage: 100, splash: 0, chain: 0, slow: 0, burn: 0, crit: 0, stun: 0,
     markDuration: 0, markBonus: 0, shatterMultiplier: 1, executeThreshold: 0,
     executeMultiplier: 1, bossDamageMultiplier: 1, closeDamageMultiplier: 1,
-    stunnedMultiplier: 1, burningMultiplier: 1,
+    stunnedMultiplier: 1, burningMultiplier: 1, killRush: 1, burnSpread: 0,
+    eliteDamageMultiplier: 1, precisionMultiplier: 1, fastDamageMultiplier: 1,
   };
 
   test("role modifiers split single-target and splash towers", () => {
@@ -87,5 +88,21 @@ describe("run modifiers", () => {
     expect(out.executeMultiplier).toBe(3);
     expect(out.crit).toBe(0.7);
     expect(applyRunModifiersToCombat({ ...baseCombat, crit: 0.7 }, { ...effects, critBonus: 0.2 }).crit).toBe(0.75);
+  });
+
+  test("situational modifiers feed the combat stats", () => {
+    const effects = getRunModifierEffects(["adrenaline", "wildfire", "pest-control", "eagle-eye", "heavy-hunter"]);
+    const out = applyRunModifiersToCombat(baseCombat, effects);
+    expect(out.killRush).toBeCloseTo(1.3);
+    expect(out.burnSpread).toBeGreaterThan(0);
+    expect(out.fastDamageMultiplier).toBeCloseTo(1.45);
+    expect(out.precisionMultiplier).toBeCloseTo(1.35);
+    expect(out.eliteDamageMultiplier).toBeCloseTo(1.35);
+  });
+
+  test("stacked status bonuses are capped", () => {
+    const effects = getRunModifierEffects(["shock-rounds"]);
+    const out = applyRunModifiersToCombat({ ...baseCombat, stunnedMultiplier: 2.2 }, effects);
+    expect(out.stunnedMultiplier).toBeLessThanOrEqual(2.4);
   });
 });
