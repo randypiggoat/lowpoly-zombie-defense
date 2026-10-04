@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   TOWER_INFO,
   TOWER_KINDS,
@@ -30,6 +30,7 @@ import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
+import { getEndlessMilestone, getEndlessSector, getEndlessSectorLabel } from "@/game/sideModes";
 
 import { getBossHealthSummary } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
@@ -72,8 +73,25 @@ function Stat({
   value: string;
   tone?: "gold" | "danger" | undefined;
 }) {
+  const initial = useRef(true);
+  const [pulsing, setPulsing] = useState(false);
+
+  useEffect(() => {
+    if (initial.current) {
+      initial.current = false;
+      return;
+    }
+    setPulsing(true);
+    const timeout = window.setTimeout(() => setPulsing(false), 240);
+    return () => window.clearTimeout(timeout);
+  }, [value]);
+
   return (
-    <div className="rotwood-stat flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur">
+    <div
+      className="rotwood-stat flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur"
+      data-pulsing={pulsing}
+      data-tone={tone}
+    >
       <span
         className="rotwood-stat-number font-display text-lg leading-none tracking-wide text-panel-foreground data-[tone=danger]:text-danger"
         data-tone={tone}
@@ -333,7 +351,10 @@ export function HUD({
         </div>
       )}
       {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
-        <div className="rotwood-toast pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur">
+        <div
+          className="rotwood-toast rotwood-kill-streak pointer-events-none absolute left-1/2 top-[26%] -translate-x-1/2 rounded-2xl bg-black/55 px-4 py-2 text-center shadow-panel backdrop-blur"
+          data-streak-tier={state.killStreak >= 8 ? "high" : state.killStreak >= 5 ? "mid" : "low"}
+        >
           <p className="font-display text-xl tracking-[0.12em] text-accent">{state.killStreak} KILL STREAK</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-panel-muted">
             +{Math.round((killStreakGoldMultiplier(state.killStreak) - 1) * 100)}% SCRAP · KEEP IT GOING
@@ -341,7 +362,7 @@ export function HUD({
         </div>
       )}
       {activeLevel !== null && !state.gameOver && (
-        <div className="rotwood-toast absolute left-1/2 top-4 -translate-x-1/2 rounded-xl bg-accent px-4 py-2 text-center shadow-panel">
+        <div className="rotwood-toast rotwood-levelup absolute left-1/2 top-4 -translate-x-1/2 rounded-xl bg-accent px-4 py-2 text-center shadow-panel">
           <p className="font-display text-lg tracking-wide text-accent-foreground">Level up!</p>
           <p className="text-xs text-accent-foreground/90">Player level {activeLevel}</p>
         </div>
@@ -350,6 +371,7 @@ export function HUD({
             {state.waveMessage && !state.gameOver && (
         <div
           className="rotwood-wave-message pointer-events-none absolute left-1/2 top-[18%] -translate-x-1/2 text-center"
+          data-wave-type={state.waveMessageType}
           style={{
             opacity: Math.min(1, state.waveMessageLife),
           }}
@@ -382,7 +404,7 @@ export function HUD({
         )}
 
       {bossHealth && !state.gameOver && (
-        <div className="pointer-events-none absolute left-1/2 top-[30%] w-[min(88vw,24rem)] -translate-x-1/2 rounded-xl border border-accent/30 bg-black/60 px-3 py-2 text-center shadow-panel backdrop-blur">
+        <div className="rotwood-boss-bar pointer-events-none absolute left-1/2 top-[30%] w-[min(88vw,24rem)] -translate-x-1/2 rounded-xl border border-accent/30 bg-black/60 px-3 py-2 text-center shadow-panel backdrop-blur">
           <div className="flex items-center justify-between gap-2">
             <p className="font-display text-xs tracking-[0.16em] text-accent">
               {bossHealth.count > 1 ? `BOSS x${bossHealth.count}` : "BOSS"}
@@ -434,6 +456,12 @@ export function HUD({
           <span>Lv {player.level}</span>
           <span>Enemies {enemiesRemaining}</span>
         </div>
+        {state.gameMode === "endless" && !state.gameOver ? (
+          <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg border border-accent/20 bg-accent/5 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-accent shadow-panel backdrop-blur">
+            <span>Sector {getEndlessSector(state.wave)} · {getEndlessSectorLabel(state.wave)}</span>
+            <span className="text-panel-muted">Next {getEndlessMilestone(state.wave)}</span>
+          </div>
+        ) : null}
         {firstSessionTip && (
           <div className="pointer-events-none max-w-sm rounded-xl border border-accent/20 bg-panel/80 px-3 py-2 shadow-panel backdrop-blur">
             <p className="font-display text-xs tracking-wide text-accent">{firstSessionTip.title}</p>
@@ -666,6 +694,9 @@ export function HUD({
                   onClick={() => onSelect({ kind: "tower", id: t.id })}
                   className="rounded-lg border border-white/10 bg-panel/85 px-1 py-1 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:bg-panel"
                   data-active={active}
+                  data-tower-id={t.id}
+                  data-tower-x={t.x}
+                  data-tower-z={t.z}
                 >
                   <span
                     className="mx-auto mb-0.5 block h-1.5 w-1.5 rounded-full"

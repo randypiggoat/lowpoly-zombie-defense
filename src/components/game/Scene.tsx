@@ -11,6 +11,7 @@ import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
+import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
   MAX_ACTIVE_BULLETS,
@@ -1879,6 +1880,7 @@ export function Scene({
         <Gibs />
         <DamagePopups/>
         <Bullets />
+        <CombatVFX reducedMotion={reducedMotion} />
       </group>
     </>
   );

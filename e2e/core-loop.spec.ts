@@ -76,8 +76,8 @@ test("weekly boss trials have a distinct entry screen", async ({ page }) => {
 
   await page.getByRole("button", { name: "Boss Trials" }).click();
 
-  await expect(page.getByText("Boss Trials", { exact: true })).toBeVisible();
-  await expect(page.getByText("Weekly rotation", { exact: true })).toBeVisible();
+  await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "boss-trial-select");
   await expect(page.getByRole("button", { name: "ENTER TRIAL" })).toBeVisible();
+  await expect(page.getByText("Weekly rotation", { exact: true })).toBeVisible();
   await expect(page.getByText(/This week/)).toBeVisible();
 });
