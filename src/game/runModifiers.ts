@@ -30,11 +30,11 @@ export type RunModifierDefinition = {
 
 export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
   { id: "overcharged", name: "Overcharged", description: "+30% fire rate, −15% range", effects: { rateMultiplier: 1.3, rangeMultiplier: 0.85 } },
-  { id: "bounty", name: "Blood Money", description: "+35% gold from kills", effects: { goldMultiplier: 1.35 } },
+  { id: "bounty", name: "Blood Money", description: "+40% kill gold, −15% fire rate", effects: { goldMultiplier: 1.4, rateMultiplier: 0.85 } },
   { id: "demolition", name: "Demolition", description: "+40% splash radius", effects: { splashMultiplier: 1.4 } },
   { id: "deadeye", name: "Deadeye", description: "+25% damage, −10% fire rate", effects: { damageMultiplier: 1.25, rateMultiplier: 0.9 } },
-  { id: "cryo-ammo", name: "Cryo Ammo", description: "Slow effects are 35% stronger", effects: { slowMultiplier: 1.35 } },
-  { id: "hot-lead", name: "Hot Lead", description: "+15% damage and +15% gold from kills", effects: { damageMultiplier: 1.15, goldMultiplier: 1.15 } },
+  { id: "cryo-ammo", name: "Cryo Ammo", description: "+45% slow strength, −15% damage", effects: { slowMultiplier: 1.45, damageMultiplier: 0.85 } },
+  { id: "hot-lead", name: "Hot Lead", description: "+25% damage, +20% kill gold, −20% fire rate", effects: { damageMultiplier: 1.25, goldMultiplier: 1.2, rateMultiplier: 0.8 } },
   {
     id: "longshot",
     name: "Longshot",
@@ -44,8 +44,8 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
   {
     id: "hot-chamber",
     name: "Hot Chamber",
-    description: "+35% fire rate, −8% range",
-    effects: { rateMultiplier: 1.35, rangeMultiplier: 0.92 },
+    description: "+50% fire rate, −22% damage",
+    effects: { rateMultiplier: 1.5, damageMultiplier: 0.78 },
   },
   {
     id: "shrapnel",
@@ -72,6 +72,8 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
     effects: { damageMultiplier: 1.22, rangeMultiplier: 0.9 },
   },
 ];
+
+export const MAX_RUN_GOLD_MULTIPLIER = 1.6;
 
 export type RunModifierEffects = {
   rateMultiplier: number;
@@ -104,6 +106,7 @@ export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects 
     if (mods.slowMultiplier) effects.slowMultiplier *= mods.slowMultiplier;
   }
 
+  effects.goldMultiplier = Math.min(effects.goldMultiplier, MAX_RUN_GOLD_MULTIPLIER);
   return effects;
 }
 
