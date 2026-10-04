@@ -118,6 +118,40 @@ export type StageDefinition = {
   mapId: StageMapId;
 };
 
+export type CampaignReplayChallengeDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  maxTowers?: number;
+  allowedTowerKinds?: string[];
+  allowRunModifiers?: boolean;
+  reward: { coins: number; xp: number; gems?: number };
+  firstClearBonus: { coins: number; xp: number; gems?: number };
+};
+
+export const CAMPAIGN_REPLAY_CHALLENGES: readonly CampaignReplayChallengeDefinition[] = [
+  {
+    id: "thin-line",
+    name: "Thin Line",
+    description: "Win with no more than 4 towers.",
+    maxTowers: 4,
+    reward: { coins: 110, xp: 80 },
+    firstClearBonus: { coins: 70, xp: 40, gems: 1 },
+  },
+  {
+    id: "no-powers",
+    name: "No Powers",
+    description: "Defend without choosing run modifiers.",
+    allowRunModifiers: false,
+    reward: { coins: 90, xp: 100, gems: 1 },
+    firstClearBonus: { coins: 60, xp: 50, gems: 1 },
+  },
+];
+
+export function campaignReplayProgressKey(stageId: number, challengeId: string) {
+  return `campaign-replay-${stageId}-${challengeId}`;
+}
+
 export const STAGE_DEFS: StageDefinition[] = [
   {
     id: 1, worldId: 1, worldName: "Outbreak County", stageNumber: 1,

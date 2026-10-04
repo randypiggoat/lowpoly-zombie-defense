@@ -158,7 +158,7 @@ export const TOWER_PATHS = {
       focus: "Turn space into a controlled slow zone",
       tiers: [
         tier("Chill Mist", "Slows a wider pocket around each impact.", 60, { slow: 0.42, splash: 0.7 }),
-        tier("Wide Nozzle", "Extends the freeze pocket into another lane.", 135, { range: 1.2, splash: 0.7 }),
+        tier("Wide Nozzle", "Extends the freeze pocket into another lane and makes slowed targets brittle.", 135, { range: 1.2, splash: 0.7 }, "shatter"),
         tier("Cryo Core", "Freeze waves linger with stronger control.", 280, { slow: 0.58, rate: 1.12 }),
         tier("Absolute Zero", "A huge freeze pulse can halt the most dangerous crowd.", 590, { slow: 0.7, splash: 1.2, range: 1.18 }, "stun"),
       ],
@@ -180,7 +180,7 @@ export const TOWER_PATHS = {
       focus: "Shape the blast zone and slow the route",
       tiers: [
         tier("Long Gun", "Reach the next bend from a safer perch.", 75, { range: 1.2 }),
-        tier("Tar Shells", "Explosions leave the wave crawling.", 160, { slow: 0.32, splash: 0.4 }),
+        tier("Tar Shells", "Explosions slow and mark their target for the whole defense.", 160, { slow: 0.32, splash: 0.4 }, "mark"),
         tier("Cluster Shot", "The blast breaks into a wider crowd hit.", 320, { splash: 1.15 }),
         tier("Bombardier", "Large shells dominate long sightlines and bends.", 690, { range: 1.25, splash: 1.2, slow: 0.5 }, "stun"),
       ],

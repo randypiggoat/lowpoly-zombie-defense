@@ -3,9 +3,16 @@
 // @ts-expect-error Bun test globals are available when this file runs under Bun.
 import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
-import { STAGE_DEFS, getStageById, type StageEnemyKind } from "./navigation";
+import {
+  CAMPAIGN_REPLAY_CHALLENGES,
+  STAGE_DEFS,
+  campaignReplayProgressKey,
+  getStageById,
+  type StageEnemyKind,
+} from "./navigation";
 import { createSeededRandom } from "./random";
 import { getWeeklyBossTrial } from "./bossTrials";
+import { profile } from "./profile";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
   const pad = BUILD_SPOTS[0]!;
@@ -91,6 +98,59 @@ describe("Game simulation", () => {
     }
 
     expect(mapIds.size).toBe(20);
+  });
+
+  test("campaign replay challenges enforce their restrictions", () => {
+    const thinLine = CAMPAIGN_REPLAY_CHALLENGES.find((challenge) => challenge.id === "thin-line")!;
+    const noPowers = CAMPAIGN_REPLAY_CHALLENGES.find((challenge) => challenge.id === "no-powers")!;
+    const buildGame = new Game();
+    buildGame.startStage({
+      ...getStageById(1),
+      startingCoins: 1000,
+      campaignReplayChallenge: thinLine,
+    });
+    for (let spot = 0; spot < 4; spot += 1) {
+      expect(buildGame.build(spot, "rifleman")).toBe(true);
+    }
+    expect(buildGame.build(4, "rifleman")).toBe(false);
+
+    const modifierGame = new Game(() => 0.5);
+    modifierGame.startStage({
+      ...getStageById(1),
+      waveCount: 3,
+      campaignReplayChallenge: noPowers,
+    });
+    modifierGame.state.wave = 2;
+    modifierGame.state.waveTimer = 0;
+    modifierGame.tick(0.1);
+    expect(modifierGame.state.wave).toBe(3);
+    expect(modifierGame.state.runModifierOffer).toHaveLength(0);
+  });
+
+  test("campaign replay challenge clears and best scores use persisted profile records", () => {
+    const challenge = CAMPAIGN_REPLAY_CHALLENGES[0]!;
+    const progressKey = campaignReplayProgressKey(1, challenge.id);
+    const playerSnapshot = structuredClone(profile.profile);
+    const previousReward = profile.lastReward;
+    const game = new Game();
+
+    try {
+      game.startStage({
+        ...getStageById(1),
+        waveCount: 1,
+        campaignReplayChallenge: challenge,
+      });
+      game.state.wave = 1;
+      game.tick(0.02);
+
+      expect(game.state.stageWon).toBe(true);
+      expect(profile.profile.sideModeClears[progressKey]).toBe(1);
+      expect(profile.profile.sideModeBestScores[progressKey]).toBeGreaterThan(0);
+      expect(profile.profile.coins).toBeGreaterThan(playerSnapshot.coins);
+    } finally {
+      Object.assign(profile.profile, playerSnapshot);
+      profile.lastReward = previousReward;
+    }
   });
 
   test("starts the first wave after the initial delay", () => {

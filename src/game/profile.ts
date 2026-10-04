@@ -1,4 +1,9 @@
-import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
+import {
+  getSeasonalEvent,
+  getSeasonalEventCycleKey,
+  getSeasonalMilestoneProgress,
+  type SeasonalActivity,
+} from "./liveOps";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked, resolveFieldKnowledgeEffects } from "./fieldKnowledge";
 import { TOWER_COSMETICS, ZOMBIE_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
@@ -225,7 +230,9 @@ export type PlayerProfile = {
   equippedTowerCosmetics: Record<string, string>;
   seasonalEventCycleKey: string;
   seasonalEventProgress: number;
+  seasonalEventActivityProgress: Record<Exclude<SeasonalActivity, "kills">, number>;
   seasonalEventClaims: string[];
+  seasonalEventUnlocks: string[];
   /** Whether the player prefers reduced motion effects. */
   reducedMotion: boolean;
   /** Whether the player has purchased the permanent ad-removal entitlement. */
@@ -352,7 +359,14 @@ function blank(): PlayerProfile {
     equippedTowerCosmetics: {},
     seasonalEventCycleKey: getSeasonalEventCycleKey(),
     seasonalEventProgress: 0,
+    seasonalEventActivityProgress: {
+      waves: 0,
+      runs: 0,
+      "tower-upgrades": 0,
+      "special-kills": 0,
+    },
     seasonalEventClaims: [],
+    seasonalEventUnlocks: [],
     adsRemoved: false,
     reducedMotion: false,
   };
@@ -559,6 +573,7 @@ function load(): PlayerProfile {
     const raw = localStorage.getItem(KEY);
     if (!raw) return blank();
     const parsed = JSON.parse(raw) as Partial<PlayerProfile>;
+    const today = dateKey();
     const merged: PlayerProfile = {
       ...blank(),
       ...parsed,
@@ -619,10 +634,17 @@ function load(): PlayerProfile {
       seasonalEventCycleKey:
         normalizeDate(parsed.seasonalEventCycleKey) ?? getSeasonalEventCycleKey(),
       seasonalEventProgress: Math.max(0, Number(parsed.seasonalEventProgress) || 0),
+      seasonalEventActivityProgress: {
+        waves: 0,
+        runs: 0,
+        "tower-upgrades": 0,
+        "special-kills": 0,
+        ...normalizeNumberRecord(parsed.seasonalEventActivityProgress),
+      },
       seasonalEventClaims: normalizeStringArray(parsed.seasonalEventClaims),
+      seasonalEventUnlocks: normalizeStringArray(parsed.seasonalEventUnlocks),
       reducedMotion: Boolean(parsed.reducedMotion),
     };
-    const today = dateKey();
     ensureDailyMissionState(merged, today);
     syncAchievements(merged, today);
     ensureStageProgressState(merged);
@@ -733,6 +755,12 @@ class ProfileStore {
     if (this.profile.seasonalEventCycleKey !== cycleKey) {
       this.profile.seasonalEventCycleKey = cycleKey;
       this.profile.seasonalEventProgress = 0;
+      this.profile.seasonalEventActivityProgress = {
+        waves: 0,
+        runs: 0,
+        "tower-upgrades": 0,
+        "special-kills": 0,
+      };
       this.profile.seasonalEventClaims = [];
       return true;
     }
@@ -742,6 +770,32 @@ class ProfileStore {
   private addSeasonalEventKillProgress(amount = 1) {
     this.refreshSeasonalEventState();
     this.profile.seasonalEventProgress += Math.max(0, amount);
+  }
+
+  private addSeasonalEventActivity(activity: Exclude<SeasonalActivity, "kills" | "waves">, amount = 1) {
+    this.refreshSeasonalEventState();
+    this.profile.seasonalEventActivityProgress ??= {
+      waves: 0,
+      runs: 0,
+      "tower-upgrades": 0,
+      "special-kills": 0,
+    };
+    this.profile.seasonalEventActivityProgress[activity] =
+      (this.profile.seasonalEventActivityProgress[activity] ?? 0) + Math.max(0, amount);
+  }
+
+  private recordSeasonalEventWave(wave: number) {
+    this.refreshSeasonalEventState();
+    this.profile.seasonalEventActivityProgress ??= {
+      waves: 0,
+      runs: 0,
+      "tower-upgrades": 0,
+      "special-kills": 0,
+    };
+    this.profile.seasonalEventActivityProgress.waves = Math.max(
+      this.profile.seasonalEventActivityProgress.waves,
+      Math.max(0, Math.floor(wave)),
+    );
   }
 
   private save() {
@@ -849,6 +903,7 @@ class ProfileStore {
 
   recordZombieKill(kind: number) {
     this.addSeasonalEventKillProgress();
+    if (kind >= 2) this.addSeasonalEventActivity("special-kills");
     this.refreshRetentionState();
     const p = this.profile;
     const xp = progressionXpForKill(kind);
@@ -873,6 +928,7 @@ class ProfileStore {
     rewardMultiplier = 1,
     trialId?: string,
   ): RunReward & { score: number; bestScore: number } {
+    this.addSeasonalEventActivity("runs");
     this.refreshRetentionState();
     const p = this.profile;
     this.lastBossTrialId = trialId ?? null;
@@ -935,12 +991,14 @@ class ProfileStore {
     firstClearBonus?: { coins?: number; xp?: number; gems?: number },
     completed = true,
   ): RunReward & { score: number; bestScore: number; clears: number; firstClear: boolean } {
+    this.addSeasonalEventActivity("runs");
     this.refreshRetentionState();
     const p = this.profile;
     const normalizedWave = Math.max(1, Math.floor(wave));
     const normalizedScore = Math.max(0, Math.floor(score));
     const previousBest = p.sideModeBestScores[levelId] ?? 0;
     const firstClear = completed && (p.sideModeClears[levelId] ?? 0) === 0;
+    const clears = p.sideModeClears[levelId] ?? 0;
     const completionScale = completed ? 1 : 0.35;
     const clearReward = {
       coins: Math.max(0, Math.floor(reward.coins * completionScale)),
@@ -980,7 +1038,7 @@ class ProfileStore {
       previousBestStars: 0,
       score: normalizedScore,
       bestScore: p.sideModeBestScores[levelId],
-      clears: p.sideModeClears[levelId],
+      clears,
       firstClear,
     };
     this.lastReward = rewardResult;
@@ -998,6 +1056,7 @@ class ProfileStore {
       rewardMultiplier?: number;
     },
   ): RunReward & { score: number; bestWave: number; bestScore: number } {
+    this.addSeasonalEventActivity("runs");
     this.refreshRetentionState();
     const p = this.profile;
     const multiplier = Math.max(0.5, options?.rewardMultiplier ?? 1);
@@ -1057,6 +1116,7 @@ class ProfileStore {
   }
 
   recordWaveReached(wave: number) {
+    this.recordSeasonalEventWave(wave);
     this.refreshRetentionState();
     const coins = 5 + wave * 2;
     const xp = progressionXpForWave(wave);
@@ -1097,6 +1157,7 @@ class ProfileStore {
       rewardMultiplier?: number;
     },
   ): RunReward {
+    this.addSeasonalEventActivity("runs");
     this.refreshRetentionState();
     const p = this.profile;
     const stageCompleted = Boolean(options?.stageCompleted);
@@ -1217,6 +1278,7 @@ class ProfileStore {
     this.refreshRetentionState();
     const p = this.profile;
     const earned = Math.max(0, points);
+    this.addSeasonalEventActivity("tower-upgrades", earned);
     p.towerUpgradeActions += earned;
     p.towerMasteryXp ??= {};
     p.towerMasteryXp[kind] = (p.towerMasteryXp[kind] ?? 0) + earned * 25;
@@ -1255,8 +1317,26 @@ class ProfileStore {
     this.refreshSeasonalEventState();
     const milestone = event.milestones.find((entry) => entry.id === id);
     if (!milestone || this.profile.seasonalEventClaims.includes(id)) return false;
-    if (this.profile.seasonalEventProgress < milestone.target) return false;
+    if (
+      milestone.prerequisite &&
+      !this.profile.seasonalEventClaims.includes(milestone.prerequisite)
+    ) {
+      return false;
+    }
+    if (
+      getSeasonalMilestoneProgress(
+        milestone,
+        this.profile.seasonalEventProgress,
+        this.profile.seasonalEventActivityProgress,
+      ) < milestone.target
+    ) {
+      return false;
+    }
     this.profile.seasonalEventClaims.push(id);
+    this.profile.seasonalEventUnlocks ??= [];
+    if (milestone.cosmeticId && !this.profile.seasonalEventUnlocks.includes(milestone.cosmeticId)) {
+      this.profile.seasonalEventUnlocks.push(milestone.cosmeticId);
+    }
     if (milestone.reward.coins) this.profile.coins += milestone.reward.coins;
     if (milestone.reward.gems) this.profile.gems += milestone.reward.gems;
     if (milestone.reward.xp) this.awardXp(milestone.reward.xp);

@@ -1,14 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { profile } from "./profile";
+import { getSeasonalEvent, getSeasonalEventCycleKey } from "./liveOps";
+import { TOWER_COSMETICS } from "./collection";
 
 describe("profile contract", () => {
   test("defaults ad removal to off for new players", () => {
     expect(profile.profile.adsRemoved).toBe(false);
   });
 });
-
-import { afterEach, describe, expect, test } from "bun:test";
-import { profile } from "./profile";
 
 describe("accessibility preferences", () => {
   const original = profile.profile.reducedMotion;
@@ -58,5 +57,69 @@ describe("daily login rewards", () => {
       profile.profile.lastLoginRewardDayClaimed = originalClaimedDay;
       profile.profile.loginCycleDay = originalCycleDay;
     }
+  });
+
+  describe("seasonal event progression", () => {
+    test("tracks waves, tower upgrades, and special kills as event activities", () => {
+      const originalProfile = structuredClone(profile.profile);
+      const originalReward = profile.lastReward;
+
+      try {
+        profile.profile.seasonalEventCycleKey = getSeasonalEventCycleKey();
+        profile.profile.seasonalEventActivityProgress = {
+          waves: 0,
+          runs: 0,
+          "tower-upgrades": 0,
+          "special-kills": 0,
+        };
+        profile.recordWaveReached(6);
+        profile.recordTowerUpgrade("rifleman", 2);
+        profile.recordZombieKill(2);
+
+        expect(profile.profile.seasonalEventActivityProgress.waves).toBe(6);
+        expect(profile.profile.seasonalEventActivityProgress["tower-upgrades"]).toBe(2);
+        expect(profile.profile.seasonalEventActivityProgress["special-kills"]).toBe(1);
+      } finally {
+        Object.assign(profile.profile, originalProfile);
+        profile.lastReward = originalReward;
+      }
+    });
+
+    test("gates the finale and permanently unlocks its collection cosmetic", () => {
+      const player = profile.profile;
+      const original = {
+        cycleKey: player.seasonalEventCycleKey,
+        killProgress: player.seasonalEventProgress,
+        activityProgress: { ...player.seasonalEventActivityProgress },
+        claims: [...player.seasonalEventClaims],
+        unlocks: [...player.seasonalEventUnlocks],
+      };
+      const event = getSeasonalEvent();
+      const finale = event.milestones[event.milestones.length - 1]!;
+
+      try {
+        player.seasonalEventCycleKey = getSeasonalEventCycleKey();
+        player.seasonalEventProgress = 0;
+        player.seasonalEventActivityProgress = {
+          waves: 12,
+          runs: 5,
+          "tower-upgrades": 3,
+          "special-kills": 40,
+        };
+        player.seasonalEventClaims = [];
+        player.seasonalEventUnlocks = [];
+
+        expect(profile.claimSeasonalMilestone(finale.id)).toBe(false);
+        player.seasonalEventClaims.push(...event.milestones.slice(0, -1).map((milestone) => milestone.id));
+        expect(profile.claimSeasonalMilestone(finale.id)).toBe(true);
+        expect(TOWER_COSMETICS.find((entry) => entry.id === finale.cosmeticId)?.unlock(player)).toBe(true);
+      } finally {
+        player.seasonalEventCycleKey = original.cycleKey;
+        player.seasonalEventProgress = original.killProgress;
+        player.seasonalEventActivityProgress = original.activityProgress;
+        player.seasonalEventClaims = original.claims;
+        player.seasonalEventUnlocks = original.unlocks;
+      }
+    });
   });
 });

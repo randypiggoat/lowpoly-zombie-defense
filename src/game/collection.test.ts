@@ -36,7 +36,14 @@ function profile(overrides: Partial<PlayerProfile> = {}): PlayerProfile {
     equippedTowerCosmetics: {},
     seasonalEventCycleKey: "E0",
     seasonalEventProgress: 100,
+    seasonalEventActivityProgress: {
+      waves: 0,
+      runs: 0,
+      "tower-upgrades": 0,
+      "special-kills": 0,
+    },
     seasonalEventClaims: [],
+    seasonalEventUnlocks: [],
     ...overrides,
   };
 }
@@ -46,6 +53,16 @@ describe("tower collection", () => {
     const p = profile();
     expect(TOWER_COSMETICS.find((c) => c.id === "bloodmoon-rifle")!.unlock(p)).toBe(true);
     expect(TOWER_COSMETICS.find((c) => c.id === "ember-rocket")!.unlock(p)).toBe(false);
+  });
+
+  test("unlocks the seasonal cosmetic through the collection", () => {
+    const locked = profile();
+    const unlocked = profile({ seasonalEventUnlocks: ["seasonal-vanguard"] });
+    const cosmetic = TOWER_COSMETICS.find((entry) => entry.id === "seasonal-vanguard")!;
+
+    expect(cosmetic.unlock(locked)).toBe(false);
+    expect(cosmetic.unlock(unlocked)).toBe(true);
+    expect(cosmetic.towerKind).toBe("freezer");
   });
 
   test("equips a cosmetic only on the matching tower", () => {

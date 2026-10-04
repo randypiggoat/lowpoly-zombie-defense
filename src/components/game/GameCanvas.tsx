@@ -13,11 +13,14 @@ import { Scene, type Selection } from "./Scene";
 import { isMuted, setMuted, sfx, unlockAudio } from "@/game/audio";
 import { TOWER_INFO, TOWER_KINDS, TOWER_PATHS, game, type TowerKind } from "@/game/engine";
 import {
+  CAMPAIGN_REPLAY_CHALLENGES,
   STAGE_DEFS,
+  campaignReplayProgressKey,
   evaluateStageObjectives,
   getNextStageId,
   getStageById,
   stageUnlockRequirementText,
+  type CampaignReplayChallengeDefinition,
   type PrimaryScreen,
 } from "@/game/navigation";
 import {
@@ -42,7 +45,12 @@ import {
   getWeeklyBossTrial,
   type BossTrialDefinition,
 } from "@/game/bossTrials";
-import { getSeasonalEvent, getSeasonalEventCycleKey, getSeasonalEventEnd } from "@/game/liveOps";
+import {
+  getSeasonalEvent,
+  getSeasonalEventCycleKey,
+  getSeasonalEventEnd,
+  getSeasonalMilestoneProgress,
+} from "@/game/liveOps";
 import { track } from "@/game/analytics";
 import { isPurchaseAvailable, purchase } from "@/game/monetization";
 import { STORE_CATALOG, storeItemStatus } from "@/game/storeCatalog";
@@ -320,10 +328,6 @@ function getEndlessSector(bestWave: number) {
   return Math.max(1, Math.ceil(Math.max(0, bestWave) / 5));
 }
 
-function seasonalEventProgressTarget(target: number, progress: number) {
-  return Math.min(target, Math.max(0, progress));
-}
-
 export function GameCanvas() {
   const state = useGameSnapshot();
   const { player, lastReward } = useProfileSnapshot();
@@ -338,6 +342,7 @@ export function GameCanvas() {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [settingsBackScreen, setSettingsBackScreen] = useState<PrimaryScreen>("main-menu");
   const [activeStageId, setActiveStageId] = useState(1);
+  const [expandedReplayStageId, setExpandedReplayStageId] = useState<number | null>(null);
   const [activeChallenge, setActiveChallenge] = useState<EndlessChallenge | null>(null);
   const [activeBossTrial, setActiveBossTrial] = useState<BossTrialDefinition | null>(null);
   const [activeSideMode, setActiveSideMode] = useState<SideModeLevel | null>(null);
@@ -418,6 +423,17 @@ export function GameCanvas() {
     resetGameplayState();
     setActiveStageId(stageId);
     game.startStage(stage);
+    setScreen("gameplay");
+  };
+
+  const startCampaignReplayChallenge = (
+    stageId: number,
+    challenge: CampaignReplayChallengeDefinition,
+  ) => {
+    if (!player.stageProgress[String(stageId)]?.completed) return;
+    resetGameplayState();
+    setActiveStageId(stageId);
+    game.startStage({ ...getStageById(stageId), campaignReplayChallenge: challenge });
     setScreen("gameplay");
   };
 
@@ -591,8 +607,14 @@ export function GameCanvas() {
   const seasonalCycleKey = getSeasonalEventCycleKey();
   const seasonalEventEnd = getSeasonalEventEnd();
   const readyEventCount = seasonalEvent.milestones.filter((milestone) => {
-    const progress = Math.min(milestone.target, player.seasonalEventProgress);
-    return progress >= milestone.target && !player.seasonalEventClaims.includes(milestone.id);
+    const progress = getSeasonalMilestoneProgress(
+      milestone,
+      player.seasonalEventProgress,
+      player.seasonalEventActivityProgress,
+    );
+    const unlocked =
+      !milestone.prerequisite || player.seasonalEventClaims.includes(milestone.prerequisite);
+    return progress >= milestone.target && unlocked && !player.seasonalEventClaims.includes(milestone.id);
   }).length;
 
   return (
@@ -1132,6 +1154,44 @@ export function GameCanvas() {
                   <div className="mt-2">
                     {stage.locked ? <div className="rounded-xl bg-black/25 px-3 py-2 text-center text-xs text-panel-muted">🔒 {stage.requiredText}</div> : <ScreenButton onClick={() => startStage(stage.id)}>{stage.completed ? "REPLAY" : "PLAY"}</ScreenButton>}
                   </div>
+                  {stage.completed && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedReplayStageId(expandedReplayStageId === stage.id ? null : stage.id)}
+                        className="w-full rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-accent"
+                      >
+                        {expandedReplayStageId === stage.id ? "HIDE CHALLENGES" : `REPLAY CHALLENGES · ${CAMPAIGN_REPLAY_CHALLENGES.filter((challenge) => (player.sideModeClears[campaignReplayProgressKey(stage.id, challenge.id)] ?? 0) > 0).length}/${CAMPAIGN_REPLAY_CHALLENGES.length}`}
+                      </button>
+                      {expandedReplayStageId === stage.id && (
+                        <div className="mt-1.5 space-y-1.5">
+                          {CAMPAIGN_REPLAY_CHALLENGES.map((challenge) => {
+                            const progressKey = campaignReplayProgressKey(stage.id, challenge.id);
+                            const clears = player.sideModeClears[progressKey] ?? 0;
+                            const bestScore = player.sideModeBestScores[progressKey] ?? 0;
+                            return (
+                              <div key={challenge.id} className="flex items-center gap-2 rounded-xl bg-black/25 p-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-display text-sm tracking-wide text-panel-foreground">{challenge.name}</p>
+                                  <p className="text-[10px] leading-tight text-panel-muted">{challenge.description}</p>
+                                  <p className="mt-0.5 text-[9px] uppercase tracking-wider text-panel-muted">
+                                    {clears > 0 ? `${clears} clears · best ${bestScore.toLocaleString()}` : `Reward: ${challenge.reward.coins} credits`}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => startCampaignReplayChallenge(stage.id, challenge)}
+                                  className="rotwood-button rotwood-button-primary min-h-9 shrink-0 px-3 text-[10px]"
+                                >
+                                  PLAY
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1233,23 +1293,33 @@ export function GameCanvas() {
              </div>
             <div className="mt-3 space-y-2">
               {seasonalEvent.milestones.map((milestone) => {
-                const progress = seasonalEventProgressTarget(milestone.target, player.seasonalEventProgress);
+                const progress = getSeasonalMilestoneProgress(
+                  milestone,
+                  player.seasonalEventProgress,
+                  player.seasonalEventActivityProgress,
+                );
                 const claimed = player.seasonalEventClaims.includes(milestone.id);
+                const locked =
+                  Boolean(milestone.prerequisite) &&
+                  !player.seasonalEventClaims.includes(milestone.prerequisite!);
                 const pct = Math.min(1, progress / milestone.target);
                 return (
                   <div key={milestone.id} className="rounded-2xl bg-panel/95 p-3 shadow-panel">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-display text-lg tracking-wide text-panel-foreground">{milestone.title}</p>
-                        <p className="text-xs text-panel-muted">{progress.toLocaleString()} / {milestone.target.toLocaleString()} event kills</p>
+                        <p className="text-xs text-panel-muted">{milestone.description}</p>
+                        <p className="text-[10px] text-panel-muted">
+                          {progress.toLocaleString()} / {milestone.target.toLocaleString()} {milestone.activity.replace("-", " ")}
+                        </p>
                       </div>
                       <p className="text-xs text-accent">{milestone.reward.label}</p>
                     </div>
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/35">
                       <div className="h-full rounded-full bg-accent transition-all" style={{ width: pct * 100 + "%" }} />
                     </div>
-                    <ScreenButton onClick={() => profile.claimSeasonalMilestone(milestone.id)} variant={claimed ? "secondary" : "primary"} disabled={claimed || progress < milestone.target}>
-                      {claimed ? "CLAIMED" : progress >= milestone.target ? "CLAIM REWARD" : "KEEP DEFENDING"}
+                    <ScreenButton onClick={() => profile.claimSeasonalMilestone(milestone.id)} variant={claimed ? "secondary" : "primary"} disabled={locked || claimed || progress < milestone.target}>
+                      {claimed ? "CLAIMED" : locked ? "COMPLETE PREVIOUS STEP" : progress >= milestone.target ? "CLAIM REWARD" : "KEEP DEFENDING"}
                     </ScreenButton>
                   </div>
                 );
