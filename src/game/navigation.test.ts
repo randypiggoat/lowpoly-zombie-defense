@@ -37,7 +37,7 @@ describe("campaign progression", () => {
 
   test("campaign replay challenges have distinct restrictions and stable stage keys", () => {
     const [thinLine, noPowers] = CAMPAIGN_REPLAY_CHALLENGES;
-    expect(CAMPAIGN_REPLAY_CHALLENGES).toHaveLength(2);
+    expect(CAMPAIGN_REPLAY_CHALLENGES).toHaveLength(4);
     expect(thinLine?.maxTowers).toBe(4);
     expect(noPowers?.allowRunModifiers).toBe(false);
     expect(campaignReplayProgressKey(3, thinLine!.id)).not.toBe(

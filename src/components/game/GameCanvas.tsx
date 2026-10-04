@@ -1,3 +1,4 @@
+import { RUN_MODIFIER_DEFS } from "@/game/runModifiers";
 import { Canvas } from "@react-three/fiber";
 import { Coins, Gem, Gift, Settings2, ShoppingBag, Sparkles, Swords, Trophy, Wrench } from "lucide-react";
 import {
@@ -1701,6 +1702,17 @@ export function GameCanvas() {
               )}
               {lastReward?.newRecord ? <p className="mt-1 font-display text-sm tracking-wide text-accent">NEW RECORD</p> : null}
             </div>
+            {lastReward && lastReward.leveledTo !== null ? (
+              <p className="mt-3 rounded-xl bg-accent px-3 py-2 text-center font-display text-lg tracking-wide text-accent-foreground">LEVEL UP · {lastReward.leveledTo}</p>
+            ) : null}
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              {([["Best streak", state.maxKillStreak], ["Bosses", state.bossesDefeated], ["Perfect waves", state.perfectWaves]] as const).map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-black/25 py-2"><p className="font-display text-lg text-panel-foreground">{value}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">{label}</p></div>
+              ))}
+            </div>
+            {state.activeRunModifiers.length > 0 ? (
+              <p className="mt-2 text-center text-[10px] leading-tight text-panel-muted">Build: {state.activeRunModifiers.map((id) => RUN_MODIFIER_DEFS.find((entry) => entry.id === id)?.name ?? id).join(" · ")}</p>
+            ) : null}
             {lastReward?.stageCompleted ? (
               <div className="mt-3 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
                 <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Stage goals</p>
@@ -1728,6 +1740,19 @@ export function GameCanvas() {
                 <p className="text-[10px] text-panel-muted">All towers unlocked. Chase mastery and cosmetics next.</p>
               </div>
             )}
+            {state.stageWon && !activeSideMode && !state.endlessMode && !state.bossTrial ? (() => {
+              const suggested = CAMPAIGN_REPLAY_CHALLENGES.find((challenge) => !((player.sideModeClears[campaignReplayProgressKey(activeStageId, challenge.id)] ?? 0) > 0));
+              return suggested ? (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl border border-accent/15 bg-accent/5 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-accent">Replay challenge</p>
+                    <p className="font-display text-base text-panel-foreground">{suggested.name}</p>
+                    <p className="text-[10px] leading-tight text-panel-muted">{suggested.description} · +{suggested.firstClearBonus.coins + suggested.reward.coins} credits first clear</p>
+                  </div>
+                  <button type="button" onClick={() => startCampaignReplayChallenge(activeStageId, suggested)} className="rotwood-button rotwood-button-primary min-h-9 shrink-0 px-3 text-[10px]">TRY</button>
+                </div>
+              ) : null;
+            })() : null}
             {!state.stageWon && !state.reviveUsed && state.baseHp <= 0 && rewardedAvailable ? (
               <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("revive"); if (earned && game.reviveRun()) setScreen("gameplay"); }} variant="secondary">SECOND CHANCE · WATCH AD</ScreenButton>
             ) : null}

@@ -9,6 +9,7 @@ import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, poi
 import { gorePartBit, type GorePart } from "@/game/enemyGore";
 import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
+import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
 import { StageEnvironment } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
@@ -1704,7 +1705,7 @@ function Bullets() {
           ),
         );
         const trailMaterial = trail.material as THREE.MeshBasicMaterial;
-        trailMaterial.color.set(c);
+        trailMaterial.color.set(projectileStatusTint(b, c));
         trailMaterial.opacity =
           b.kind === "laser"
             ? 0.38
@@ -1712,7 +1713,7 @@ function Bullets() {
               ? 0.32
               : 0.22;
       }
-      (m.material as THREE.MeshBasicMaterial).color.set(b.crit ? "#fff3c4" : c);
+      (m.material as THREE.MeshBasicMaterial).color.set(b.crit ? "#fff3c4" : projectileStatusTint(b, c));
       const critScale = b.crit ? 1.5 : 1;
       switch (b.kind) {
         case "shotgunner":

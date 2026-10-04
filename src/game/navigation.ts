@@ -146,6 +146,23 @@ export const CAMPAIGN_REPLAY_CHALLENGES: readonly CampaignReplayChallengeDefinit
     reward: { coins: 90, xp: 100, gems: 1 },
     firstClearBonus: { coins: 60, xp: 50, gems: 1 },
   },
+  {
+    id: "marksman-frost",
+    name: "Marksman & Frost",
+    description: "Win using only Riflemen and Freezers: slow them, then shatter them.",
+    allowedTowerKinds: ["rifleman", "freezer"],
+    reward: { coins: 100, xp: 90 },
+    firstClearBonus: { coins: 65, xp: 45, gems: 1 },
+  },
+  {
+    id: "close-quarters",
+    name: "Close Quarters",
+    description: "Win with only Shotgunners and Freezers, 5 towers at most.",
+    maxTowers: 5,
+    allowedTowerKinds: ["shotgunner", "freezer"],
+    reward: { coins: 120, xp: 95 },
+    firstClearBonus: { coins: 75, xp: 50, gems: 1 },
+  },
 ];
 
 export function campaignReplayProgressKey(stageId: number, challengeId: string) {

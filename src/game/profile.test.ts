@@ -101,9 +101,9 @@ describe("daily login rewards", () => {
         player.seasonalEventCycleKey = getSeasonalEventCycleKey();
         player.seasonalEventProgress = 0;
         player.seasonalEventActivityProgress = {
-          waves: 12,
+          waves: 15,
           runs: 5,
-          "tower-upgrades": 3,
+          "tower-upgrades": 8,
           "special-kills": 40,
         };
         player.seasonalEventClaims = [];

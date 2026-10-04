@@ -111,6 +111,43 @@ export const TOWER_COSMETICS: TowerCosmetic[] = [
     requirement: "Claim a seasonal event finale.",
     unlock: (profile) => profile.seasonalEventUnlocks?.includes("seasonal-vanguard") ?? false,
   },
+  {
+    id: "seasonal-frostbound",
+    name: "Frostbound",
+    description: "Icy event finish for Rifleman.",
+    kind: "tower",
+    towerKind: "rifleman",
+    accent: "#8fd8ff",
+    body: "#2f4860",
+    requirement: "Complete the Frozen Night event finale.",
+    unlock: (profile) => profile.seasonalEventUnlocks?.includes("seasonal-frostbound") ?? false,
+  },
+  {
+    id: "breacher-shotgun",
+    name: "Breacher",
+    description: "Scorched riot finish for Shotgunner.",
+    kind: "tower",
+    towerKind: "shotgunner",
+    accent: "#ff9d4d",
+    body: "#3d3330",
+    requirement: "Clear 3 campaign replay challenges.",
+    unlock: (profile) =>
+      Object.entries(profile.sideModeClears ?? {}).filter(
+        ([key, clears]) => key.startsWith("campaign-replay-") && clears > 0,
+      ).length >= 3,
+  },
+  {
+    id: "warden-sniper",
+    name: "Warden",
+    description: "Brass-and-black Sniper trophy.",
+    kind: "tower",
+    towerKind: "sniper",
+    accent: "#e8c36a",
+    body: "#2b2d33",
+    requirement: "Win 3 boss trials.",
+    unlock: (profile) =>
+      Object.values(profile.bossTrialClears ?? {}).reduce((sum, clears) => sum + clears, 0) >= 3,
+  },
 ];
 
 export function unlockedTowerCosmetics(profile: PlayerProfile) {

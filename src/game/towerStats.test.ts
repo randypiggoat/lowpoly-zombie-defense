@@ -125,6 +125,15 @@ describe("tower stat calculations", () => {
       executeMultiplier: 1,
       bossDamageMultiplier: 1,
       closeDamageMultiplier: 1,
+      stunnedMultiplier: 1,
+      burningMultiplier: 1,
+      swarmMultiplier: 1,
+      killRush: 1,
+      burnSpread: 0,
+      chainEscalation: 0,
+      eliteDamageMultiplier: 1,
+      precisionMultiplier: 1,
+      fastDamageMultiplier: 1,
       burnDuration: 2.4,
     });
   });

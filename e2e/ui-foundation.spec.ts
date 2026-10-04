@@ -221,7 +221,7 @@ test("streamlined upgrade UI hides combat math while keeping upgrade effects rea
   await expect(page.getByText("Tower guide", { exact: true })).toBeVisible();
   await expect(page.getByText("Scout Optic", { exact: true })).toBeVisible();
   await expect(page.getByText("Double Tap", { exact: true })).toBeVisible();
-  await expect(page.getByText("Longer sightline; the Rifleman learns to watch the map.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Longer sightline; shots at distant targets (6+ tiles) deal 30% more damage.", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: /BACK|← BACK/i }).first().click();
   await page.getByRole("button", { name: "Campaign" }).click();
