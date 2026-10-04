@@ -32,6 +32,183 @@ function Core({ color, size = 0.22 }: { color: string; size?: number }) {
   );
 }
 
+type GearProps = { kind: string; a: number; b: number; accent: string; dark: string };
+
+/** Per-tower upgrade hardware: each path tier visibly adds or changes parts. Kept to a few meshes per tower. */
+function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
+  const metal = <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.5} />;
+  switch (kind) {
+    case "rifleman":
+      return (
+        <>
+          {a >= 1 && (
+            <mesh position={[0, 1.16, 0.45]} castShadow>
+              <boxGeometry args={[0.14, 0.14, a >= 4 ? 0.7 : 0.42]} />
+              {metal}
+            </mesh>
+          )}
+          {a >= 4 && (
+            <mesh position={[0, 1.16, 0.88]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.09, 0.025, 5, 8]} />
+              <AccentMaterial color={accent} glow={0.8} />
+            </mesh>
+          )}
+          {b >= 1 && (
+            <mesh position={[0.22, 0.9, 1.0]} castShadow>
+              <boxGeometry args={[0.1, 0.1, 1.2]} />
+              {metal}
+            </mesh>
+          )}
+          {b >= 4 && (
+            <mesh position={[-0.22, 0.9, 1.0]} castShadow>
+              <boxGeometry args={[0.1, 0.1, 1.2]} />
+              {metal}
+            </mesh>
+          )}
+        </>
+      );
+    case "shotgunner":
+      return (
+        <>
+          {a >= 1 && (
+            <mesh position={[0, 0.9, 1.5]} rotation-x={Math.PI / 2}>
+              <coneGeometry args={[0.28 + a * 0.04, 0.3, 6]} />
+              <AccentMaterial color={accent} glow={0.3} />
+            </mesh>
+          )}
+          {b >= 2 && (
+            <mesh position={[0, 0.55, 0.75]} castShadow>
+              <boxGeometry args={[1.0, 0.5, 0.12]} />
+              {metal}
+            </mesh>
+          )}
+        </>
+      );
+    case "sniper":
+      return (
+        <>
+          {a >= 1 && (
+            <mesh position={[0, 1.3, 0.2]} rotation-x={Math.PI / 2} castShadow>
+              <cylinderGeometry args={[0.1, 0.1, 0.7 + a * 0.12, 6]} />
+              {metal}
+            </mesh>
+          )}
+          {a >= 4 && (
+            <mesh position={[0, 1.55, -0.2]} rotation-x={0.5}>
+              <coneGeometry args={[0.3, 0.14, 6]} />
+              <AccentMaterial color={accent} glow={0.7} />
+            </mesh>
+          )}
+          {b >= 1 && (
+            <mesh position={[0, 0.95, 1.35]} castShadow>
+              <boxGeometry args={[0.36, 0.22, 0.22]} />
+              {metal}
+            </mesh>
+          )}
+          {b >= 4 && (
+            <mesh position={[0, 0.95, 0.8]} castShadow>
+              <boxGeometry args={[0.3, 0.3, 0.9]} />
+              <AccentMaterial color={accent} glow={0.4} />
+            </mesh>
+          )}
+        </>
+      );
+    case "tesla":
+      return (
+        <>
+          {Array.from({ length: Math.min(3, a) }, (_, i) => (
+            <mesh key={i} position={[0, 0.7 + i * 0.28, 0]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.5 - i * 0.07, 0.04, 5, 10]} />
+              <AccentMaterial color={accent} glow={0.7 + i * 0.1} />
+            </mesh>
+          ))}
+          {b >= 2 && (
+            <>
+              <mesh position={[0.55, 0.45, 0.4]} castShadow>
+                <boxGeometry args={[0.24, 0.4, 0.24]} />
+                {metal}
+              </mesh>
+              <mesh position={[-0.55, 0.45, 0.4]} castShadow>
+                <boxGeometry args={[0.24, 0.4, 0.24]} />
+                {metal}
+              </mesh>
+            </>
+          )}
+        </>
+      );
+    case "flamethrower":
+      return (
+        <>
+          {a >= 2 && (
+            <mesh position={[0, 0.6, -0.55]} castShadow>
+              <cylinderGeometry args={[0.28, 0.28, 0.7, 6]} />
+              <AccentMaterial color={accent} glow={0.3} />
+            </mesh>
+          )}
+          {b >= 3 && (
+            <mesh position={[0.28, 0.85, 1.0]} castShadow>
+              <cylinderGeometry args={[0.08, 0.12, 0.7, 5]} />
+              {metal}
+            </mesh>
+          )}
+        </>
+      );
+    case "freezer":
+      return (
+        <>
+          {a >= 2 && (
+            <mesh position={[0.4, 1.0, 0.2]} rotation-z={-0.3}>
+              <icosahedronGeometry args={[0.2, 0]} />
+              <AccentMaterial color="#cfefff" glow={0.6} />
+            </mesh>
+          )}
+          {b >= 2 && (
+            <mesh position={[-0.4, 1.0, 0.2]} rotation-z={0.3}>
+              <coneGeometry args={[0.14, 0.6, 5]} />
+              <AccentMaterial color="#cfefff" glow={0.6} />
+            </mesh>
+          )}
+        </>
+      );
+    case "rocket":
+      return (
+        <>
+          {a >= 2 && (
+            <mesh position={[0.6, 0.85, 0.2]} castShadow>
+              <boxGeometry args={[0.3, 0.3, 0.9]} />
+              {metal}
+            </mesh>
+          )}
+          {b >= 3 && (
+            <mesh position={[0, 1.15, 1.0]} rotation-x={Math.PI / 2}>
+              <coneGeometry args={[0.2, 0.4, 6]} />
+              <AccentMaterial color={accent} glow={0.6} />
+            </mesh>
+          )}
+        </>
+      );
+    case "laser":
+      return (
+        <>
+          {a >= 3 && (
+            <mesh position={[0, 1.2, 0.6]} rotation-y={Math.PI / 4}>
+              <octahedronGeometry args={[0.2, 0]} />
+              <AccentMaterial color={accent} glow={0.9} />
+            </mesh>
+          )}
+          {b >= 2 && (
+            <mesh position={[0, 0.9, 1.1]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.2, 0.03, 5, 8]} />
+              <AccentMaterial color={accent} glow={0.7} />
+            </mesh>
+          )}
+        </>
+      );
+    default:
+      return null;
+  }
+}
+
 export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps) {
   const rig = useRef<THREE.Group>(null);
   const weapon = useRef<THREE.Group>(null);
@@ -85,7 +262,7 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       const pulse = 1 + Math.sin(t * 5 + idleSeed) * 0.1;
       core.current.scale.setScalar(pulse);
       const material = core.current.material as THREE.MeshStandardMaterial;
-      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8;
+      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8 + ((tower.surge ?? 0) > 0 ? 0.6 : 0);
     }
     if (identityCore.current) {
       const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08;
@@ -450,6 +627,7 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           )}
         </group>
       )}
+      <UpgradeGear kind={tower.kind} a={tower.a} b={tower.b} accent={accent} dark={dark} />
       {level >= 3 && (
         <>
           <mesh position={[-0.62, 0.3, -0.05]} rotation-z={0.18} castShadow>

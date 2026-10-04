@@ -32,7 +32,8 @@ import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
 import { getEndlessMilestone, getEndlessSector, getEndlessSectorLabel } from "@/game/sideModes";
 
-import { getBossHealthSummary } from "@/game/bossHealth";
+import { RUN_MODIFIER_DEFS } from "@/game/runModifiers";
+import { getBossHealthSummary, getBossStatusFlags } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { enemyThreatLabel } from "@/game/enemyPresentation";
 
@@ -164,6 +165,17 @@ function abilityLabel(ability: string | undefined) {
     case "boss-hunter": return "ELITE HUNTER";
     case "close-range": return "POINT BLANK";
     case "burn-duration": return "LONG BURN";
+    case "barrage": return "BARRAGE";
+    case "stun-burst": return "STUN BURST";
+    case "burn-pressure": return "BURN PRESSURE";
+    case "swarm": return "SWARM";
+    case "brittle": return "BRITTLE";
+    case "kill-rush": return "KILL RUSH";
+    case "burn-spread": return "WILDFIRE";
+    case "chain-escalation": return "ESCALATING ARC";
+    case "elite-hunter": return "HEAVY HUNTER";
+    case "precision": return "PRECISION";
+    case "fast-hunter": return "PEST CONTROL";
     default: return "";
   }
 }
@@ -281,6 +293,7 @@ export function HUD({
   const claimedLoginToday = player.lastLoginClaimDate === today;
   const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
   const bossHealth = getBossHealthSummary(state.zombies);
+  const bossFlags = bossHealth ? getBossStatusFlags(state.zombies) : null;
   const visibleSpecialEnemy = state.zombies.find((zombie) => !zombie.dead && (zombie.kind >= 2 || zombie.boss));
   const firstSessionTip = getFirstSessionTip(
     player.gamesPlayed,
@@ -446,6 +459,19 @@ export function HUD({
               style={{ width: `${bossHealth.ratio * 100}%` }}
             />
           </div>
+          {bossFlags && (
+            <div className="mt-1.5 flex flex-wrap justify-center gap-1 text-[9px] font-bold uppercase tracking-wider">
+              {bossFlags.enraged && <span className="rounded bg-danger/30 px-1.5 py-0.5 text-danger">Enraged</span>}
+              {bossFlags.vulnerable && <span className="rounded bg-accent/25 px-1.5 py-0.5 text-accent">Execute now</span>}
+              {bossFlags.marked && <span className="rounded bg-white/10 px-1.5 py-0.5 text-panel-foreground">Marked</span>}
+              {bossFlags.stunned && <span className="rounded bg-white/10 px-1.5 py-0.5 text-panel-foreground">Stunned</span>}
+              {bossFlags.burning && <span className="rounded bg-white/10 px-1.5 py-0.5 text-panel-foreground">Burning</span>}
+              {bossFlags.slowed && <span className="rounded bg-white/10 px-1.5 py-0.5 text-panel-foreground">Slowed</span>}
+              {!bossFlags.marked && !bossFlags.stunned && !bossFlags.slowed && !bossFlags.enraged && (
+                <span className="rounded bg-white/5 px-1.5 py-0.5 text-panel-muted">Mark · Slow · Stun it</span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -798,6 +824,23 @@ export function HUD({
           <p className="text-sm text-panel-muted">
             Wave reached {state.wave} · Zombies killed {state.kills}
           </p>
+          <div className="grid w-full max-w-xs grid-cols-3 gap-2 text-center">
+            {[
+              ["Best streak", state.maxKillStreak],
+              ["Bosses", state.bossesDefeated],
+              ["Perfect waves", state.perfectWaves],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg bg-black/35 py-1.5">
+                <div className="font-display text-base text-panel-foreground">{value}</div>
+                <div className="text-[10px] uppercase tracking-wider text-panel-muted">{label}</div>
+              </div>
+            ))}
+          </div>
+          {state.activeRunModifiers.length > 0 && (
+            <p className="max-w-xs text-center text-[11px] text-panel-muted">
+              Build: {state.activeRunModifiers.map((id) => RUN_MODIFIER_DEFS.find((entry) => entry.id === id)?.name ?? id).join(" · ")}
+            </p>
+          )}
           {lastReward && (
             <div className="w-full max-w-xs rounded-2xl bg-panel/90 p-3 text-center shadow-panel">
               {lastReward.leveledTo !== null && (

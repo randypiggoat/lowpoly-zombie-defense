@@ -2093,8 +2093,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             s.bullets.push(
               createTowerProjectile({
                 id: this.nextId++,
-                x: t.x,
-                z: t.z,
+                // fan multi-shot volleys sideways so a barrage reads as parallel rounds
+                x: t.x + Math.cos(t.aim) * (shot - (volley - 1) / 2) * 0.32,
+                z: t.z - Math.sin(t.aim) * (shot - (volley - 1) / 2) * 0.32,
                 tx: best.x,
                 tz: best.z,
                 originX: t.x,

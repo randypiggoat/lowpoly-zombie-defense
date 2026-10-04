@@ -71,3 +71,24 @@ describe("tower collection", () => {
     expect(cosmeticForTower("shotgunner", "bloodmoon-rifle")).toBeNull();
   });
 });
+
+describe("trophy cosmetics", () => {
+  test("replay challenge and boss trial trophies unlock from existing profile progress", () => {
+    const breacher = TOWER_COSMETICS.find((entry) => entry.id === "breacher-shotgun")!;
+    const warden = TOWER_COSMETICS.find((entry) => entry.id === "warden-sniper")!;
+    expect(breacher.unlock(profile())).toBe(false);
+    expect(
+      breacher.unlock(
+        profile({ sideModeClears: { "campaign-replay-1-thin-line": 1, "campaign-replay-2-no-powers": 2, "campaign-replay-3-thin-line": 1, "daily-x": 9 } }),
+      ),
+    ).toBe(true);
+    expect(warden.unlock(profile({ bossTrialClears: { a: 2 } }))).toBe(false);
+    expect(warden.unlock(profile({ bossTrialClears: { a: 2, b: 1 } }))).toBe(true);
+  });
+
+  test("event finale cosmetics are exclusive to their events", () => {
+    const frost = TOWER_COSMETICS.find((entry) => entry.id === "seasonal-frostbound")!;
+    expect(frost.unlock(profile())).toBe(false);
+    expect(frost.unlock(profile({ seasonalEventUnlocks: ["seasonal-frostbound"] }))).toBe(true);
+  });
+});
