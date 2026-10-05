@@ -11,8 +11,8 @@ export type TowerEconomyTower = {
 };
 
 export type TowerEconomyPaths = {
-  a: { tiers: Array<{ cost: number }> };
-  b: { tiers: Array<{ cost: number }> };
+  a: { tiers: readonly { cost: number }[] };
+  b: { tiers: readonly { cost: number }[] };
 };
 
 export function towerUpgradeCost(

@@ -267,6 +267,8 @@ export type RunReward = {
   bestStars: number;
   previousBestWave: number;
   previousBestStars: number;
+  /** Score for side-mode/endless/boss-trial results when applicable. */
+  score?: number;
 };
 
 export type LevelUpNotice = {
@@ -733,7 +735,7 @@ class ProfileStore {
   unlockFieldKnowledge(id: string) {
     const node = FIELD_KNOWLEDGE.find((entry) => entry.id === id);
     const p = this.profile;
-    if (!node || p.fieldKnowledge[id] > 0) return false;
+    if (!node || (p.fieldKnowledge[id] ?? 0) > 0) return false;
     if (!knowledgeUnlocked(node, p.fieldKnowledge)) return false;
     if (p.coins < node.cost) return false;
     p.coins -= node.cost;

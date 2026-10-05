@@ -175,9 +175,6 @@ export type Zombie = {
   hitZ: number;
   hitForce: number;
   hitKind?: TowerKind;
-  stun?: number;
-  markTime?: number;
-  markBonus?: number;
 };
 
 export type Gib = {
@@ -1034,7 +1031,7 @@ export class Game {
     if (!tower) return false;
 
     tower.targetMode = mode;
-    tower.targetId = undefined;
+    delete tower.targetId;
     tower.targetRefreshTimer = 0;
     this.emit();
     return true;
@@ -1076,7 +1073,6 @@ export class Game {
       targetMode: "first",
       cooldown: 0,
       aim: 0,
-      targetId: undefined,
       targetRefreshTimer: 0,
       recoil: 0,
     });
@@ -1325,7 +1321,6 @@ export class Game {
       hitX: 0,
       hitZ: 0,
       hitForce: 0,
-      hitKind: undefined,
     };
     s.zombies.push(spawned);
     this.zombieById.set(spawned.id, spawned);
@@ -1472,7 +1467,7 @@ export class Game {
       1.75,
       (0.28 + damageRatio * 2.2) * damageReactionMultiplier(ability.damageKind),
     );
-    z.hitKind = ability.damageKind;
+    if (ability.damageKind !== undefined) z.hitKind = ability.damageKind;
 
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
@@ -2020,12 +2015,16 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: false });
           } else if (this.stage.endless) {
             this.flushMasteryKills();
-            profile.completeEndlessRun(Math.max(1, s.wave), s.kills, {
-              challengeId: this.stage.challenge?.id,
-              challengePeriod: this.stage.challenge?.period,
-              challengeKey: this.stage.challengeKey,
-              rewardMultiplier: this.stage.rewardMultiplier,
-            });
+            profile.completeEndlessRun(
+              Math.max(1, s.wave),
+              s.kills,
+              {
+                ...(this.stage.challenge?.id !== undefined && { challengeId: this.stage.challenge.id }),
+                ...(this.stage.challenge?.period !== undefined && { challengePeriod: this.stage.challenge.period }),
+                ...(this.stage.challengeKey !== undefined && { challengeKey: this.stage.challengeKey }),
+                rewardMultiplier: this.stage.rewardMultiplier,
+              },
+            );
           } else {
             this.flushMasteryKills();
             profile.completeRun(Math.max(1, s.wave), s.kills, {
@@ -2209,7 +2208,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
       if (!best) {
         best = selectTowerTarget(s.zombies, t, range, t.targetMode, this.map);
-        t.targetId = best?.id;
+        if (best) t.targetId = best.id;
+        else delete t.targetId;
         t.targetRefreshTimer = 0.08;
       }
       if (best) {
@@ -2333,8 +2333,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
               executeMultiplier: b.executeMultiplier,
               bossDamageMultiplier: b.bossDamageMultiplier,
               closeDamageMultiplier: b.closeDamageMultiplier,
-              stunnedMultiplier: b.stunnedMultiplier,
-              burningMultiplier: b.burningMultiplier,
+              ...(b.stunnedMultiplier !== undefined && { stunnedMultiplier: b.stunnedMultiplier }),
+              ...(b.burningMultiplier !== undefined && { burningMultiplier: b.burningMultiplier }),
               ...(b.eliteDamageMultiplier !== undefined && { eliteDamageMultiplier: b.eliteDamageMultiplier }),
               ...(b.precisionMultiplier !== undefined && { precisionMultiplier: b.precisionMultiplier }),
               ...(b.fastDamageMultiplier !== undefined && { fastDamageMultiplier: b.fastDamageMultiplier }),

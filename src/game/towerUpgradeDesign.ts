@@ -50,7 +50,13 @@ const tier = (
   cost: number,
   mods: UpgradeTier["mods"],
   ability?: UpgradeAbility,
-): UpgradeTier => ({ name, desc, cost, mods, ability });
+): UpgradeTier => ({
+  name,
+  desc,
+  cost,
+  mods,
+  ...(ability !== undefined ? { ability } : {}),
+});
 
 export const TOWER_PATHS = {
   rifleman: {

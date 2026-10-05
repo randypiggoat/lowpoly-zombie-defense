@@ -66,7 +66,7 @@ export const DEFAULT_FIELD_KNOWLEDGE_EFFECTS: FieldKnowledgeEffects = {
 export function resolveFieldKnowledgeEffects(ranks: Record<string, number>): FieldKnowledgeEffects {
   const out = { ...DEFAULT_FIELD_KNOWLEDGE_EFFECTS };
   for (const node of FIELD_KNOWLEDGE) {
-    if (!(ranks[node.id] > 0)) continue;
+    if (!((ranks[node.id] ?? 0) > 0)) continue;
     const e = node.effect;
     if (e.scrapMultiplier) out.scrapMultiplier *= e.scrapMultiplier;
     if (e.startingScrap) out.startingScrap += e.startingScrap;
@@ -85,5 +85,5 @@ export function knowledgeUnlocked(
   node: FieldKnowledgeNode,
   ranks: Record<string, number>,
 ) {
-  return !node.prerequisite || ranks[node.prerequisite] > 0;
+  return !node.prerequisite || (ranks[node.prerequisite] ?? 0) > 0;
 }

@@ -32,6 +32,6 @@ export type TowerDef = {
 };
 
 export type TowerPathTiers = {
-  a: { tiers: Array<{ mods: Mods }> };
-  b: { tiers: Array<{ mods: Mods }> };
+  a: { tiers: readonly { mods: Mods }[] };
+  b: { tiers: readonly { mods: Mods }[] };
 };

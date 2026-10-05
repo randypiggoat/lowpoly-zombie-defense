@@ -10,6 +10,8 @@ function zombie(overrides: Partial<Zombie> = {}): Zombie {
     maxHp: 100,
     speed: 1,
     kind: 0,
+    boss: false,
+    bossEnraged: false,
     x: 0,
     y: 0,
     z: 0,
@@ -31,7 +33,6 @@ function zombie(overrides: Partial<Zombie> = {}): Zombie {
     hitX: 0,
     hitZ: 0,
     hitForce: 0,
-    hitKind: undefined,
     ...overrides,
   };
 }

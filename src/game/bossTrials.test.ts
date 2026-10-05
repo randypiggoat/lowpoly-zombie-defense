@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { createBossTrialStage, getBossTrialVariant, getWeeklyBossTrial, BOSS_TRIAL_ROSTER } from "./bossTrials";
 
 describe("boss trials", () => {
