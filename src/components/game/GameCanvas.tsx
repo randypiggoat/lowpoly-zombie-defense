@@ -92,7 +92,7 @@ function useProfileSnapshot() {
 type Overlay = "pause" | "confirm-restart" | null;
 
 type ScreenButtonProps = {
-  children: string;
+  children: ReactNode;
   onClick: () => void;
   variant?: "primary" | "secondary";
   disabled?: boolean;
@@ -574,6 +574,8 @@ export function GameCanvas() {
       getPlacementPreview: () => { x: number; z: number } | null;
       getPlacementStatus: () => { valid: boolean; reason: string } | null;
       getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: TowerKind }>;
+      selectTower: (id: number) => void;
+      getTowerIds: () => number[];
       getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
     };
 
@@ -843,12 +845,26 @@ export function GameCanvas() {
                   <HomeShortcut title="Armory" subtitle="Towers, roles & mastery" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
                   <HomeShortcut title="Knowledge" subtitle="Permanent run modifiers" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
                   <HomeShortcut title="Collection" subtitle="Earned cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
-                  <HomeShortcut title="Goals" subtitle="Missions & achievements" icon={<Trophy size={18} />} badge={(readyMissionCount + readyAchievementCount) || undefined} onClick={() => setScreen("achievements")} />
+                  <HomeShortcut
+                    title="Goals"
+                    subtitle="Missions & achievements"
+                    icon={<Trophy size={18} />}
+                    {...((readyMissionCount + readyAchievementCount) > 0
+                      ? { badge: readyMissionCount + readyAchievementCount }
+                      : {})}
+                    onClick={() => setScreen("achievements")}
+                  />
                 </div>
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-1.5">
-                <HomeShortcut title="Events" subtitle="Rotating challenges" icon={<Swords size={18} />} badge={readyEventCount || undefined} onClick={() => setScreen("events")} />
+                <HomeShortcut
+                  title="Events"
+                  subtitle="Rotating challenges"
+                  icon={<Swords size={18} />}
+                  {...(readyEventCount > 0 ? { badge: readyEventCount } : {})}
+                  onClick={() => setScreen("events")}
+                />
                 <HomeShortcut title="Shop" subtitle="Optional extras" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
               </div>
             </ScreenCard>
@@ -1706,7 +1722,7 @@ export function GameCanvas() {
             ) : null}
             <div className="mt-3 rounded-2xl bg-black/25 p-3 text-center">
               {state.endlessMode || state.bossTrial || state.sideModeId ? (
-                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">{state.bossTrial ? "Trial score" : state.sideModeId ? "Mode score" : "Score"}</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.bossTrial ? state.bossTrialScore.toLocaleString() : lastReward && "score" in lastReward ? lastReward.score.toLocaleString() : "—"}</p></>
+                <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">{state.bossTrial ? "Trial score" : state.sideModeId ? "Mode score" : "Score"}</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.bossTrial ? state.bossTrialScore.toLocaleString() : lastReward?.score !== undefined ? lastReward.score.toLocaleString() : "—"}</p></>
               ) : (
                 <><p className="text-[9px] uppercase tracking-[0.18em] text-panel-muted">Wave reached</p><p className="mt-1 font-display text-2xl text-panel-foreground">{state.wave}</p></>
               )}
