@@ -29,6 +29,7 @@ import {
   stepLivingEnemy,
   shouldDespawnEnemy,
   type EnemyRagdollState,
+  type LivingEnemyStepInput,
   type LivingEnemyStepResult,
 } from "./enemyLifecycle";
 import {
@@ -864,6 +865,7 @@ export class Game {
   reset() {
     this.zombieById.clear();
     this.cachedEffectsKey = null;
+    this.livingStepInputs.length = 0;
     this.livingStepResults.length = 0;
     this.ragdollStepResults.length = 0;
     this.nextId = 1;
@@ -1337,6 +1339,7 @@ export class Game {
   private readonly healTargets: Zombie[] = [];
   private readonly splashTargets: Zombie[] = [];
   private readonly chainTargets: Zombie[] = [];
+  private readonly livingStepInputs: LivingEnemyStepInput[] = [];
   private readonly livingStepResults: LivingEnemyStepResult[] = [];
   private readonly ragdollStepResults: EnemyRagdollState[] = [];
   private readonly pathPointScratch = { x: 0, z: 0 };
@@ -1762,7 +1765,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     }
 
     // zombies
-    for (const z of s.zombies) {
+    for (let zombieIndex = 0; zombieIndex < s.zombies.length; zombieIndex++) {
+      const z = s.zombies[zombieIndex]!;
       if (z.flash > 0) z.flash = Math.max(0, z.flash - dt * 4);
       if (z.hitReact > 0) {
         z.hitReact = Math.max(0, z.hitReact - dt * 7);
@@ -1770,21 +1774,31 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
 
       if (z.dead) {
-        const ragdoll = stepEnemyRagdoll(
-          {
-            fade: z.fade,
-            x: z.x,
-            y: z.y,
-            z: z.z,
-            vx: z.vx,
-            vy: z.vy,
-            vz: z.vz,
-            tilt: z.tilt,
-            spin: z.spin,
-            roll: z.roll,
-          },
-          dt,
-        );
+        const ragdoll =
+          this.ragdollStepResults[zombieIndex] ??
+          (this.ragdollStepResults[zombieIndex] = {
+            fade: 0,
+            x: 0,
+            y: 0,
+            z: 0,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+            tilt: 0,
+            spin: 0,
+            roll: 0,
+          });
+        ragdoll.fade = z.fade;
+        ragdoll.x = z.x;
+        ragdoll.y = z.y;
+        ragdoll.z = z.z;
+        ragdoll.vx = z.vx;
+        ragdoll.vy = z.vy;
+        ragdoll.vz = z.vz;
+        ragdoll.tilt = z.tilt;
+        ragdoll.spin = z.spin;
+        ragdoll.roll = z.roll;
+        stepEnemyRagdoll(ragdoll, dt, ragdoll);
         z.fade = ragdoll.fade;
         z.x = ragdoll.x;
         z.y = ragdoll.y;
@@ -1854,21 +1868,55 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         }
       }
 
-      const lifecycle = stepLivingEnemy({
-        dist: z.dist,
-        speed:
-          z.speed *
-          bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier) *
-          this.enemyMobilityMultiplier(z),
-        slow: z.slow,
-        burn: z.burn,
-        burnTime: z.burnTime,
-        stun: z.stun ?? 0,
-        markTime: z.markTime ?? 0,
-        wobble: z.wobble,
-        dt,
-        pathLength: this.pathLength,
-      });
+      const lifecycleInput =
+        this.livingStepInputs[zombieIndex] ??
+        (this.livingStepInputs[zombieIndex] = {
+          dist: 0,
+          speed: 0,
+          slow: 0,
+          burn: 0,
+          burnTime: 0,
+          stun: 0,
+          markTime: 0,
+          markBonus: 0,
+          wobble: 0,
+          dt: 0,
+          pathLength: 0,
+        });
+      lifecycleInput.dist = z.dist;
+      lifecycleInput.speed =
+        z.speed *
+        bossSpeedMultiplier(
+          z.boss,
+          z.bossEnraged,
+          this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier,
+        ) *
+        this.enemyMobilityMultiplier(z);
+      lifecycleInput.slow = z.slow;
+      lifecycleInput.burn = z.burn;
+      lifecycleInput.burnTime = z.burnTime;
+      lifecycleInput.stun = z.stun ?? 0;
+      lifecycleInput.markTime = z.markTime ?? 0;
+      lifecycleInput.markBonus = z.markBonus ?? 0;
+      lifecycleInput.wobble = z.wobble;
+      lifecycleInput.dt = dt;
+      lifecycleInput.pathLength = this.pathLength;
+
+      const lifecycle =
+        this.livingStepResults[zombieIndex] ??
+        (this.livingStepResults[zombieIndex] = {
+          dist: 0,
+          slow: 0,
+          burn: 0,
+          burnTime: 0,
+          stun: 0,
+          markTime: 0,
+          markBonus: 0,
+          wobble: 0,
+          burnDamage: 0,
+          reachedBase: false,
+        });
+      stepLivingEnemy(lifecycleInput, lifecycle);
 
       z.wobble = lifecycle.wobble;
       z.burnTime = lifecycle.burnTime;
