@@ -1,6 +1,3 @@
-// Bun provides this module at test runtime; the project type checker does not
-// include Bun's ambient module declarations.
-// @ts-expect-error Bun test globals are available when this file runs under Bun.
 import { describe, expect, test } from "bun:test";
 import { BUILD_SPOTS, Game, type Zombie } from "./engine";
 import {
