@@ -1066,7 +1066,8 @@ function Zombies({
           }
           if (bossCore) {
             const material = bossCore.material as THREE.MeshStandardMaterial;
-            const baseBossColor = BOSS_SIGNATURE_COLORS[z.kind] ?? "#e9b44c";
+            const baseBossColor =
+              BOSS_SIGNATURE_COLORS[z.kind as keyof typeof BOSS_SIGNATURE_COLORS] ?? "#e9b44c";
             const bossColor = z.bossEnraged ? "#ff6b4a" : baseBossColor;
             material.color.set(bossColor);
             material.emissive.set(z.bossEnraged ? "#ff4f36" : baseBossColor);
