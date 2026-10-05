@@ -36,6 +36,9 @@ jobs:
       - name: Unit tests
         run: bun run test:unit
 
+      - name: TypeScript check
+        run: bunx tsc --noEmit
+
       - name: Build
         run: bun run build
 
