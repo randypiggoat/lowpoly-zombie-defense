@@ -3,7 +3,7 @@ import { useRef } from "react";
 import * as THREE from "three";
 import { game } from "@/game/engine";
 
-const MAX_BURSTS = 48;
+const MAX_BURSTS = 24;
 const MAX_ZOMBIES = 60;
 
 type BurstState = {
@@ -49,6 +49,11 @@ function createBurstState(): BurstState {
 
 export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }) {
   const groups = useRef<(THREE.Group | null)[]>([]);
+  const rings = useRef<(THREE.Mesh | null)[]>([]);
+  const cores = useRef<(THREE.Mesh | null)[]>([]);
+  const sparks = useRef<Array<Array<THREE.Mesh | null>>>(
+    Array.from({ length: MAX_BURSTS }, () => Array(4).fill(null)),
+  );
   const states = useRef(Array.from({ length: MAX_BURSTS }, createBurstState));
   const cursor = useRef(0);
   const previousIds = useRef<number[]>([]);
@@ -130,8 +135,8 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
       root.rotation.y += dt * (state.kind === "kill" ? 7 : 4.5);
       root.rotation.z += dt * (state.kind === "heal" ? -2.5 : 2.8);
 
-      const ring = root.getObjectByName("ring") as THREE.Mesh | undefined;
-      const core = root.getObjectByName("core") as THREE.Mesh | undefined;
+      const ring = rings.current[index];
+      const core = cores.current[index];
       if (ring) {
         ring.scale.setScalar(1 + (1 - progress) * 0.12);
         (ring.material as THREE.MeshBasicMaterial).color.set(state.color);
@@ -141,8 +146,9 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
         core.scale.setScalar(1 + (1 - progress) * 0.45);
         (core.material as THREE.MeshBasicMaterial).color.set(state.color);
       }
+      const sparkRefs = sparks.current[index];
       for (let shard = 0; shard < 4; shard++) {
-        const spark = root.getObjectByName("spark-" + shard) as THREE.Mesh | undefined;
+        const spark = sparkRefs?.[shard];
         if (spark) {
           (spark.material as THREE.MeshBasicMaterial).color.set(state.color);
           (spark.material as THREE.MeshBasicMaterial).opacity = 0.78 * (1 - progress);
@@ -160,11 +166,18 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
     <group>
       {Array.from({ length: MAX_BURSTS }, (_, i) => (
         <group key={i} ref={(el) => void (groups.current[i] = el)} visible={false}>
-          <mesh name="ring" rotation-x={Math.PI / 2}>
+          <mesh
+            name="ring"
+            ref={(el) => void (rings.current[i] = el)}
+            rotation-x={Math.PI / 2}
+          >
             <torusGeometry args={[0.42, 0.055, 5, 14]} />
             <meshBasicMaterial color="#fff1c7" transparent opacity={0.72} />
           </mesh>
-          <mesh name="core">
+          <mesh
+            name="core"
+            ref={(el) => void (cores.current[i] = el)}
+          >
             <icosahedronGeometry args={[0.13, 0]} />
             <meshBasicMaterial color="#fff1c7" />
           </mesh>
@@ -174,6 +187,7 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
               <mesh
                 key={shard}
                 name={"spark-" + shard}
+                ref={(el) => void (sparks.current[i]![shard] = el)}
                 position={[Math.cos(angle) * 0.24, Math.sin(angle) * 0.24, 0]}
                 rotation-z={angle}
                 visible
