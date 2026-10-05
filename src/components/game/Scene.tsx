@@ -24,7 +24,7 @@ import {
 
 const MAX_ZOMBIES = 60;
 const MAX_BULLETS = MAX_ACTIVE_BULLETS;
-const MAX_GIBS = 96;
+const MAX_GIBS = 64;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
 
@@ -267,8 +267,18 @@ function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getS
 }
 
 function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
+  const root = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    root.current?.traverse((object) => {
+      if ((object as THREE.Mesh).isMesh) {
+        (object as THREE.Mesh).castShadow = false;
+      }
+    });
+  }, [map]);
+
   return (
-    <group>
+    <group ref={root}>
       {map.obstacles.map((obstacle, index) => {
         const label = obstacle.label.toLowerCase();
         const x = obstacle.x;
@@ -542,6 +552,7 @@ function Rock({ position, scale = 1 }: { position: [number, number, number]; sca
 }
 
 function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof getStageMapByStageId> }) {
+  const root = useRef<THREE.Group>(null);
   const items = useMemo(() => {
     const trees: [number, number, number][] = [];
     const rocks: [number, number, number][] = [];
@@ -566,8 +577,16 @@ function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof g
     return { trees, rocks };
   }, [count, map]);
 
+  useEffect(() => {
+    root.current?.traverse((object) => {
+      if ((object as THREE.Mesh).isMesh) {
+        (object as THREE.Mesh).castShadow = false;
+      }
+    });
+  }, [items]);
+
   return (
-    <group>
+    <group ref={root}>
       {items.trees.map((p, i) => (
         <Tree key={'t' + i} position={p} scale={0.85 + ((i * 13) % 5) * 0.12} />
       ))}
@@ -939,8 +958,19 @@ function Zombies({
   const partRefs = useRef<Array<Record<string, THREE.Object3D | undefined> | null>>([]);
   const lastBoss = useRef<boolean[]>([]);
 
-  useFrame(() => {
+  useEffect(() => {
+    for (const group of groups.current) {
+      group?.traverse((object) => {
+        if ((object as THREE.Mesh).isMesh) {
+          (object as THREE.Mesh).castShadow = false;
+        }
+      });
+    }
+  }, []);
+
+  useFrame(({ clock }) => {
     const list = game.state.zombies;
+    const now = clock.elapsedTime * 1000;
     for (let i = 0; i < MAX_ZOMBIES; i++) {
       const g = groups.current[i];
       if (!g) continue;
@@ -990,7 +1020,6 @@ function Zombies({
         const guardianMark = refs["boss-mark-guardian"] as THREE.Group | undefined;
         const healerMark = refs["boss-mark-healer"] as THREE.Group | undefined;
         const swarmMark = refs["boss-mark-swarm"] as THREE.Group | undefined;
-        const now = performance.now();
         if (bossChanged) {
           lastBoss.current[i] = z.boss;
         }
@@ -1609,7 +1638,7 @@ function GoldPickup({
 
   return (
     <group ref={group}>
-      <mesh ref={coin} position={[0, 0.05, 0]} castShadow>
+      <mesh ref={coin} position={[0, 0.05, 0]}>
         <cylinderGeometry args={[0.22, 0.22, 0.09, 12]} />
         <meshStandardMaterial
           color="#e9b44c"
