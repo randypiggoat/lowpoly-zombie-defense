@@ -113,8 +113,8 @@ export function installCapacitorAdMobProvider() {
   const admob = runtime.Capacitor?.Plugins?.AdMob;
   if (!admob) return false;
 
-  const rewardedAdId = import.meta.env.VITE_ADMOB_REWARDED_AD_ID as string | undefined;
-  const interstitialAdId = import.meta.env.VITE_ADMOB_INTERSTITIAL_AD_ID as string | undefined;
+  const rewardedAdId = import.meta.env["VITE_ADMOB_REWARDED_AD_ID"] as string | undefined;
+  const interstitialAdId = import.meta.env["VITE_ADMOB_INTERSTITIAL_AD_ID"] as string | undefined;
 
   setMonetizationProvider({
     canShowRewarded: () => Boolean(rewardedAdId),
@@ -162,8 +162,9 @@ export function isRewardedAvailable() {
 }
 
 export async function showRewarded(placement: RewardedPlacement) {
-  if (!(externalProvider?.canShowRewarded?.() ?? false)) return false;
-  return externalProvider.showRewarded?.(placement) ?? false;
+  const provider = externalProvider;
+  if (!(provider?.canShowRewarded?.() ?? false)) return false;
+  return provider.showRewarded?.(placement) ?? false;
 }
 
 export function isInterstitialAvailable(
