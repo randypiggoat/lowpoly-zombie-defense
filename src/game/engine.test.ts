@@ -46,7 +46,6 @@ function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
     hitX: 0,
     hitZ: 0,
     hitForce: 0,
-    hitKind: undefined,
     ...overrides,
   };
 }
