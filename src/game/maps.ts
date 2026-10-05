@@ -706,7 +706,11 @@ export function getPathLength(path: readonly MapVec2[]) {
   return length;
 }
 
-export function pointAtPath(path: readonly MapVec2[], distance: number): MapVec2 {
+export function pointAtPath(
+  path: readonly MapVec2[],
+  distance: number,
+  out?: MapVec2,
+): MapVec2 {
   let remaining = Math.max(0, distance);
   for (let i = 1; i < path.length; i++) {
     const a = path[i - 1]!;
@@ -714,12 +718,23 @@ export function pointAtPath(path: readonly MapVec2[], distance: number): MapVec2
     const segment = Math.hypot(b.x - a.x, b.z - a.z);
     if (remaining <= segment) {
       const t = segment === 0 ? 0 : remaining / segment;
+      if (out) {
+        out.x = a.x + (b.x - a.x) * t;
+        out.z = a.z + (b.z - a.z) * t;
+        return out;
+      }
       return {
         x: a.x + (b.x - a.x) * t,
         z: a.z + (b.z - a.z) * t,
       };
     }
     remaining -= segment;
+  }
+  if (out) {
+    const last = path[path.length - 1]!;
+    out.x = last.x;
+    out.z = last.z;
+    return out;
   }
   return path[path.length - 1]!;
 }
