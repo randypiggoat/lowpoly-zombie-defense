@@ -101,16 +101,23 @@ export function stepProjectile(
   >,
   dt: number,
   target: { x: number; z: number } | null,
+  out: ProjectileFlightResult = {
+    x: 0,
+    z: 0,
+    tx: 0,
+    tz: 0,
+    alive: false,
+    impacted: false,
+  },
 ): ProjectileFlightResult {
   if (!projectile.alive) {
-    return {
-      x: projectile.x,
-      z: projectile.z,
-      tx: projectile.tx,
-      tz: projectile.tz,
-      alive: false,
-      impacted: false,
-    };
+    out.x = projectile.x;
+    out.z = projectile.z;
+    out.tx = projectile.tx;
+    out.tz = projectile.tz;
+    out.alive = false;
+    out.impacted = false;
+    return out;
   }
 
   const tx = target?.x ?? projectile.tx;
@@ -120,27 +127,23 @@ export function stepProjectile(
   const distance = Math.hypot(dx, dz);
   const step = projectile.speed * dt;
 
-  // Preserve the projectile's current position on impact. The original engine
-  // marks it dead here and resolves damage from b.x/b.z rather than snapping it.
+  // Preserve the projectile's current position on impact. The engine resolves
+  // damage from the projectile's current x/z rather than snapping to the target.
+  out.x = projectile.x;
+  out.z = projectile.z;
+  out.tx = tx;
+  out.tz = tz;
   if (distance <= step || !target) {
-    return {
-      x: projectile.x,
-      z: projectile.z,
-      tx,
-      tz,
-      alive: false,
-      impacted: true,
-    };
+    out.alive = false;
+    out.impacted = true;
+    return out;
   }
 
-  return {
-    x: projectile.x + (dx / distance) * step,
-    z: projectile.z + (dz / distance) * step,
-    tx,
-    tz,
-    alive: true,
-    impacted: false,
-  };
+  out.x = projectile.x + (dx / distance) * step;
+  out.z = projectile.z + (dz / distance) * step;
+  out.alive = true;
+  out.impacted = false;
+  return out;
 }
 
 export const PROJECTILE_SPLASH_DAMAGE_MULTIPLIER = 0.5;
