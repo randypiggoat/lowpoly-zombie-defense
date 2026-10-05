@@ -163,7 +163,7 @@ export function isRewardedAvailable() {
 
 export async function showRewarded(placement: RewardedPlacement) {
   const provider = externalProvider;
-  if (!(provider?.canShowRewarded?.() ?? false)) return false;
+  if (!provider || !provider.canShowRewarded?.()) return false;
   return provider.showRewarded?.(placement) ?? false;
 }
 
