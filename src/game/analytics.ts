@@ -23,7 +23,9 @@ export type AnalyticsEventName =
   | "interstitial_requested"
   | "interstitial_shown"
   | "interstitial_failed"
-  | "iap_purchase";
+  | "iap_purchase"
+  | "side_mode_started"
+  | "side_mode_completed";
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName;
@@ -51,7 +53,9 @@ export function track(
   name: AnalyticsEventName,
   payload?: Record<string, string | number | boolean>,
 ) {
-  events = [...events, { name, at: new Date().toISOString(), payload }].slice(-MAX_EVENTS);
+  const event: AnalyticsEvent = { name, at: new Date().toISOString() };
+  if (payload !== undefined) event.payload = payload;
+  events = [...events, event].slice(-MAX_EVENTS);
   try {
     localStorage.setItem(KEY, JSON.stringify(events));
   } catch {
