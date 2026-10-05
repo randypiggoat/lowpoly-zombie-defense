@@ -1308,6 +1308,7 @@ export class Game {
       hitKind: undefined,
     };
     s.zombies.push(spawned);
+    this.zombieById.set(spawned.id, spawned);
     return spawned;
   }
 
