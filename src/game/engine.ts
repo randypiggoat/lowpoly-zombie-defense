@@ -16,7 +16,6 @@ import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import { applyProjectileStatusEffects } from "./projectileEffects";
 import {
-  advanceTowerCooldown,
   createTowerProjectile,
   KILL_RUSH_DURATION,
   chainJumpMultiplier,
@@ -1340,6 +1339,7 @@ export class Game {
   private readonly livingStepResults: LivingEnemyStepResult[] = [];
   private readonly ragdollStepResults: EnemyRagdollState[] = [];
   private readonly pathPointScratch = { x: 0, z: 0 };
+  private readonly projectileFlightResults: ProjectileFlightResult[] = [];
 
   /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
   private runEffects() {
@@ -2138,9 +2138,10 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     // towers
     const runEffects = this.runEffects();
     for (const t of s.towers) {
-      const cooldown = advanceTowerCooldown(t.cooldown, dt);
+      const nextCooldown = t.cooldown - dt;
+      const cooldownReady = nextCooldown <= 0;
       t.targetRefreshTimer = Math.max(0, (t.targetRefreshTimer ?? 0) - dt);
-      t.cooldown = cooldown.cooldown;
+      t.cooldown = nextCooldown;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
       if ((t.surge ?? 0) > 0) t.surge = Math.max(0, (t.surge ?? 0) - dt);
 
@@ -2163,7 +2164,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
-        if (cooldown.ready) {
+        if (cooldownReady) {
           const combat = applyRunModifiersToCombat(towerCombatStats(t), runEffects);
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
           const rate = towerRate(t) * runEffects.rateMultiplier * surgeRate;
@@ -2227,7 +2228,18 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     for (const b of s.bullets) {
       const candidate = b.alive ? this.zombieById.get(b.target) : undefined;
       const target = candidate && !candidate.dead ? candidate : null;
-      const flight = stepProjectile(b, dt, target);
+      const flightIndex = b.id % MAX_ACTIVE_BULLETS;
+      const flight =
+        this.projectileFlightResults[flightIndex] ??
+        (this.projectileFlightResults[flightIndex] = {
+          x: 0,
+          z: 0,
+          tx: 0,
+          tz: 0,
+          alive: false,
+          impacted: false,
+        });
+      stepProjectile(b, dt, target, flight);
 
       b.tx = flight.tx;
       b.tz = flight.tz;
