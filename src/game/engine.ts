@@ -1316,6 +1316,8 @@ export class Game {
   private kindKills: Record<string, number> = {};
   private readonly zombieById = new Map<number, Zombie>();
   private readonly healTargets: Zombie[] = [];
+  private readonly splashTargets: Zombie[] = [];
+  private readonly chainTargets: Zombie[] = [];
 
   /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
   private runEffects() {
@@ -2269,6 +2271,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           target.x,
           target.z,
           b.splash,
+          this.splashTargets,
         );
         for (const z of splashTargets) {
           hit(
@@ -2285,10 +2288,15 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           target.x,
           target.z,
           b.chain,
+          3.4,
+          this.chainTargets,
         );
-        chainTargets.forEach((z, jump) => {
-          hit(z, b.damage * chainJumpMultiplier(jump, b.chainEscalation ?? 0));
-        });
+        for (let jump = 0; jump < chainTargets.length; jump++) {
+          hit(
+            chainTargets[jump]!,
+            b.damage * chainJumpMultiplier(jump, b.chainEscalation ?? 0),
+          );
+        }
       }
     }
 
