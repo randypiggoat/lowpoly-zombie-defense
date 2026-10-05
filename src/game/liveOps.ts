@@ -32,79 +32,42 @@ export type SeasonalEvent = {
   milestones: SeasonalMilestone[];
 };
 
-function createMilestones(prefix: string): SeasonalMilestone[] {
-  const first = `${prefix}-250`;
-  const second = `${prefix}-1000`;
-  const third = `${prefix}-2500`;
-  const fourth = `${prefix}-runs-3`;
-  const fifth = `${prefix}-special-40`;
-  const sixth = `${prefix}-wave-12`;
-  return [
-    {
-      id: first,
-      target: 250,
-      title: "First Harvest",
-      description: "Defeat 250 infected.",
-      activity: "kills",
-      reward: { label: "250 credits", coins: 250 },
-    },
-    {
-      id: second,
-      target: 6,
-      title: "Hold the Block",
-      description: "Reach wave 6 in any run.",
-      activity: "waves",
-      prerequisite: first,
-      reward: { label: "150 XP", xp: 150 },
-    },
-    {
-      id: third,
-      target: 3,
-      title: "Tune the Arsenal",
-      description: "Upgrade towers 3 times.",
-      activity: "tower-upgrades",
-      prerequisite: second,
-      reward: { label: "12 gems", gems: 12 },
-    },
-    {
-      id: fourth,
-      target: 3,
-      title: "Keep the Line",
-      description: "Finish 3 runs.",
-      activity: "runs",
-      prerequisite: third,
-      reward: { label: "300 credits", coins: 300 },
-    },
-    {
-      id: fifth,
-      target: 40,
-      title: "Priority Targets",
-      description: "Defeat 40 special enemies.",
-      activity: "special-kills",
-      prerequisite: fourth,
-      reward: { label: "250 XP", xp: 250 },
-    },
-    {
-      id: sixth,
-      target: 12,
-      title: "Red Tide",
-      description: "Reach wave 12 in any run.",
-      activity: "waves",
-      prerequisite: fifth,
-      reward: { label: "18 gems", gems: 18 },
-    },
-    {
-      id: `${prefix}-cosmetic`,
-      target: 5,
-      title: "Event Vanguard",
-      description: "Finish 5 runs to claim the event-exclusive tower finish.",
-      activity: "runs",
-      prerequisite: sixth,
-      reward: { label: "Event-exclusive tower finish" },
-      cosmeticId: "seasonal-vanguard",
-    },
-  ];
+type MilestoneSlot = Omit<SeasonalMilestone, "id" | "prerequisite">;
+
+/**
+ * Milestone ids and prerequisite order are stable across events (saved claims depend on them);
+ * each event supplies its own activities, targets and rewards so the two events play differently.
+ */
+function createMilestones(prefix: string, slots: readonly MilestoneSlot[]): SeasonalMilestone[] {
+  const suffixes = ["250", "1000", "2500", "runs-3", "special-40", "wave-12", "cosmetic"];
+  return slots.map((slot, index) => ({
+    ...slot,
+    id: `${prefix}-${suffixes[index]}`,
+    ...(index > 0 && { prerequisite: `${prefix}-${suffixes[index - 1]}` }),
+  }));
 }
+
+/** Blood Harvest rewards swarm control: kills, special targets and deep waves. */
+const BLOOD_SLOTS: readonly MilestoneSlot[] = [
+  { target: 300, title: "First Harvest", description: "Defeat 300 infected.", activity: "kills", reward: { label: "250 credits", coins: 250 } },
+  { target: 6, title: "Hold the Block", description: "Reach wave 6 in any run.", activity: "waves", reward: { label: "150 XP", xp: 150 } },
+  { target: 30, title: "Priority Targets", description: "Defeat 30 special enemies.", activity: "special-kills", reward: { label: "12 gems", gems: 12 } },
+  { target: 3, title: "Keep the Line", description: "Finish 3 runs.", activity: "runs", reward: { label: "300 credits", coins: 300 } },
+  { target: 5, title: "Sharpen the Arsenal", description: "Upgrade towers 5 times.", activity: "tower-upgrades", reward: { label: "250 XP", xp: 250 } },
+  { target: 12, title: "Red Tide", description: "Reach wave 12 in any run.", activity: "waves", reward: { label: "18 gems", gems: 18 } },
+  { target: 5, title: "Event Vanguard", description: "Finish 5 runs to claim the event-exclusive tower finish.", activity: "runs", reward: { label: "Vanguard Freezer finish" }, cosmeticId: "seasonal-vanguard" },
+];
+
+/** Frozen Night rewards build-crafting: upgrades first, fewer kills, longer survival. */
+const FROST_SLOTS: readonly MilestoneSlot[] = [
+  { target: 4, title: "Cold Open", description: "Upgrade towers 4 times.", activity: "tower-upgrades", reward: { label: "250 credits", coins: 250 } },
+  { target: 8, title: "Deep Freeze", description: "Reach wave 8 in any run.", activity: "waves", reward: { label: "150 XP", xp: 150 } },
+  { target: 200, title: "Cold Steel", description: "Defeat 200 infected.", activity: "kills", reward: { label: "12 gems", gems: 12 } },
+  { target: 4, title: "Long Watch", description: "Finish 4 runs.", activity: "runs", reward: { label: "300 credits", coins: 300 } },
+  { target: 20, title: "Frostbitten Elites", description: "Defeat 20 special enemies.", activity: "special-kills", reward: { label: "250 XP", xp: 250 } },
+  { target: 15, title: "The Long Night", description: "Reach wave 15 in any run.", activity: "waves", reward: { label: "18 gems", gems: 18 } },
+  { target: 8, title: "Night Vanguard", description: "Upgrade towers 8 times to claim the event-exclusive Rifleman finish.", activity: "tower-upgrades", reward: { label: "Frostbound Rifleman finish" }, cosmeticId: "seasonal-frostbound" },
+];
 
 export const SEASONAL_EVENTS: SeasonalEvent[] = [
   {
@@ -113,7 +76,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
     tagline: "The streets are crawling. Hold the block and earn your place in the harvest.",
     color: "#e24b4b",
     durationDays: 28,
-    milestones: createMilestones("blood"),
+    milestones: createMilestones("blood", BLOOD_SLOTS),
   },
   {
     id: "frozen-night",
@@ -121,7 +84,7 @@ export const SEASONAL_EVENTS: SeasonalEvent[] = [
     tagline: "Cold steel, hot streaks. Keep defending to earn event rewards.",
     color: "#79c7e3",
     durationDays: 28,
-    milestones: createMilestones("frost"),
+    milestones: createMilestones("frost", FROST_SLOTS),
   },
 ];
 

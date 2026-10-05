@@ -21,6 +21,40 @@ describe("tower upgrade design", () => {
   });
 });
 
+describe("behavioral upgrades", () => {
+  test("new abilities change how towers are used", () => {
+    expect(getTowerUpgradeAbilities("rifleman", 0, 4).volley).toBe(3);
+    expect(getTowerUpgradeAbilities("tesla", 0, 3).stunnedMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("tesla", 4, 0).stunnedMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("flamethrower", 2, 0).burningMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("flamethrower", 3, 0).swarmMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("flamethrower", 4, 0).executeThreshold).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("rocket", 3, 0).swarmMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("freezer", 0, 3).shatterMultiplier).toBeGreaterThan(1.42);
+    expect(getTowerUpgradeAbilities("laser", 0, 3).burningMultiplier).toBeGreaterThan(1);
+  });
+});
+
+describe("second-wave behaviors", () => {
+  test("new situational abilities unlock at their tiers", () => {
+    expect(getTowerUpgradeAbilities("rifleman", 1, 0).precisionMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("rifleman", 0, 2).killRush).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("shotgunner", 1, 0).fastDamageMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("sniper", 0, 3).eliteDamageMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("tesla", 1, 0).chainEscalation).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("flamethrower", 0, 2).burnSpread).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("laser", 0, 1).chainEscalation).toBeGreaterThan(0);
+  });
+
+  test("every tower has at least one behavioral ability in each path", () => {
+    for (const paths of Object.values(TOWER_PATHS)) {
+      for (const path of [paths.a, paths.b]) {
+        expect(path.tiers.some((entry) => "ability" in entry && entry.ability)).toBe(true);
+      }
+    }
+  });
+});
+
 describe("field knowledge", () => {
   test("knowledge forms three readable prerequisite branches", () => {
     for (const category of ["ARSENAL", "FIELDCRAFT", "SALVAGE"] as const) {

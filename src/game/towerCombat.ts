@@ -47,6 +47,15 @@ export type ProjectileState = {
   burnDuration: number;
   markedDamageMultiplier: number;
   slowedDamageMultiplier: number;
+  stunnedMultiplier?: number;
+  burningMultiplier?: number;
+  swarmMultiplier?: number;
+  burnSpread?: number;
+  chainEscalation?: number;
+  eliteDamageMultiplier?: number;
+  precisionMultiplier?: number;
+  fastDamageMultiplier?: number;
+  killRush?: number;
 };
 
 export type ProjectileLaunchInput = Omit<
@@ -136,3 +145,53 @@ export function stepProjectile(
 
 export const PROJECTILE_SPLASH_DAMAGE_MULTIPLIER = 0.5;
 export const PROJECTILE_CHAIN_DAMAGE_MULTIPLIER = 0.6;
+
+/** Distance (tiles) at which precision shots start to pay off. */
+export const PRECISION_RANGE = 6;
+/** Fire-rate window after a kill-rush kill, in seconds. */
+export const KILL_RUSH_DURATION = 2;
+
+const ELITE_KINDS = new Set([2, 5, 6]);
+const FAST_KINDS = new Set([1, 7]);
+
+export type ConditionalDamageInput = {
+  enemyKind: number;
+  boss: boolean;
+  distanceFromTower: number;
+  eliteDamageMultiplier?: number;
+  precisionMultiplier?: number;
+  fastDamageMultiplier?: number;
+};
+
+/** Situational damage from the elite / precision / fast-hunter abilities and matching modifiers. */
+export function conditionalDamageMultiplier(input: ConditionalDamageInput): number {
+  let multiplier = 1;
+  if ((input.boss || ELITE_KINDS.has(input.enemyKind)) && input.eliteDamageMultiplier) {
+    multiplier *= Math.max(1, input.eliteDamageMultiplier);
+  }
+  if (input.distanceFromTower >= PRECISION_RANGE && input.precisionMultiplier) {
+    multiplier *= Math.max(1, input.precisionMultiplier);
+  }
+  if (FAST_KINDS.has(input.enemyKind) && !input.boss && input.fastDamageMultiplier) {
+    multiplier *= Math.max(1, input.fastDamageMultiplier);
+  }
+  return multiplier;
+}
+
+/** Damage factor for the Nth chain jump (0-based), given an escalation per jump. */
+export function chainJumpMultiplier(jumpIndex: number, escalation = 0): number {
+  return PROJECTILE_CHAIN_DAMAGE_MULTIPLIER * (1 + Math.max(0, escalation) * (jumpIndex + 1));
+}
+
+/** Tint that makes a shot's status payload readable in flight. */
+export function projectileStatusTint(
+  shot: Pick<ProjectileState, "markDuration" | "burn" | "slow" | "stun" | "executeThreshold">,
+  base: string,
+): string {
+  if (shot.executeThreshold > 0 && shot.markDuration > 0) return "#ff5a5a";
+  if (shot.markDuration > 0) return "#ff8ad8";
+  if (shot.burn > 0) return "#ffa23a";
+  if (shot.slow > 0) return "#bdeaff";
+  if (shot.stun > 0) return "#fff08a";
+  return base;
+}

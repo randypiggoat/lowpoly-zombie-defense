@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  PRECISION_RANGE,
+  chainJumpMultiplier,
+  conditionalDamageMultiplier,
+  projectileStatusTint,
   advanceTowerCooldown,
   createTowerProjectile,
   PROJECTILE_CHAIN_DAMAGE_MULTIPLIER,
@@ -160,5 +164,33 @@ describe("tower combat loop rules", () => {
   test("secondary damage multipliers preserve the existing impact rules", () => {
     expect(PROJECTILE_SPLASH_DAMAGE_MULTIPLIER).toBe(0.5);
     expect(PROJECTILE_CHAIN_DAMAGE_MULTIPLIER).toBe(0.6);
+  });
+});
+
+describe("conditional and status combat helpers", () => {
+  test("precision only pays off at long range", () => {
+    expect(conditionalDamageMultiplier({ enemyKind: 0, boss: false, distanceFromTower: PRECISION_RANGE - 1, precisionMultiplier: 1.3 })).toBe(1);
+    expect(conditionalDamageMultiplier({ enemyKind: 0, boss: false, distanceFromTower: PRECISION_RANGE, precisionMultiplier: 1.3 })).toBeCloseTo(1.3);
+  });
+
+  test("elite and fast hunters target the right enemies", () => {
+    const base = { distanceFromTower: 2 };
+    expect(conditionalDamageMultiplier({ ...base, enemyKind: 2, boss: false, eliteDamageMultiplier: 1.3 })).toBeCloseTo(1.3);
+    expect(conditionalDamageMultiplier({ ...base, enemyKind: 0, boss: true, eliteDamageMultiplier: 1.3 })).toBeCloseTo(1.3);
+    expect(conditionalDamageMultiplier({ ...base, enemyKind: 0, boss: false, eliteDamageMultiplier: 1.3 })).toBe(1);
+    expect(conditionalDamageMultiplier({ ...base, enemyKind: 1, boss: false, fastDamageMultiplier: 1.4 })).toBeCloseTo(1.4);
+    expect(conditionalDamageMultiplier({ ...base, enemyKind: 2, boss: false, fastDamageMultiplier: 1.4 })).toBe(1);
+  });
+
+  test("chain escalation grows with each jump", () => {
+    expect(chainJumpMultiplier(0)).toBeCloseTo(PROJECTILE_CHAIN_DAMAGE_MULTIPLIER);
+    expect(chainJumpMultiplier(1, 0.25)).toBeGreaterThan(chainJumpMultiplier(0, 0.25));
+  });
+
+  test("status tint makes mark, burn and frost readable", () => {
+    const shot = { markDuration: 0, burn: 0, slow: 0, stun: 0, executeThreshold: 0 };
+    expect(projectileStatusTint(shot, "#fff")).toBe("#fff");
+    expect(projectileStatusTint({ ...shot, burn: 5 }, "#fff")).not.toBe("#fff");
+    expect(projectileStatusTint({ ...shot, markDuration: 3 }, "#fff")).not.toBe(projectileStatusTint({ ...shot, burn: 5 }, "#fff"));
   });
 });
