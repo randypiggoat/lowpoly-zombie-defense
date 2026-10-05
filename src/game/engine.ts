@@ -22,6 +22,7 @@ import {
   conditionalDamageMultiplier,
   PROJECTILE_SPLASH_DAMAGE_MULTIPLIER,
   stepProjectile,
+  type ProjectileFlightResult,
 } from "./towerCombat";
 import {
   stepEnemyRagdoll,
