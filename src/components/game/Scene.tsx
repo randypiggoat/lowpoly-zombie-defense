@@ -28,7 +28,7 @@ const MAX_GIBS = 64;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
 
-const BOSS_SIGNATURE_COLORS: Record<number, string> = {
+const BOSS_SIGNATURE_COLORS: Record<2 | 3 | 4 | 5 | 6 | 7, string> = {
   2: "#ef7d43",
   3: "#f0c75e",
   4: "#ff8b45",
@@ -111,7 +111,7 @@ function createZombieFaceGeometry(kind: number) {
       [feature.w / 2, -feature.h / 2],
       [feature.w / 2, feature.h / 2],
       [-feature.w / 2, feature.h / 2],
-    ];
+    ] as const;
     const color = new THREE.Color(feature.color);
     const pushVertex = (x: number, y: number) => {
       positions.push(x * cos - y * sin + feature.x, x * sin + y * cos + feature.y, 0.008);
@@ -460,7 +460,7 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
                 <boxGeometry args={[w, h, d]} />
                 <meshStandardMaterial color="#8d806b" flatShading />
               </mesh>
-              {[[-0.35, -0.34], [0.35, 0.34]].map(([px, pz]) => (
+              {([[-0.35, -0.34], [0.35, 0.34]] as const).map(([px, pz]) => (
                 <mesh key={px + "-" + pz} position={[px * w, h + 0.16, pz * d]} castShadow>
                   <boxGeometry args={[0.35, 0.32, 0.35]} />
                   <meshStandardMaterial color="#ad6e48" flatShading />
@@ -722,7 +722,7 @@ function BuildSurface({
     return hits.some((hit) => {
       let object: THREE.Object3D | null = hit.object;
       while (object) {
-        if (object.userData.rotwoodTowerId !== undefined) return true;
+        if (object.userData["rotwoodTowerId"] !== undefined) return true;
         object = object.parent;
       }
       return false;
@@ -803,7 +803,6 @@ function BuildSurface({
               color={placement.valid ? "#e9b44c" : "#e24b4b"}
               transparent
               opacity={placement.valid ? 0.22 : 0.12}
-              flatShading
             />
           </mesh>
           {placement.valid ? (
@@ -995,7 +994,7 @@ function Zombies({
       const statusMark = refs["status-mark"];
       const statusStun = refs["status-stun"];
       if (statusMark) {
-        statusMark.visible = z.markTime > 0 && !z.dead;
+        statusMark.visible = (z.markTime ?? 0) > 0 && !z.dead;
         if (statusMark.visible) {
           statusMark.rotation.y += 0.03;
           statusMark.position.y = 1.1 + Math.sin(performance.now() * 0.008 + i) * 0.025;
