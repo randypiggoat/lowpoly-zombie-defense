@@ -2194,7 +2194,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
       if ((t.surge ?? 0) > 0) t.surge = Math.max(0, (t.surge ?? 0) - dt);
 
-      const range = towerRange(t) * runEffects.rangeMultiplier;
+      const baseCombat = towerCombatStats(t);
+      const range = baseCombat.range * runEffects.rangeMultiplier;
       let best: Zombie | null = null;
       if (t.targetRefreshTimer! > 0 && t.targetId !== undefined) {
         const cached = this.zombieById.get(t.targetId);
@@ -2214,9 +2215,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (cooldownReady) {
-          const combat = applyRunModifiersToCombat(towerCombatStats(t), runEffects);
+          const combat = applyRunModifiersToCombat(baseCombat, runEffects);
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
-          const rate = towerRate(t) * runEffects.rateMultiplier * surgeRate;
+          const rate = baseCombat.rate * runEffects.rateMultiplier * surgeRate;
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < combat.crit;
