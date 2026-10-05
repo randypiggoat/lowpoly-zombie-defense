@@ -36,6 +36,18 @@ export type LivingEnemyStepResult = {
  */
 export function stepLivingEnemy(
   input: LivingEnemyStepInput,
+  out: LivingEnemyStepResult = {
+    dist: 0,
+    slow: 0,
+    burn: 0,
+    burnTime: 0,
+    stun: 0,
+    markTime: 0,
+    markBonus: 0,
+    wobble: 0,
+    burnDamage: 0,
+    reachedBase: false,
+  },
 ): LivingEnemyStepResult {
   const {
     dist,
@@ -64,22 +76,19 @@ export function stepLivingEnemy(
   const nextDist =
     dist + speed * dt * (nextStun > 0 ? 0 : 1 - Math.min(0.85, slow));
 
-  if (nextBurnTime <= 0) {
-    nextBurn = 0;
-  }
+  if (nextBurnTime <= 0) nextBurn = 0;
 
-  return {
-    dist: nextDist,
-    slow: 0,
-    burn: nextBurn,
-    burnTime: nextBurnTime,
-    stun: nextStun,
-    markTime: nextMarkTime,
-    markBonus: nextMarkBonus,
-    wobble: nextWobble,
-    burnDamage,
-    reachedBase: nextDist >= pathLength,
-  };
+  out.dist = nextDist;
+  out.slow = 0;
+  out.burn = nextBurn;
+  out.burnTime = nextBurnTime;
+  out.stun = nextStun;
+  out.markTime = nextMarkTime;
+  out.markBonus = nextMarkBonus;
+  out.wobble = nextWobble;
+  out.burnDamage = burnDamage;
+  out.reachedBase = nextDist >= pathLength;
+  return out;
 }
 
 export type EnemyRagdollState = {
@@ -101,35 +110,34 @@ export type EnemyRagdollState = {
 export function stepEnemyRagdoll(
   state: EnemyRagdollState,
   dt: number,
+  out: EnemyRagdollState = { ...state },
 ): EnemyRagdollState {
   const nextVy = state.vy - 16 * dt;
-  const next = {
-    fade: state.fade + dt * 0.55,
-    x: state.x + state.vx * dt,
-    y: state.y + nextVy * dt,
-    z: state.z + state.vz * dt,
-    vx: state.vx,
-    vy: nextVy,
-    vz: state.vz,
-    tilt: state.tilt + state.spin * dt,
-    spin: state.spin,
-    roll: state.roll + state.spin * 0.6 * dt,
-  };
+  out.fade = state.fade + dt * 0.55;
+  out.x = state.x + state.vx * dt;
+  out.y = state.y + nextVy * dt;
+  out.z = state.z + state.vz * dt;
+  out.vx = state.vx;
+  out.vy = nextVy;
+  out.vz = state.vz;
+  out.tilt = state.tilt + state.spin * dt;
+  out.spin = state.spin;
+  out.roll = state.roll + state.spin * 0.6 * dt;
 
-  if (next.y <= 0) {
-    next.y = 0;
-    if (next.vy < -0.4) {
-      next.vy = -next.vy * 0.3;
-      next.spin *= 0.4;
+  if (out.y <= 0) {
+    out.y = 0;
+    if (out.vy < -0.4) {
+      out.vy = -out.vy * 0.3;
+      out.spin *= 0.4;
     } else {
-      next.vy = 0;
-      next.spin *= Math.exp(-8 * dt);
+      out.vy = 0;
+      out.spin *= Math.exp(-8 * dt);
     }
-    next.vx *= Math.exp(-6 * dt);
-    next.vz *= Math.exp(-6 * dt);
+    out.vx *= Math.exp(-6 * dt);
+    out.vz *= Math.exp(-6 * dt);
   }
 
-  return next;
+  return out;
 }
 
 export function shouldDespawnEnemy(

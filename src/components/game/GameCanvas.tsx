@@ -349,6 +349,7 @@ export function GameCanvas() {
   const [activeSideMode, setActiveSideMode] = useState<SideModeLevel | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
+  const [lowGraphics, setLowGraphics] = useState(true);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const [purchasedProducts, setPurchasedProducts] = useState<Partial<Record<PurchaseProduct, boolean>>>({});
   const [armoryTowerKind, setArmoryTowerKind] = useState<TowerKind>("rifleman");
@@ -479,6 +480,14 @@ export function GameCanvas() {
   useEffect(() => {
     let active = true;
     setCanvasReady(true);
+
+    const coarsePointer =
+      window.matchMedia("(pointer: coarse)").matches &&
+      window.matchMedia("(hover: none)").matches;
+    const lowCpu = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    const lowMemory = memory !== undefined && memory <= 4;
+    setLowGraphics(coarsePointer || lowCpu || lowMemory);
     void import("@/game/monetization")
       .then(({ installCapacitorAdMobProvider, isRewardedAvailable }) => {
         if (!active) return;
@@ -622,13 +631,14 @@ export function GameCanvas() {
     <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
       {canvasReady && (
         <Canvas
-          // Use the cheaper supported shadow mode; Three r185 deprecates PCFSoftShadowMap.
-          shadows="basic"
-          // Keep pixel fill-rate predictable on mobile GPUs to reduce WebGL context resets.
-          dpr={1}
+          // Shadows are disabled on touch/low-end hardware; desktop keeps a basic shadow
+          // pass with only the base and towers casting, which preserves depth without the
+          // cost of animating dozens of zombie/environment shadow casters.
+          shadows={lowGraphics ? false : "basic"}
+          dpr={lowGraphics ? 0.85 : 1}
           gl={{
             antialias: false,
-            powerPreference: "low-power",
+            powerPreference: "high-performance",
             failIfMajorPerformanceCaveat: false,
           }}
           camera={{ position: [2, 26, 30], fov: 40 }}

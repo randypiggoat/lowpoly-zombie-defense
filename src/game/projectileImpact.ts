@@ -6,13 +6,18 @@ export function getSplashTargets(
   targetX: number,
   targetZ: number,
   radius: number,
+  out: Zombie[] = [],
 ): Zombie[] {
-  if (radius <= 0) return [];
+  out.length = 0;
+  if (radius <= 0) return out;
 
-  return zombies.filter((zombie) => {
-    if (zombie.dead || zombie.id === primaryTargetId) return false;
-    return Math.hypot(zombie.x - targetX, zombie.z - targetZ) < radius;
-  });
+  for (const zombie of zombies) {
+    if (zombie.dead || zombie.id === primaryTargetId) continue;
+    if (Math.hypot(zombie.x - targetX, zombie.z - targetZ) < radius) {
+      out.push(zombie);
+    }
+  }
+  return out;
 }
 
 export function getChainTargets(
@@ -22,19 +27,19 @@ export function getChainTargets(
   targetZ: number,
   chainCount: number,
   radius = 3.4,
+  out: Zombie[] = [],
 ): Zombie[] {
-  if (chainCount <= 0) return [];
-
-  const targets: Zombie[] = [];
+  out.length = 0;
+  if (chainCount <= 0) return out;
 
   for (const zombie of zombies) {
-    if (targets.length >= chainCount) break;
+    if (out.length >= chainCount) break;
     if (zombie.dead || zombie.id === primaryTargetId) continue;
 
     if (Math.hypot(zombie.x - targetX, zombie.z - targetZ) < radius) {
-      targets.push(zombie);
+      out.push(zombie);
     }
   }
 
-  return targets;
+  return out;
 }

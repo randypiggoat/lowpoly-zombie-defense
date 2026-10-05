@@ -695,6 +695,8 @@ class ProfileStore {
   private revision = 0;
   private lastRunRewardBoosted = false;
   private lastBossTrialId: string | null = null;
+  /** Combat progression is batched so a kill never forces synchronous JSON/localStorage work. */
+  private unsavedCombatKills = 0;
 
   get canClaimLastRunRewardBoost() {
     return Boolean(this.lastReward) && !this.lastRunRewardBoosted;
@@ -804,6 +806,7 @@ class ProfileStore {
     } catch {
       /* storage unavailable — progression stays in memory this session */
     }
+    this.unsavedCombatKills = 0;
     this.notify();
   }
 
@@ -915,7 +918,14 @@ class ProfileStore {
     const result = this.awardXp(xp);
     this.updateDailyMission("zombieKill", 1);
     this.syncAchievementProgress();
-    this.save();
+
+    // Persist combat progression in batches instead of on every kill. This keeps
+    // synchronous JSON serialization/storage work out of the hottest gameplay path.
+    this.unsavedCombatKills += 1;
+    if (this.unsavedCombatKills >= 24) {
+      this.save();
+    }
+
     return { xp, coins, ...result };
   }
 

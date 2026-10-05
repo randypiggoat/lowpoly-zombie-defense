@@ -16,15 +16,22 @@ import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import { applyProjectileStatusEffects } from "./projectileEffects";
 import {
-  advanceTowerCooldown,
   createTowerProjectile,
   KILL_RUSH_DURATION,
   chainJumpMultiplier,
   conditionalDamageMultiplier,
   PROJECTILE_SPLASH_DAMAGE_MULTIPLIER,
   stepProjectile,
+  type ProjectileFlightResult,
 } from "./towerCombat";
-import { stepEnemyRagdoll, stepLivingEnemy, shouldDespawnEnemy } from "./enemyLifecycle";
+import {
+  stepEnemyRagdoll,
+  stepLivingEnemy,
+  shouldDespawnEnemy,
+  type EnemyRagdollState,
+  type LivingEnemyStepInput,
+  type LivingEnemyStepResult,
+} from "./enemyLifecycle";
 import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
@@ -221,6 +228,9 @@ export type Tower = {
   b: number; // tiers bought in path B (0-4)
   targetMode: TargetMode;
   cooldown: number;
+  /** Cached targeting state; refreshed periodically to avoid repeated LOS scans every simulation step. */
+  targetId?: number;
+  targetRefreshTimer?: number;
   aim: number;
   recoil: number;
   /** Seconds left of a kill-rush fire-rate surge. */
@@ -853,6 +863,11 @@ export class Game {
   }
 
   reset() {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
+    this.livingStepInputs.length = 0;
+    this.livingStepResults.length = 0;
+    this.ragdollStepResults.length = 0;
     this.nextId = 1;
     this.projectileEmissions = 0;
     this.resetTransientState();
@@ -861,6 +876,8 @@ export class Game {
   }
 
   startStage(stage: StageRunConfig) {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     this.stage = stage;
     this.map = getStageMap(stage.mapId);
@@ -873,6 +890,8 @@ export class Game {
 }
 
  startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+  this.zombieById.clear();
+  this.cachedEffectsKey = null;
   this.projectileEmissions = 0;
   const stage = createEndlessStage(challenge);
   this.stage = { ...stage, challenge, challengeKey, endless: true };
@@ -886,6 +905,8 @@ export class Game {
 }
 
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     const stage = createBossTrialStage(trial);
     this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
@@ -903,6 +924,8 @@ export class Game {
   }
 
   startSideMode(level: SideModeLevel, cycleKey = new Date().toISOString().slice(0, 10)) {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     this.stage = {
       ...level.stage,
@@ -1011,6 +1034,8 @@ export class Game {
     if (!tower) return false;
 
     tower.targetMode = mode;
+    tower.targetId = undefined;
+    tower.targetRefreshTimer = 0;
     this.emit();
     return true;
   }
@@ -1051,6 +1076,8 @@ export class Game {
       targetMode: "first",
       cooldown: 0,
       aim: 0,
+      targetId: undefined,
+      targetRefreshTimer: 0,
       recoil: 0,
     });
     s.towersPlaced += 1;
@@ -1301,12 +1328,22 @@ export class Game {
       hitKind: undefined,
     };
     s.zombies.push(spawned);
+    this.zombieById.set(spawned.id, spawned);
     return spawned;
   }
 
   private cachedEffectsKey: RunModifierId[] | null = null;
   private cachedEffects = getRunModifierEffects([]);
   private kindKills: Record<string, number> = {};
+  private readonly zombieById = new Map<number, Zombie>();
+  private readonly healTargets: Zombie[] = [];
+  private readonly splashTargets: Zombie[] = [];
+  private readonly chainTargets: Zombie[] = [];
+  private readonly livingStepInputs: LivingEnemyStepInput[] = [];
+  private readonly livingStepResults: LivingEnemyStepResult[] = [];
+  private readonly ragdollStepResults: EnemyRagdollState[] = [];
+  private readonly pathPointScratch = { x: 0, z: 0 };
+  private readonly projectileFlightResults: ProjectileFlightResult[] = [];
 
   /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
   private runEffects() {
@@ -1573,12 +1610,11 @@ export class Game {
       sfx(feedback.hitSound);
     }
 
-    this.emit();
   }
 
   private spawnPartGib(z: Zombie, part: GorePart, goreBase: number, force = 1) {
     const s = this.state;
-    if (s.gibs.length >= 96) return;
+    if (s.gibs.length >= 64) return;
     const anchor = goreAnchor(part);
     const angle = this.random() * Math.PI * 2;
     const speed = (1.25 + this.random() * 2.4) * Math.max(0.7, Math.min(2, goreBase)) * force;
@@ -1602,7 +1638,7 @@ export class Game {
 
   private spawnGibs(z: Zombie, count: number, force: number) {
     const s = this.state;
-    if (s.gibs.length >= 96) return;
+    if (s.gibs.length >= 64) return;
 
     for (let i = 0; i < count; i++) {
       const a = this.random() * Math.PI * 2;
@@ -1665,6 +1701,14 @@ export class Game {
     const s = this.state;
     if (s.gameOver) return;
     if (s.runModifierOffer.length > 0) return;
+
+    // Reuse one ID map for the whole simulation step so projectile tracking is O(1)
+    // instead of scanning every zombie for every active projectile.
+    this.zombieById.clear();
+    for (const zombie of s.zombies) {
+      this.zombieById.set(zombie.id, zombie);
+    }
+
     if (s.killStreakTimer > 0) {
       s.killStreakTimer = Math.max(0, s.killStreakTimer - dt);
       if (s.killStreakTimer === 0) s.killStreak = 0;
@@ -1721,7 +1765,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     }
 
     // zombies
-    for (const z of s.zombies) {
+    for (let zombieIndex = 0; zombieIndex < s.zombies.length; zombieIndex++) {
+      const z = s.zombies[zombieIndex]!;
       if (z.flash > 0) z.flash = Math.max(0, z.flash - dt * 4);
       if (z.hitReact > 0) {
         z.hitReact = Math.max(0, z.hitReact - dt * 7);
@@ -1729,21 +1774,31 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
 
       if (z.dead) {
-        const ragdoll = stepEnemyRagdoll(
-          {
-            fade: z.fade,
-            x: z.x,
-            y: z.y,
-            z: z.z,
-            vx: z.vx,
-            vy: z.vy,
-            vz: z.vz,
-            tilt: z.tilt,
-            spin: z.spin,
-            roll: z.roll,
-          },
-          dt,
-        );
+        const ragdoll =
+          this.ragdollStepResults[zombieIndex] ??
+          (this.ragdollStepResults[zombieIndex] = {
+            fade: 0,
+            x: 0,
+            y: 0,
+            z: 0,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+            tilt: 0,
+            spin: 0,
+            roll: 0,
+          });
+        ragdoll.fade = z.fade;
+        ragdoll.x = z.x;
+        ragdoll.y = z.y;
+        ragdoll.z = z.z;
+        ragdoll.vx = z.vx;
+        ragdoll.vy = z.vy;
+        ragdoll.vz = z.vz;
+        ragdoll.tilt = z.tilt;
+        ragdoll.spin = z.spin;
+        ragdoll.roll = z.roll;
+        stepEnemyRagdoll(ragdoll, dt, ragdoll);
         z.fade = ragdoll.fade;
         z.x = ragdoll.x;
         z.y = ragdoll.y;
@@ -1789,11 +1844,21 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         z.healTimer = (z.healTimer ?? 0) + dt;
         if (z.healTimer >= healInterval) {
           z.healTimer = 0;
-          const targets = s.zombies
-            .filter((other) => !other.dead && other.id !== z.id && Math.hypot(other.x - z.x, other.z - z.z) <= 4.6)
-            .sort((a, b) => (b.maxHp - b.hp) - (a.maxHp - a.hp))
-            .slice(0, targetCount);
-          for (const target of targets) {
+          this.healTargets.length = 0;
+          for (const other of s.zombies) {
+            if (other.dead || other.id === z.id) continue;
+            if (Math.hypot(other.x - z.x, other.z - z.z) > 4.6) continue;
+            const missing = other.maxHp - other.hp;
+            if (missing <= 0) continue;
+            this.healTargets.push(other);
+          }
+          this.healTargets.sort(
+            (a, b) => (b.maxHp - b.hp) - (a.maxHp - a.hp),
+          );
+          if (this.healTargets.length > targetCount) {
+            this.healTargets.length = targetCount;
+          }
+          for (const target of this.healTargets) {
             const missing = target.maxHp - target.hp;
             if (missing > 0) {
               target.hp = Math.min(target.maxHp, target.hp + target.maxHp * healAmount);
@@ -1803,21 +1868,55 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         }
       }
 
-      const lifecycle = stepLivingEnemy({
-        dist: z.dist,
-        speed:
-          z.speed *
-          bossSpeedMultiplier(z.boss, z.bossEnraged, this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier) *
-          this.enemyMobilityMultiplier(z),
-        slow: z.slow,
-        burn: z.burn,
-        burnTime: z.burnTime,
-        stun: z.stun ?? 0,
-        markTime: z.markTime ?? 0,
-        wobble: z.wobble,
-        dt,
-        pathLength: this.pathLength,
-      });
+      const lifecycleInput =
+        this.livingStepInputs[zombieIndex] ??
+        (this.livingStepInputs[zombieIndex] = {
+          dist: 0,
+          speed: 0,
+          slow: 0,
+          burn: 0,
+          burnTime: 0,
+          stun: 0,
+          markTime: 0,
+          markBonus: 0,
+          wobble: 0,
+          dt: 0,
+          pathLength: 0,
+        });
+      lifecycleInput.dist = z.dist;
+      lifecycleInput.speed =
+        z.speed *
+        bossSpeedMultiplier(
+          z.boss,
+          z.bossEnraged,
+          this.stage.bossTrial?.variant?.traits.bossEnrageSpeedMultiplier,
+        ) *
+        this.enemyMobilityMultiplier(z);
+      lifecycleInput.slow = z.slow;
+      lifecycleInput.burn = z.burn;
+      lifecycleInput.burnTime = z.burnTime;
+      lifecycleInput.stun = z.stun ?? 0;
+      lifecycleInput.markTime = z.markTime ?? 0;
+      lifecycleInput.markBonus = z.markBonus ?? 0;
+      lifecycleInput.wobble = z.wobble;
+      lifecycleInput.dt = dt;
+      lifecycleInput.pathLength = this.pathLength;
+
+      const lifecycle =
+        this.livingStepResults[zombieIndex] ??
+        (this.livingStepResults[zombieIndex] = {
+          dist: 0,
+          slow: 0,
+          burn: 0,
+          burnTime: 0,
+          stun: 0,
+          markTime: 0,
+          markBonus: 0,
+          wobble: 0,
+          burnDamage: 0,
+          reachedBase: false,
+        });
+      stepLivingEnemy(lifecycleInput, lifecycle);
 
       z.wobble = lifecycle.wobble;
       z.burnTime = lifecycle.burnTime;
@@ -1836,9 +1935,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.dist = lifecycle.dist;
       z.slow = lifecycle.slow;
 
-      const p = pointAtPath(this.map.path, z.dist);
-      z.x = p.x;
-      z.z = p.z;
+      pointAtPath(this.map.path, z.dist, this.pathPointScratch);
+      z.x = this.pathPointScratch.x;
+      z.z = this.pathPointScratch.z;
 
       if (lifecycle.reachedBase) {
         z.dead = true;
@@ -2088,24 +2187,37 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
     // towers
     const runEffects = this.runEffects();
     for (const t of s.towers) {
-      const cooldown = advanceTowerCooldown(t.cooldown, dt);
-      t.cooldown = cooldown.cooldown;
+      const nextCooldown = t.cooldown - dt;
+      const cooldownReady = nextCooldown <= 0;
+      t.targetRefreshTimer = Math.max(0, (t.targetRefreshTimer ?? 0) - dt);
+      t.cooldown = nextCooldown;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 5);
       if ((t.surge ?? 0) > 0) t.surge = Math.max(0, (t.surge ?? 0) - dt);
 
-      const best = selectTowerTarget(
-        s.zombies,
-        t,
-        towerRange(t) * runEffects.rangeMultiplier,
-        t.targetMode,
-        this.map,
-      );
+      const baseCombat = towerCombatStats(t);
+      const range = baseCombat.range * runEffects.rangeMultiplier;
+      let best: Zombie | null = null;
+      if (t.targetRefreshTimer! > 0 && t.targetId !== undefined) {
+        const cached = this.zombieById.get(t.targetId);
+        if (
+          cached &&
+          !cached.dead &&
+          Math.hypot(cached.x - t.x, cached.z - t.z) <= range
+        ) {
+          best = cached;
+        }
+      }
+      if (!best) {
+        best = selectTowerTarget(s.zombies, t, range, t.targetMode, this.map);
+        t.targetId = best?.id;
+        t.targetRefreshTimer = 0.08;
+      }
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
-        if (cooldown.ready) {
-          const combat = applyRunModifiersToCombat(towerCombatStats(t), runEffects);
+        if (cooldownReady) {
+          const combat = applyRunModifiersToCombat(baseCombat, runEffects);
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
-          const rate = towerRate(t) * runEffects.rateMultiplier * surgeRate;
+          const rate = baseCombat.rate * runEffects.rateMultiplier * surgeRate;
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < combat.crit;
@@ -2164,10 +2276,20 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     // bullets
     for (const b of s.bullets) {
-      const target = b.alive
-        ? s.zombies.find((z) => z.id === b.target && !z.dead) ?? null
-        : null;
-      const flight = stepProjectile(b, dt, target);
+      const candidate = b.alive ? this.zombieById.get(b.target) : undefined;
+      const target = candidate && !candidate.dead ? candidate : null;
+      const flightIndex = b.id % MAX_ACTIVE_BULLETS;
+      const flight =
+        this.projectileFlightResults[flightIndex] ??
+        (this.projectileFlightResults[flightIndex] = {
+          x: 0,
+          z: 0,
+          tx: 0,
+          tz: 0,
+          alive: false,
+          impacted: false,
+        });
+      stepProjectile(b, dt, target, flight);
 
       b.tx = flight.tx;
       b.tz = flight.tz;
@@ -2179,10 +2301,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         const goreBase = GORE_BASE[b.kind];
         const hit = (z: Zombie, dmg: number) => {
           const statusDamageMultiplier = getRunModifierDamageMultiplier(
-            {
-              markedDamageMultiplier: b.markedDamageMultiplier,
-              slowedDamageMultiplier: b.slowedDamageMultiplier,
-            },
+            b,
             (z.markTime ?? 0) > 0,
             z.slow > 0,
           );
@@ -2235,6 +2354,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           target.x,
           target.z,
           b.splash,
+          this.splashTargets,
         );
         for (const z of splashTargets) {
           hit(
@@ -2251,24 +2371,47 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           target.x,
           target.z,
           b.chain,
+          3.4,
+          this.chainTargets,
         );
-        chainTargets.forEach((z, jump) => {
-          hit(z, b.damage * chainJumpMultiplier(jump, b.chainEscalation ?? 0));
-        });
+        for (let jump = 0; jump < chainTargets.length; jump++) {
+          hit(
+            chainTargets[jump]!,
+            b.damage * chainJumpMultiplier(jump, b.chainEscalation ?? 0),
+          );
+        }
       }
     }
 
     if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 2);
 
-    // cleanup
+    // cleanup: compact arrays in place to avoid per-step temporary allocations.
     if (s.zombies.length > 0) {
-      s.zombies = s.zombies.filter((z) => !shouldDespawnEnemy(z.dead, z.fade));
+      let write = 0;
+      for (let read = 0; read < s.zombies.length; read++) {
+        const zombie = s.zombies[read]!;
+        if (shouldDespawnEnemy(zombie.dead, zombie.fade)) continue;
+        s.zombies[write++] = zombie;
+      }
+      s.zombies.length = write;
     }
     if (s.bullets.length > 0) {
-      s.bullets = s.bullets.filter((b) => b.alive);
+      let write = 0;
+      for (let read = 0; read < s.bullets.length; read++) {
+        const bullet = s.bullets[read]!;
+        if (!bullet.alive) continue;
+        s.bullets[write++] = bullet;
+      }
+      s.bullets.length = write;
     }
     if (s.gibs.length > 0) {
-      s.gibs = s.gibs.filter((g) => g.life < 1.75);
+      let write = 0;
+      for (let read = 0; read < s.gibs.length; read++) {
+        const gib = s.gibs[read]!;
+        if (gib.life >= 1.75) continue;
+        s.gibs[write++] = gib;
+      }
+      s.gibs.length = write;
     }
   }
 }
