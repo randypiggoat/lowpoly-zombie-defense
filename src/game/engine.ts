@@ -24,7 +24,13 @@ import {
   PROJECTILE_SPLASH_DAMAGE_MULTIPLIER,
   stepProjectile,
 } from "./towerCombat";
-import { stepEnemyRagdoll, stepLivingEnemy, shouldDespawnEnemy } from "./enemyLifecycle";
+import {
+  stepEnemyRagdoll,
+  stepLivingEnemy,
+  shouldDespawnEnemy,
+  type EnemyRagdollState,
+  type LivingEnemyStepResult,
+} from "./enemyLifecycle";
 import {
   canBuyTier as canBuyTowerTier,
   tierCost as getTowerTierCost,
@@ -856,6 +862,10 @@ export class Game {
   }
 
   reset() {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
+    this.livingStepResults.length = 0;
+    this.ragdollStepResults.length = 0;
     this.nextId = 1;
     this.projectileEmissions = 0;
     this.resetTransientState();
@@ -864,6 +874,8 @@ export class Game {
   }
 
   startStage(stage: StageRunConfig) {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     this.stage = stage;
     this.map = getStageMap(stage.mapId);
@@ -876,6 +888,8 @@ export class Game {
 }
 
  startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+  this.zombieById.clear();
+  this.cachedEffectsKey = null;
   this.projectileEmissions = 0;
   const stage = createEndlessStage(challenge);
   this.stage = { ...stage, challenge, challengeKey, endless: true };
@@ -889,6 +903,8 @@ export class Game {
 }
 
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     const stage = createBossTrialStage(trial);
     this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
@@ -906,6 +922,8 @@ export class Game {
   }
 
   startSideMode(level: SideModeLevel, cycleKey = new Date().toISOString().slice(0, 10)) {
+    this.zombieById.clear();
+    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     this.stage = {
       ...level.stage,
@@ -1319,6 +1337,9 @@ export class Game {
   private readonly healTargets: Zombie[] = [];
   private readonly splashTargets: Zombie[] = [];
   private readonly chainTargets: Zombie[] = [];
+  private readonly livingStepResults: LivingEnemyStepResult[] = [];
+  private readonly ragdollStepResults: EnemyRagdollState[] = [];
+  private readonly pathPointScratch = { x: 0, z: 0 };
 
   /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
   private runEffects() {
@@ -1865,9 +1886,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.dist = lifecycle.dist;
       z.slow = lifecycle.slow;
 
-      const p = pointAtPath(this.map.path, z.dist);
-      z.x = p.x;
-      z.z = p.z;
+      pointAtPath(this.map.path, z.dist, this.pathPointScratch);
+      z.x = this.pathPointScratch.x;
+      z.z = this.pathPointScratch.z;
 
       if (lifecycle.reachedBase) {
         z.dead = true;
@@ -2204,9 +2225,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 
     // bullets
     for (const b of s.bullets) {
-      const target = b.alive
-        ? this.zombieById.get(b.target) ?? null
-        : null;
+      const candidate = b.alive ? this.zombieById.get(b.target) : undefined;
+      const target = candidate && !candidate.dead ? candidate : null;
       const flight = stepProjectile(b, dt, target);
 
       b.tx = flight.tx;
