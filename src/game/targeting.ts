@@ -10,28 +10,23 @@ export function selectTowerTarget(
   mode: TargetMode,
   map?: StageMap,
 ): Zombie | null {
-  const candidates = zombies.filter((zombie) => {
-    if (zombie.dead) return false;
-    if (Math.hypot(zombie.x - tower.x, zombie.z - tower.z) > range) return false;
-    return !map || hasLineOfSight(map, tower, zombie);
-  });
+  let best: Zombie | null = null;
+  for (const zombie of zombies) {
+    if (zombie.dead) continue;
+    if (Math.hypot(zombie.x - tower.x, zombie.z - tower.z) > range) continue;
+    if (map && !hasLineOfSight(map, tower, zombie)) continue;
+    if (!best) {
+      best = zombie;
+      continue;
+    }
 
-  if (candidates.length === 0) return null;
-
-  if (mode === "strongest") {
-    return candidates.reduce((best, zombie) =>
-      zombie.hp > best.hp ? zombie : best,
-    );
+    if (
+      (mode === "strongest" && zombie.hp > best.hp) ||
+      (mode === "last" && zombie.dist < best.dist) ||
+      (mode === "first" && zombie.dist > best.dist)
+    ) {
+      best = zombie;
+    }
   }
-
-  if (mode === "last") {
-    return candidates.reduce((best, zombie) =>
-      zombie.dist < best.dist ? zombie : best,
-    );
-  }
-
-  // "first" = zombie furthest along the path.
-  return candidates.reduce((best, zombie) =>
-    zombie.dist > best.dist ? zombie : best,
-  );
+  return best;
 }

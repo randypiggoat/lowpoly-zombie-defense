@@ -38,7 +38,15 @@ import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "./combatRewards";
-import { applyRunModifiersToCombat, createRunModifierOffer, getRunModifierEffects, shouldOfferRunModifier, type RunModifierDefinition, type RunModifierId } from "./runModifiers";
+import {
+  applyRunModifiersToCombat,
+  createRunModifierOffer,
+  getRunModifierDamageMultiplier,
+  getRunModifierEffects,
+  shouldOfferRunModifier,
+  type RunModifierDefinition,
+  type RunModifierId,
+} from "./runModifiers";
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { perfectWaveGoldBonus } from "./waveRewards";
 import { bossKillGoldMultiplier } from "./bossRewards";
@@ -160,6 +168,9 @@ export type Zombie = {
   hitZ: number;
   hitForce: number;
   hitKind?: TowerKind;
+  stun?: number;
+  markTime?: number;
+  markBonus?: number;
 };
 
 export type Gib = {
@@ -256,6 +267,17 @@ export type Bullet = {
   bossDamageMultiplier: number;
   closeDamageMultiplier: number;
   burnDuration: number;
+  markedDamageMultiplier: number;
+  slowedDamageMultiplier: number;
+  stunnedMultiplier?: number;
+  burningMultiplier?: number;
+  swarmMultiplier?: number;
+  burnSpread?: number;
+  chainEscalation?: number;
+  eliteDamageMultiplier?: number;
+  precisionMultiplier?: number;
+  fastDamageMultiplier?: number;
+  killRush?: number;
 };
 
 export type TowerDef = {
@@ -2120,6 +2142,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 bossDamageMultiplier: combat.bossDamageMultiplier,
                 closeDamageMultiplier: combat.closeDamageMultiplier,
                 burnDuration: combat.burnDuration,
+                markedDamageMultiplier: runEffects.markedDamageMultiplier,
+                slowedDamageMultiplier: runEffects.slowedDamageMultiplier,
                 stunnedMultiplier: combat.stunnedMultiplier,
                 burningMultiplier: combat.burningMultiplier,
                 swarmMultiplier: combat.swarmMultiplier,
@@ -2154,6 +2178,14 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (flight.impacted && target) {
         const goreBase = GORE_BASE[b.kind];
         const hit = (z: Zombie, dmg: number) => {
+          const statusDamageMultiplier = getRunModifierDamageMultiplier(
+            {
+              markedDamageMultiplier: b.markedDamageMultiplier,
+              slowedDamageMultiplier: b.slowedDamageMultiplier,
+            },
+            (z.markTime ?? 0) > 0,
+            z.slow > 0,
+          );
           const status = applyProjectileStatusEffects(
             z,
             b.slow,
@@ -2167,7 +2199,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           const counterplayMultiplier = towerEnemyDamageMultiplier(b.kind, z.kind);
           this.damage(
             z,
-            dmg * counterplayMultiplier,
+            dmg * counterplayMultiplier * statusDamageMultiplier,
             b.x,
             b.z,
             goreBase,

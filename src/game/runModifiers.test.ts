@@ -3,6 +3,7 @@ import {
   RUN_MODIFIER_DEFS,
   applyRunModifiersToCombat,
   createRunModifierOffer,
+  getRunModifierDamageMultiplier,
   getRunModifierEffects,
   shouldOfferRunModifier,
 } from "./runModifiers";
@@ -20,6 +21,17 @@ describe("run modifiers", () => {
     expect(effects.rangeMultiplier).toBeCloseTo(0.85);
     expect(effects.singleTargetDamageMultiplier).toBeCloseTo(1.4);
     expect(effects.damageMultiplier).toBeCloseTo(1);
+  });
+
+  test("status-synergy modifiers reward marked and slowed targets without buffing fresh targets", () => {
+    const effects = getRunModifierEffects(["hunter's-mark", "cold-front"]);
+
+    expect(effects.markedDamageMultiplier).toBe(1.25);
+    expect(effects.slowedDamageMultiplier).toBe(1.2);
+    expect(getRunModifierDamageMultiplier(effects, false, false)).toBe(1);
+    expect(getRunModifierDamageMultiplier(effects, true, false)).toBe(1.25);
+    expect(getRunModifierDamageMultiplier(effects, false, true)).toBe(1.2);
+    expect(getRunModifierDamageMultiplier(effects, true, true)).toBeCloseTo(1.5);
   });
 
   test("offer is unique and excludes active modifiers", () => {

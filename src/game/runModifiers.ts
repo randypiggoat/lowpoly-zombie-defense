@@ -26,7 +26,9 @@ export type RunModifierId =
   | "wildfire"
   | "pest-control"
   | "eagle-eye"
-  | "heavy-hunter";
+  | "heavy-hunter"
+  | "hunter's-mark"
+  | "cold-front";
 
 export type RunModifierTag = "damage" | "control" | "economy" | "range" | "crowd" | "boss" | "synergy";
 
@@ -37,6 +39,8 @@ export type RunModifierEffectSpec = {
   goldMultiplier?: number;
   splashMultiplier?: number;
   slowMultiplier?: number;
+  markedDamageMultiplier?: number;
+  slowedDamageMultiplier?: number;
   /** Extra damage to bosses, from every tower. */
   bossDamageMultiplier?: number;
   /** Extra damage to targets within close range of the firing tower. */
@@ -235,6 +239,20 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
     tags: ["boss"],
     effects: { eliteDamageMultiplier: 1.35, damageMultiplier: 0.92 },
   },
+  {
+    id: "hunter's-mark",
+    name: "Hunter's Mark",
+    description: "+25% damage to already-marked targets, −10% range",
+    tags: ["synergy", "damage"],
+    effects: { markedDamageMultiplier: 1.25, rangeMultiplier: 0.9 },
+  },
+  {
+    id: "cold-front",
+    name: "Cold Front",
+    description: "+20% damage to already-slowed targets, −10% fire rate",
+    tags: ["synergy", "control"],
+    effects: { slowedDamageMultiplier: 1.2, rateMultiplier: 0.9 },
+  },
 ];
 
 export type RunModifierEffects = {
@@ -244,6 +262,8 @@ export type RunModifierEffects = {
   goldMultiplier: number;
   splashMultiplier: number;
   slowMultiplier: number;
+  markedDamageMultiplier: number;
+  slowedDamageMultiplier: number;
   bossDamageMultiplier: number;
   closeDamageMultiplier: number;
   splashTowerDamageMultiplier: number;
@@ -277,6 +297,8 @@ const MULTIPLICATIVE_EFFECTS = [
   "goldMultiplier",
   "splashMultiplier",
   "slowMultiplier",
+  "markedDamageMultiplier",
+  "slowedDamageMultiplier",
   "bossDamageMultiplier",
   "closeDamageMultiplier",
   "splashTowerDamageMultiplier",
@@ -297,6 +319,8 @@ export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects 
     goldMultiplier: 1,
     splashMultiplier: 1,
     slowMultiplier: 1,
+    markedDamageMultiplier: 1,
+    slowedDamageMultiplier: 1,
     bossDamageMultiplier: 1,
     closeDamageMultiplier: 1,
     splashTowerDamageMultiplier: 1,
@@ -339,6 +363,17 @@ export function getRunModifierEffects(ids: RunModifierId[]): RunModifierEffects 
   }
 
   return effects;
+}
+
+export function getRunModifierDamageMultiplier(
+  effects: Pick<RunModifierEffects, "markedDamageMultiplier" | "slowedDamageMultiplier">,
+  marked: boolean,
+  slowed: boolean,
+) {
+  return (
+    (marked ? effects.markedDamageMultiplier : 1) *
+    (slowed ? effects.slowedDamageMultiplier : 1)
+  );
 }
 
 export type RunModifierCombatInput = {

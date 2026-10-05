@@ -62,6 +62,8 @@ describe("tower combat loop rules", () => {
     expect(projectile.burn).toBe(0);
     expect(projectile.gold).toBe(1);
     expect(projectile.crit).toBe(true);
+    expect(projectile.markedDamageMultiplier).toBe(1);
+    expect(projectile.slowedDamageMultiplier).toBe(1);
     expect(projectile.alive).toBe(true);
   });
 
