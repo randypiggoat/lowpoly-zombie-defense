@@ -44,6 +44,8 @@ describe("enemy counterplay", () => {
       maxHp: 1,
       speed: 1,
       kind: 3,
+      boss: false,
+      bossEnraged: false,
       x: pad.x,
       y: 0,
       z: pad.z,
@@ -61,11 +63,10 @@ describe("enemy counterplay", () => {
       spin: 0,
       roll: 0,
       gibbed: false,
-    hitReact: 0,
-    hitX: 0,
-    hitZ: 0,
-    hitForce: 0,
-    hitKind: undefined,
+      hitReact: 0,
+      hitX: 0,
+      hitZ: 0,
+      hitForce: 0,
     });
 
     for (let i = 0; i < 20; i++) game.tick(1 / 60);
