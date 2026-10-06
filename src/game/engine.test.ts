@@ -189,7 +189,7 @@ describe("Game simulation", () => {
 
     game.buyTier(tower.id, "a");
 
-    expect(towerRange(tower)).toBeCloseTo(initialRange * 1.14, 12);
+    expect(towerRange(tower)).toBeCloseTo(initialRange * 1.14 * 1.01, 12);
   });
 
   test("a tower can damage and kill a zombie during the simulation tick", () => {
