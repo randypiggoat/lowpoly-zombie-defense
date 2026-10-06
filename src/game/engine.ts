@@ -1539,10 +1539,10 @@ export class Game {
     z.fade = 0;
     s.kills += 1;
     if (damageKind && ability.originX !== undefined) {
-      this.kindKills[ability.damageKind] = (this.kindKills[ability.damageKind] ?? 0) + (z.boss ? 10 : 1);
+      this.kindKills[damageKind] = (this.kindKills[damageKind] ?? 0) + (z.boss ? 10 : 1);
       if (ability.killRush && ability.killRush > 1) {
         for (const tower of s.towers) {
-          if (tower.kind === ability.damageKind) tower.surge = KILL_RUSH_DURATION;
+          if (tower.kind === damageKind) tower.surge = KILL_RUSH_DURATION;
         }
       }
     }
