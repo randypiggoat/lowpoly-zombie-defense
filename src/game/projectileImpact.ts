@@ -11,9 +11,12 @@ export function getSplashTargets(
   out.length = 0;
   if (radius <= 0) return out;
 
+  const radiusSq = radius * radius;
   for (const zombie of zombies) {
     if (zombie.dead || zombie.id === primaryTargetId) continue;
-    if (Math.hypot(zombie.x - targetX, zombie.z - targetZ) < radius) {
+    const dx = zombie.x - targetX;
+    const dz = zombie.z - targetZ;
+    if (dx * dx + dz * dz < radiusSq) {
       out.push(zombie);
     }
   }
@@ -32,11 +35,14 @@ export function getChainTargets(
   out.length = 0;
   if (chainCount <= 0) return out;
 
+  const radiusSq = radius * radius;
   for (const zombie of zombies) {
     if (out.length >= chainCount) break;
     if (zombie.dead || zombie.id === primaryTargetId) continue;
 
-    if (Math.hypot(zombie.x - targetX, zombie.z - targetZ) < radius) {
+    const dx = zombie.x - targetX;
+    const dz = zombie.z - targetZ;
+    if (dx * dx + dz * dz < radiusSq) {
       out.push(zombie);
     }
   }

@@ -11,9 +11,12 @@ export function selectTowerTarget(
   map?: StageMap,
 ): Zombie | null {
   let best: Zombie | null = null;
+  const rangeSq = range * range;
   for (const zombie of zombies) {
     if (zombie.dead) continue;
-    if (Math.hypot(zombie.x - tower.x, zombie.z - tower.z) > range) continue;
+    const dx = zombie.x - tower.x;
+    const dz = zombie.z - tower.z;
+    if (dx * dx + dz * dz > rangeSq) continue;
     if (map && !hasLineOfSight(map, tower, zombie)) continue;
     if (!best) {
       best = zombie;

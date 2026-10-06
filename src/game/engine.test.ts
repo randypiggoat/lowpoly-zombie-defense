@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { BUILD_SPOTS, Game, type Zombie } from "./engine";
+import { BUILD_SPOTS, Game, towerRange, type Zombie } from "./engine";
 import {
   CAMPAIGN_REPLAY_CHALLENGES,
   STAGE_DEFS,
@@ -177,6 +177,19 @@ describe("Game simulation", () => {
     expect(game.state.towers[0]?.spot).toBe(0);
     expect(game.state.gold).toBe(startingGold - 40);
     expect(game.state.towersPlaced).toBe(1);
+  });
+
+  test("cached tower stats invalidate when tower upgrades change inputs", () => {
+    const game = new Game();
+    game.startStage({ ...getStageById(1), startingCoins: 1000 });
+
+    expect(game.build(0, "rifleman")).toBe(true);
+    const tower = game.state.towers[0]!;
+    const initialRange = towerRange(tower);
+
+    game.buyTier(tower.id, "a");
+
+    expect(towerRange(tower)).toBeCloseTo(initialRange * 1.14 * 1.01, 12);
   });
 
   test("a tower can damage and kill a zombie during the simulation tick", () => {

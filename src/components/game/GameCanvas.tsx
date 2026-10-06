@@ -633,6 +633,7 @@ export function GameCanvas() {
     <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
       {canvasReady && (
         <Canvas
+          frameloop={screen === "gameplay" ? "always" : "never"}
           // Shadows are disabled on touch/low-end hardware; desktop keeps a basic shadow
           // pass with only the base and towers casting, which preserves depth without the
           // cost of animating dozens of zombie/environment shadow casters.

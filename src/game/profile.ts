@@ -4,7 +4,12 @@ import {
   getSeasonalMilestoneProgress,
   type SeasonalActivity,
 } from "./liveOps";
-import { FIELD_KNOWLEDGE, knowledgeUnlocked, resolveFieldKnowledgeEffects } from "./fieldKnowledge";
+import {
+  FIELD_KNOWLEDGE,
+  knowledgeUnlocked,
+  resolveFieldKnowledgeEffects,
+  type FieldKnowledgeEffects,
+} from "./fieldKnowledge";
 import { TOWER_COSMETICS, ZOMBIE_COSMETICS } from "./collection";
 // Persistent player progression. Stored client-side in localStorage.
 import { STAGE_DEFS, getNextStageId } from "./navigation";
@@ -695,6 +700,8 @@ class ProfileStore {
     this.loaded = true;
   }
   private revision = 0;
+  private fieldKnowledgeRevision = 0;
+  private cachedFieldKnowledgeEffects: FieldKnowledgeEffects | null = null;
   private lastRunRewardBoosted = false;
   private lastBossTrialId: string | null = null;
   /** Combat progression is batched so a kill never forces synchronous JSON/localStorage work. */
@@ -722,8 +729,15 @@ class ProfileStore {
     return this.profile.fieldKnowledge[id] ?? 0;
   }
 
+  fieldKnowledgeVersion() {
+    return this.fieldKnowledgeRevision;
+  }
+
   fieldKnowledgeEffects() {
-    return resolveFieldKnowledgeEffects(this.profile.fieldKnowledge);
+    if (this.cachedFieldKnowledgeEffects === null) {
+      this.cachedFieldKnowledgeEffects = resolveFieldKnowledgeEffects(this.profile.fieldKnowledge);
+    }
+    return this.cachedFieldKnowledgeEffects;
   }
 
   canUnlockFieldKnowledge(id: string) {
@@ -740,6 +754,8 @@ class ProfileStore {
     if (p.coins < node.cost) return false;
     p.coins -= node.cost;
     p.fieldKnowledge[id] = 1;
+    this.fieldKnowledgeRevision += 1;
+    this.cachedFieldKnowledgeEffects = null;
     this.save();
     return true;
   }

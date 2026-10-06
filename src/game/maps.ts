@@ -698,12 +698,64 @@ export function getStageMapByStageId(stageId: number) {
   return STAGE_MAPS[MAP_BY_STAGE_ID[stageId] ?? "neighborhood"];
 }
 
-export function getPathLength(path: readonly MapVec2[]) {
-  let length = 0;
-  for (let i = 1; i < path.length; i++) {
-    length += Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.z - path[i - 1]!.z);
+type PathCache = {
+  segmentLengths: number[];
+  cumulativeLengths: number[];
+  segmentDirections: number[];
+  totalLength: number;
+};
+
+const PATH_CACHE = new WeakMap<readonly MapVec2[], PathCache>();
+
+function getPathCache(path: readonly MapVec2[]) {
+  const cached = PATH_CACHE.get(path);
+  if (cached) return cached;
+
+  const segmentCount = Math.max(0, path.length - 1);
+  const segmentLengths = new Array<number>(segmentCount);
+  const cumulativeLengths = new Array<number>(path.length);
+  const segmentDirections = new Array<number>(segmentCount);
+  cumulativeLengths[0] = 0;
+  let totalLength = 0;
+
+  for (let i = 0; i < segmentCount; i++) {
+    const a = path[i]!;
+    const b = path[i + 1]!;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const length = Math.hypot(dx, dz);
+    segmentLengths[i] = length;
+    segmentDirections[i] = Math.atan2(dx, dz);
+    totalLength += length;
+    cumulativeLengths[i + 1] = totalLength;
   }
-  return length;
+
+  const next = { segmentLengths, cumulativeLengths, segmentDirections, totalLength };
+  PATH_CACHE.set(path, next);
+  return next;
+}
+
+function pathSegmentEndIndex(cumulativeLengths: readonly number[], distance: number) {
+  let low = 1;
+  let high = cumulativeLengths.length - 1;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (cumulativeLengths[mid]! < distance) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
+export function getPathLength(path: readonly MapVec2[]) {
+  return getPathCache(path).totalLength;
+}
+
+export function getPathDirectionAtDistance(path: readonly MapVec2[], distance: number) {
+  if (path.length < 2) return 0;
+  const cache = getPathCache(path);
+  if (cache.totalLength === 0) return cache.segmentDirections[0] ?? 0;
+  const clampedDistance = Math.max(0, Math.min(cache.totalLength, distance));
+  return cache.segmentDirections[pathSegmentEndIndex(cache.cumulativeLengths, clampedDistance) - 1] ?? 0;
 }
 
 export function pointAtPath(
@@ -711,32 +763,61 @@ export function pointAtPath(
   distance: number,
   out?: MapVec2,
 ): MapVec2 {
-  let remaining = Math.max(0, distance);
-  for (let i = 1; i < path.length; i++) {
-    const a = path[i - 1]!;
-    const b = path[i]!;
-    const segment = Math.hypot(b.x - a.x, b.z - a.z);
-    if (remaining <= segment) {
-      const t = segment === 0 ? 0 : remaining / segment;
-      if (out) {
-        out.x = a.x + (b.x - a.x) * t;
-        out.z = a.z + (b.z - a.z) * t;
-        return out;
-      }
-      return {
-        x: a.x + (b.x - a.x) * t,
-        z: a.z + (b.z - a.z) * t,
-      };
+  if (path.length === 0) {
+    if (out) {
+      out.x = 0;
+      out.z = 0;
+      return out;
     }
-    remaining -= segment;
+    return { x: 0, z: 0 };
   }
-  if (out) {
+  if (path.length === 1) {
+    const point = path[0]!;
+    if (out) {
+      out.x = point.x;
+      out.z = point.z;
+      return out;
+    }
+    return point;
+  }
+
+  const cache = getPathCache(path);
+  if (cache.totalLength === 0) {
+    const point = path[0]!;
+    if (out) {
+      out.x = point.x;
+      out.z = point.z;
+      return out;
+    }
+    return point;
+  }
+
+  const clampedDistance = Math.max(0, Math.min(cache.totalLength, distance));
+  if (clampedDistance >= cache.totalLength) {
     const last = path[path.length - 1]!;
-    out.x = last.x;
-    out.z = last.z;
+    if (out) {
+      out.x = last.x;
+      out.z = last.z;
+      return out;
+    }
+    return last;
+  }
+
+  const segmentEnd = pathSegmentEndIndex(cache.cumulativeLengths, clampedDistance);
+  const segmentIndex = segmentEnd - 1;
+  const segmentLength = cache.segmentLengths[segmentIndex]!;
+  const segmentStart = cache.cumulativeLengths[segmentIndex]!;
+  const t = segmentLength === 0 ? 0 : (clampedDistance - segmentStart) / segmentLength;
+  const a = path[segmentIndex]!;
+  const b = path[segmentEnd]!;
+  const x = a.x + (b.x - a.x) * t;
+  const z = a.z + (b.z - a.z) * t;
+  if (out) {
+    out.x = x;
+    out.z = z;
     return out;
   }
-  return path[path.length - 1]!;
+  return { x, z };
 }
 
 function pointToSegmentDistance(point: MapVec2, a: MapVec2, b: MapVec2) {

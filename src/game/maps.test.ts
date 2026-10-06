@@ -4,6 +4,7 @@ import {
   canPlaceTower,
   getStageMapByStageId,
   getPathLength,
+  getPathDirectionAtDistance,
   pathCoverageRatio,
   snapBuildPosition,
 } from "./maps";
@@ -59,6 +60,13 @@ describe("stage maps", () => {
         point.z <= map.bounds.maxZ,
       )).toBe(true);
     }
+  });
+
+  test("precomputed path directions match route segments", () => {
+    const map = STAGE_MAPS.neighborhood;
+    const firstSegmentLength = getPathLength([map.path[0]!, map.path[1]!]);
+    expect(getPathDirectionAtDistance(map.path, firstSegmentLength + 0.6)).toBeCloseTo(Math.PI / 2, 12);
+    expect(getPathDirectionAtDistance(map.path, 0.6)).toBeCloseTo(0, 12);
   });
 
   test("placement rejects roads and accepts open ground", () => {

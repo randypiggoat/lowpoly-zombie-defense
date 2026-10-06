@@ -3,10 +3,13 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { cosmeticForTower, ZOMBIE_COSMETICS } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
-import { getEnemyHealthBarPresentation } from "@/game/enemyPresentation";
+import {
+  getEnemyHealthBarPresentation,
+  type EnemyHealthBarPresentation,
+} from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
-import { canPlaceTower, distanceToPath, getStageMapByStageId, getPathLength, pointAtPath, snapBuildPosition } from "@/game/maps";
-import { gorePartBit, type GorePart } from "@/game/enemyGore";
+import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
+import { gorePartBit } from "@/game/enemyGore";
 import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
@@ -27,6 +30,22 @@ const MAX_BULLETS = MAX_ACTIVE_BULLETS;
 const MAX_GIBS = 64;
 
 const GIB_COLORS = ["#8c2b2b", "#a83c3c", "#6f8f5a"];
+
+const HIDDEN_GORE_PARTS: readonly [string, number, number | undefined][] = [
+  ["head", gorePartBit("head"), undefined],
+  ["left-arm", gorePartBit("left-arm"), undefined],
+  ["right-arm", gorePartBit("right-arm"), undefined],
+  ["left-leg", gorePartBit("left-leg"), undefined],
+  ["right-leg", gorePartBit("right-leg"), undefined],
+  ["left-shoulder", gorePartBit("left-shoulder"), 2],
+  ["right-shoulder", gorePartBit("right-shoulder"), 2],
+  ["runner-crest", gorePartBit("runner-crest"), 1],
+  ["splitter-core", gorePartBit("splitter-core"), 3],
+  ["bomber-pack", gorePartBit("bomber-pack"), 4],
+  ["guardian-shield", gorePartBit("guardian-shield"), 5],
+  ["healer-aura", gorePartBit("healer-aura"), 6],
+  ["swarm-crest", gorePartBit("swarm-crest"), 7],
+];
 
 const BOSS_SIGNATURE_COLORS: Record<2 | 3 | 4 | 5 | 6 | 7, string> = {
   2: "#ef7d43",
@@ -954,6 +973,8 @@ function Zombies({
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
+  const lastGoreMask = useRef<number[]>([]);
+  const healthBarStyles = useRef<(EnemyHealthBarPresentation | null)[]>([]);
   const partRefs = useRef<Array<Record<string, THREE.Object3D | undefined> | null>>([]);
   const lastBoss = useRef<boolean[]>([]);
 
@@ -990,7 +1011,8 @@ function Zombies({
       const look = ZOMBIE_LOOKS[z.kind] ?? ZOMBIE_LOOKS[0];
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
-      const isBroken = (part: GorePart) => (goreMask & gorePartBit(part)) !== 0;
+      const kindChanged = lastKind.current[i] !== z.kind;
+      const goreChanged = lastGoreMask.current[i] !== goreMask;
       const statusMark = refs["status-mark"];
       const statusStun = refs["status-stun"];
       if (statusMark) {
@@ -1092,7 +1114,7 @@ function Zombies({
                     : z.kind === 6
                       ? 0.9
                       : 1;
-      if (lastKind.current[i] !== z.kind) {
+      if (kindChanged) {
         lastKind.current[i] = z.kind;
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
@@ -1170,6 +1192,29 @@ function Zombies({
         if (healerAura) healerAura.visible = z.kind === 6;
         if (swarmCrest) swarmCrest.visible = z.kind === 7;
       }
+      if (kindChanged || goreChanged) {
+        lastGoreMask.current[i] = goreMask;
+        for (const [name, bit, requiredKind] of HIDDEN_GORE_PARTS) {
+          const object = refs[name];
+          if (!object) continue;
+          object.visible =
+            (requiredKind === undefined || z.kind === requiredKind) &&
+            (goreMask & bit) === 0;
+        }
+      }
+
+      if (kindChanged || bossChanged) {
+        const healthBarStyle = getEnemyHealthBarPresentation(z.kind, 1, 1, z.boss);
+        healthBarStyles.current[i] = healthBarStyle;
+        const hpBackground = refs["hp-background"] as THREE.Mesh | undefined;
+        const hpFill = refs["hp-fill"] as THREE.Mesh | undefined;
+        if (hpBackground) hpBackground.scale.x = healthBarStyle.widthMultiplier;
+        if (hpFill) {
+          const material = hpFill.material as THREE.MeshBasicMaterial;
+          material.color.set(healthBarStyle.color);
+        }
+      }
+
       if (z.dead) {
         const f = Math.min(1, z.fade);
         const deathProgress = Math.min(1, f * 2.6);
@@ -1202,8 +1247,7 @@ function Zombies({
         const reactionEnvelope = z.hitReact > 0
           ? z.hitReact * z.hitReact * (3 - 2 * z.hitReact)
           : 0;
-        const nextPoint = pointAtPath(map.path, Math.min(getPathLength(map.path), z.dist + 0.6));
-        const facingY = Math.atan2(nextPoint.x - z.x, nextPoint.z - z.z);
+        const facingY = z.facingY ?? 0;
         g.position.set(
           z.x,
           0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp,
@@ -1300,49 +1344,17 @@ function Zombies({
           }
         });
       }
-      const hiddenGoreParts: Array<[string, GorePart]> = [
-        ["head", "head"],
-        ["left-arm", "left-arm"],
-        ["right-arm", "right-arm"],
-        ["left-leg", "left-leg"],
-        ["right-leg", "right-leg"],
-        ["left-shoulder", "left-shoulder"],
-        ["right-shoulder", "right-shoulder"],
-        ["runner-crest", "runner-crest"],
-        ["splitter-core", "splitter-core"],
-        ["bomber-pack", "bomber-pack"],
-        ["guardian-shield", "guardian-shield"],
-        ["healer-aura", "healer-aura"],
-        ["swarm-crest", "swarm-crest"],
-      ];
-      for (const [name, part] of hiddenGoreParts) {
-        const object = refs[name];
-        if (!object) continue;
-        const kindRequired =
-          name === "left-shoulder" || name === "right-shoulder" ? z.kind === 2 :
-          name === "runner-crest" ? z.kind === 1 :
-          name === "splitter-core" ? z.kind === 3 :
-          name === "bomber-pack" ? z.kind === 4 :
-          name === "guardian-shield" ? z.kind === 5 :
-          name === "healer-aura" ? z.kind === 6 :
-          name === "swarm-crest" ? z.kind === 7 : true;
-        object.visible = kindRequired && !isBroken(part);
-      }
-
       const hpBackground = refs["hp-background"] as THREE.Mesh | undefined;
       const hpFill = refs["hp-fill"] as THREE.Mesh | undefined;
-      const healthBar = getEnemyHealthBarPresentation(z.kind, z.hp, z.maxHp, z.boss);
-      const showHealth = healthBar.show && !z.dead;
+      const healthBar = healthBarStyles.current[i];
+      const showHealth = Boolean(healthBar?.show && !z.dead && z.hp > 0 && z.maxHp > 0);
       if (hpBackground && hpFill) {
         hpBackground.visible = showHealth;
         hpFill.visible = showHealth;
-        if (showHealth) {
+        if (showHealth && healthBar) {
           const ratio = Math.max(0.04, Math.min(1, z.hp / Math.max(1, z.maxHp)));
-          hpBackground.scale.x = healthBar.widthMultiplier;
           hpFill.scale.x = ratio * healthBar.widthMultiplier;
           hpFill.position.x = (ratio - 1) * 0.45 * healthBar.widthMultiplier;
-          const material = hpFill.material as THREE.MeshBasicMaterial;
-          material.color.set(healthBar.color);
         }
       }
 
