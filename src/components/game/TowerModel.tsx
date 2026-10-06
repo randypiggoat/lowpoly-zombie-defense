@@ -218,6 +218,10 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const identityCore = useRef<THREE.Mesh>(null);
   const identityHalo = useRef<THREE.Mesh>(null);
   const idleSeed = tower.id * 0.71;
+  const baseScale = 1 + Math.min(level - 1, 8) * 0.025;
+  const signatureSpin =
+    tower.kind === "tesla" ? 0.52 : tower.kind === "laser" ? -0.24 : tower.kind === "freezer" ? 0.18 :
+    tower.kind === "rocket" ? -0.12 : tower.kind === "flamethrower" ? 0.1 : 0.07;
 
   const primary = bodyColor || "#6d7477";
   const secondary = bodyColor ? "#d8d2c5" : "#b5b0a3";
@@ -228,7 +232,6 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
     const t = clock.elapsedTime;
     const bob = Math.sin(t * 2.1 + idleSeed) * 0.035;
     if (rig.current) {
-      const baseScale = 1 + Math.min(level - 1, 8) * 0.025;
       const punch = Math.max(0, tower.recoil);
       rig.current.position.y = bob + punch * 0.025;
       rig.current.scale.set(
@@ -243,19 +246,7 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       weapon.current.position.y = tower.recoil * 0.018;
     }
     if (signature.current) {
-      const spin =
-        tower.kind === "tesla"
-          ? 0.52
-          : tower.kind === "laser"
-            ? -0.24
-            : tower.kind === "freezer"
-              ? 0.18
-              : tower.kind === "rocket"
-                ? -0.12
-                : tower.kind === "flamethrower"
-                  ? 0.1
-                  : 0.07;
-      signature.current.rotation.y = t * spin;
+      signature.current.rotation.y = t * signatureSpin;
       signature.current.scale.setScalar(1 + Math.sin(t * 3.2 + idleSeed) * 0.025);
     }
     if (core.current) {

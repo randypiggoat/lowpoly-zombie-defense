@@ -11,7 +11,7 @@ import {
 } from "./navigation";
 import { chooseEnemyKind, getEnemySpawnStats } from "./enemySpawns";
 import { resolveDamage } from "./damage";
-import { getTowerCombatStats } from "./towerStats";
+import { getTowerCombatStats, type TowerCombatStats } from "./towerStats";
 import { isStageWinReady, resolveBaseHit } from "./stageOutcomes";
 import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import { applyProjectileStatusEffects } from "./projectileEffects";
@@ -69,6 +69,7 @@ import {
   placementKey,
   snapBuildPosition,
   pointAtPath,
+  getPathDirectionAtDistance,
 } from "./maps";
 import {
   deathGorePartsForKind,
@@ -175,6 +176,8 @@ export type Zombie = {
   hitZ: number;
   hitForce: number;
   hitKind?: TowerKind;
+  /** Precomputed render-facing direction along the current map path. */
+  facingY?: number;
 };
 
 export type Gib = {
@@ -499,13 +502,46 @@ export function tierCost(t: Tower, path: "a" | "b") {
     : raw;
 }
 
-function towerCombatStats(t: Tower) {
-  return getTowerCombatStats(
+type CachedTowerCombatStats = {
+  kind: TowerKind;
+  level: number;
+  a: number;
+  b: number;
+  fieldKnowledgeVersion: number;
+  stats: TowerCombatStats;
+};
+
+const TOWER_COMBAT_STATS_CACHE = new WeakMap<Tower, CachedTowerCombatStats>();
+
+function towerCombatStats(t: Tower): TowerCombatStats {
+  const fieldKnowledgeVersion = profile.fieldKnowledgeVersion();
+  const cached = TOWER_COMBAT_STATS_CACHE.get(t);
+  if (
+    cached &&
+    cached.kind === t.kind &&
+    cached.level === t.level &&
+    cached.a === t.a &&
+    cached.b === t.b &&
+    cached.fieldKnowledgeVersion === fieldKnowledgeVersion
+  ) {
+    return cached.stats;
+  }
+
+  const stats = getTowerCombatStats(
     t,
     TOWER_INFO[t.kind],
     TOWER_PATHS[t.kind],
     towerProfileBonus(t.kind),
   );
+  TOWER_COMBAT_STATS_CACHE.set(t, {
+    kind: t.kind,
+    level: t.level,
+    a: t.a,
+    b: t.b,
+    fieldKnowledgeVersion,
+    stats,
+  });
+  return stats;
 }
 export function towerUpgradeAbilities(t: Tower) {
   return getTowerUpgradeAbilities(t.kind as keyof typeof DESIGNED_TOWER_PATHS, t.a, t.b);
@@ -1285,9 +1321,11 @@ export class Game {
     }
     hp *= this.runEffects().enemyHealthMultiplier;
 
+    const spawnDist = startDist ?? -this.random() * 2;
     const spawned: Zombie = {
       id: this.nextId++,
-      dist: startDist ?? -this.random() * 2,
+      dist: spawnDist,
+      facingY: getPathDirectionAtDistance(this.map.path, spawnDist + 0.6),
       hp,
       maxHp: hp,
       speed,
@@ -1367,6 +1405,7 @@ export class Game {
     goldMult = 1,
     crit = false,
     ability: {
+      kind?: TowerKind;
       stun?: number;
       markDuration?: number;
       markBonus?: number;
@@ -1386,6 +1425,7 @@ export class Game {
       damageKind?: TowerKind;
     } = {},
   ) {
+    const damageKind = ability.damageKind ?? ability.kind;
     const s = this.state;
     if (z.dead) return;
 
@@ -1465,9 +1505,9 @@ export class Game {
     z.hitReact = 1;
     z.hitForce = Math.min(
       1.75,
-      (0.28 + damageRatio * 2.2) * damageReactionMultiplier(ability.damageKind),
+      (0.28 + damageRatio * 2.2) * damageReactionMultiplier(damageKind),
     );
-    if (ability.damageKind !== undefined) z.hitKind = ability.damageKind;
+    if (damageKind !== undefined) z.hitKind = damageKind;
 
     const nextRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     const brokenParts = gorePartsBrokenBetween(
@@ -1498,7 +1538,7 @@ export class Game {
     z.dead = true;
     z.fade = 0;
     s.kills += 1;
-    if (ability.damageKind && ability.originX !== undefined) {
+    if (damageKind && ability.originX !== undefined) {
       this.kindKills[ability.damageKind] = (this.kindKills[ability.damageKind] ?? 0) + (z.boss ? 10 : 1);
       if (ability.killRush && ability.killRush > 1) {
         for (const tower of s.towers) {
@@ -1933,6 +1973,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       pointAtPath(this.map.path, z.dist, this.pathPointScratch);
       z.x = this.pathPointScratch.x;
       z.z = this.pathPointScratch.z;
+      z.facingY = getPathDirectionAtDistance(this.map.path, z.dist + 0.6);
 
       if (lifecycle.reachedBase) {
         z.dead = true;
@@ -2324,25 +2365,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             goreBase,
             b.gold,
             z.id === target.id ? b.crit : false,
-            {
-              stun: b.stun,
-              markDuration: b.markDuration,
-              markBonus: b.markBonus,
-              shatterMultiplier: b.shatterMultiplier,
-              executeThreshold: b.executeThreshold,
-              executeMultiplier: b.executeMultiplier,
-              bossDamageMultiplier: b.bossDamageMultiplier,
-              closeDamageMultiplier: b.closeDamageMultiplier,
-              ...(b.stunnedMultiplier !== undefined && { stunnedMultiplier: b.stunnedMultiplier }),
-              ...(b.burningMultiplier !== undefined && { burningMultiplier: b.burningMultiplier }),
-              ...(b.eliteDamageMultiplier !== undefined && { eliteDamageMultiplier: b.eliteDamageMultiplier }),
-              ...(b.precisionMultiplier !== undefined && { precisionMultiplier: b.precisionMultiplier }),
-              ...(b.fastDamageMultiplier !== undefined && { fastDamageMultiplier: b.fastDamageMultiplier }),
-              ...(b.killRush !== undefined && { killRush: b.killRush }),
-              damageKind: b.kind,
-              originX: b.originX,
-              originZ: b.originZ,
-            },
+            b,
           );
         };
 
