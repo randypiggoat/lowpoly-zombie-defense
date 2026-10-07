@@ -98,7 +98,7 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
     effects: { singleTargetDamageMultiplier: 1.4, rateMultiplier: 0.9 },
   },
   { id: "cryo-ammo", name: "Cryo Ammo", description: "Slow effects are 35% stronger", tags: ["control"], effects: { slowMultiplier: 1.35 } },
-  { id: "hot-lead", name: "Hot Lead", description: "+15% damage and +15% gold from kills", tags: ["economy", "damage"], effects: { damageMultiplier: 1.15, goldMultiplier: 1.15 } },
+  { id: "hot-lead", name: "Hot Lead", description: "+20% damage, −15% kill gold", tags: ["economy", "damage"], effects: { damageMultiplier: 1.2, goldMultiplier: 0.85 } },
   {
     id: "longshot",
     name: "Longshot",
@@ -109,9 +109,9 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
   {
     id: "hot-chamber",
     name: "Hot Chamber",
-    description: "+35% fire rate, −8% range",
+    description: "+35% fire rate, −10% damage",
     tags: ["damage"],
-    effects: { rateMultiplier: 1.35, rangeMultiplier: 0.92 },
+    effects: { rateMultiplier: 1.35, damageMultiplier: 0.9 },
   },
   {
     id: "shrapnel",
@@ -137,9 +137,9 @@ export const RUN_MODIFIER_DEFS: RunModifierDefinition[] = [
   {
     id: "execution-order",
     name: "Execution Order",
-    description: "Every tower finishes targets below 18% HP for double damage, −8% damage",
+    description: "+25% damage, −20% slow strength",
     tags: ["synergy", "damage"],
-    effects: { executeThresholdBonus: 0.18, damageMultiplier: 0.92 },
+    effects: { damageMultiplier: 1.25, slowMultiplier: 0.8 },
   },
   {
     id: "hunter-protocol",
