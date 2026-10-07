@@ -73,8 +73,9 @@ export function stepLivingEnemy(
     burnDamage = nextBurn * dt;
   }
 
-  const nextDist =
+  const rawNextDist =
     dist + speed * dt * (nextStun > 0 ? 0 : 1 - Math.min(0.85, slow));
+  const nextDist = Math.min(Math.max(0, pathLength), rawNextDist);
 
   if (nextBurnTime <= 0) nextBurn = 0;
 

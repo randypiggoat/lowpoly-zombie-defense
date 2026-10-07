@@ -10,6 +10,7 @@ import {
 import { createSeededRandom } from "./random";
 import { getWeeklyBossTrial } from "./bossTrials";
 import { profile } from "./profile";
+import { getStageMapByStageId, pointAtPath } from "./maps";
 
 function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
   const pad = BUILD_SPOTS[0]!;
@@ -216,6 +217,27 @@ describe("Game simulation", () => {
     expect(game.state.kills).toBe(1);
     expect(game.state.zombies[0]?.dead).toBe(true);
     expect(game.state.gold).toBeGreaterThan(140);
+  });
+
+  test("living zombies stay exactly on the authored path while moving", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+    const map = getStageMapByStageId(1);
+
+    const spawn = (
+      game as unknown as {
+        spawn: (forcedKind?: StageEnemyKind, startDist?: number, isBoss?: boolean) => Zombie | null;
+      }
+    ).spawn.bind(game);
+
+    const zombie = spawn(0, 0, false)!;
+
+    for (let i = 0; i < 120 && !zombie.dead; i += 1) {
+      game.tick(1 / 60);
+      const expected = pointAtPath(map.path, zombie.dist);
+      expect(zombie.x).toBeCloseTo(expected.x, 8);
+      expect(zombie.z).toBeCloseTo(expected.z, 8);
+    }
   });
 
   test("seeded randomness makes simulation results repeatable", () => {
