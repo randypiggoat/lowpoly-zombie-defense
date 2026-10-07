@@ -684,8 +684,10 @@ export function HUD({
                   ? "LEGAL PLACEMENT"
                   : placement?.reason === "road"
                     ? "TOO CLOSE TO ROAD"
-                    : placement?.reason === "obstacle"
-                      ? "BLOCKED TERRAIN"
+                    : placement?.reason === "blocked-terrain"
+                      ? "BROKEN ICE"
+                      : placement?.reason === "obstacle"
+                        ? "BLOCKED TERRAIN"
                       : placement?.reason === "too-close"
                         ? "TOO CLOSE"
                         : "OUT OF BOUNDS"}
