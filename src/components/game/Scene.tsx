@@ -1517,7 +1517,7 @@ export const Scene = memo(function Scene({
   endlessMode?: boolean;
   bossTrial?: boolean;
   towers: Tower[];
-  towerRevision?: string;
+  towerRevision: string;
   selection: Selection;
   previewPosition: { x: number; z: number } | null;
   onSelectTower: (id: number) => void;
