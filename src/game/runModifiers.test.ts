@@ -82,6 +82,26 @@ describe("run modifiers", () => {
     expect(out.chain).toBe(1);
   });
 
+  test("reworked modifiers trade power against gold, damage, or slows", () => {
+    const hotLead = getRunModifierEffects(["hot-lead"]);
+    expect(hotLead.damageMultiplier).toBeCloseTo(1.2);
+    expect(hotLead.goldMultiplier).toBeCloseTo(0.85);
+    const chamber = getRunModifierEffects(["hot-chamber"]);
+    expect(chamber.rateMultiplier).toBeCloseTo(1.35);
+    expect(chamber.damageMultiplier).toBeCloseTo(0.9);
+    expect(chamber.rangeMultiplier).toBe(1);
+    const order = getRunModifierEffects(["execution-order"]);
+    expect(order.damageMultiplier).toBeCloseTo(1.25);
+    expect(order.slowMultiplier).toBeCloseTo(0.8);
+  });
+
+  test("combined reworked modifiers stay bounded and offset cryo synergy", () => {
+    const e = getRunModifierEffects(["hot-lead", "scavenger", "execution-order", "cryo-ammo", "cryo-reserve"]);
+    expect(e.goldMultiplier).toBeCloseTo(0.85 * 1.25);
+    expect(e.slowMultiplier).toBeCloseTo(0.8 * 1.35 * 1.3);
+    expect(e.damageMultiplier).toBeLessThan(1.6);
+  });
+
   test("hazard pay trades danger for gold", () => {
     const effects = getRunModifierEffects(["hazard-pay"]);
     expect(effects.goldMultiplier).toBeCloseTo(1.5);
