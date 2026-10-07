@@ -76,6 +76,17 @@ describe("stage maps", () => {
     expect(canPlaceTower(map, 0, -22).valid).toBe(true);
   });
 
+  test("blocked terrain rejects tower placement on frozen maps", () => {
+    const frozenLab = STAGE_MAPS["frozen-lab"];
+    const cavern = STAGE_MAPS["ice-cavern"];
+    expect(frozenLab.blockedZones?.length).toBeGreaterThan(0);
+    expect(cavern.blockedZones?.length).toBeGreaterThan(0);
+    const labZone = frozenLab.blockedZones![0]!;
+    const cavernZone = cavern.blockedZones![0]!;
+    expect(canPlaceTower(frozenLab, labZone.x, labZone.z).reason).toBe("blocked-terrain");
+    expect(canPlaceTower(cavern, cavernZone.x, cavernZone.z).reason).toBe("blocked-terrain");
+  });
+
   test("placement snaps to half-unit coordinates", () => {
     const snapped = snapBuildPosition(STAGE_MAPS.neighborhood, 0.24, -21.24);
     expect(snapped).toEqual({ x: 0, z: -21 });
