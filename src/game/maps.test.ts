@@ -5,6 +5,8 @@ import {
   getStageMapByStageId,
   getPathLength,
   getPathDirectionAtDistance,
+  pointAtPath,
+  samplePathAtDistance,
   pathCoverageRatio,
   snapBuildPosition,
 } from "./maps";
@@ -67,6 +69,24 @@ describe("stage maps", () => {
     const firstSegmentLength = getPathLength([map.path[0]!, map.path[1]!]);
     expect(getPathDirectionAtDistance(map.path, firstSegmentLength + 0.6)).toBeCloseTo(Math.PI / 2, 12);
     expect(getPathDirectionAtDistance(map.path, 0.6)).toBeCloseTo(0, 12);
+  });
+
+  test("path sampling matches point and direction APIs at route corners", () => {
+    const map = STAGE_MAPS.neighborhood;
+    const first = pointAtPath(map.path, 3.5);
+    const sampled = samplePathAtDistance(map.path, 3.5);
+    expect(sampled.x).toBeCloseTo(first.x, 12);
+    expect(sampled.z).toBeCloseTo(first.z, 12);
+    expect(sampled.direction).toBeCloseTo(
+      getPathDirectionAtDistance(map.path, 3.5),
+      12,
+    );
+
+    const firstSegmentLength = getPathLength([map.path[0]!, map.path[1]!]);
+    const corner = samplePathAtDistance(map.path, firstSegmentLength + 0.01);
+    expect(corner.x).toBeCloseTo(map.path[1]!.x + 0.01, 12);
+    expect(corner.z).toBeCloseTo(map.path[1]!.z, 12);
+    expect(corner.direction).toBeCloseTo(Math.PI / 2, 12);
   });
 
   test("placement rejects roads and accepts open ground", () => {

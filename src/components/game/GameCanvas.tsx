@@ -352,6 +352,29 @@ export function GameCanvas() {
   const [lowGraphics, setLowGraphics] = useState(true);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const [purchasedProducts, setPurchasedProducts] = useState<Partial<Record<PurchaseProduct, boolean>>>({});
+
+  const handleSelectTower = useCallback((id: number) => {
+    setPlacementPreview(null);
+    setSelection({ kind: "tower", id });
+  }, []);
+
+  const handleSelectPosition = useCallback((position: { x: number; z: number }) => {
+    setPlacementPreview(position);
+    setSelection({ kind: "spot", position });
+  }, []);
+
+  const handlePreviewPosition = useCallback((position: { x: number; z: number } | null) => {
+    setPlacementPreview(position);
+  }, []);
+
+  const handleHudSelect = useCallback((next: Selection) => {
+    if (next?.kind === "tower") setPlacementPreview(null);
+    setSelection(next);
+  }, []);
+
+  const handlePause = useCallback(() => {
+    setOverlay("pause");
+  }, []);
   const [armoryTowerKind, setArmoryTowerKind] = useState<TowerKind>("rifleman");
   const activeStage = getStageById(activeStageId);
   const gameplayStage =
@@ -362,6 +385,9 @@ export function GameCanvas() {
         : activeStage;
   const waveThreatPreview =
     state.wave > 0 ? getWaveThreatPreview(gameplayStage, state.wave) : null;
+  const towerRevision = state.towers
+    .map((tower) => tower.id + ":" + tower.level + ":" + tower.a + ":" + tower.b)
+    .join(",");
 
   const stages = STAGE_DEFS.map((stage) => {
     const progress = player.stageProgress[String(stage.id)];
@@ -658,15 +684,10 @@ export function GameCanvas() {
             towers={state.towers}
             selection={selection}
             previewPosition={placementPreview}
-            onSelectTower={(id) => {
-              setPlacementPreview(null);
-              setSelection({ kind: "tower", id });
-            }}
-            onSelectPosition={(position) => {
-              setPlacementPreview(position);
-              setSelection({ kind: "spot", position });
-            }}
-            onPreviewPosition={setPlacementPreview}
+            towerRevision={towerRevision}
+            onSelectTower={handleSelectTower}
+            onSelectPosition={handleSelectPosition}
+            onPreviewPosition={handlePreviewPosition}
           />
         </Canvas>
       )}
@@ -676,11 +697,8 @@ export function GameCanvas() {
           <HUD
             state={state}
             selection={selection}
-            onSelect={(next) => {
-              if (next?.kind === "tower") setPlacementPreview(null);
-              setSelection(next);
-            }}
-            onPause={() => setOverlay("pause")}
+            onSelect={handleHudSelect}
+            onPause={handlePause}
             rewardedAvailable={rewardedAvailable}
             waveThreatPreview={waveThreatPreview}
             reducedMotion={player.reducedMotion}

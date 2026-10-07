@@ -1,5 +1,5 @@
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { cosmeticForTower, ZOMBIE_COSMETICS } from "@/game/collection";
 import { getStageTheme, type StageTheme } from "@/game/stageThemes";
@@ -569,9 +569,15 @@ function TowerMesh({
 function Zombies({
   map,
   reducedMotion = false,
+  towerRevision: _towerRevision = "",
 }: {
   map: ReturnType<typeof getStageMapByStageId>;
   reducedMotion?: boolean;
+  /**
+   * Changes only when tower composition/upgrades change. The Game simulation
+   * mutates tower objects in place, so this provides an explicit React signal.
+   */
+  towerRevision?: string;
 }) {
   const bodyGeometries = useMemo(() => ({
     0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
@@ -617,13 +623,13 @@ function Zombies({
     [bodyGeometries, headGeometries, faceGeometries],
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
-  const legs = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
   const lastHealFlash = useRef<number[]>([]);
   const lastKind = useRef<number[]>([]);
   const lastGoreMask = useRef<number[]>([]);
   const healthBarStyles = useRef<(EnemyHealthBarPresentation | null)[]>([]);
   const partRefs = useRef<Array<Record<string, THREE.Object3D | undefined> | null>>([]);
+  const emissiveMaterials = useRef<THREE.MeshStandardMaterial[][]>([]);
   const lastBoss = useRef<boolean[]>([]);
 
   useEffect(() => {
@@ -655,6 +661,15 @@ function Zombies({
           refs[name] = g.getObjectByName(name) ?? undefined;
         }
         partRefs.current[i] = refs;
+        const materials: THREE.MeshStandardMaterial[] = [];
+        g.traverse((object) => {
+          const mesh = object as THREE.Mesh;
+          const material = mesh.material as THREE.MeshStandardMaterial;
+          if (mesh.isMesh && material?.isMeshStandardMaterial) {
+            materials.push(material);
+          }
+        });
+        emissiveMaterials.current[i] = materials;
       }
       const look = ZOMBIE_LOOKS[z.kind] ?? ZOMBIE_LOOKS[0];
       const presentation = zombiePresentation(z.kind);
@@ -667,14 +682,14 @@ function Zombies({
         statusMark.visible = (z.markTime ?? 0) > 0 && !z.dead;
         if (statusMark.visible) {
           statusMark.rotation.y += 0.03;
-          statusMark.position.y = 1.1 + Math.sin(performance.now() * 0.008 + i) * 0.025;
+          statusMark.position.y = 1.1 + Math.sin(now * 0.008 + i) * 0.025;
         }
       }
       if (statusStun) {
         statusStun.visible = (z.stun ?? 0) > 0 && !z.dead;
         if (statusStun.visible) {
           statusStun.rotation.y -= 0.05;
-          statusStun.scale.setScalar(0.85 + Math.sin(performance.now() * 0.012 + i) * 0.08);
+          statusStun.scale.setScalar(0.85 + Math.sin(now * 0.012 + i) * 0.08);
         }
       }
       const bossChanged = lastBoss.current[i] !== z.boss;
@@ -970,27 +985,17 @@ function Zombies({
       }
       // damage flash
       const f = z.dead ? 0 : z.flash;
-      if (lastFlash.current[i] !== f) {
-        lastFlash.current[i] = f;
-        g.traverse((o) => {
-          const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-          if (m && m.isMeshStandardMaterial) {
-            const heal = z.dead ? 0 : (z.healFlash ?? 0);
-            m.emissive.setRGB(f * 0.9 + heal * 0.1, heal * 0.8, 0);
-            m.emissiveIntensity = Math.max(f * 1.6, heal * 0.8);
-          }
-        });
-      }
       const heal = z.dead ? 0 : (z.healFlash ?? 0);
-      if (lastHealFlash.current[i] !== heal) {
+      if (lastFlash.current[i] !== f || lastHealFlash.current[i] !== heal) {
+        lastFlash.current[i] = f;
         lastHealFlash.current[i] = heal;
-        g.traverse((o) => {
-          const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-          if (m && m.isMeshStandardMaterial) {
-            m.emissive.setRGB(f * 0.9 + heal * 0.1, heal * 0.8, 0);
-            m.emissiveIntensity = Math.max(f * 1.6, heal * 0.8);
-          }
-        });
+        const materials = emissiveMaterials.current[i] ?? [];
+        const emissiveR = f * 0.9 + heal * 0.1;
+        const emissiveIntensity = Math.max(f * 1.6, heal * 0.8);
+        for (const material of materials) {
+          material.emissive.setRGB(emissiveR, heal * 0.8, 0);
+          material.emissiveIntensity = emissiveIntensity;
+        }
       }
       const hpBackground = refs["hp-background"] as THREE.Mesh | undefined;
       const hpFill = refs["hp-fill"] as THREE.Mesh | undefined;
@@ -1006,8 +1011,6 @@ function Zombies({
         }
       }
 
-      const l = legs.current[i];
-      if (l && !z.dead) l.rotation.x = Math.sin(z.wobble * 2) * 0.5;
     }
   });
 
@@ -1165,7 +1168,7 @@ function Zombies({
             <coneGeometry args={[0.16, 0.5, 5]} />
             <meshStandardMaterial color="#9ce06d" flatShading />
           </mesh>
-          <group ref={(el) => void (legs.current[i] = el)} position={[0, 0.5, 0]}>
+          <group position={[0, 0.5, 0]}>
             <mesh name="left-leg" position={[0.17, -0.25, 0]} castShadow>
               <boxGeometry args={[0.22, 0.6, 0.22]} />
               <meshStandardMaterial color={ZOMBIE_LOOKS[0].legs} flatShading />
@@ -1496,11 +1499,12 @@ function Simulation({ paused }: { paused: boolean }) {
   return null;
 }
 
-export function Scene({
+export const Scene = memo(function Scene({
   stageId,
   endlessMode = false,
   bossTrial = false,
   towers,
+  towerRevision,
   selection,
   previewPosition,
   onSelectTower,
@@ -1513,6 +1517,7 @@ export function Scene({
   endlessMode?: boolean;
   bossTrial?: boolean;
   towers: Tower[];
+  towerRevision?: string;
   selection: Selection;
   previewPosition: { x: number; z: number } | null;
   onSelectTower: (id: number) => void;
@@ -1567,7 +1572,7 @@ export function Scene({
             onSelect={onSelectTower}
           />
         ))}
-        <Zombies map={map} reducedMotion={reducedMotion} />
+        <Zombies map={map} reducedMotion={reducedMotion} towerRevision={towerRevision} />
         <Gibs />
         <DamagePopups/>
         <Bullets />
@@ -1575,4 +1580,4 @@ export function Scene({
       </group>
     </>
   );
-}
+});

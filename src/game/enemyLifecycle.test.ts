@@ -61,6 +61,22 @@ describe("enemy lifecycle", () => {
     expect(result.dist).toBe(10.3);
   });
 
+  test("living enemies clamp their route position to the base endpoint", () => {
+    const result = stepLivingEnemy({
+      dist: 9.9,
+      speed: 20,
+      slow: 0,
+      burn: 0,
+      burnTime: 0,
+      wobble: 0,
+      dt: 0.1,
+      pathLength: 10,
+    });
+
+    expect(result.dist).toBe(10);
+    expect(result.reachedBase).toBe(true);
+  });
+
   test("living enemies report when they reach the base", () => {
     const result = stepLivingEnemy({
       dist: 9.5,
@@ -73,7 +89,7 @@ describe("enemy lifecycle", () => {
       pathLength: 10,
     });
 
-    expect(result.dist).toBe(10.5);
+    expect(result.dist).toBe(10);
     expect(result.reachedBase).toBe(true);
   });
 

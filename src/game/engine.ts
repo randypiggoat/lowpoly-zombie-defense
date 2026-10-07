@@ -68,7 +68,7 @@ import {
   getStageMapByStageId,
   placementKey,
   snapBuildPosition,
-  pointAtPath,
+  samplePathAtDistance,
   getPathDirectionAtDistance,
 } from "./maps";
 import {
@@ -1375,7 +1375,7 @@ export class Game {
   private readonly livingStepInputs: LivingEnemyStepInput[] = [];
   private readonly livingStepResults: LivingEnemyStepResult[] = [];
   private readonly ragdollStepResults: EnemyRagdollState[] = [];
-  private readonly pathPointScratch = { x: 0, z: 0 };
+  private readonly pathSampleScratch = { x: 0, z: 0, direction: 0 };
   private readonly projectileFlightResults: ProjectileFlightResult[] = [];
 
   /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
@@ -1436,7 +1436,7 @@ export class Game {
             other.kind === 5 &&
             !other.dead &&
             other.id !== z.id &&
-            Math.hypot(other.x - z.x, other.z - z.z) <= 4.2,
+            (other.x - z.x) * (other.x - z.x) + (other.z - z.z) * (other.z - z.z) <= 4.2 * 4.2,
         )
         ? Math.max(0, 1 - this.stage.bossTrial.variant.traits.bossAuraDamageReduction)
         : 1
@@ -1549,7 +1549,7 @@ export class Game {
     if (z.burn > 0 && z.burnSpread) {
       for (const other of s.zombies) {
         if (other.dead || other.id === z.id) continue;
-        if (Math.hypot(other.x - z.x, other.z - z.z) > z.burnSpread) continue;
+        if ((other.x - z.x) * (other.x - z.x) + (other.z - z.z) * (other.z - z.z) > z.burnSpread * z.burnSpread) continue;
         other.burn = Math.max(other.burn, z.burn);
         other.burnTime = Math.max(other.burnTime, 2.4);
       }
@@ -1882,7 +1882,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           this.healTargets.length = 0;
           for (const other of s.zombies) {
             if (other.dead || other.id === z.id) continue;
-            if (Math.hypot(other.x - z.x, other.z - z.z) > 4.6) continue;
+            if ((other.x - z.x) * (other.x - z.x) + (other.z - z.z) * (other.z - z.z) > 4.6 * 4.6) continue;
             const missing = other.maxHp - other.hp;
             if (missing <= 0) continue;
             this.healTargets.push(other);
@@ -1970,10 +1970,10 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.dist = lifecycle.dist;
       z.slow = lifecycle.slow;
 
-      pointAtPath(this.map.path, z.dist, this.pathPointScratch);
-      z.x = this.pathPointScratch.x;
-      z.z = this.pathPointScratch.z;
-      z.facingY = getPathDirectionAtDistance(this.map.path, z.dist + 0.6);
+      samplePathAtDistance(this.map.path, z.dist, this.pathSampleScratch);
+      z.x = this.pathSampleScratch.x;
+      z.z = this.pathSampleScratch.z;
+      z.facingY = this.pathSampleScratch.direction;
 
       if (lifecycle.reachedBase) {
         z.dead = true;
@@ -2242,7 +2242,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (
           cached &&
           !cached.dead &&
-          Math.hypot(cached.x - t.x, cached.z - t.z) <= range
+          (cached.x - t.x) * (cached.x - t.x) + (cached.z - t.z) * (cached.z - t.z) <= range * range
         ) {
           best = cached;
         }
