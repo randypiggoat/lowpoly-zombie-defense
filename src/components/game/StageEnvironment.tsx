@@ -167,7 +167,7 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   }
 }
 
-function PropMesh({ item }: { item: EnvironmentProp }) {
+export function EnvironmentPropMesh({ item }: { item: EnvironmentProp }) {
   let node: ReactNode;
   switch (item.kind) {
     case "tree": node = <Tree />; break;
@@ -218,7 +218,7 @@ export function StageEnvironment({ environmentId }: { environmentId: StageEnviro
   const environment = getStageEnvironment(environmentId);
   return (
     <group>
-      {environment.props.map((item, index) => <PropMesh key={`${item.kind}-${index}`} item={item} />)}
+      {environment.props.map((item, index) => <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />)}
       <LandmarkMesh item={environment.landmark} />
     </group>
   );
