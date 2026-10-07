@@ -11,14 +11,17 @@ type Props = {
 };
 
 function Mat({ color, emissive }: { color: string; emissive?: string }) {
-  return (
-    <meshStandardMaterial
-      color={color}
-      flatShading
-      emissive={emissive}
-      emissiveIntensity={emissive ? 0.2 : 0}
-    />
-  );
+  if (emissive) {
+    return (
+      <meshStandardMaterial
+        color={color}
+        flatShading
+        emissive={emissive}
+        emissiveIntensity={0.2}
+      />
+    );
+  }
+  return <meshStandardMaterial color={color} flatShading />;
 }
 
 function Shell({ w, h, d, color }: { w: number; h: number; d: number; color: string }) {
