@@ -98,6 +98,29 @@ function Rock({ big = false, crystal = false, ice = false }: { big?: boolean; cr
   );
 }
 
+function Igloo() {
+  return (
+    <group>
+      <mesh position={[0, 0.72, 0]} castShadow>
+        <sphereGeometry args={[1.05, 8, 6]} />
+        <meshStandardMaterial color={C.ice2} flatShading />
+      </mesh>
+      <mesh position={[0, 0.43, 0.94]} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[0.25, 0.28, 0.62, 8]} />
+        <meshStandardMaterial color={C.ice} flatShading />
+      </mesh>
+      <mesh position={[-0.72, 0.55, 0]} scale={[0.26, 0.18, 0.22]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={C.ice} flatShading />
+      </mesh>
+      <mesh position={[0.72, 0.55, 0]} scale={[0.26, 0.18, 0.22]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={C.ice} flatShading />
+      </mesh>
+    </group>
+  );
+}
+
 function Cactus() {
   return (
     <>
@@ -162,6 +185,7 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
     case "antenna": return <><mesh position={[0, 1.3, 0]}><cylinderGeometry args={[0.06, 0.08, 2.6, 6]} /><Mat color={C.metal} /></mesh><mesh position={[0, 2.6, 0]}><sphereGeometry args={[0.14, 6, 4]} /><Mat color={C.hazard} /></mesh></>;
     case "barrier": return <mesh position={[0, 0.45, 0]} rotation-y={Math.PI / 2}><boxGeometry args={[2.2, 0.5, 0.22]} /><Mat color={C.hazard} /></mesh>;
     case "hay-bale": return <mesh position={[0, 0.5, 0]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.5, 0.5, 0.9, 8]} /><Mat color={C.sand} /></mesh>;
+    case "igloo": return <Igloo />;
     case "shed": return <group><mesh position={[0, 0.55, 0]}><boxGeometry args={[1.7, 1.1, 1.4]} /><Mat color={C.brick} /></mesh><mesh position={[0, 1.35, 0]} rotation-y={Math.PI / 4}><coneGeometry args={[1.2, 0.6, 4]} /><Mat color={C.wood} /></mesh></group>;
     default: return null;
   }
