@@ -42,6 +42,7 @@ export type StageMap = {
   buildClearance: number;
   towerClearance: number;
   obstacles: MapRect[];
+  blockedZones?: MapRect[];
   placementTip: string;
   environmentId: import("./stageEnvironments").StageEnvironmentId;
 };
@@ -307,6 +308,9 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
       { x: 11.5, z: 6, width: 3.2, depth: 2.7, height: 1.15, label: "Cryo lab" },
       { x: 10.5, z: 14, width: 2.8, depth: 1.9, height: 0.8, label: "Supply locker" },
     ],
+    blockedZones: [
+      { x: -8.4, z: -10.2, width: 2.8, depth: 2.2, height: 0.12, label: "Broken ice shelf" },
+    ],
     placementTip: "Clean ice lanes exaggerate range differences: the best all-purpose spot is tempting, but lab corners reward specialized coverage.",
     environmentId: "frozen-lab",
   },
@@ -333,6 +337,10 @@ export const STAGE_MAPS: Record<StageMapId, StageMap> = {
       { x: -10.5, z: 0, width: 3, depth: 2.5, height: 1.1, label: "Frozen wall" },
       { x: 10.5, z: 6, width: 3.1, depth: 2.7, height: 1.25, label: "Crystal wall" },
       { x: -10.5, z: 14, width: 3, depth: 1.8, height: 1.1, label: "Cave shelf" },
+    ],
+    blockedZones: [
+      { x: 0.2, z: -10.8, width: 3.8, depth: 2.4, height: 0.12, label: "Thin broken ice" },
+      { x: 1.1, z: 3.1, width: 2.8, depth: 2.0, height: 0.12, label: "Collapsed ice shelf" },
     ],
     placementTip: "The route feels carved through chambers: long diagonals reward range while sharp turns create deliberate burst-damage posts.",
     environmentId: "ice-cavern",
@@ -861,7 +869,7 @@ export function snapBuildPosition(map: StageMap, x: number, z: number): MapVec2 
   };
 }
 
-export type PlacementReason = "ok" | "off-map" | "road" | "obstacle" | "too-close";
+export type PlacementReason = "ok" | "off-map" | "road" | "obstacle" | "blocked-terrain" | "too-close";
 
 export type PlacementCheck = {
   valid: boolean;
@@ -898,6 +906,10 @@ export function canPlaceTower(
 
   if (map.obstacles.some((obstacle) => insideRect(point, obstacle, 0.35))) {
     return { valid: false, reason: "obstacle" };
+  }
+
+  if (map.blockedZones?.some((zone) => insideRect(point, zone, 0.2))) {
+    return { valid: false, reason: "blocked-terrain" };
   }
 
   if (existing.some((tower) => Math.hypot(tower.x - point.x, tower.z - point.z) < map.towerClearance)) {
