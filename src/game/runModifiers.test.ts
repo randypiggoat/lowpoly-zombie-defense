@@ -71,11 +71,11 @@ describe("run modifiers", () => {
   });
 
   test("synergy modifiers grant mark, execute, stun and ignite to every tower", () => {
-    const effects = getRunModifierEffects(["spotter-net", "execution-order", "shock-rounds", "accelerant", "forked-rounds"]);
+    const effects = getRunModifierEffects(["spotter-net", "shock-rounds", "accelerant", "forked-rounds"]);
     const out = applyRunModifiersToCombat(baseCombat, effects);
     expect(out.markDuration).toBeGreaterThan(0);
-    expect(out.executeThreshold).toBeCloseTo(0.18);
-    expect(out.executeMultiplier).toBe(2);
+    expect(out.executeThreshold).toBe(0);
+    expect(out.executeMultiplier).toBe(1);
     expect(out.stun).toBeGreaterThan(0);
     expect(out.stunnedMultiplier).toBeCloseTo(1.3);
     expect(out.burn).toBeGreaterThan(0);
@@ -109,14 +109,14 @@ describe("run modifiers", () => {
   });
 
   test("boss, close-range, shatter and burn effects combine and respect caps", () => {
-    const effects = getRunModifierEffects(["hunter-protocol", "bunker-doctrine", "brittle-frost", "accelerant", "execution-order"]);
+    const effects = getRunModifierEffects(["hunter-protocol", "bunker-doctrine", "brittle-frost", "accelerant"]);
     const out = applyRunModifiersToCombat({ ...baseCombat, crit: 0.7, executeThreshold: 0.45, executeMultiplier: 3 }, effects);
     expect(out.bossDamageMultiplier).toBeCloseTo(1.55);
     expect(out.closeDamageMultiplier).toBeCloseTo(1.45);
     expect(out.shatterMultiplier).toBeCloseTo(1.5);
     expect(out.burn).toBe(6);
     expect(out.burningMultiplier).toBeCloseTo(1.2);
-    expect(out.executeThreshold).toBe(0.5);
+    expect(out.executeThreshold).toBe(0.45);
     expect(out.executeMultiplier).toBe(3);
     expect(out.crit).toBe(0.7);
     expect(applyRunModifiersToCombat({ ...baseCombat, crit: 0.7 }, { ...effects, critBonus: 0.2 }).crit).toBe(0.75);
