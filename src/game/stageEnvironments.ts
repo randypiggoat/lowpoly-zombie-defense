@@ -49,7 +49,7 @@ export type EnvironmentPropKind =
   | "antenna"
   | "barrier"
   | "hay-bale"
-  | "shed";
+  | "shed" | "igloo";
 
 export type EnvironmentLandmarkKind =
   | "windmill"

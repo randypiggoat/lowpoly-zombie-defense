@@ -8,13 +8,19 @@ import {
   type EnemyHealthBarPresentation,
 } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
+import { getEnvironmentVisualProfile } from "@/game/environmentVisuals";
+import type { EnvironmentProp } from "@/game/stageEnvironments";
+import { ThemedRoads } from "./ThemedRoads";
+import { ThemedBuilding } from "./ThemedBuildings";
+import { ThemedBase } from "./ThemedBase";
+import { MapSpecialTerrain } from "./SpecialTerrain";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
 import { gorePartBit } from "@/game/enemyGore";
 import { zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
-import { StageEnvironment } from "./StageEnvironment";
+import { StageEnvironment, EnvironmentPropMesh } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
@@ -207,29 +213,12 @@ export type Selection =
 /* ---------------- ground, path, props ---------------- */
 
 function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getStageMapByStageId> }) {
-  const segments = useMemo(() => {
-    const out: { x: number; z: number; rot: number; len: number }[] = [];
-    for (let i = 1; i < map.path.length; i++) {
-      const a = map.path[i - 1]!;
-      const b = map.path[i]!;
-      const len = Math.hypot(b.x - a.x, b.z - a.z);
-      out.push({
-        x: (a.x + b.x) / 2,
-        z: (a.z + b.z) / 2,
-        rot: Math.atan2(b.x - a.x, b.z - a.z),
-        len: len + map.pathWidth,
-      });
-    }
-    return out;
-  }, [map]);
-
   const facets = useMemo(
-    () =>
-      Array.from({ length: 26 }, (_, i) => {
-        const a = (i / 26) * Math.PI * 2 + i;
-        const r = 12 + ((i * 7) % 22);
-        return { a, r, i };
-      }),
+    () => Array.from({ length: 26 }, (_, i) => {
+      const a = (i / 26) * Math.PI * 2 + i;
+      const r = 12 + ((i * 7) % 22);
+      return { a, r, i };
+    }),
     [],
   );
 
@@ -250,429 +239,88 @@ function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getS
           <meshStandardMaterial color={i % 2 ? theme.groundAlt : theme.ground} flatShading />
         </mesh>
       ))}
-      {segments.map((s, i) => (
-        <group key={i}>
-          <mesh position={[s.x, 0.07, s.z]} rotation-y={s.rot} receiveShadow>
-            <boxGeometry args={[map.pathWidth, 0.14, s.len]} />
-            <meshStandardMaterial color={theme.path} flatShading />
-          </mesh>
-          <mesh position={[s.x, 0.15, s.z]} rotation-y={s.rot}>
-            <boxGeometry args={[0.18, 0.025, Math.max(1, s.len - 0.7)]} />
-            <meshStandardMaterial color={theme.pathEdge} transparent opacity={0.72} flatShading />
-          </mesh>
-          {Array.from({ length: Math.max(1, Math.floor(s.len / 4)) }, (_, markerIndex) => {
-            const directionX = Math.sin(s.rot);
-            const directionZ = Math.cos(s.rot);
-            const offset = (markerIndex + 0.5) * 4 - s.len * 0.5;
-            return (
-              <mesh
-                key={markerIndex}
-                position={[
-                  s.x + directionX * offset,
-                  0.17,
-                  s.z + directionZ * offset,
-                ]}
-                rotation-y={s.rot}
-              >
-                <boxGeometry args={[0.32, 0.025, 1.15]} />
-                <meshStandardMaterial color={theme.marker} flatShading />
-              </mesh>
-            );
-          })}
-        </group>
-      ))}
+      <ThemedRoads map={map} theme={theme} />
     </group>
   );
 }
 
 function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> }) {
-  const root = useRef<THREE.Group>(null);
-
-  useEffect(() => {
-    root.current?.traverse((object) => {
-      if ((object as THREE.Mesh).isMesh) {
-        (object as THREE.Mesh).castShadow = false;
-      }
-    });
-  }, [map]);
-
   return (
-    <group ref={root}>
-      {map.obstacles.map((obstacle, index) => {
-        const label = obstacle.label.toLowerCase();
-        const x = obstacle.x;
-        const z = obstacle.z;
-        const w = obstacle.width;
-        const d = obstacle.depth;
-        const h = obstacle.height;
-
-        if (label.includes("house")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#b96d52" flatShading />
-              </mesh>
-              <mesh position={[0, h / 2 + 0.32, 0]} rotation-y={Math.PI / 4} castShadow>
-                <coneGeometry args={[Math.min(w, d) * 0.66, 0.68, 4]} />
-                <meshStandardMaterial color="#5c3f3d" flatShading />
-              </mesh>
-              <mesh position={[0, h * 0.5, d / 2 + 0.02]}>
-                <boxGeometry args={[w * 0.24, h * 0.32, 0.04]} />
-                <meshStandardMaterial color="#8fd2d8" emissive="#8fd2d8" emissiveIntensity={0.18} flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("garage")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#7a7e83" flatShading />
-              </mesh>
-              <mesh position={[0, -h * 0.06, d / 2 + 0.03]}>
-                <boxGeometry args={[w * 0.7, h * 0.58, 0.06]} />
-                <meshStandardMaterial color="#3f454c" flatShading />
-              </mesh>
-              <mesh position={[0, h / 2 + 0.24, 0]} rotation-y={Math.PI / 4}>
-                <coneGeometry args={[Math.min(w, d) * 0.62, 0.46, 4]} />
-                <meshStandardMaterial color="#4b5057" flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("garden")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d * 0.55]} />
-                <meshStandardMaterial color="#a29a87" flatShading />
-              </mesh>
-              {[-0.3, 0.3].map((offset) => (
-                <mesh key={offset} position={[offset * w, h + 0.24, 0]} castShadow>
-                  <coneGeometry args={[0.32, 0.52, 6]} />
-                  <meshStandardMaterial color="#3e7f52" flatShading />
-                </mesh>
-              ))}
-            </group>
-          );
-        }
-
-        if (label.includes("canopy")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
-              <mesh position={[0, h, 0]} castShadow receiveShadow>
-                <boxGeometry args={[w, 0.14, d]} />
-                <meshStandardMaterial color="#d8d0bd" flatShading />
-              </mesh>
-              {[-1, 1].map((side) => (
-                <mesh key={side} position={[side * w * 0.38, h / 2, 0]} castShadow>
-                  <boxGeometry args={[0.12, h, 0.12]} />
-                  <meshStandardMaterial color="#a24c3e" flatShading />
-                </mesh>
-              ))}
-              <mesh position={[0, h + 0.34, 0]} castShadow>
-                <boxGeometry args={[1.65, 0.24, 0.42]} />
-                <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.18} flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("pump")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, 0, z]}>
-              <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
-                <boxGeometry args={[w, 0.28, d]} />
-                <meshStandardMaterial color="#cfc7b5" flatShading />
-              </mesh>
-              {[-0.34, 0.34].map((px) => (
-                <group key={px} position={[px, 0.7, 0]}>
-                  <mesh castShadow>
-                    <boxGeometry args={[0.28, 1.05, 0.18]} />
-                    <meshStandardMaterial color="#d8d4c9" flatShading />
-                  </mesh>
-                  <mesh position={[0, 0.16, 0.1]}>
-                    <boxGeometry args={[0.14, 0.18, 0.03]} />
-                    <meshStandardMaterial color="#63a9bb" emissive="#63a9bb" emissiveIntensity={0.35} flatShading />
-                  </mesh>
-                </group>
-              ))}
-            </group>
-          );
-        }
-
-        if (label.includes("storefront") || label.includes("shop") || label.includes("kiosk") || label.includes("food court")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#66747d" flatShading />
-              </mesh>
-              <mesh position={[0, h * 0.1, d / 2 + 0.04]}>
-                <boxGeometry args={[w * 0.56, h * 0.42, 0.05]} />
-                <meshStandardMaterial color="#9dd7dc" emissive="#9dd7dc" emissiveIntensity={0.16} flatShading />
-              </mesh>
-              <mesh position={[0, h * 0.64, d / 2 + 0.12]} castShadow>
-                <boxGeometry args={[w * 0.82, 0.16, 0.5]} />
-                <meshStandardMaterial color={label.includes("food") || label.includes("kiosk") ? "#e9b44c" : "#a04c42"} flatShading />
-              </mesh>
-              <mesh position={[0, h + 0.2, 0]} rotation-y={Math.PI / 4} castShadow>
-                <coneGeometry args={[Math.min(w, d) * 0.58, 0.36, 4]} />
-                <meshStandardMaterial color="#4d5660" flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("police station")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#5d6870" flatShading />
-              </mesh>
-              <mesh position={[0, h * 0.18, d / 2 + 0.05]}>
-                <boxGeometry args={[w * 0.22, h * 0.56, 0.08]} />
-                <meshStandardMaterial color="#2d3640" flatShading />
-              </mesh>
-              <mesh position={[0, h * 0.72, d / 2 + 0.08]}>
-                <boxGeometry args={[w * 0.55, 0.2, 0.12]} />
-                <meshStandardMaterial color="#4f9fcb" emissive="#4f9fcb" emissiveIntensity={0.3} flatShading />
-              </mesh>
-              <mesh position={[0, h + 0.32, 0]} rotation-y={Math.PI / 4}>
-                <coneGeometry args={[Math.min(w, d) * 0.62, 0.48, 4]} />
-                <meshStandardMaterial color="#3c4851" flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("impound")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#6d6f70" flatShading />
-              </mesh>
-              {[-1, 1].map((side) => (
-                <mesh key={side} position={[side * w * 0.42, h + 0.34, d / 2]} castShadow>
-                  <cylinderGeometry args={[0.05, 0.05, 0.7, 6]} />
-                  <meshStandardMaterial color="#a2a6a6" flatShading />
-                </mesh>
-              ))}
-              <mesh position={[0, h + 0.56, d / 2]} rotation-z={Math.PI / 2}>
-                <cylinderGeometry args={[0.03, 0.03, w * 0.8, 6]} />
-                <meshStandardMaterial color="#a2a6a6" flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("evidence")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#8d806b" flatShading />
-              </mesh>
-              {([[-0.35, -0.34], [0.35, 0.34]] as const).map(([px, pz]) => (
-                <mesh key={px + "-" + pz} position={[px * w, h + 0.16, pz * d]} castShadow>
-                  <boxGeometry args={[0.35, 0.32, 0.35]} />
-                  <meshStandardMaterial color="#ad6e48" flatShading />
-                </mesh>
-              ))}
-              <mesh position={[0, h + 0.22, 0]} rotation-y={Math.PI / 4}>
-                <coneGeometry args={[Math.min(w, d) * 0.55, 0.3, 4]} />
-                <meshStandardMaterial color="#5f574e" flatShading />
-              </mesh>
-            </group>
-          );
-        }
-
-        if (label.includes("median") || label.includes("jersey")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#8e9394" flatShading />
-              </mesh>
-              {[-1, 0, 1].map((side) => (
-                <mesh key={side} position={[side * w * 0.3, h + 0.08, 0]}>
-                  <boxGeometry args={[0.12, 0.09, d * 0.72]} />
-                  <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.14} flatShading />
-                </mesh>
-              ))}
-            </group>
-          );
-        }
-
-        if (label.includes("service depot")) {
-          return (
-            <group key={obstacle.label + "-" + index} position={[x, h / 2, z]}>
-              <mesh castShadow receiveShadow>
-                <boxGeometry args={[w, h, d]} />
-                <meshStandardMaterial color="#765d49" flatShading />
-              </mesh>
-              <mesh position={[0, h * 0.55, d / 2 + 0.04]}>
-                <boxGeometry args={[w * 0.56, h * 0.34, 0.06]} />
-                <meshStandardMaterial color="#4b5258" flatShading />
-              </mesh>
-              {[-0.35, 0.35].map((px) => (
-                <mesh key={px} position={[px * w, h + 0.25, 0]} castShadow>
-                  <cylinderGeometry args={[0.14, 0.14, 0.4, 8]} />
-                  <meshStandardMaterial color="#d55c43" flatShading />
-                </mesh>
-              ))}
-            </group>
-          );
-        }
-
-        return (
-          <mesh key={obstacle.label + "-" + index} position={[x, h / 2, z]} castShadow receiveShadow>
-            <boxGeometry args={[w, h, d]} />
-            <meshStandardMaterial color="#6f6b63" flatShading />
-          </mesh>
-        );
-      })}
+    <group>
+      {map.obstacles.map((obstacle, index) => (
+        <ThemedBuilding
+          key={obstacle.label + "-" + index}
+          environmentId={map.environmentId}
+          label={obstacle.label}
+          width={obstacle.width}
+          depth={obstacle.depth}
+          height={obstacle.height}
+          index={index}
+        />
+      ))}
     </group>
   );
 }
 
-function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
-  return (
-    <group position={position} scale={scale}>
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <cylinderGeometry args={[0.16, 0.24, 1, 5]} />
-        <meshStandardMaterial color="#6b4a33" flatShading />
-      </mesh>
-      <mesh position={[0, 1.5, 0]} castShadow>
-        <coneGeometry args={[0.95, 1.7, 6]} />
-        <meshStandardMaterial color="#2f6b45" flatShading />
-      </mesh>
-      <mesh position={[0, 2.3, 0]} castShadow>
-        <coneGeometry args={[0.7, 1.3, 6]} />
-        <meshStandardMaterial color="#3a7d51" flatShading />
-      </mesh>
-    </group>
-  );
-}
 
-function Rock({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
-  return (
-    <mesh position={position} scale={scale} rotation={[0.3, position[0], 0.2]} castShadow>
-      <dodecahedronGeometry args={[0.6, 0]} />
-      <meshStandardMaterial color="#8d8f94" flatShading />
-    </mesh>
-  );
-}
 
 function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof getStageMapByStageId> }) {
   const root = useRef<THREE.Group>(null);
-  const items = useMemo(() => {
-    const trees: [number, number, number][] = [];
-    const rocks: [number, number, number][] = [];
-    let seed = 7;
-    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-    for (let i = 0; i < count; i++) {
-      const x = (rnd() - 0.5) * 56;
-      const z = (rnd() - 0.5) * 60 - 4;
+  const profile = getEnvironmentVisualProfile(map.environmentId);
+  const items = useMemo<EnvironmentProp[]>(() => {
+    const result: EnvironmentProp[] = [];
+    const kinds = profile.ambientKinds;
+    let seed = 13;
+    const rnd = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+
+    for (let attempt = 0; attempt < count * 4 && result.length < count; attempt++) {
+      const x = map.bounds.minX + 0.8 + rnd() * (map.bounds.maxX - map.bounds.minX - 1.6);
+      const z = map.bounds.minZ + 0.8 + rnd() * (map.bounds.maxZ - map.bounds.minZ - 1.6);
       const clear =
-        distanceToPath(map, { x, z }) >= 3.4 &&
-        Math.hypot(x - map.base.x, z - map.base.z) >= 6 &&
+        distanceToPath(map, { x, z }) >= 3.45 &&
+        Math.hypot(x - map.base.x, z - map.base.z) >= 5.4 &&
         !map.obstacles.some((obstacle) =>
-          x >= obstacle.x - obstacle.width / 2 - 2 &&
-          x <= obstacle.x + obstacle.width / 2 + 2 &&
-          z >= obstacle.z - obstacle.depth / 2 - 2 &&
-          z <= obstacle.z + obstacle.depth / 2 + 2,
+          x >= obstacle.x - obstacle.width / 2 - 1.35 &&
+          x <= obstacle.x + obstacle.width / 2 + 1.35 &&
+          z >= obstacle.z - obstacle.depth / 2 - 1.35 &&
+          z <= obstacle.z + obstacle.depth / 2 + 1.35,
+        ) &&
+        !(map.blockedZones ?? []).some((zone) =>
+          x >= zone.x - zone.width / 2 - 0.7 &&
+          x <= zone.x + zone.width / 2 + 0.7 &&
+          z >= zone.z - zone.depth / 2 - 0.7 &&
+          z <= zone.z + zone.depth / 2 + 0.7,
         );
-      if (!clear) continue;
-      if (rnd() > 0.25) trees.push([x, 0, z]);
-      else rocks.push([x, 0.4, z]);
+      if (!clear || kinds.length === 0) continue;
+      result.push({
+        kind: kinds[Math.floor(rnd() * kinds.length)]!,
+        position: [x, 0, z],
+        scale: 0.68 + rnd() * 0.34,
+        rotation: rnd() * Math.PI * 2,
+      });
     }
-    return { trees, rocks };
-  }, [count, map]);
+    return result;
+  }, [count, map, profile]);
 
   useEffect(() => {
     root.current?.traverse((object) => {
-      if ((object as THREE.Mesh).isMesh) {
-        (object as THREE.Mesh).castShadow = false;
-      }
+      if ((object as THREE.Mesh).isMesh) (object as THREE.Mesh).castShadow = false;
     });
   }, [items]);
 
   return (
     <group ref={root}>
-      {items.trees.map((p, i) => (
-        <Tree key={'t' + i} position={p} scale={0.85 + ((i * 13) % 5) * 0.12} />
-      ))}
-      {items.rocks.map((p, i) => (
-        <Rock key={'r' + i} position={p} scale={0.6 + ((i * 7) % 4) * 0.2} />
+      {items.map((item, index) => (
+        <EnvironmentPropMesh key={"scenery-" + index} item={item} />
       ))}
     </group>
   );
 }
 
-/* ---------------- base ---------------- */
 
-function Base({ position }: { position: { x: number; z: number } }) {
-  const flagRef = useRef<THREE.Mesh>(null);
-  const beaconRef = useRef<THREE.Group>(null);
-  const coreRef = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    if (flagRef.current) {
-      flagRef.current.rotation.z = Math.sin(clock.elapsedTime * 3) * 0.12;
-    }
-    if (beaconRef.current) beaconRef.current.rotation.y = clock.elapsedTime * 0.6;
-    if (coreRef.current) {
-      const pulse = 1 + Math.sin(clock.elapsedTime * 4) * 0.1;
-      coreRef.current.scale.setScalar(pulse);
-    }
-  });
-  return (
-    <group position={[position.x, 0, position.z]}>
-      <mesh position={[0, 0.35, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[3.4, 3.8, 0.7, 7]} />
-        <meshStandardMaterial color="#9a9083" flatShading />
-      </mesh>
-      <mesh position={[0, 1.9, 0]} castShadow>
-        <cylinderGeometry args={[1.5, 1.9, 2.4, 6]} />
-        <meshStandardMaterial color="#c9bfae" flatShading />
-      </mesh>
-      <mesh position={[0, 3.5, 0]} castShadow>
-        <coneGeometry args={[2.1, 1.5, 6]} />
-        <meshStandardMaterial color="#b4553f" flatShading />
-      </mesh>
-      <mesh ref={flagRef} position={[0, 4.9, 0]} castShadow>
-        <boxGeometry args={[0.9, 0.55, 0.08]} />
-        <meshStandardMaterial color="#e9b44c" flatShading />
-      </mesh>
-      <group ref={beaconRef} position={[0, 3.78, 0]}>
-        <mesh rotation-x={Math.PI / 2}>
-          <torusGeometry args={[0.52, 0.06, 5, 10]} />
-          <meshStandardMaterial color="#79c7e3" emissive="#79c7e3" emissiveIntensity={0.45} transparent opacity={0.72} flatShading />
-        </mesh>
-        <mesh ref={coreRef} position={[0, 0, 0]}>
-          <icosahedronGeometry args={[0.18, 0]} />
-          <meshStandardMaterial color="#79c7e3" emissive="#79c7e3" emissiveIntensity={1.1} flatShading />
-        </mesh>
-        <mesh position={[0, 0.18, 0]}>
-          <coneGeometry args={[0.12, 0.42, 5]} />
-          <meshStandardMaterial color="#cfeff4" flatShading />
-        </mesh>
-      </group>
-      <mesh position={[0, 0.74, 1.58]} rotation-z={Math.PI / 2}>
-        <boxGeometry args={[0.12, 0.08, 1.5]} />
-        <meshStandardMaterial color="#e9b44c" emissive="#e9b44c" emissiveIntensity={0.18} flatShading />
-      </mesh>
-    </group>
-  );
-}
-
-/* ---------------- free placement ---------------- */
 
 function BuildSurface({
   map,
@@ -1899,9 +1547,10 @@ export function Scene({
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} map={map} />
         <StageEnvironment environmentId={map.environmentId} />
+        <MapSpecialTerrain map={map} />
         <MapObstacles map={map} />
         <Scenery count={renderQuality.sceneryCount} map={map} />
-        <Base position={map.base} />
+        <ThemedBase position={map.base} environmentId={map.environmentId} />
         <BuildSurface
           map={map}
           selection={selection}
