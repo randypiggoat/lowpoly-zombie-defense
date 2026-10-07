@@ -577,7 +577,7 @@ function Zombies({
    * Changes only when tower composition/upgrades change. The Game simulation
    * mutates tower objects in place, so this provides an explicit React signal.
    */
-  towerRevision?: string;
+  towerRevision: string;
 }) {
   const bodyGeometries = useMemo(() => ({
     0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
