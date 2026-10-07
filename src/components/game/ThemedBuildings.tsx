@@ -26,7 +26,7 @@ function Mat({ color, emissive }: { color: string; emissive?: string }) {
 
 function Shell({ w, h, d, color }: { w: number; h: number; d: number; color: string }) {
   return (
-    <mesh castShadow receiveShadow>
+    <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
       <boxGeometry args={[w, h, d]} />
       <Mat color={color} />
     </mesh>
@@ -157,7 +157,7 @@ export function ThemedBuilding({ environmentId, label, width, depth, height, ind
             </mesh>
           )),
         )}
-        <mesh position={[0, h * 0.18, 0]} castShadow receiveShadow>
+        <mesh position={[0, h * 0.18 + raisedH / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[w, raisedH, d]} />
           <Mat color={shell} />
         </mesh>
