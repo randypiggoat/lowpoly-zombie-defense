@@ -18,16 +18,15 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
 
   await page.goto("/");
 
-  await expect(page.getByText("Play", { exact: true })).toBeVisible();
-  await expect(page.getByText("Build your collection", { exact: true })).toBeVisible();
-  await expect(page.getByText("Next tower", { exact: true })).toBeVisible();
-  await expect(page.getByText("Last defense network", { exact: true })).toBeVisible();
-  await expect(page.locator(".rotwood-shell")).toHaveCount(1);
-  await expect(page.getByText("Daily supply drop", { exact: true })).toBeVisible();
-  await expect(page.getByText(/DAY \d+\/7/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "CLAIM" })).toBeVisible();
+  await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
+  await expect(page.getByRole("heading", { name: /ROTWOOD.*DEFENSE/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /THE LAST LIGHT/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Operations/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Armory/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Field Intel/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Supply Depot/i })).toBeVisible();
 
-  const playButton = page.getByRole("button", { name: "DEFEND NOW" });
+  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
   await expect(playButton).toBeVisible();
 
   await playButton.click();
@@ -74,7 +73,8 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
 test("weekly boss trials have a distinct entry screen", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: "Boss Trials" }).click();
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Boss Trials/i }).click();
 
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "boss-trial-select");
   await expect(page.getByRole("button", { name: "ENTER TRIAL" })).toBeVisible();

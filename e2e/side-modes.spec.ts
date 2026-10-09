@@ -12,7 +12,8 @@ test("side modes expose resource and challenge progression", async ({ page }) =>
   });
 
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: "Side Modes" }).click();
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Side Operations/i }).click();
 
   await expect(page.getByText("RESOURCE OPS", { exact: true })).toBeVisible();
   await expect(page.getByText("CHALLENGE GAUNTLET", { exact: true })).toBeVisible();
@@ -36,7 +37,8 @@ test("seasonal event offers an active playable run", async ({ page }) => {
   });
 
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: "Events" }).click();
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Live Events/i }).click();
   await expect(page.getByText("PLAY THE EVENT", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "PLAY EVENT RUN" })).toBeVisible();
 
