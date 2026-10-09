@@ -2,6 +2,10 @@ import type { StageMapId } from "./maps";
 
 export type PrimaryScreen =
   | "main-menu"
+  | "operations"
+  | "arsenal"
+  | "field-intel"
+  | "supply-depot"
   | "stage-select"
   | "endless-select"
   | "boss-trial-select"
