@@ -12,7 +12,8 @@ test("campaign exposes all twenty locations across four worlds", async ({ page }
   });
 
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: "Campaign" }).click();
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Campaign/i }).click();
 
   await expect(page.locator('[data-stage-id]')).toHaveCount(20);
   await expect(page.locator('[data-world-id="1"]')).toHaveCount(5);
