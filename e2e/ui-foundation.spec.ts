@@ -15,8 +15,8 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
   await page.goto("/");
 
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
-  await expect(page.locator(".rotwood-shell")).toHaveCount(1);
-  await expect(page.locator(".rotwood-menu-tile")).toHaveCount(10);
+  await expect(page.locator(".rotwood-shell")).toHaveCount(0);
+  await expect(page.locator(".rotwood-menu-tile")).toHaveCount(4);
 
   const primaryButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
   await expect(primaryButton).toBeVisible();
@@ -24,7 +24,8 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
   const minHeight = await primaryButton.evaluate((element) => Number.parseFloat(getComputedStyle(element).minHeight));
   expect(minHeight).toBeGreaterThanOrEqual(44);
 
-  await page.getByRole("button", { name: "Campaign" }).click();
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Campaign/i }).click();
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "stage-select");
   await expect(page.locator(".rotwood-shell")).toHaveCount(0);
   expect(pageErrors).toEqual([]);
@@ -217,14 +218,16 @@ test("streamlined upgrade UI hides combat math while keeping upgrade effects rea
   });
 
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: "Armory" }).click();
+  await page.getByRole("button", { name: /Armory/ }).click();
+  await page.getByRole("button", { name: /Tower Armory/ }).click();
   await expect(page.getByText("Tower guide", { exact: true })).toBeVisible();
   await expect(page.getByText("Scout Optic", { exact: true })).toBeVisible();
   await expect(page.getByText("Double Tap", { exact: true })).toBeVisible();
   await expect(page.getByText("Longer sightline; shots at distant targets (6+ tiles) deal 30% more damage.", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: /BACK|← BACK/i }).first().click();
-  await page.getByRole("button", { name: "Campaign" }).click();
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Campaign/i }).click();
   await expect(page.getByText("Completion Reward:", { exact: false })).toHaveCount(0);
   await expect(page.getByText("First Clear Bonus:", { exact: false })).toHaveCount(0);
   await expect(page.getByText("Reward x", { exact: false })).toHaveCount(0);
