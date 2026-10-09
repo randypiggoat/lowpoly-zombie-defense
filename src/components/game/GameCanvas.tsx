@@ -166,6 +166,49 @@ function ShieldMark({ size = 24 }: { size?: number }) {
   );
 }
 
+function OutbreakIllustration() {
+  return (
+    <svg viewBox="0 0 620 260" className="rw-outbreak-art" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="rw-night-sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#21364b" /><stop offset="58%" stopColor="#172838" /><stop offset="100%" stopColor="#101923" /></linearGradient>
+        <radialGradient id="rw-moon-glow"><stop offset="0%" stopColor="#d8e69f" stopOpacity=".38" /><stop offset="100%" stopColor="#a4d18a" stopOpacity="0" /></radialGradient>
+      </defs>
+      <rect width="620" height="260" fill="url(#rw-night-sky)" />
+      <circle cx="455" cy="58" r="76" fill="url(#rw-moon-glow)" /><circle cx="455" cy="58" r="22" fill="#d9e6b3" opacity=".85" /><circle cx="455" cy="58" r="15" fill="#b5c98f" opacity=".58" />
+      <path d="M0 146 82 96 132 127 205 76 264 124 326 92 383 137 452 98 529 140 620 102V260H0Z" fill="#263d4d" />
+      <path d="M0 174 78 135 143 159 213 112 276 162 348 124 408 156 482 119 550 169 620 140V260H0Z" fill="#1b303c" />
+      <g fill="#15232f" stroke="#496072" strokeOpacity=".35" strokeWidth="2">
+        <path d="M254 150V69L284 51 307 70V150Z" /><path d="M283 61 307 70 307 150 283 150Z" fill="#203441" />
+        <path d="M317 150V96L343 81 363 96V150Z" /><path d="M365 151V62L396 42 421 62V151Z" />
+        <path d="M396 42 421 62 421 151 396 151Z" fill="#203541" /><path d="M431 150V105L454 88 474 105V150Z" />
+        <path d="M483 150V77L506 65 529 79V150Z" /><path d="M506 65 529 79V150H506Z" fill="#243c4a" />
+        <path d="M540 150V111L559 99 578 111V150Z" />
+      </g>
+      <g fill="#d4b66b" opacity=".65">
+        <rect x="270" y="84" width="5" height="8" /><rect x="294" y="85" width="5" height="8" /><rect x="271" y="105" width="5" height="8" /><rect x="294" y="105" width="5" height="8" />
+        <rect x="379" y="76" width="6" height="9" /><rect x="405" y="76" width="6" height="9" /><rect x="379" y="98" width="6" height="9" /><rect x="405" y="98" width="6" height="9" />
+        <rect x="491" y="91" width="5" height="8" /><rect x="515" y="91" width="5" height="8" /><rect x="491" y="111" width="5" height="8" /><rect x="515" y="111" width="5" height="8" />
+      </g>
+      <path d="M0 197 86 173 148 188 222 159 278 187 343 163 395 188 463 164 522 186 620 156V260H0Z" fill="#172732" />
+      <g stroke="#789b91" strokeWidth="2" strokeOpacity=".75" fill="none"><path d="M346 161V114H377V89" /><path d="M336 141H356" /><path d="M467 164V134H492" /></g>
+      <g>
+        <path d="M338 159V103L361 91 384 103V159Z" fill="#3a655f" stroke="#9bc98d" strokeOpacity=".65" strokeWidth="2" /><path d="M361 91 384 103V159H361Z" fill="#274b4b" />
+        <path d="M333 103 361 84 389 103Z" fill="#6a8d6e" /><path d="M342 159V124L361 112 379 124V159Z" fill="#13242f" />
+        <path d="M351 159V132H370V159" fill="none" stroke="#d6b967" strokeWidth="2" /><rect x="357" y="116" width="8" height="5" fill="#d7e8a0" />
+      </g>
+      <path d="M0 224 114 195 181 218 227 198 290 223 365 199 422 225 502 194 620 221V260H0Z" fill="#0f1a22" />
+      <path d="M37 227 118 207 151 218 146 234 65 250Z" fill="#596a6b" /><path d="M65 250 146 234 146 243 65 260Z" fill="#35484e" />
+      <path d="M155 230 224 211 263 225 259 241 186 258Z" fill="#667573" /><path d="M186 258 259 241 259 251 186 268Z" fill="#34454b" />
+      <g fill="#101820" stroke="#0b1117" strokeWidth="3" strokeLinejoin="round">
+        <path d="M511 190 513 161 527 151 541 163 543 190 552 210 536 214 530 192 522 212 507 210Z" /><path d="M514 162 505 174 498 187 506 191 519 178Z" /><path d="M537 165 550 174 561 189 555 194 538 181Z" />
+        <path d="M564 205 565 179 578 170 591 181 592 205 601 222 586 225 578 206 572 224 558 222Z" /><path d="M566 181 557 190 555 201 562 202 574 191Z" /><path d="M588 183 602 193 609 208 603 211 589 198Z" />
+      </g>
+      <g fill="#c8e887"><path d="M518 162 525 160 530 164 526 168 519 167Z" /><path d="M570 181 577 178 581 182 578 186 571 186Z" /></g>
+      <path d="M454 246 489 226 514 233 539 224 567 238 620 223V260H454Z" fill="#253d3d" /><path d="M0 252 65 242 109 255 163 244 220 257 290 244 346 260H0Z" fill="#3b594e" /><path d="M294 260 342 246 381 260Z" fill="#5c7c5e" /><path d="M412 260 464 244 493 260Z" fill="#54745b" />
+    </svg>
+  );
+}
+
 function HomeCurrency({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
   return (
     <div className="rotwood-currency">
@@ -709,185 +752,158 @@ export function GameCanvas() {
       )}
 
       {screen === "main-menu" && (
-        <div className="rotwood-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pb-[calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]">
-          <div className="mx-auto w-full max-w-md">
-            <div className="mb-2 flex items-center justify-between gap-2 px-1">
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Last defense network</p>
-                <h1 className="rotwood-display text-3xl text-panel-foreground">Rotwood Defense</h1>
+        <div className="rotwood-screen rw-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <main className="rw-home mx-auto w-full">
+            <header className="rw-home-header">
+              <div className="rw-brand-lockup">
+                <span className="rw-brand-emblem"><ShieldMark size={25} /></span>
+                <div className="min-w-0">
+                  <p className="rw-eyebrow">LAST DEFENSE NETWORK</p>
+                  <h1 className="rw-brand-title">ROTWOOD <span>DEFENSE</span></h1>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => openSettings("main-menu")}
-                aria-label="Settings"
-                className="rotwood-button rotwood-button-secondary grid h-11 w-11 shrink-0 place-items-center p-0"
-              >
-                <Settings2 size={19} />
+              <button type="button" onClick={() => openSettings("main-menu")} onPointerDown={() => sfx("uiClick")} aria-label="Open settings" className="rotwood-button rotwood-button-secondary rw-settings-button">
+                <Settings2 size={20} />
               </button>
+            </header>
+            <section className="rw-home-hero" aria-labelledby="rw-home-hero-title">
+              <div className="rw-hero-art"><OutbreakIllustration /></div>
+              <div className="rw-hero-scrim" aria-hidden="true" />
+              <div className="rw-hero-content">
+                <p className="rw-eyebrow rw-hero-eyebrow"><span className="rw-live-dot" /> CONTAINMENT ALERT · SECTOR 04</p>
+                <h2 id="rw-home-hero-title">THE LAST LIGHT<br /><span>HOLDS.</span></h2>
+                <p className="rw-hero-copy">Build your defenses. Hold the line. Survive the night.</p>
+                <div className="rw-sector-stamp"><span>RW-04</span><span>THREAT LEVEL: HIGH</span></div>
+              </div>
+            </section>
+            <section className="rw-player-strip" aria-label="Player progress and resources">
+              <div className="rw-player-level">
+                <span className="rw-level-token"><span>LVL</span>{player.level}</span>
+                <div className="rw-level-progress">
+                  <div className="rw-level-row"><span>DEFENSE RANK</span><span>{currentLevelXp} / {currentLevelTarget} XP</span></div>
+                  <div className="rw-xp-track"><span style={{ width: Math.min(100, (currentLevelXp / Math.max(1, currentLevelTarget)) * 100) + "%" }} /></div>
+                </div>
+              </div>
+              <div className="rw-player-resources">
+                <span className="rw-resource-chip"><Coins size={15} /><span>{player.coins.toLocaleString()}</span></span>
+                <span className="rw-resource-chip"><Gem size={15} /><span>{player.gems.toLocaleString()}</span></span>
+                <span className="rw-resource-chip rw-best-wave"><span className="rw-wave-mark">↗</span><span>{player.highestWave}<small> BEST WAVE</small></span></span>
+              </div>
+            </section>
+            <section className="rw-deploy-panel rotwood-card" aria-label="Recommended defense mission">
+              <div className="rw-deploy-heading">
+                <div className="min-w-0">
+                  <p className="rw-eyebrow">CURRENT DIRECTIVE</p>
+                  <h2>STAGE {recommendedStage.stageNumber}</h2>
+                  <p className="rw-mission-name">{recommendedStage.name} <span>·</span> {recommendedStage.difficulty}</p>
+                </div>
+                <div className="rw-mission-stars" aria-label={recommendedStage.stars + " stars earned"}>
+                  <span>★</span><strong>{recommendedStage.stars ? "×" + recommendedStage.stars : "NEW"}</strong>
+                </div>
+              </div>
+              <p className="rw-next-unlock">{nextTower ? "NEXT UNLOCK: " + TOWER_INFO[nextTower.kind].name + " · LEVEL " + nextTower.level : "FULL ROSTER · ALL TOWERS UNLOCKED"}</p>
+              <ScreenButton className="rw-deploy-button" onClick={() => {
+                resetGameplayState();
+                setActiveStageId(recommendedStage.id);
+                if (isFirstRun) track("menu_quick_play", { stageId: recommendedStage.id });
+                game.startStage(recommendedStage);
+                setScreen("gameplay");
+              }}>
+                <span>{isFirstRun ? "DEFEND NOW" : "CONTINUE DEFENSE"}</span><Swords size={19} />
+              </ScreenButton>
+            </section>
+            <section className="rw-home-navigation" aria-labelledby="rw-nav-title">
+              <div className="rw-section-heading">
+                <div><p className="rw-eyebrow">TACTICAL NETWORK</p><h2 id="rw-nav-title">Command Center</h2></div>
+                <span>SELECT DESTINATION</span>
+              </div>
+              <div className="rw-menu-grid">
+                <HomeShortcut title="Operations" subtitle="Campaigns & combat modes" icon={<Swords size={20} />} onClick={() => setScreen("operations")} />
+                <HomeShortcut title="Armory" subtitle="Towers & field knowledge" icon={<Wrench size={20} />} onClick={() => setScreen("arsenal")} />
+                <HomeShortcut title="Field Intel" subtitle="Missions & achievements" icon={<Trophy size={20} />} {...(readyMissionCount + readyAchievementCount > 0 ? { badge: readyMissionCount + readyAchievementCount } : {})} onClick={() => setScreen("field-intel")} />
+                <HomeShortcut title="Supply Depot" subtitle="Daily drops & store" icon={<ShoppingBag size={20} />} onClick={() => setScreen("supply-depot")} />
+              </div>
+            </section>
+            <p className="rw-home-footer"><span>ROTWOOD DEFENSE</span><span>HOLD THE LINE</span></p>
+          </main>
+        </div>
+      )}
+
+      {screen === "operations" && (
+        <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <main className="rw-hub-wrap mx-auto">
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 01</p><h1>Operations</h1><p>Pick a deployment. Every route leads to a different kind of fight.</p></header>
+            <div className="rw-hub-list">
+              <MenuTile title="Campaign" subtitle="Structured stages, stars, and tower unlocks." onClick={() => setScreen("stage-select")} />
+              <MenuTile title="Endless Siege" subtitle="Push your build as far as it can go." onClick={() => setScreen("endless-select")} />
+              <MenuTile title="Boss Trials" subtitle="Take on the weekly boss and its mastery rules." onClick={() => setScreen("boss-trial-select")} />
+              <MenuTile title="Side Operations" subtitle="Short resource runs and focused challenges." onClick={() => setScreen("side-mode-select")} />
+              <MenuTile title="Live Events" subtitle="Rotating objectives and seasonal milestones." {...(readyEventCount > 0 ? { badge: "READY · " + readyEventCount } : {})} onClick={() => setScreen("events")} />
             </div>
+          </main>
+        </div>
+      )}
 
-            <ScreenCard>
-              <div className="rotwood-card rotwood-shine p-3">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-accent/30 bg-accent/10 text-accent">
-                    <ShieldMark size={24} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-panel-muted">Defense profile</p>
-                    <p className="rotwood-display text-2xl text-panel-foreground">LEVEL {player.level}</p>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
-                      <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: Math.min(100, (currentLevelXp / Math.max(1, currentLevelTarget)) * 100) + "%" }} />
-                    </div>
-                    <p className="mt-1 text-[9px] text-panel-muted">{currentLevelXp} / {currentLevelTarget} XP to the next level</p>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-0.5">
-                  <HomeCurrency icon={<Coins size={15} />} value={player.coins} label="Credits" />
-                  <HomeCurrency icon={<Gem size={15} />} value={player.gems} label="Gems" />
-                  <HomeMetric label="Best Wave" value={player.highestWave} />
-                </div>
-                {nextTower ? (
-                  <div className="mt-3 rounded-xl border border-accent/20 bg-accent/5 px-3 py-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-accent">Next tower</p>
-                        <p className="font-display text-sm tracking-wide text-panel-foreground">{TOWER_INFO[nextTower.kind].name}</p>
-                      </div>
-                      <p className="text-right text-[9px] text-panel-muted">LEVEL {nextTower.level}<br />{towerUnlockRole(nextTower.kind)}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-[10px] uppercase tracking-wider text-accent">Full tower roster unlocked</p>
-                )}
-              </div>
-              <div className="rotwood-card rotwood-card-highlight mt-2 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Next defense</p>
-                    <h2 className="rotwood-display mt-1 text-2xl leading-none text-panel-foreground">
-                      STAGE {recommendedStage.stageNumber} · {recommendedStage.name}
-                    </h2>
-                    <p className="mt-1.5 text-xs leading-relaxed text-panel-muted">{recommendedStage.description}</p>
-                  </div>
-                  <div className="rounded-lg border border-accent/20 bg-accent/10 px-2 py-1 text-right">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-panel-muted">Difficulty</p>
-                    <p className="rotwood-display text-sm text-accent">{recommendedStage.difficulty}</p>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-panel-muted">
-                  <span>Best wave {recommendedStage.bestWave || "—"}</span>
-                  <span aria-hidden="true">•</span>
-                  <span className="text-accent">{"★".repeat(recommendedStage.stars) || "No stars yet"}</span>
-                </div>
-                <ScreenButton
-                  className="mt-3"
-                  onClick={() => {
-                    resetGameplayState();
-                    setActiveStageId(recommendedStage.id);
-                    if (isFirstRun) track("menu_quick_play", { stageId: recommendedStage.id });
-                    game.startStage(recommendedStage);
-                    setScreen("gameplay");
-                  }}
-                  >
-                  {isFirstRun ? "DEFEND NOW" : "CONTINUE DEFENSE"}
-                </ScreenButton>
-              </div>
+      {screen === "arsenal" && (
+        <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <main className="rw-hub-wrap mx-auto">
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 02</p><h1>Armory</h1><p>Know your tools before the next wave reaches the walls.</p></header>
+            <div className="rw-hub-list">
+              <MenuTile title="Tower Armory" subtitle="Browse towers, roles, unlocks, and upgrade paths." onClick={() => setScreen("towers")} />
+              <MenuTile title="Field Knowledge" subtitle="Spend permanent knowledge on your long-term strategy." onClick={() => setScreen("knowledge")} />
+              <MenuTile title="Collection" subtitle="View your earned tower and zombie cosmetics." onClick={() => setScreen("collection")} />
+            </div>
+            <div className="rw-hub-note"><Sparkles size={18} /><p><strong>Build with intent.</strong><br />Different towers solve different threats. A balanced defense gives you more answers when the horde changes.</p></div>
+          </main>
+        </div>
+      )}
 
-              <div className="rotwood-card mt-2 p-3">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
-                    <Gift size={18} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-panel-muted">Daily supply drop</p>
-                    <p className="rotwood-display text-lg text-panel-foreground">
-                      DAY {player.loginCycleDay}/7 · {dailyLoginReward.title}
-                    </p>
-                    <p className="text-xs text-panel-muted">{dailyLoginReward.reward.label}</p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!dailyLoginAvailable}
-                    onClick={() => {
-                      if (!profile.claimDailyLoginReward()) return;
-                      track("daily_login_claimed", { day: dailyLoginReward.day, reward: dailyLoginReward.reward.label });
-                    }}
-                    className="rotwood-button rotwood-button-primary min-h-11 shrink-0 px-3 text-xs disabled:opacity-50"
-                  >
-                    {dailyLoginAvailable ? "CLAIM" : "CLAIMED"}
-                  </button>
-                </div>
-              </div>
+      {screen === "field-intel" && (
+        <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <main className="rw-hub-wrap mx-auto">
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 03</p><h1>Field Intel</h1><p>Your next objective, recent milestones, and the progress worth chasing.</p></header>
+            <div className="rw-hub-list">
+              <MenuTile title="Daily Missions" subtitle="Complete field tasks and claim available rewards." {...(readyMissionCount > 0 ? { badge: "READY · " + readyMissionCount } : {})} onClick={() => setScreen("missions")} />
+              <MenuTile title="Achievements" subtitle="Track milestones earned across your defenses." {...(readyAchievementCount > 0 ? { badge: "READY · " + readyAchievementCount } : {})} onClick={() => setScreen("achievements")} />
+            </div>
+          </main>
+        </div>
+      )}
 
-              {!player.adsRemoved && (
-                <div className="mt-2 rounded-xl border border-white/10 bg-black/20 p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/5 text-panel-foreground">
-                      <Sparkles size={18} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-panel-muted">Optional bonus</p>
-                      <p className="rotwood-display text-base text-panel-foreground">+150 CREDITS · +1 GEM</p>
-                      <p className="text-[10px] text-panel-muted">One voluntary rewarded ad per day.</p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!dailyBonusAvailable}
-                      onClick={async () => {
-                        const { showRewarded } = await import("@/game/monetization");
-                        const earned = await showRewarded("daily-bonus");
-                        if (earned && profile.claimDailyRewardedBonus()) {
-                          track("daily_rewarded_bonus_claimed", { coins: 150, gems: 1 });
-                        }
-                      }}
-                      className="rotwood-button rotwood-button-secondary min-h-11 shrink-0 px-3 text-[10px]"
-                    >
-                      {dailyBonusAvailable ? "WATCH" : "DONE"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Play</p>
-                <div className="space-y-1.5">
-                  <MenuTile title="Campaign" subtitle="Structured progression, stars, and the main tower-unlock path." onClick={() => setScreen("stage-select")} />
-                  <MenuTile title="Endless Siege" subtitle="Build experimentation, records, and long-run mastery." onClick={() => setScreen("endless-select")} />
-                  <MenuTile title="Boss Trials" subtitle="Recurring boss mastery with rotating variants." onClick={() => setScreen("boss-trial-select")} />
-                  <MenuTile title="Side Modes" subtitle="Short resource runs and rotating challenges." onClick={() => setScreen("side-mode-select")} />
-                </div>
+      {screen === "supply-depot" && (
+        <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <main className="rw-hub-wrap mx-auto">
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 04</p><h1>Supply Depot</h1><p>Collect the supplies you have earned. Optional purchases never replace progression earned through play.</p></header>
+            <section className="rw-supply-card">
+              <div className="rw-supply-icon"><Gift size={21} /></div>
+              <div className="rw-supply-copy">
+                <p className="rw-eyebrow">DAILY SUPPLY DROP</p><h2>DAY {player.loginCycleDay}/7 · {dailyLoginReward.title}</h2><p>{dailyLoginReward.reward.label}</p>
               </div>
-
-              <div className="mt-3">
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-panel-muted">Build your collection</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <HomeShortcut title="Armory" subtitle="Towers, roles & mastery" icon={<Wrench size={18} />} onClick={() => setScreen("towers")} />
-                  <HomeShortcut title="Knowledge" subtitle="Permanent run modifiers" icon={<Sparkles size={18} />} onClick={() => setScreen("knowledge")} />
-                  <HomeShortcut title="Collection" subtitle="Earned cosmetics" icon={<Sparkles size={18} />} onClick={() => setScreen("collection")} />
-                  <HomeShortcut
-                    title="Goals"
-                    subtitle="Missions & achievements"
-                    icon={<Trophy size={18} />}
-                    {...((readyMissionCount + readyAchievementCount) > 0
-                      ? { badge: readyMissionCount + readyAchievementCount }
-                      : {})}
-                    onClick={() => setScreen("achievements")}
-                  />
+              <button type="button" disabled={!dailyLoginAvailable} onPointerDown={() => sfx("uiClick")} onClick={() => {
+                if (!profile.claimDailyLoginReward()) return;
+                track("daily_login_claimed", { day: dailyLoginReward.day, reward: dailyLoginReward.reward.label });
+              }} className="rotwood-button rotwood-button-primary rw-supply-action">{dailyLoginAvailable ? "CLAIM" : "CLAIMED"}</button>
+            </section>
+            {!player.adsRemoved && (
+              <section className="rw-supply-card rw-bonus-card">
+                <div className="rw-supply-icon"><Sparkles size={21} /></div>
+                <div className="rw-supply-copy">
+                  <p className="rw-eyebrow">VOLUNTARY DAILY BONUS</p><h2>+150 CREDITS · +1 GEM</h2><p>One optional rewarded ad each day.</p>
                 </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-1.5">
-                <HomeShortcut
-                  title="Events"
-                  subtitle="Rotating challenges"
-                  icon={<Swords size={18} />}
-                  {...(readyEventCount > 0 ? { badge: readyEventCount } : {})}
-                  onClick={() => setScreen("events")}
-                />
-                <HomeShortcut title="Shop" subtitle="Optional extras" icon={<ShoppingBag size={18} />} onClick={() => setScreen("shop")} />
-              </div>
-            </ScreenCard>
-          </div>
+                <button type="button" disabled={!dailyBonusAvailable} onPointerDown={() => sfx("uiClick")} onClick={async () => {
+                  const { showRewarded } = await import("@/game/monetization");
+                  const earned = await showRewarded("daily-bonus");
+                  if (earned && profile.claimDailyRewardedBonus()) track("daily_rewarded_bonus_claimed", { coins: 150, gems: 1 });
+                }} className="rotwood-button rotwood-button-secondary rw-supply-action">{dailyBonusAvailable ? "WATCH" : "DONE"}</button>
+              </section>
+            )}
+            <div className="rw-hub-list rw-supply-shop"><MenuTile title="Shop & Optional Extras" subtitle="Cosmetics, support options, and available purchases." onClick={() => setScreen("shop")} /></div>
+            <p className="rw-supply-footnote"><Coins size={14} /> Credits and gems earned through play remain central to progression.</p>
+          </main>
         </div>
       )}
 

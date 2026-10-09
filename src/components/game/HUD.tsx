@@ -475,8 +475,8 @@ export function HUD({
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <div className="flex items-start gap-1.5">
+      <div className="rw-hud-top space-y-1.5">
+        <div className="rw-hud-status-row flex items-start gap-1.5">
           <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" />
           <Stat label="Wave" value={`${state.wave || 1}`} />
           <Stat
@@ -523,7 +523,7 @@ export function HUD({
         )}
       </div>
 
-      <div className="pointer-events-auto max-h-[56dvh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="rw-hud-context pointer-events-auto max-h-[56dvh] space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {showMetaSections && (
           <>
             <div className="rounded-2xl bg-panel/90 p-3 shadow-panel backdrop-blur">
