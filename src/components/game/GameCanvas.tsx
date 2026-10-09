@@ -820,7 +820,7 @@ export function GameCanvas() {
               <div className="rw-menu-grid">
                 <HomeShortcut title="Operations" subtitle="Campaigns & combat modes" icon={<Swords size={20} />} onClick={() => setScreen("operations")} />
                 <HomeShortcut title="Armory" subtitle="Towers & field knowledge" icon={<Wrench size={20} />} onClick={() => setScreen("arsenal")} />
-                <HomeShortcut title="Field Intel" subtitle="Missions & achievements" icon={<Trophy size={20} />} badge={readyMissionCount + readyAchievementCount > 0 ? readyMissionCount + readyAchievementCount : undefined} onClick={() => setScreen("field-intel")} />
+                <HomeShortcut title="Field Intel" subtitle="Missions & achievements" icon={<Trophy size={20} />} {...(readyMissionCount + readyAchievementCount > 0 ? { badge: readyMissionCount + readyAchievementCount } : {})} onClick={() => setScreen("field-intel")} />
                 <HomeShortcut title="Supply Depot" subtitle="Daily drops & store" icon={<ShoppingBag size={20} />} onClick={() => setScreen("supply-depot")} />
               </div>
             </section>
@@ -839,7 +839,7 @@ export function GameCanvas() {
               <MenuTile title="Endless Siege" subtitle="Push your build as far as it can go." onClick={() => setScreen("endless-select")} />
               <MenuTile title="Boss Trials" subtitle="Take on the weekly boss and its mastery rules." onClick={() => setScreen("boss-trial-select")} />
               <MenuTile title="Side Operations" subtitle="Short resource runs and focused challenges." onClick={() => setScreen("side-mode-select")} />
-              <MenuTile title="Live Events" subtitle="Rotating objectives and seasonal milestones." badge={readyEventCount > 0 ? "READY · " + readyEventCount : undefined} onClick={() => setScreen("events")} />
+              <MenuTile title="Live Events" subtitle="Rotating objectives and seasonal milestones." {...(readyEventCount > 0 ? { badge: "READY · " + readyEventCount } : {})} onClick={() => setScreen("events")} />
             </div>
           </main>
         </div>
@@ -866,8 +866,8 @@ export function GameCanvas() {
             <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
             <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 03</p><h1>Field Intel</h1><p>Your next objective, recent milestones, and the progress worth chasing.</p></header>
             <div className="rw-hub-list">
-              <MenuTile title="Daily Missions" subtitle="Complete field tasks and claim available rewards." badge={readyMissionCount > 0 ? "READY · " + readyMissionCount : undefined} onClick={() => setScreen("missions")} />
-              <MenuTile title="Achievements" subtitle="Track milestones earned across your defenses." badge={readyAchievementCount > 0 ? "READY · " + readyAchievementCount : undefined} onClick={() => setScreen("achievements")} />
+              <MenuTile title="Daily Missions" subtitle="Complete field tasks and claim available rewards." {...(readyMissionCount > 0 ? { badge: "READY · " + readyMissionCount } : {})} onClick={() => setScreen("missions")} />
+              <MenuTile title="Achievements" subtitle="Track milestones earned across your defenses." {...(readyAchievementCount > 0 ? { badge: "READY · " + readyAchievementCount } : {})} onClick={() => setScreen("achievements")} />
             </div>
           </main>
         </div>
