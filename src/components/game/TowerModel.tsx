@@ -185,6 +185,7 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
 export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps) {
   const rig = useRef<THREE.Group>(null);
   const weapon = useRef<THREE.Group>(null);
+  const weaponBasePosition = useRef<THREE.Vector3 | null>(null);
   const signature = useRef<THREE.Group>(null);
   const muzzle = useRef<THREE.Mesh>(null);
   const muzzleSecondary = useRef<THREE.Mesh>(null);
@@ -217,8 +218,9 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       rig.current.rotation.z = Math.sin(t * 13 + idleSeed) * punch * 0.035;
     }
     if (weapon.current) {
-      weapon.current.position.z = 0.82 - tower.recoil * 0.18;
-      weapon.current.position.y = tower.recoil * 0.018;
+      if (!weaponBasePosition.current) weaponBasePosition.current = weapon.current.position.clone();
+      const base = weaponBasePosition.current;
+      weapon.current.position.set(base.x, base.y + tower.recoil * 0.018, base.z - tower.recoil * 0.18);
     }
     if (signature.current) {
       signature.current.rotation.y = t * signatureSpin;
@@ -335,7 +337,7 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <meshStandardMaterial color={secondary} flatShading roughness={0.66} />
       </mesh>
       {[-0.44, 0.44].map((x) => (
-        <mesh key={x} position={[x, 0.66, -0.15]} rotation-x={Math.PI / 2} castShadow>
+        <mesh key={x} position={[x, 0.66, -0.15]} rotation-z={Math.PI / 2} castShadow>
           <cylinderGeometry args={[0.25, 0.3, 0.72, 6]} />
           <AccentMaterial color={accent} glow={0.35} />
         </mesh>
@@ -347,13 +349,22 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         </mesh>
       ))}
       <group ref={weapon} position={[0, 1.02, 0]}>
-        {[-0.24, 0.24].map((x) => (
-          <mesh key={x} position={[x, 0, 0.72]} castShadow>
-            <cylinderGeometry args={[0.09, 0.12, 1.42, 6]} />
+        {tower.a >= 2 ? (
+          <>
+            {[-0.24, 0.24].map((x) => (
+              <mesh key={x} position={[x, 0, 0.72]} castShadow>
+                <cylinderGeometry args={[0.09, 0.12, 1.42, 6]} />
+                <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.44} />
+              </mesh>
+            ))}
+          </>
+        ) : (
+          <mesh position={[0, 0, 0.72]} castShadow>
+            <cylinderGeometry args={[0.12, 0.15, 1.42, 6]} />
             <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.44} />
           </mesh>
-        ))}
-        <mesh ref={muzzle} position={[-0.24, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
+        )}
+        <mesh ref={muzzle} position={tower.a >= 2 ? [-0.24, 0, 1.48] : [0, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
           <coneGeometry args={[0.28, 0.38, 7]} />
           <AccentMaterial color="#fff0bb" glow={1.15} />
         </mesh>
@@ -505,18 +516,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <meshStandardMaterial color={secondary} flatShading roughness={0.62} />
       </mesh>
       <group ref={weapon} position={[0, 1.02, 0]}>
-        {[-0.46, -0.15, 0.15, 0.46].map((x) => (
-          <group key={x} position={[x, 0, 0.26]}>
-            <mesh rotation-x={Math.PI / 2} castShadow>
-              <cylinderGeometry args={[0.16, 0.2, 0.86, 6]} />
-              <meshStandardMaterial color={dark} flatShading metalness={0.4} />
-            </mesh>
-            <mesh position={[0, -0.18, 0.56]} rotation-x={Math.PI / 2}>
-              <coneGeometry args={[0.12, 0.3, 6]} />
-              <AccentMaterial color={accent} glow={0.32} />
-            </mesh>
-          </group>
-        ))}
+        <group position={[0, 0, 0.26]}>
+          <mesh rotation-x={Math.PI / 2} castShadow>
+            <cylinderGeometry args={[0.21, 0.24, 0.86, 6]} />
+            <meshStandardMaterial color={dark} flatShading metalness={0.4} />
+          </mesh>
+          <mesh position={[0, -0.18, 0.56]} rotation-x={Math.PI / 2}>
+            <coneGeometry args={[0.15, 0.34, 6]} />
+            <AccentMaterial color={accent} glow={0.32} />
+          </mesh>
+        </group>
         <mesh ref={muzzle} position={[0, 0, 0.82]} rotation-x={Math.PI / 2} visible={false}>
           <ringGeometry args={[0.32, 0.5, 8]} />
           <meshBasicMaterial color="#ffe6a8" transparent opacity={0.95} />
