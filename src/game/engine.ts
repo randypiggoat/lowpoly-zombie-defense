@@ -45,15 +45,6 @@ import type { RandomSource } from "./random";
 import { getWaveSpawnPlan } from "./waves";
 import { getCombatFeedback } from "./combatFeel";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "./combatRewards";
-import {
-  applyRunModifiersToCombat,
-  createRunModifierOffer,
-  getRunModifierDamageMultiplier,
-  getRunModifierEffects,
-  shouldOfferRunModifier,
-  type RunModifierDefinition,
-  type RunModifierId,
-} from "./runModifiers";
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
 import { bossKillGoldMultiplier } from "./bossRewards";
 import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
@@ -644,9 +635,6 @@ damagePopups: DamagePopup[];
 waveMessage: string;
 waveMessageLife: number;
 waveMessageType: "start" | "complete" | "boss" | "";
-  runModifierOffer: RunModifierDefinition[];
-  activeRunModifiers: RunModifierId[];
-  runModifierRerollUsed: boolean;
   reviveUsed: boolean;
   bossesRemaining: number;
   perfectWaves: number;
@@ -700,7 +688,6 @@ type StageRunConfig = Pick<
   challengeKey?: string;
   bossTrial?: BossTrialDefinition;
   bossTrialKey?: string;
-  allowRunModifiers?: boolean;
   campaignReplayChallenge?: CampaignReplayChallengeDefinition;
   sideMode?: SideModeLevel;
   sideModeCycleKey?: string;
@@ -750,7 +737,6 @@ const DEFAULT_STAGE: StageRunConfig = {
   },
   objectives: [],
   mapId: "neighborhood",
-  allowRunModifiers: true,
 };
 
 function makeState(stage: StageRunConfig): GameState {
@@ -777,9 +763,6 @@ damagePopups: [],
 waveMessage: "",
 waveMessageLife: 0,
 waveMessageType: "",
-    runModifierOffer: [],
-    activeRunModifiers: [],
-    runModifierRerollUsed: false,
     reviveUsed: false,
     bossesRemaining: 0,
     perfectWaves: 0,
@@ -885,7 +868,6 @@ export class Game {
 
   reset() {
     this.zombieById.clear();
-    this.cachedEffectsKey = null;
     this.livingStepInputs.length = 0;
     this.livingStepResults.length = 0;
     this.ragdollStepResults.length = 0;
@@ -898,7 +880,6 @@ export class Game {
 
   startStage(stage: StageRunConfig) {
     this.zombieById.clear();
-    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     this.stage = stage;
     this.map = getStageMap(stage.mapId);
@@ -944,7 +925,6 @@ export class Game {
     state.spawnTimer = 0;
     state.bossesRemaining = 0;
     state.waveDamageTaken = 0;
-    state.runModifierOffer = [];
     state.waveTimer = 2.2;
     state.waveMessage = `ENDLESS SIEGE · WAVE ${state.wave + 1}`;
     state.waveMessageLife = 3;
@@ -973,10 +953,9 @@ export class Game {
 
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
     this.zombieById.clear();
-    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     const stage = createBossTrialStage(trial);
-    this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey, allowRunModifiers: false };
+    this.stage = { ...stage, bossTrial: trial, bossTrialKey: weekKey };
     this.map = getStageMap(stage.mapId);
     this.pathLength = getPathLength(this.map.path);
     this.nextId = 1;
@@ -992,13 +971,11 @@ export class Game {
 
   startSideMode(level: SideModeLevel, cycleKey = new Date().toISOString().slice(0, 10)) {
     this.zombieById.clear();
-    this.cachedEffectsKey = null;
     this.projectileEmissions = 0;
     this.stage = {
       ...level.stage,
       sideMode: level,
       sideModeCycleKey: cycleKey,
-      allowRunModifiers: false,
     };
     this.map = getStageMap(level.stage.mapId);
     this.pathLength = getPathLength(this.map.path);
@@ -1024,65 +1001,6 @@ export class Game {
     state.waveMessageType = "complete";
     state.flash = 0;
     track("revive_used", { wave: state.wave });
-    sfx("upgrade");
-    this.emit();
-    return true;
-  }
-
-  rerollRunModifierOffer(): boolean {
-    const state = this.state;
-    if (state.runModifierOffer.length === 0 || state.runModifierRerollUsed) return false;
-    const excluded = [
-      ...state.activeRunModifiers,
-      ...state.runModifierOffer.map((entry) => entry.id),
-    ];
-    const offer = createRunModifierOffer(this.random, excluded);
-    if (offer.length === 0) return false;
-    state.runModifierOffer = offer;
-    state.runModifierRerollUsed = true;
-    track("modifier_rerolled", { wave: state.wave });
-    sfx("upgrade");
-    this.emit();
-    return true;
-  }
-
-  chooseRunModifier(id: RunModifierId): boolean {
-    const state = this.state;
-    const chosen = state.runModifierOffer.find((entry) => entry.id === id);
-    if (!chosen) return false;
-    state.activeRunModifiers = [...state.activeRunModifiers, id];
-    state.runModifierOffer = [];
-    state.waveMessage = chosen.name.toUpperCase() + " ACTIVE";
-    state.waveMessageLife = 1.4;
-    state.waveMessageType = "complete";
-    track("modifier_chosen", { modifier: id, wave: state.wave });
-    const plan = getWaveSpawnPlan(state.wave, state.stageWaveTarget);
-    const endlessScaling = this.stage.endless ? getEndlessWaveScaling(state.wave, this.stage.waveCount) : null;
-    const queueMult =
-      Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
-      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier) *
-      (endlessScaling?.waveSizeMultiplier ?? 1);
-    const endlessBossWave =
-      Boolean(this.stage.endless) && state.wave >= 10 && state.wave % 10 === 0;
-    const bossWave =
-      endlessBossWave ||
-      (this.stage.boss.enabled && this.stage.boss.wave === state.wave);
-    const bossCount = endlessBossWave
-      ? 1 + Math.floor(state.wave / 30)
-      : bossWave
-        ? Math.max(0, this.stage.boss.count)
-        : 0;
-    state.bossesRemaining = bossCount;
-    const queue = waveQueueSize(
-      state.wave,
-      state.stageWaveTarget,
-      queueMult,
-      plan.sizeMultiplier,
-      bossCount,
-    );
-    state.spawnQueue = Math.min(64, Math.max(1, queue));
-    state.spawnTimer = 0;
-    state.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
     sfx("upgrade");
     this.emit();
     return true;
@@ -1262,23 +1180,6 @@ export class Game {
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
 
-    if (
-      this.stage.campaignReplayChallenge?.allowRunModifiers !== false &&
-      this.stage.allowRunModifiers !== false &&
-      shouldOfferRunModifier(s.wave)
-    ) {
-      s.runModifierOffer = createRunModifierOffer(this.random, s.activeRunModifiers);
-      if (s.runModifierOffer.length > 0) {
-        s.waveMessage = "CHOOSE YOUR POWER";
-        s.waveMessageLife = 999;
-        s.waveMessageType = "complete";
-        profile.recordWaveReached(s.wave, { awardXp: !s.endlessMode });
-        sfx("wave");
-        this.emit();
-        return;
-      }
-    }
-
     const bossCount = endlessBossWave
       ? 1 + Math.floor(s.wave / 30)
       : bossWave
@@ -1352,7 +1253,7 @@ export class Game {
       speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
     }
     const endlessScaling = this.stage.endless ? getEndlessWaveScaling(w, this.stage.waveCount) : null;
-    hp *= (endlessScaling?.enemyHealthMultiplier ?? 1) * this.runEffects().enemyHealthMultiplier;
+    hp *= endlessScaling?.enemyHealthMultiplier ?? 1;
     speed *= endlessScaling?.enemySpeedMultiplier ?? 1;
 
     const spawnDist = startDist ?? -this.random() * 2;
@@ -1399,8 +1300,6 @@ export class Game {
     return spawned;
   }
 
-  private cachedEffectsKey: RunModifierId[] | null = null;
-  private cachedEffects = getRunModifierEffects([]);
   private kindKills: Record<string, number> = {};
   private readonly zombieById = new Map<number, Zombie>();
   private readonly healTargets: Zombie[] = [];
@@ -1411,16 +1310,6 @@ export class Game {
   private readonly ragdollStepResults: EnemyRagdollState[] = [];
   private readonly pathSampleScratch = { x: 0, z: 0, direction: 0 };
   private readonly projectileFlightResults: ProjectileFlightResult[] = [];
-
-  /** Combined run-modifier effects, recomputed only when the active modifier list changes. */
-  private runEffects() {
-    const active = this.state.activeRunModifiers;
-    if (this.cachedEffectsKey !== active) {
-      this.cachedEffectsKey = active;
-      this.cachedEffects = getRunModifierEffects(active);
-    }
-    return this.cachedEffects;
-  }
 
   /** Flush per-tower kill counts into persistent tower mastery (once per wave, not per kill). */
   private flushMasteryKills() {
@@ -1605,7 +1494,7 @@ export class Game {
     s.maxKillStreak = Math.max(s.maxKillStreak, s.killStreak);
     s.killStreakTimer = 2.25;
     const knowledge = profile.fieldKnowledgeEffects();
-    const runGoldMultiplier = this.runEffects().goldMultiplier * knowledge.scrapMultiplier;
+    const runGoldMultiplier = knowledge.scrapMultiplier;
     const streakGoldMultiplier = killStreakGoldMultiplier(s.killStreak);
     const bossGoldMultiplier = bossKillGoldMultiplier(z.boss);
     const reward = calculateKillReward(
@@ -1782,7 +1671,6 @@ export class Game {
   private step(dt: number) {
     const s = this.state;
     if (s.gameOver) return;
-    if (s.runModifierOffer.length > 0) return;
 
     // Reuse one ID map for the whole simulation step so projectile tracking is O(1)
     // instead of scanning every zombie for every active projectile.
@@ -2251,7 +2139,6 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       }
     }
     // towers
-    const runEffects = this.runEffects();
     for (const t of s.towers) {
       const nextCooldown = t.cooldown - dt;
       const cooldownReady = nextCooldown <= 0;
@@ -2261,7 +2148,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if ((t.surge ?? 0) > 0) t.surge = Math.max(0, (t.surge ?? 0) - dt);
 
       const baseCombat = towerCombatStats(t);
-      const range = baseCombat.range * runEffects.rangeMultiplier;
+      const range = baseCombat.range;
       let best: Zombie | null = null;
       if (t.targetRefreshTimer! > 0 && t.targetId !== undefined) {
         const cached = this.zombieById.get(t.targetId);
@@ -2282,9 +2169,9 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (best) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (cooldownReady) {
-          const combat = applyRunModifiersToCombat(baseCombat, runEffects);
+          const combat = baseCombat;
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
-          const rate = baseCombat.rate * runEffects.rateMultiplier * surgeRate;
+          const rate = baseCombat.rate * surgeRate;
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < combat.crit;
@@ -2321,8 +2208,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 bossDamageMultiplier: combat.bossDamageMultiplier,
                 closeDamageMultiplier: combat.closeDamageMultiplier,
                 burnDuration: combat.burnDuration,
-                markedDamageMultiplier: runEffects.markedDamageMultiplier,
-                slowedDamageMultiplier: runEffects.slowedDamageMultiplier,
+                markedDamageMultiplier: 1,
+                slowedDamageMultiplier: 1,
                 stunnedMultiplier: combat.stunnedMultiplier,
                 burningMultiplier: combat.burningMultiplier,
                 swarmMultiplier: combat.swarmMultiplier,
@@ -2367,11 +2254,6 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if (flight.impacted && target) {
         const goreBase = GORE_BASE[b.kind];
         const hit = (z: Zombie, dmg: number) => {
-          const statusDamageMultiplier = getRunModifierDamageMultiplier(
-            b,
-            (z.markTime ?? 0) > 0,
-            z.slow > 0,
-          );
           const status = applyProjectileStatusEffects(
             z,
             b.slow,
@@ -2385,7 +2267,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           const counterplayMultiplier = towerEnemyDamageMultiplier(b.kind, z.kind);
           this.damage(
             z,
-            dmg * counterplayMultiplier * statusDamageMultiplier,
+            dmg * counterplayMultiplier,
             b.x,
             b.z,
             goreBase,
