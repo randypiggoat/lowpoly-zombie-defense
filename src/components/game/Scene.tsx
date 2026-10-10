@@ -526,7 +526,9 @@ function TowerMesh({
       let diff = target - cur;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      turret.current.rotation.y = cur + diff * (1 - Math.exp(-10 * dt));
+      // Snap on the actual shot frame so the model and simulation fire along the same aim.
+      const aimBlend = tower.recoil > 0.8 ? 1 : 1 - Math.exp(-10 * dt);
+      turret.current.rotation.y = cur + diff * aimBlend;
     }
     if (ring.current) {
       ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025);
