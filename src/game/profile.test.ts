@@ -198,8 +198,12 @@ describe("kill-only run currency and endless XP rules", () => {
     const originalProfile=structuredClone(profile.profile),originalReward=profile.lastReward;
     try {
       profile.profile.xp=51;profile.profile.coins=700;
+      const playMissionProgress = profile.profile.dailyMissionProgress["daily-play-3"]?.progress ?? 0;
       const reward=profile.completeEndlessRun(8,14,{awardXp:false});
-      expect(profile.profile.xp).toBe(51);expect(reward.xp).toBe(0);expect(profile.profile.coins).toBeGreaterThan(700);
+      expect(profile.profile.xp).toBe(51);
+      expect(reward.xp).toBe(0);
+      expect(profile.profile.coins).toBeGreaterThan(700);
+      expect(profile.profile.dailyMissionProgress["daily-play-3"]?.progress ?? 0).toBe(playMissionProgress);
     } finally { Object.assign(profile.profile,originalProfile);profile.lastReward=originalReward; }
   });
 });

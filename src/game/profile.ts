@@ -1129,7 +1129,8 @@ class ProfileStore {
 
     const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(baseXp);
     if (!continuedAfterVictory) {
-      this.updateDailyMission("gameCompleted", 1);
+      // Endless runs cannot satisfy the daily XP mission through a repeatable run-end path.
+      if (options?.awardXp !== false) this.updateDailyMission("gameCompleted", 1);
       this.syncAchievementProgress();
     }
     const reward: RunReward & { score: number; bestWave: number; bestScore: number } = {
