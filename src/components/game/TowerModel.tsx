@@ -61,8 +61,8 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
       return (
         <>
           {a >= 1 && (
-            <mesh position={[0, 1.3, 0.2]} rotation-x={Math.PI / 2} castShadow>
-              <cylinderGeometry args={[0.1, 0.1, 0.7 + a * 0.12, 6]} />
+            <mesh position={[0.3, 1.12, -0.24]} castShadow>
+              <boxGeometry args={[0.22, 0.3, 0.22]} />
               {metal}
             </mesh>
           )}
@@ -79,10 +79,16 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
             </mesh>
           )}
           {b >= 4 && (
-            <mesh position={[0, 0.95, 0.8]} castShadow>
-              <boxGeometry args={[0.3, 0.3, 0.9]} />
-              <AccentMaterial color={accent} glow={0.4} />
-            </mesh>
+            <group position={[0, 1.36, -0.24]}>
+              <mesh position={[0, 0.12, 0]} castShadow>
+                <cylinderGeometry args={[0.025, 0.025, 0.24, 5]} />
+                {metal}
+              </mesh>
+              <mesh position={[0, 0.28, 0]}>
+                <icosahedronGeometry args={[0.13, 0]} />
+                <AccentMaterial color={accent} glow={0.75} />
+              </mesh>
+            </group>
           )}
         </>
       );
@@ -119,9 +125,9 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
             </mesh>
           )}
           {b >= 3 && (
-            <mesh position={[0.28, 0.85, 1.0]} castShadow>
-              <cylinderGeometry args={[0.08, 0.12, 0.7, 5]} />
-              {metal}
+            <mesh position={[0.34, 0.92, -0.22]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.11, 0.025, 5, 8]} />
+              <AccentMaterial color={accent} glow={0.5} />
             </mesh>
           )}
         </>
@@ -147,16 +153,28 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
       return (
         <>
           {a >= 2 && (
-            <mesh position={[0.6, 0.85, 0.2]} castShadow>
-              <boxGeometry args={[0.3, 0.3, 0.9]} />
-              {metal}
-            </mesh>
+            <group position={[0.58, 0.82, -0.28]}>
+              <mesh castShadow>
+                <boxGeometry args={[0.36, 0.32, 0.38]} />
+                {metal}
+              </mesh>
+              <mesh position={[0, 0.2, 0]}>
+                <coneGeometry args={[0.1, 0.22, 5]} />
+                <AccentMaterial color={accent} glow={0.25} />
+              </mesh>
+            </group>
           )}
           {b >= 3 && (
-            <mesh position={[0, 1.15, 1.0]} rotation-x={Math.PI / 2}>
-              <coneGeometry args={[0.2, 0.4, 6]} />
-              <AccentMaterial color={accent} glow={0.6} />
-            </mesh>
+            <group position={[0, 1.3, -0.22]}>
+              <mesh position={[0, 0.12, 0]} castShadow>
+                <cylinderGeometry args={[0.035, 0.035, 0.24, 5]} />
+                {metal}
+              </mesh>
+              <mesh position={[0, 0.28, 0]}>
+                <octahedronGeometry args={[0.14, 0]} />
+                <AccentMaterial color={accent} glow={0.8} />
+              </mesh>
+            </group>
           )}
         </>
       );
@@ -401,6 +419,12 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           <cylinderGeometry args={[0.17, 0.17, 0.62, 8]} />
           <AccentMaterial color={accent} glow={0.25} />
         </mesh>
+        {tower.a >= 1 && (
+          <mesh position={[0.22, 0.25, 0.42]} rotation-x={Math.PI / 2} castShadow>
+            <cylinderGeometry args={[0.055, 0.055, 0.42, 6]} />
+            <AccentMaterial color={accent} glow={0.5} />
+          </mesh>
+        )}
         <mesh ref={muzzle} position={[0, 0.05, 1.83]} rotation-x={Math.PI / 2} visible={false}>
           <coneGeometry args={[0.12, 0.3, 6]} />
           <AccentMaterial color="#fff4ce" glow={1.2} />
