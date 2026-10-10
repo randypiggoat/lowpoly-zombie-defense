@@ -16,7 +16,7 @@ import { ThemedBase } from "./ThemedBase";
 import { MapSpecialTerrain } from "./SpecialTerrain";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
 import { gorePartBit } from "@/game/enemyGore";
-import { zombiePresentation } from "@/game/zombiePresentation";
+import { zombieModelScale, zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
@@ -252,6 +252,8 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
           key={obstacle.label + "-" + index}
           environmentId={map.environmentId}
           label={obstacle.label}
+          x={obstacle.x}
+          z={obstacle.z}
           width={obstacle.width}
           depth={obstacle.depth}
           height={obstacle.height}
@@ -761,22 +763,7 @@ function Zombies({
           }
         }
       }
-      const scale =
-        z.kind === 2
-          ? 1.24
-          : z.kind === 1
-            ? 0.88
-            : z.kind === 5
-              ? 1.18
-              : z.kind === 7
-                ? 0.72
-                : z.kind === 4
-                  ? 1.06
-                  : z.kind === 3
-                    ? 1.02
-                    : z.kind === 6
-                      ? 0.9
-                      : 1;
+      const baseScale = zombieModelScale(z.kind, z.boss);
       if (kindChanged) {
         lastKind.current[i] = z.kind;
         const body = refs["body"] as THREE.Mesh | undefined;
@@ -884,7 +871,7 @@ function Zombies({
         g.position.set(z.x, 0.1 + z.y, z.z);
         g.rotation.x = -1.4 - z.tilt;
         g.rotation.z = z.roll;
-        g.scale.setScalar(scale * (z.boss ? 1.16 : 1) * (1 - f * 0.35));
+        g.scale.setScalar(baseScale * (1 - f * 0.35));
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
         const face = refs["face"] as THREE.Mesh | undefined;
@@ -905,26 +892,20 @@ function Zombies({
         const gaitWave = Math.sin(phase * presentation.gait) * animationFactor;
         const altGaitWave = Math.sin(phase * presentation.gait + Math.PI) * animationFactor;
         const idleWave = Math.sin(phase * presentation.idleRate) * animationFactor;
-        const hpRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
-        const injured = 1 - hpRatio;
-        const reactionEnvelope = z.hitReact > 0
-          ? z.hitReact * z.hitReact * (3 - 2 * z.hitReact)
-          : 0;
         const facingY = z.facingY ?? 0;
+        // Restore archetype/boss scale every active frame so a prior pooled death fade
+        // cannot leak into a new enemy. Damage response is material-only: hits must not
+        // squash, twist, or lean the model.
+        g.scale.setScalar(baseScale);
         g.position.set(
           z.x,
           0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp,
           z.z,
         );
-        const localHitRight = z.hitX * Math.cos(facingY) - z.hitZ * Math.sin(facingY);
-        const localHitForward = z.hitX * Math.sin(facingY) + z.hitZ * Math.cos(facingY);
         const movementSway = idleWave * presentation.bodySway;
-        const damageSag = injured * presentation.damageLean * 0.35;
-        const hitTwist = localHitRight * reactionEnvelope * z.hitForce * presentation.hitTwist;
-        const hitRecoil = localHitForward * reactionEnvelope * z.hitForce * presentation.hitRecoil;
         g.rotation.y = facingY;
-        g.rotation.x = presentation.forwardLean + damageSag - hitRecoil * 0.18;
-        g.rotation.z = movementSway + hitTwist;
+        g.rotation.x = presentation.forwardLean;
+        g.rotation.z = movementSway;
 
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
@@ -936,17 +917,13 @@ function Zombies({
 
         if (body) {
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
-          body.rotation.y = localHitRight * reactionEnvelope * z.hitForce * 0.22;
+          body.rotation.y = 0;
           const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
-          body.scale.y = baseBodyScaleY * (1 + Math.abs(gaitWave) * 0.018);
+          body.scale.y = baseBodyScaleY;
         }
         if (head) {
-          head.rotation.x =
-            Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75 -
-            hitRecoil * 0.12;
-          head.rotation.z =
-            Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45 -
-            hitTwist * 0.55;
+          head.rotation.x = Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75;
+          head.rotation.z = Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45;
         }
         if (face) {
           face.visible = true;
@@ -955,18 +932,18 @@ function Zombies({
           face.position.z = presentation.faceZ;
         }
         if (leftArm) {
-          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing - hitRecoil * 0.35;
-          leftArm.rotation.z = -hitTwist * 0.7 + idleWave * 0.04;
+          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing;
+          leftArm.rotation.z = idleWave * 0.04;
         }
         if (rightArm) {
-          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing + hitRecoil * 0.35;
-          rightArm.rotation.z = hitTwist * 0.7 - idleWave * 0.04;
+          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing;
+          rightArm.rotation.z = -idleWave * 0.04;
         }
         if (leftLeg) {
-          leftLeg.rotation.x = altGaitWave * presentation.stride + hitRecoil * 0.12;
+          leftLeg.rotation.x = altGaitWave * presentation.stride;
         }
         if (rightLeg) {
-          rightLeg.rotation.x = gaitWave * presentation.stride - hitRecoil * 0.12;
+          rightLeg.rotation.x = gaitWave * presentation.stride;
         }
 
         const signatureName =
