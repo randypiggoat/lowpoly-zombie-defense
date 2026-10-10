@@ -305,7 +305,7 @@ export type TowerDef = {
 export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   rifleman: {
     name: "Rifleman",
-    blurb: "Cheap, fast shots at long range",
+    blurb: "Quick, steady shots from a safe distance",
     damage: 6,
     rate: 2.2,
     range: 7.6,
@@ -317,7 +317,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   shotgunner: {
     name: "Shotgunner",
-    blurb: "Short range, heavy spread damage",
+    blurb: "A close-range blast for clustered zombies",
     damage: 15,
     rate: 1.1,
     range: 4.3,
@@ -331,7 +331,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   freezer: {
     name: "Freezer",
-    blurb: "Low damage, heavy slow",
+    blurb: "Chill the horde and slow its advance",
     damage: 4,
     rate: 1.4,
     range: 6,
@@ -345,7 +345,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   sniper: {
     name: "Sniper",
-    blurb: "Very long range, huge single hits",
+    blurb: "Long-range hits for the toughest threats",
     damage: 62,
     rate: 0.36,
     range: 14,
@@ -358,7 +358,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   tesla: {
     name: "Tesla",
-    blurb: "Chain lightning across the horde",
+    blurb: "Chain lightning jumps through the horde",
     damage: 12,
     rate: 1.1,
     range: 5.6,
@@ -372,7 +372,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   flamethrower: {
     name: "Flamethrower",
-    blurb: "Burns groups over time",
+    blurb: "Roast a crowd over time",
     damage: 4,
     rate: 3.4,
     range: 5,
@@ -387,7 +387,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   rocket: {
     name: "Rocket",
-    blurb: "Slow shots, big explosions",
+    blurb: "Big blasts for tightly packed crowds",
     damage: 42,
     rate: 0.5,
     range: 8.6,
@@ -401,7 +401,7 @@ export const TOWER_INFO: Record<TowerKind, TowerDef> = {
   },
   laser: {
     name: "Laser",
-    blurb: "Expensive, melts single targets",
+    blurb: "A focused beam that melts priority targets",
     damage: 34,
     rate: 2.6,
     range: 9.2,
