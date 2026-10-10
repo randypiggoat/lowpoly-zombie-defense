@@ -59,11 +59,47 @@ export type ProjectileState = {
   killRush?: number;
 };
 
+export type TowerMuzzleOffset = Readonly<{ side: number; forward: number; height: number }>;
+
+const TOWER_PRIMARY_MUZZLES: Record<TowerKind, TowerMuzzleOffset> = {
+  rifleman: { side: 0, forward: 1.58, height: 0.9 },
+  shotgunner: { side: -0.24, forward: 1.48, height: 1.02 },
+  sniper: { side: 0, forward: 1.91, height: 1.71 },
+  tesla: { side: 0, forward: 0, height: 1.74 },
+  flamethrower: { side: 0, forward: 1.24, height: 1.3 },
+  freezer: { side: 0, forward: 0.55, height: 0.96 },
+  rocket: { side: 0, forward: 0.82, height: 1.02 },
+  laser: { side: 0, forward: 0.66, height: 1.42 },
+};
+const RIFLEMAN_DUAL_MUZZLES: readonly TowerMuzzleOffset[] = [
+  { side: 0, forward: 1.58, height: 0.9 },
+  { side: 0.22, forward: 1.48, height: 0.9 },
+];
+const RIFLEMAN_TRIPLE_MUZZLES: readonly TowerMuzzleOffset[] = [
+  { side: -0.22, forward: 1.48, height: 0.9 },
+  { side: 0, forward: 1.58, height: 0.9 },
+  { side: 0.22, forward: 1.48, height: 0.9 },
+];
+const SHOTGUNNER_DUAL_MUZZLES: readonly TowerMuzzleOffset[] = [
+  { side: -0.24, forward: 1.48, height: 1.02 },
+  { side: 0.24, forward: 1.48, height: 1.02 },
+];
+
+/** Returns the world-oriented muzzle offset for an actual shot in a weapon volley. */
+export function getTowerMuzzleOffset(kind: TowerKind, shotIndex = 0, shotCount = 1): TowerMuzzleOffset {
+  const index = Math.max(0, Math.floor(shotIndex));
+  if (kind === "rifleman" && shotCount >= 3) return RIFLEMAN_TRIPLE_MUZZLES[Math.min(index, 2)]!;
+  if (kind === "rifleman" && shotCount >= 2) return RIFLEMAN_DUAL_MUZZLES[Math.min(index, 1)]!;
+  if (kind === "shotgunner" && shotCount >= 2) return SHOTGUNNER_DUAL_MUZZLES[Math.min(index, 1)]!;
+  return TOWER_PRIMARY_MUZZLES[kind];
+}
+
 export type ProjectileLaunchInput = Omit<
   ProjectileState,
   "alive" | "y" | "markedDamageMultiplier" | "slowedDamageMultiplier"
 > & {
   level: number;
+  muzzleHeight?: number;
   markedDamageMultiplier?: number;
   slowedDamageMultiplier?: number;
 };
@@ -73,6 +109,7 @@ export function createTowerProjectile(
 ): ProjectileState {
   const {
     level,
+    muzzleHeight,
     markedDamageMultiplier = 1,
     slowedDamageMultiplier = 1,
     ...projectile
@@ -81,7 +118,7 @@ export function createTowerProjectile(
     ...projectile,
     markedDamageMultiplier,
     slowedDamageMultiplier,
-    y: 1.6 + level * 0.03,
+    y: muzzleHeight !== undefined && Number.isFinite(muzzleHeight) ? muzzleHeight : 1.6 + level * 0.03,
     alive: true,
   };
 }
