@@ -922,18 +922,18 @@ class ProfileStore {
     return true;
   }
 
-  recordZombieKill(kind: number) {
+  recordZombieKill(kind: number, options?: { awardXp?: boolean }) {
     this.addSeasonalEventKillProgress();
     if (kind >= 2) this.addSeasonalEventActivity("special-kills");
     this.refreshRetentionState();
     const p = this.profile;
-    const xp = progressionXpForKill(kind);
+    const xp = options?.awardXp === false ? 0 : progressionXpForKill(kind);
     const coins =
       kind === 2 ? 3 : kind === 1 ? 2 : kind === 4 ? 4 : kind === 5 ? 3 : kind === 6 ? 4 : kind === 3 ? 2 : 1;
     p.totalKills += 1;
     if (kind === 2) p.bruteKills += 1;
     p.coins += coins;
-    const result = this.awardXp(xp);
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(xp);
     this.updateDailyMission("zombieKill", 1);
     this.syncAchievementProgress();
 
@@ -973,9 +973,11 @@ class ProfileStore {
     const baseCoins = Math.round((55 + normalizedWave * 8 + Math.floor(kills / 3)) * rewardScale * (completed ? 1.2 : 0.8));
     const gems = completed ? 4 : Math.floor(normalizedWave / 4);
 
-    p.coins += baseCoins;
-    p.gems += gems;
-    p.gamesPlayed += 1;
+    if (!continuedAfterVictory) {
+      p.coins += baseCoins;
+      p.gems += gems;
+      p.gamesPlayed += 1;
+    }
     if (newRecord) p.bossTrialBestScore = normalizedScore;
     if (completed && this.lastBossTrialId) {
       const clears = (p.bossTrialClears[this.lastBossTrialId] ?? 0) + 1;
@@ -983,16 +985,18 @@ class ProfileStore {
       p.bossTrialMastery[this.lastBossTrialId] = clears >= 10 ? 3 : clears >= 3 ? 2 : 1;
     }
 
-    const result = this.awardXp(baseXp);
-    this.updateDailyMission("gameCompleted", 1);
-    this.syncAchievementProgress();
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(baseXp);
+    if (!continuedAfterVictory) {
+      this.updateDailyMission("gameCompleted", 1);
+      this.syncAchievementProgress();
+    }
 
     const reward: RunReward & { score: number; bestScore: number } = {
       wave: normalizedWave,
       kills: Math.max(0, kills),
       xp: baseXp,
-      coins: baseCoins,
-      gems: gems + result.levelsGained,
+      coins: continuedAfterVictory ? 0 : baseCoins,
+      gems: continuedAfterVictory ? 0 : gems + result.levelsGained,
       leveledTo: result.leveledTo,
       newRecord,
       stageId: null,
@@ -1082,16 +1086,19 @@ class ProfileStore {
       challengePeriod?: "free" | "daily" | "weekly";
       challengeKey?: string;
       rewardMultiplier?: number;
+      awardXp?: boolean;
+      continuedAfterVictory?: boolean;
     },
   ): RunReward & { score: number; bestWave: number; bestScore: number } {
-    this.addSeasonalEventActivity("runs");
+    const continuedAfterVictory = Boolean(options?.continuedAfterVictory);
+    if (!continuedAfterVictory) this.addSeasonalEventActivity("runs");
     this.refreshRetentionState();
     const p = this.profile;
     const multiplier = Math.max(0.5, options?.rewardMultiplier ?? 1);
     const score = Math.max(0, Math.round(wave * 100 + kills * 8 + p.level * 10));
     const newWaveRecord = wave > p.endlessBestWave;
     const newScoreRecord = score > p.endlessBestScore;
-    const baseXp = progressionXpForRun(wave, kills, multiplier);
+    const baseXp = options?.awardXp === false ? 0 : progressionXpForRun(wave, kills, multiplier);
     const baseCoins = Math.round((15 + wave * 4.5 + Math.floor(kills / 4)) * multiplier);
     const gems = Math.floor(wave / 10) + (newScoreRecord && wave >= 10 ? 2 : 0);
 
@@ -1143,18 +1150,15 @@ class ProfileStore {
     return reward;
   }
 
-  recordWaveReached(wave: number) {
+  recordWaveReached(wave: number, options?: { awardXp?: boolean }) {
     this.recordSeasonalEventWave(wave);
     this.refreshRetentionState();
-    const coins = 5 + wave * 2;
-    const xp = progressionXpForWave(wave);
-    const p = this.profile;
-    p.coins += coins;
-    const result = this.awardXp(xp);
+    const xp = options?.awardXp === false ? 0 : progressionXpForWave(wave);
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(xp);
     this.updateDailyMission("waveReached", wave);
     this.syncAchievementProgress();
     this.save();
-    return { xp, coins, ...result };
+    return { xp, coins: 0, ...result };
   }
 
   private stageEntry(stageId: number): StageProgress {
