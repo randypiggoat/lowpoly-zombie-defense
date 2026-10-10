@@ -20,6 +20,7 @@ import { zombieModelScale, zombiePresentation } from "@/game/zombiePresentation"
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
+import { RIFLEMAN_SQUAD_SUPPORT } from "@/game/towerUpgradeDesign";
 import { StageEnvironment, EnvironmentPropMesh } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
 import {
@@ -517,7 +518,11 @@ function TowerMesh({
   const accent = equippedCosmetic?.accent || TOWER_INFO[tower.kind].accent;
   const bodyColor = equippedCosmetic?.body || "";
   const level = towerLevel(tower);
-  const squadRadius = tower.kind === "rifleman" && tower.b >= 3 ? (tower.b >= 4 ? 6.2 : 5.2) : 0;
+  const squadRadius = tower.kind !== "rifleman" || tower.b < 3
+    ? 0
+    : tower.b >= 4
+      ? RIFLEMAN_SQUAD_SUPPORT.command.radius
+      : RIFLEMAN_SQUAD_SUPPORT.drill.radius;
 
   useFrame(({ clock }, dt) => {
     if (turret.current) {
