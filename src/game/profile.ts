@@ -973,11 +973,9 @@ class ProfileStore {
     const baseCoins = Math.round((55 + normalizedWave * 8 + Math.floor(kills / 3)) * rewardScale * (completed ? 1.2 : 0.8));
     const gems = completed ? 4 : Math.floor(normalizedWave / 4);
 
-    if (!continuedAfterVictory) {
-      p.coins += baseCoins;
-      p.gems += gems;
-      p.gamesPlayed += 1;
-    }
+    p.coins += baseCoins;
+    p.gems += gems;
+    p.gamesPlayed += 1;
     if (newRecord) p.bossTrialBestScore = normalizedScore;
     if (completed && this.lastBossTrialId) {
       const clears = (p.bossTrialClears[this.lastBossTrialId] ?? 0) + 1;
@@ -985,18 +983,16 @@ class ProfileStore {
       p.bossTrialMastery[this.lastBossTrialId] = clears >= 10 ? 3 : clears >= 3 ? 2 : 1;
     }
 
-    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(baseXp);
-    if (!continuedAfterVictory) {
-      this.updateDailyMission("gameCompleted", 1);
-      this.syncAchievementProgress();
-    }
+    const result = this.awardXp(baseXp);
+    this.updateDailyMission("gameCompleted", 1);
+    this.syncAchievementProgress();
 
     const reward: RunReward & { score: number; bestScore: number } = {
       wave: normalizedWave,
       kills: Math.max(0, kills),
       xp: baseXp,
-      coins: continuedAfterVictory ? 0 : baseCoins,
-      gems: continuedAfterVictory ? 0 : gems + result.levelsGained,
+      coins: baseCoins,
+      gems: gems + result.levelsGained,
       leveledTo: result.leveledTo,
       newRecord,
       stageId: null,
@@ -1102,9 +1098,11 @@ class ProfileStore {
     const baseCoins = Math.round((15 + wave * 4.5 + Math.floor(kills / 4)) * multiplier);
     const gems = Math.floor(wave / 10) + (newScoreRecord && wave >= 10 ? 2 : 0);
 
-    p.coins += baseCoins;
-    p.gems += gems;
-    p.gamesPlayed += 1;
+    if (!continuedAfterVictory) {
+      p.coins += baseCoins;
+      p.gems += gems;
+      p.gamesPlayed += 1;
+    }
     if (newWaveRecord) p.endlessBestWave = wave;
     if (newScoreRecord) p.endlessBestScore = score;
 
@@ -1123,15 +1121,17 @@ class ProfileStore {
       p.weeklyChallengeBestScore = Math.max(p.weeklyChallengeBestScore, score);
     }
 
-    const result = this.awardXp(baseXp);
-    this.updateDailyMission("gameCompleted", 1);
-    this.syncAchievementProgress();
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(baseXp);
+    if (!continuedAfterVictory) {
+      this.updateDailyMission("gameCompleted", 1);
+      this.syncAchievementProgress();
+    }
     const reward: RunReward & { score: number; bestWave: number; bestScore: number } = {
       wave,
       kills,
       xp: baseXp,
-      coins: baseCoins,
-      gems: gems + result.levelsGained,
+      coins: continuedAfterVictory ? 0 : baseCoins,
+      gems: continuedAfterVictory ? 0 : gems + result.levelsGained,
       leveledTo: result.leveledTo,
       newRecord: newWaveRecord || newScoreRecord,
       stageId: null,
