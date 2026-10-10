@@ -261,6 +261,7 @@ export type Bullet = {
   stun: number;
   markDuration: number;
   markBonus: number;
+  markSpreadRadius?: number;
   shatterMultiplier: number;
   executeThreshold: number;
   executeMultiplier: number;
@@ -535,6 +536,26 @@ function towerCombatStats(t: Tower): TowerCombatStats {
 }
 export function towerUpgradeAbilities(t: Tower) {
   return getTowerUpgradeAbilities(t.kind as keyof typeof DESIGNED_TOWER_PATHS, t.a, t.b);
+}
+
+/**
+ * Support-specialized Riflemen improve nearby Riflemen only. Overlapping squad
+ * auras use the strongest eligible bonus rather than stacking multiplicatively.
+ */
+function rifleSquadRateBonus(tower: Tower, towers: readonly Tower[]): number {
+  if (tower.kind !== "rifleman") return 0;
+  let bonus = 0;
+  for (const commander of towers) {
+    if (commander.id === tower.id || commander.kind !== "rifleman") continue;
+    const support = towerCombatStats(commander);
+    if (support.squadRadius <= 0 || support.squadRateBonus <= bonus) continue;
+    const dx = commander.x - tower.x;
+    const dz = commander.z - tower.z;
+    if (dx * dx + dz * dz <= support.squadRadius * support.squadRadius) {
+      bonus = support.squadRateBonus;
+    }
+  }
+  return Math.min(0.15, bonus);
 }
 
 /** Total tiers bought across both paths (used for visuals). */
@@ -1142,7 +1163,7 @@ export class Game {
     else t.b += 1;
     t.level = Math.min(MAX_TOWER_LEVEL, 1 + t.a + t.b);
     profile.recordTowerUpgrade(t.kind, 1, { trackXpBearingSeasonal: !s.endlessMode });
-    sfx("upgrade");
+    sfx(path === "b" ? "supportUpgrade" : "upgrade");
     this.emit();
   }
 
@@ -1344,6 +1365,7 @@ export class Game {
       stun?: number;
       markDuration?: number;
       markBonus?: number;
+      markSpreadRadius?: number;
       shatterMultiplier?: number;
       executeThreshold?: number;
       executeMultiplier?: number;
@@ -1424,12 +1446,11 @@ export class Game {
     );
     const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
-    if (!result.killed) {
-      if (ability.stun) z.stun = Math.max(z.stun ?? 0, ability.stun);
-      if (ability.markDuration) {
-        z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
-        z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
-      }
+    if (!result.killed && ability.stun) z.stun = Math.max(z.stun ?? 0, ability.stun);
+    // A lethal impact can still pass its target call on to nearby enemies.
+    if (ability.markDuration) {
+      z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
+      z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
     }
     const hit = hitDirection(z.x, z.z, originX, originZ);
     if (hit.x !== 0 || hit.z !== 0) {
@@ -1472,6 +1493,22 @@ export class Game {
 
     z.dead = true;
     z.fade = 0;
+    const markSpreadRadius = ability.markSpreadRadius ?? 0;
+    if ((z.markTime ?? 0) > 0 && markSpreadRadius > 0) {
+      const radiusSquared = markSpreadRadius * markSpreadRadius;
+      const spreadDuration = Math.max(0, ability.markDuration ?? 0);
+      const spreadBonus = Math.max(0, ability.markBonus ?? z.markBonus ?? 0);
+      if (spreadDuration > 0 && spreadBonus > 0) {
+        for (const nearby of s.zombies) {
+          if (nearby.dead || nearby.id === z.id) continue;
+          const dx = nearby.x - z.x;
+          const dz = nearby.z - z.z;
+          if (dx * dx + dz * dz > radiusSquared) continue;
+          nearby.markTime = Math.max(nearby.markTime ?? 0, spreadDuration);
+          nearby.markBonus = Math.max(nearby.markBonus ?? 0, spreadBonus);
+        }
+      }
+    }
     s.kills += 1;
     if (damageKind && ability.originX !== undefined) {
       this.kindKills[damageKind] = (this.kindKills[damageKind] ?? 0) + (z.boss ? 10 : 1);
@@ -2170,12 +2207,15 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (cooldownReady) {
           const combat = baseCombat;
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
-          const rate = baseCombat.rate * surgeRate;
+          const squadRateBonus = rifleSquadRateBonus(t, s.towers);
+          const rate = baseCombat.rate * surgeRate * (1 + squadRateBonus);
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < combat.crit;
           const volley = Math.max(1, Math.min(3, combat.volley));
-          const volleyDamageFactor = volley === 3 ? 0.48 : volley === 2 ? 0.68 : 1;
+          // Multiple-shot volleys change attack shape, not base single-target DPS.
+          // Their value comes from coverage, multi-target effects and support abilities.
+          const volleyDamageFactor = 1 / volley;
           for (let shot = 0; shot < volley && s.bullets.length < MAX_ACTIVE_BULLETS; shot++) {
             s.bullets.push(
               createTowerProjectile({
@@ -2201,6 +2241,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 stun: combat.stun,
                 markDuration: combat.markDuration,
                 markBonus: combat.markBonus,
+                markSpreadRadius: combat.markSpreadRadius,
                 shatterMultiplier: combat.shatterMultiplier,
                 executeThreshold: combat.executeThreshold,
                 executeMultiplier: combat.executeMultiplier,
