@@ -39,6 +39,7 @@ export type ProjectileState = {
   stun: number;
   markDuration: number;
   markBonus: number;
+  markSpreadRadius?: number;
   shatterMultiplier: number;
   executeThreshold: number;
   executeMultiplier: number;

@@ -1,23 +1,11 @@
 export type UpgradeAbility =
-  | "burst"
-  | "stun"
-  | "mark"
-  | "shatter"
-  | "execute"
-  | "boss-hunter"
-  | "close-range"
-  | "burn-duration"
-  | "barrage"
-  | "stun-burst"
-  | "burn-pressure"
-  | "swarm"
-  | "brittle"
-  | "kill-rush"
-  | "burn-spread"
-  | "chain-escalation"
-  | "elite-hunter"
-  | "precision"
-  | "fast-hunter";
+  | "burst" | "stun" | "mark" | "shatter" | "execute" | "boss-hunter"
+  | "close-range" | "burn-duration" | "barrage" | "stun-burst"
+  | "burn-pressure" | "swarm" | "brittle" | "kill-rush" | "burn-spread"
+  | "chain-escalation" | "elite-hunter" | "precision" | "fast-hunter"
+  | "double-tap-mark" | "strong-mark" | "mark-spread" | "commanding-mark"
+  | "marking-arc" | "squad-drill" | "squad-command" | "long-stun"
+  | "control-network" | "wildfire-network";
 
 export type UpgradeTier = {
   name: string;
@@ -61,23 +49,23 @@ const tier = (
 export const TOWER_PATHS = {
   rifleman: {
     a: {
-      name: "RECON",
-      focus: "Mark threats and own long sightlines",
+      name: "PRECISION FIRE",
+      focus: "Turn clean sightlines into reliable eliminations",
       tiers: [
         tier("Scout Optic", "Longer sightline; shots at distant targets (6+ tiles) deal 30% more damage.", 45, { range: 1.14 }, "precision"),
-        tier("Threat Paint", "First hit marks the target; marked zombies take extra damage.", 95, { range: 1.08 }, "mark"),
-        tier("Piercing Round", "Shots jump to one nearby target after impact.", 220, { chain: 1 }, "mark"),
-        tier("Deadeye", "Badly wounded marked targets are finished by a heavy critical hit.", 500, { crit: 0.3, gore: 1.4 }, "execute"),
+        tier("Hardpoint Rounds", "A heavier cartridge makes every hit count harder.", 95, { dmg: 1.18 }),
+        tier("Piercing Round", "Shots jump to one nearby target after impact.", 220, { chain: 1 }, "chain-escalation"),
+        tier("Deadeye", "Badly wounded targets are finished by a heavy critical hit.", 500, { crit: 0.3, gore: 1.4, dmg: 1.12 }, "execute"),
       ],
     },
     b: {
-      name: "SUSTAINED FIRE",
-      focus: "Turn one rifle into a firing lane",
+      name: "SQUAD DOCTRINE",
+      focus: "Mark threats and make nearby Riflemen fight as a team",
       tiers: [
-        tier("Double Tap", "Each attack fires a second round at reduced power.", 50, {}, "burst"),
-        tier("Fast Magazine", "Shorter cycle; every kill spins the rifles up for +35% fire rate for 2s.", 105, { rate: 1.28 }, "kill-rush"),
-        tier("Suppressing Burst", "Burst rounds briefly disrupt the target.", 235, { rate: 1.12 }, "stun"),
-        tier("Overwatch", "Three-round volleys turn long sightlines into kill lanes.", 520, { rate: 1.16, dmg: 1.12 }, "barrage"),
+        tier("Double Tap", "Two controlled shots tag the target; tagged zombies take 12% more damage from the whole defense.", 50, {}, "double-tap-mark"),
+        tier("Radio Discipline", "Keep target calls active longer and expose marked threats more clearly to allied fire.", 105, {}, "strong-mark"),
+        tier("Buddy Drill", "Nearby Riflemen gain 12% fire rate from this tower's squad drills; squad auras do not stack.", 235, {}, "squad-drill"),
+        tier("Overwatch Network", "Three-round volleys, stronger shared target calls, and a wider 15% Rifleman fire-rate aura.", 520, { rate: 1.05 }, "squad-command"),
       ],
     },
   },
@@ -88,128 +76,128 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Wide Choke", "Broader impact zone; pellets deal 40% more damage to runners and swarms.", 55, { splash: 0.72 }, "fast-hunter"),
         tier("Buckshot", "Each blast throws a second close-range shell.", 120, { dmg: 1.18 }, "burst"),
-        tier("Dragon Breath", "Pellets ignite targets, and burning zombies take extra damage from the shotgun.", 270, { burn: 10 }, "burn-pressure"),
+        tier("Dragon Breath", "Pellets ignite targets, and burning zombies take extra shotgun damage.", 270, { burn: 10 }, "burn-pressure"),
         tier("Riot Storm", "Blasts that catch two or more zombies hit the whole pack much harder.", 560, { splash: 0.9, gore: 2.1 }, "swarm"),
       ],
     },
     b: {
-      name: "BREACH",
-      focus: "Turn close contact into execution range",
+      name: "BREACH CONTROL",
+      focus: "Interrupt a crowd and open enemies for allied fire",
       tiers: [
-        tier("Concussion Shell", "Impact briefly stuns targets.", 60, { dmg: 1.08 }, "stun"),
-        tier("Heavy Buck", "Stronger when fired from a tight defensive pocket.", 130, { dmg: 1.22 }, "close-range"),
-        tier("Breaker", "Close hits can finish badly wounded elites.", 290, { crit: 0.2 }, "execute"),
-        tier("Gore Cannon", "The whole blast becomes a close-range finishing tool.", 620, { dmg: 1.35, gore: 2.6 }, "close-range"),
+        tier("Concussion Shell", "The blast briefly stuns every enemy it hits, including targets caught in the splash.", 60, {}, "stun"),
+        tier("Suppression Buck", "Pellets slow survivors, buying nearby towers more time to shoot.", 130, { slow: 0.22 }),
+        tier("Exposed Guard", "Blasted targets stay marked and take 20% more damage from all towers.", 290, {}, "strong-mark"),
+        tier("Breach Shockwave", "A heavier concussive blast applies a longer stun; marked kills relay target calls to nearby enemies.", 620, { splash: 0.25 }, "control-network"),
       ],
     },
   },
   sniper: {
     a: {
       name: "OVERWATCH",
-      focus: "Own the map from one premium perch",
+      focus: "Spend each shot on the most dangerous target",
       tiers: [
         tier("Longwatch", "Reach farther lanes; shots at distant targets (6+ tiles) deal 30% more damage.", 85, { range: 1.24 }, "precision"),
-        tier("Spotter Scope", "First shot marks priority targets for the whole defense.", 190, { range: 1.08 }, "mark"),
-        tier("Wall-Piercer", "A shot can jump to a nearby follow-up target.", 390, { chain: 1 }, "mark"),
-        tier("God's Eye", "Badly wounded marked targets become execution candidates.", 820, { crit: 0.35, range: 1.12, gore: 1.8 }, "execute"),
+        tier("Heavy Caliber", "A harder-hitting round makes elites and bosses feel every shot.", 190, { dmg: 1.18 }, "boss-hunter"),
+        tier("Wall-Piercer", "A shot can jump to a nearby follow-up target.", 390, { chain: 1 }, "chain-escalation"),
+        tier("God's Eye", "Badly wounded targets are candidates for a devastating finishing shot.", 820, { crit: 0.35, range: 1.12, gore: 1.8 }, "execute"),
       ],
     },
     b: {
-      name: "ANTI-MATERIEL",
-      focus: "Specialize against dangerous heavy units",
+      name: "SPOTTER NETWORK",
+      focus: "Call priority threats and share their weaknesses with the defense",
       tiers: [
-        tier("Heavy Caliber", "Big targets feel every round.", 90, { dmg: 1.18 }, "boss-hunter"),
-        tier("Breaker Tip", "Heavy rounds briefly disrupt armored threats.", 205, { dmg: 1.12 }, "stun"),
-        tier("Blast Tip", "Impact splashes the nearest body; elites and bosses take 30% more damage.", 420, { splash: 1.4 }, "elite-hunter"),
-        tier("Brute Breaker", "Heavy targets take a brutal finishing multiplier.", 900, { dmg: 1.4, gore: 2.4 }, "boss-hunter"),
+        tier("Spotter Scope", "The first hit marks a priority target; all towers deal 12% more damage to it for 3.2 seconds.", 90, {}, "mark"),
+        tier("Radio Relay", "Target calls last longer and expose a target more clearly to every allied tower.", 205, {}, "strong-mark"),
+        tier("Priority Broadcast", "When a marked target falls, nearby enemies inherit the target call.", 420, {}, "mark-spread"),
+        tier("Kill Order", "Elite target calls last longer and chain across a wider group when a marked enemy falls.", 900, { range: 1.06 }, "commanding-mark"),
       ],
     },
   },
   tesla: {
     a: {
       name: "CHAIN COIL",
-      focus: "Turn crowds into a connected circuit",
+      focus: "Turn packed waves into an escalating electrical cascade",
       tiers: [
         tier("Extra Arc", "Arc one additional target; each jump hits 25% harder than the last.", 95, { chain: 1 }, "chain-escalation"),
         tier("Conductors", "Arcs reach a wider pocket.", 195, { range: 1.2, chain: 1 }),
-        tier("Storm Net", "Arcs briefly stun secondary targets.", 390, { chain: 2 }, "stun"),
-        tier("Tempest", "Stunned zombies are overloaded and take 50% more damage from every arc.", 820, { chain: 2, range: 1.25 }, "stun-burst"),
+        tier("Storm Net", "Arcs briefly stun secondary targets, setting them up for the next discharge.", 390, { chain: 2 }, "stun"),
+        tier("Tempest", "Stunned zombies are overloaded and take 50% more damage from every arc.", 820, { chain: 2, range: 1.25, dmg: 1.08 }, "stun-burst"),
       ],
     },
     b: {
-      name: "OVERLOAD",
-      focus: "Build a boss killer that spikes hard",
+      name: "GRID CONTROL",
+      focus: "Lock down clustered enemies and expose them to allied fire",
       tiers: [
-        tier("Charged Core", "Heavy current bites deeper into elites.", 90, { dmg: 1.22 }, "boss-hunter"),
-        tier("Arc Furnace", "Big discharges briefly stagger the target.", 195, { dmg: 1.12 }, "stun"),
-        tier("Critical Surge", "Staggered targets take 50% more damage and can spike into criticals.", 400, { crit: 0.25 }, "stun-burst"),
-        tier("Annihilator", "Elites and bosses take a devastating bonus.", 840, { dmg: 1.4, gore: 3 }, "boss-hunter"),
+        tier("Static Lock", "Electrical hits briefly stun targets, including enemies reached by a chain.", 90, {}, "stun"),
+        tier("Conductive Tags", "Arcs mark each target they hit; all towers deal 20% more damage to marked enemies.", 195, {}, "strong-mark"),
+        tier("Arc Lockdown", "The grid's pulse holds a target in place longer and slows its advance.", 400, { slow: 0.24 }, "long-stun"),
+        tier("Network Collapse", "Longer stuns and marks spread from a defeated marked target to nearby enemies.", 840, { chain: 1 }, "control-network"),
       ],
     },
   },
   flamethrower: {
     a: {
       name: "INFERNO",
-      focus: "Make burn damage persist through the horde",
+      focus: "Build sustained burn damage that overwhelms a lane",
       tiers: [
         tier("Hot Fuel", "Burns persist longer after the first hit.", 65, { burn: 5 }, "burn-duration"),
         tier("Sticky Napalm", "Burning targets stay aflame longer and take 35% more flame damage.", 145, { burn: 7, splash: 0.45 }, "burn-pressure"),
-        tier("Firestorm", "A wider cone; blasts that catch a pack hit it much harder.", 310, { range: 1.2, splash: 0.55 }, "swarm"),
+        tier("Firestorm", "A wider cone punishes tightly packed groups.", 310, { range: 1.2, splash: 0.55 }, "swarm"),
         tier("Hellmouth", "Deep burn; badly wounded targets are cremated outright.", 650, { burn: 14, splash: 0.65, gore: 2.2 }, "execute"),
       ],
     },
     b: {
-      name: "PRESSURE",
-      focus: "Own the short lane with crowd control",
+      name: "FIREBREAK",
+      focus: "Slow the wave, spread pressure, and make burning targets easier to finish",
       tiers: [
-        tier("Wide Cone", "Make the nozzle cover a larger bend.", 70, { splash: 0.65, range: 1.1 }),
+        tier("Wide Cone", "A broader stream slows the crowd and covers more of a bend.", 70, { splash: 0.65, range: 1.1, slow: 0.14 }),
         tier("Scald", "Burning kills spread their flames to nearby zombies.", 150, { burn: 5 }, "burn-spread"),
-        tier("Twin Nozzles", "A hotter stream hits in two quick pulses.", 320, { dmg: 1.18, rate: 1.15 }, "burst"),
-        tier("Purifier", "Close-range flame power becomes a lane-clearing burst.", 680, { dmg: 1.3, splash: 0.95, rate: 1.12 }, "close-range"),
+        tier("Scorch Signal", "Burning targets are marked for follow-up attacks from the whole defense.", 320, {}, "strong-mark"),
+        tier("Wildfire Relay", "A burning kill spreads fire and shared target marks across a wider pocket.", 680, { splash: 0.45 }, "wildfire-network"),
       ],
     },
   },
   freezer: {
     a: {
-      name: "DEEP FREEZE",
-      focus: "Turn space into a controlled slow zone",
+      name: "SHATTER",
+      focus: "Turn slowed enemies into brittle, high-value damage windows",
       tiers: [
-        tier("Chill Mist", "Slows a wider pocket around each impact.", 60, { slow: 0.42, splash: 0.7 }),
-        tier("Wide Nozzle", "Extends the freeze pocket into another lane and makes slowed targets brittle.", 135, { range: 1.2, splash: 0.7 }, "shatter"),
-        tier("Cryo Core", "Freeze waves linger with stronger control.", 280, { slow: 0.58, rate: 1.12 }),
-        tier("Absolute Zero", "A huge freeze pulse can halt the most dangerous crowd.", 590, { slow: 0.7, splash: 1.2, range: 1.18 }, "stun"),
+        tier("Ice Shards", "Hits deal 42% more damage to slowed targets.", 65, {}, "shatter"),
+        tier("Frostbite", "Brittle targets can take devastating critical hits.", 145, { crit: 0.18 }, "shatter"),
+        tier("Brittle Bones", "Slowed targets take 75% extra shatter damage.", 300, { dmg: 1.22 }, "brittle"),
+        tier("Shatterstorm", "Brittle targets take heavy bonus damage, and the wider impact catches nearby enemies.", 620, { dmg: 1.28, gore: 2.3, splash: 0.7 }, "brittle"),
       ],
     },
     b: {
-      name: "SHATTER",
-      focus: "Convert slowed zombies into brittle targets",
+      name: "COLD FRONT",
+      focus: "Hold enemy packs in place and prepare them for the whole team",
       tiers: [
-        tier("Ice Shards", "Frozen flesh takes a heavier hit.", 65, { dmg: 1.2 }, "shatter"),
-        tier("Frostbite", "Brittle targets can take devastating critical hits.", 145, { crit: 0.18 }, "shatter"),
-        tier("Brittle Bones", "Slowed targets shatter for 75% extra damage.", 300, { dmg: 1.22 }, "brittle"),
-        tier("Shatterstorm", "Killing a brittle target sends a violent final burst.", 620, { dmg: 1.28, gore: 2.3, splash: 0.7 }, "shatter"),
+        tier("Chill Mist", "A wider chill pocket slows clustered zombies so other towers get more firing time.", 60, { slow: 0.42, splash: 0.7 }, "mark"),
+        tier("Wide Nozzle", "Reach farther into the lane and keep exposed enemies marked for allied attacks.", 135, { range: 1.2, splash: 0.7 }, "strong-mark"),
+        tier("Cryo Core", "A stronger chill pulse briefly locks down targets.", 280, { slow: 0.58, rate: 1.08 }, "long-stun"),
+        tier("Absolute Zero", "A broad freeze pulse stuns and marks the crowd; kills then relay target calls through the pack.", 590, { slow: 0.7, splash: 1.2, range: 1.18 }, "control-network"),
       ],
     },
   },
   rocket: {
     a: {
       name: "SIEGE ARTILLERY",
-      focus: "Shape the blast zone and slow the route",
+      focus: "Make every shell a high-impact answer to dense waves and tough targets",
       tiers: [
         tier("Long Gun", "Reach the next bend; shells at distant targets (6+ tiles) deal 30% more damage.", 75, { range: 1.2 }, "precision"),
-        tier("Tar Shells", "Explosions slow and mark their target for the whole defense.", 160, { slow: 0.32, splash: 0.4 }, "mark"),
-        tier("Cluster Shot", "A wider blast that hits packs of two or more far harder.", 320, { splash: 1.15 }, "swarm"),
-        tier("Bombardier", "Large shells dominate long sightlines and bends.", 690, { range: 1.25, splash: 1.2, slow: 0.5 }, "stun"),
+        tier("Demolition Charge", "A denser warhead hits harder on direct impact.", 160, { dmg: 1.2 }),
+        tier("Cluster Shot", "A wider blast hits packs of two or more far harder.", 320, { splash: 1.15 }, "swarm"),
+        tier("Bombardier", "Large shells dominate long sightlines and bends.", 690, { range: 1.25, splash: 1.2, dmg: 1.18 }, "elite-hunter"),
       ],
     },
     b: {
-      name: "WARHEAD",
-      focus: "Make every shell matter against elites",
+      name: "TACTICAL BARRAGE",
+      focus: "Slow, stagger, and mark whole groups so allied towers can finish them",
       tiers: [
-        tier("Packed Powder", "The closer the target, the harder the impact.", 80, { dmg: 1.15 }, "close-range"),
-        tier("Concussion Warhead", "Direct impacts briefly stagger enemies.", 170, { dmg: 1.08 }, "stun"),
-        tier("Bunker Buster", "Heavy targets take a large finishing hit.", 350, { dmg: 1.25 }, "boss-hunter"),
-        tier("Meat Grinder", "Close explosive hits become elite-killing finishers.", 740, { dmg: 1.35, rate: 1.18, gore: 2.7 }, "execute"),
+        tier("Tar Shells", "Explosions slow and mark their targets for the whole defense.", 80, { slow: 0.32, splash: 0.4 }, "mark"),
+        tier("Concussion Warhead", "Direct and splash impacts briefly stagger the enemies they hit.", 170, { slow: 0.4, splash: 0.2 }, "stun"),
+        tier("Signal Flare", "Marked enemies take 20% more damage from every tower for longer.", 350, {}, "strong-mark"),
+        tier("Suppressing Salvo", "Concussive blasts apply longer stuns; marked kills relay target calls through nearby enemies.", 740, { splash: 0.35, slow: 0.5 }, "control-network"),
       ],
     },
   },
@@ -219,19 +207,19 @@ export const TOWER_PATHS = {
       focus: "Concentrate power into one doomed target",
       tiers: [
         tier("Tight Beam", "Focused contact bites harder.", 160, { dmg: 1.18 }),
-        tier("Prism Lens", "Priority targets become marked for follow-up shots.", 340, { dmg: 1.12 }, "mark"),
+        tier("Prism Lens", "Refine the beam for a stronger hit on every contact.", 340, { dmg: 1.12 }),
         tier("Fusion Core", "The beam is tuned for elite targets.", 680, { range: 1.18, dmg: 1.2 }, "boss-hunter"),
-        tier("Deathray", "Low-health marked targets are vaporized.", 1320, { dmg: 1.45, crit: 0.28, gore: 3 }, "execute"),
+        tier("Deathray", "Low-health targets are vaporized by a devastating finishing hit.", 1320, { dmg: 1.45, crit: 0.28, gore: 3 }, "execute"),
       ],
     },
     b: {
-      name: "SCATTER OPTICS",
-      focus: "Turn a beam into chain pressure",
+      name: "PRISM RELAY",
+      focus: "Spread target intelligence and status pressure through chained beams",
       tiers: [
-        tier("Beam Splitter", "The beam jumps to one nearby body, hitting 25% harder with each jump.", 155, { chain: 1 }, "chain-escalation"),
-        tier("Refraction", "The beam can keep bouncing.", 330, { chain: 2, range: 1.12 }),
-        tier("Thermal Bloom", "Refractions ignite the crowd; burning zombies take extra beam damage.", 650, { burn: 14, splash: 0.5 }, "burn-pressure"),
-        tier("Starfall", "A cascade of chained pulses clears packed lanes.", 1280, { chain: 3, dmg: 1.22, rate: 1.12 }, "swarm"),
+        tier("Beam Splitter", "The beam tags targets as it jumps, helping every tower focus the same threat.", 155, { chain: 1 }, "marking-arc"),
+        tier("Refraction", "The beam can reach more targets, and its marks stay active longer.", 330, { chain: 2, range: 1.12 }, "strong-mark"),
+        tier("Thermal Bloom", "Refractions ignite the crowd; burning targets take extra beam damage.", 650, { burn: 14, splash: 0.5 }, "burn-pressure"),
+        tier("Starfall Relay", "Chained hits mark the crowd; when a marked enemy falls, its neighbors inherit the signal.", 1280, { chain: 2, dmg: 1.08, rate: 1.04 }, "mark-spread"),
       ],
     },
   },
@@ -244,6 +232,9 @@ export type TowerUpgradeAbilities = {
   stun: number;
   markDuration: number;
   markBonus: number;
+  markSpreadRadius: number;
+  squadRadius: number;
+  squadRateBonus: number;
   shatterMultiplier: number;
   executeThreshold: number;
   executeMultiplier: number;
@@ -253,16 +244,11 @@ export type TowerUpgradeAbilities = {
   stunnedMultiplier: number;
   burningMultiplier: number;
   swarmMultiplier: number;
-  /** Fire-rate multiplier granted to this tower kind for a short window after a kill (1 = none). */
   killRush: number;
-  /** Radius that a burning kill spreads its fire across (0 = none). */
   burnSpread: number;
-  /** Extra damage per chain jump (0.25 = +25% each jump). */
   chainEscalation: number;
   eliteDamageMultiplier: number;
-  /** Damage multiplier for targets at least PRECISION_RANGE tiles from the tower. */
   precisionMultiplier: number;
-  /** Damage multiplier against fast enemies (runners and swarm). */
   fastDamageMultiplier: number;
 };
 
@@ -271,6 +257,9 @@ const EMPTY_ABILITIES: TowerUpgradeAbilities = {
   stun: 0,
   markDuration: 0,
   markBonus: 0,
+  markSpreadRadius: 0,
+  squadRadius: 0,
+  squadRateBonus: 0,
   shatterMultiplier: 0,
   executeThreshold: 0,
   executeMultiplier: 1,
@@ -308,14 +297,46 @@ const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = 
   "elite-hunter": { eliteDamageMultiplier: 1.3 },
   precision: { precisionMultiplier: 1.3 },
   "fast-hunter": { fastDamageMultiplier: 1.4 },
+  "double-tap-mark": { volley: 2, markDuration: 3.2, markBonus: 0.12 },
+  "strong-mark": { markDuration: 4.5, markBonus: 0.2 },
+  "mark-spread": { markDuration: 4.5, markBonus: 0.2, markSpreadRadius: 2.3 },
+  "commanding-mark": { markDuration: 5.5, markBonus: 0.22, markSpreadRadius: 2.8 },
+  "marking-arc": { markDuration: 4, markBonus: 0.16, chainEscalation: 0.25 },
+  "squad-drill": { squadRadius: 5.2, squadRateBonus: 0.12 },
+  "squad-command": {
+    volley: 3,
+    markDuration: 4.8,
+    markBonus: 0.2,
+    markSpreadRadius: 2.4,
+    squadRadius: 6.2,
+    squadRateBonus: 0.15,
+  },
+  "long-stun": { stun: 0.42 },
+  "control-network": {
+    stun: 0.42,
+    markDuration: 4.5,
+    markBonus: 0.2,
+    markSpreadRadius: 2.4,
+  },
+  "wildfire-network": {
+    burnSpread: 3.4,
+    markDuration: 4.5,
+    markBonus: 0.2,
+    markSpreadRadius: 2.4,
+  },
 };
 
-export function getTowerUpgradeAbilities(kind: TowerKindKey, a: number, b: number): TowerUpgradeAbilities {
+export function getTowerUpgradeAbilities(
+  kind: TowerKindKey,
+  a: number,
+  b: number,
+): TowerUpgradeAbilities {
   const pathSet = TOWER_PATHS[kind];
   const out = { ...EMPTY_ABILITIES };
   if (!pathSet) return out;
+
   const apply = (path: "a" | "b", count: number) => {
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < Math.min(4, count); i++) {
       const ability = pathSet[path].tiers[i]?.ability;
       if (!ability) continue;
       const effects = ABILITY_EFFECTS[ability];
@@ -323,6 +344,9 @@ export function getTowerUpgradeAbilities(kind: TowerKindKey, a: number, b: numbe
       if (effects.stun) out.stun = Math.max(out.stun, effects.stun);
       if (effects.markDuration) out.markDuration = Math.max(out.markDuration, effects.markDuration);
       if (effects.markBonus) out.markBonus = Math.max(out.markBonus, effects.markBonus);
+      if (effects.markSpreadRadius) out.markSpreadRadius = Math.max(out.markSpreadRadius, effects.markSpreadRadius);
+      if (effects.squadRadius) out.squadRadius = Math.max(out.squadRadius, effects.squadRadius);
+      if (effects.squadRateBonus) out.squadRateBonus = Math.max(out.squadRateBonus, effects.squadRateBonus);
       if (effects.shatterMultiplier) out.shatterMultiplier = Math.max(out.shatterMultiplier, effects.shatterMultiplier);
       if (effects.executeThreshold) out.executeThreshold = Math.max(out.executeThreshold, effects.executeThreshold);
       if (effects.executeMultiplier) out.executeMultiplier = Math.max(out.executeMultiplier, effects.executeMultiplier);
@@ -340,6 +364,7 @@ export function getTowerUpgradeAbilities(kind: TowerKindKey, a: number, b: numbe
       if (effects.fastDamageMultiplier) out.fastDamageMultiplier = Math.max(out.fastDamageMultiplier, effects.fastDamageMultiplier);
     }
   };
+
   apply("a", Math.min(4, a));
   apply("b", Math.min(4, b));
   return out;

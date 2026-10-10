@@ -213,6 +213,9 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate font-display text-xs tracking-[0.12em] text-panel-foreground">{def.name}</h3>
+          <p className={"mt-0.5 text-[8px] font-bold uppercase tracking-[0.12em] " + (path === "a" ? "text-accent" : "text-[#70d9c4]")}>
+            {path === "a" ? "Damage specialization" : "Support & control"}
+          </p>
           <p className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-panel-muted">{def.focus}</p>
         </div>
         <span className="shrink-0 text-[9px] uppercase tracking-wider text-panel-muted">

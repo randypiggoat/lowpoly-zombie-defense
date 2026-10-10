@@ -99,6 +99,8 @@ export type SfxName =
   | "gib"
   | "build"
   | "upgrade"
+  | "supportUpgrade"
+  | "shootRifleCoordinated"
   | "deny"
   | "baseHit"
   | "wave"
@@ -119,6 +121,7 @@ export function sfx(name: SfxName) {
     if (!c || muted) return;
     switch (name) {
     case "shootRifle":
+    case "shootRifleCoordinated":
     case "shootShotgun":
     case "shootSniper":
     case "shootTesla":
@@ -131,8 +134,11 @@ export function sfx(name: SfxName) {
       if (now - lastShot < 0.045) return;
       lastShot = now;
 
-      if (name === "shootRifle") {
+      if (name === "shootRifle" || name === "shootRifleCoordinated") {
         tone({ freq: 700, to: 310, dur: 0.045, type: "square", gain: 0.055 });
+        if (name === "shootRifleCoordinated") {
+          tone({ freq: 1140, to: 920, dur: 0.065, type: "sine", gain: 0.022, delay: 0.008 });
+        }
       } else if (name === "shootShotgun") {
         tone({ freq: 180, to: 62, dur: 0.13, type: "sawtooth", gain: 0.12 });
         noise(0.09, 0.075, 760);
@@ -180,6 +186,10 @@ export function sfx(name: SfxName) {
       tone({ freq: 520, dur: 0.08, type: "square", gain: 0.12 });
       tone({ freq: 780, dur: 0.09, type: "square", gain: 0.12, delay: 0.07 });
       tone({ freq: 1040, dur: 0.12, type: "square", gain: 0.1, delay: 0.15 });
+      return;
+    case "supportUpgrade":
+      tone({ freq: 392, to: 523, dur: 0.12, type: "sine", gain: 0.075 });
+      tone({ freq: 587, to: 784, dur: 0.16, type: "triangle", gain: 0.055, delay: 0.075 });
       return;
     case "deny":
       tone({ freq: 200, to: 120, dur: 0.12, type: "square", gain: 0.1 });

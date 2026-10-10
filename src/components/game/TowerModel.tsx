@@ -586,6 +586,17 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <ringGeometry args={[0.68, 0.84, 8]} />
         <meshBasicMaterial color={accent} transparent opacity={0.22} side={THREE.DoubleSide} />
       </mesh>
+      {tower.b > 0 && (
+        <mesh position={[0, 0.255, 0]} rotation-x={Math.PI / 2}>
+          <ringGeometry args={[0.9 + tower.b * 0.035, 1.01 + tower.b * 0.035, 8]} />
+          <meshBasicMaterial
+            color="#70d9c4"
+            transparent
+            opacity={0.18 + tower.b * 0.035}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )}
       <mesh ref={identityCore} position={[0, 0.31, -0.08]}>
         <icosahedronGeometry args={[0.16, 0]} />
         <AccentMaterial color={accent} glow={0.9} />
