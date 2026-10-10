@@ -888,23 +888,22 @@ export class Game {
     this.resetTransientState();
     this.state = makeState(stage);
     track("run_started", { stageId: stage.id, endless: false });
-  this.emit();
-}
+    this.emit();
+  }
 
- startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
-  this.zombieById.clear();
-  this.cachedEffectsKey = null;
-  this.projectileEmissions = 0;
-  const stage = createEndlessStage(challenge);
-  this.stage = { ...stage, challenge, challengeKey, endless: true };
-  this.map = getStageMap(stage.mapId);
-  this.pathLength = getPathLength(this.map.path);
-  this.nextId = 1;
-  this.resetTransientState();
-  this.state = makeState(this.stage);
-  track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
-  this.emit();
-}
+  startEndless(challenge: EndlessChallenge, challengeKey = new Date().toISOString().slice(0, 10)) {
+    this.zombieById.clear();
+    this.projectileEmissions = 0;
+    const stage = createEndlessStage(challenge);
+    this.stage = { ...stage, challenge, challengeKey, endless: true };
+    this.map = getStageMap(stage.mapId);
+    this.pathLength = getPathLength(this.map.path);
+    this.nextId = 1;
+    this.resetTransientState();
+    this.state = makeState(this.stage);
+    track("run_started", { stageId: stage.id, endless: true, challenge: challenge.id });
+    this.emit();
+  }
 
   canContinueAfterVictory(): boolean {
     const state = this.state;
