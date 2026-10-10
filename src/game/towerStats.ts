@@ -23,6 +23,9 @@ export type TowerCombatStats = {
   stun: number;
   markDuration: number;
   markBonus: number;
+  markSpreadRadius: number;
+  squadRadius: number;
+  squadRateBonus: number;
   shatterMultiplier: number;
   executeThreshold: number;
   executeMultiplier: number;
