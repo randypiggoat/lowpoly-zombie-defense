@@ -46,6 +46,12 @@ const tier = (
   ...(ability !== undefined ? { ability } : {}),
 });
 
+/** Shared, bounded Rifleman squad bonuses; used by definitions, simulation, and visuals. */
+export const RIFLEMAN_SQUAD_SUPPORT = {
+  drill: { radius: 5.2, damageBonus: 0.1, rangeBonus: 0.04 },
+  command: { radius: 6.2, damageBonus: 0.15, rangeBonus: 0.08 },
+} as const;
+
 export const TOWER_PATHS = {
   rifleman: {
     a: {
@@ -304,15 +310,19 @@ const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = 
   "mark-spread": { markDuration: 4.5, markBonus: 0.2, markSpreadRadius: 2.3 },
   "commanding-mark": { markDuration: 5.5, markBonus: 0.22, markSpreadRadius: 2.8 },
   "marking-arc": { markDuration: 4, markBonus: 0.16, chainEscalation: 0.25 },
-  "squad-drill": { squadRadius: 5.2, squadDamageBonus: 0.1, squadRangeBonus: 0.04 },
+  "squad-drill": {
+    squadRadius: RIFLEMAN_SQUAD_SUPPORT.drill.radius,
+    squadDamageBonus: RIFLEMAN_SQUAD_SUPPORT.drill.damageBonus,
+    squadRangeBonus: RIFLEMAN_SQUAD_SUPPORT.drill.rangeBonus,
+  },
   "squad-command": {
     volley: 3,
     markDuration: 4.8,
     markBonus: 0.2,
     markSpreadRadius: 2.4,
-    squadRadius: 6.2,
-    squadDamageBonus: 0.15,
-    squadRangeBonus: 0.08,
+    squadRadius: RIFLEMAN_SQUAD_SUPPORT.command.radius,
+    squadDamageBonus: RIFLEMAN_SQUAD_SUPPORT.command.damageBonus,
+    squadRangeBonus: RIFLEMAN_SQUAD_SUPPORT.command.rangeBonus,
   },
   "long-stun": { stun: 0.42 },
   "control-network": {
