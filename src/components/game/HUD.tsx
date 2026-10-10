@@ -496,7 +496,8 @@ export function HUD({
           <div className="rw-round-progress">
             <div className="rw-round-progress-copy">
               <div className="rw-round-heading">
-                <span className="rw-round-kicker">{state.endlessMode ? "ENDLESS · ROUND" : "ROUND"}</span>
+                <span className="rw-round-kicker">{state.endlessMode ? "Endless" : "ROUND"}</span>
+                {state.endlessMode && <span className="rw-round-kicker">· ROUND</span>}
                 <strong>{currentRound}{!state.endlessMode && <span> / {maximumRounds}</span>}</strong>
               </div>
               <span className="rw-round-remaining">
