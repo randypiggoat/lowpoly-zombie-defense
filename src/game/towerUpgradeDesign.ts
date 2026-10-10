@@ -260,7 +260,7 @@ const EMPTY_ABILITIES: TowerUpgradeAbilities = {
   markSpreadRadius: 0,
   squadRadius: 0,
   squadRateBonus: 0,
-  shatterMultiplier: 1,
+  shatterMultiplier: 0,
   executeThreshold: 0,
   executeMultiplier: 1,
   bossDamageMultiplier: 1,
