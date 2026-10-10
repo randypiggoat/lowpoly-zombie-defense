@@ -70,6 +70,7 @@ import {
   type GorePart,
 } from "./enemyGore";
 import {
+  RIFLEMAN_SQUAD_SUPPORT,
   TOWER_PATHS as DESIGNED_TOWER_PATHS,
   getTowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
@@ -556,12 +557,20 @@ function rifleSquadAuraBonus(
   let bonus = 0;
   for (const commander of towers) {
     if (commander.id === tower.id || commander.kind !== "rifleman") continue;
-    const support = towerCombatStats(commander);
-    const candidateBonus = support[stat];
-    if (support.squadRadius <= 0 || candidateBonus <= bonus) continue;
+    // The only aura tiers are b3 (drill) and b4 (command). Read the shared
+    // immutable definitions directly to avoid allocating combat-stat objects
+    // while every tower checks its range each frame.
+    const support = commander.b >= 4
+      ? RIFLEMAN_SQUAD_SUPPORT.command
+      : commander.b >= 3
+        ? RIFLEMAN_SQUAD_SUPPORT.drill
+        : null;
+    if (!support) continue;
+    const candidateBonus = stat === "squadDamageBonus" ? support.damageBonus : support.rangeBonus;
+    if (candidateBonus <= bonus) continue;
     const dx = commander.x - tower.x;
     const dz = commander.z - tower.z;
-    if (dx * dx + dz * dz <= support.squadRadius * support.squadRadius) bonus = candidateBonus;
+    if (dx * dx + dz * dz <= support.radius * support.radius) bonus = candidateBonus;
   }
   return Math.min(cap, bonus);
 }
