@@ -200,6 +200,9 @@ describe("weapon muzzle mapping", () => {
     expect(getTowerMuzzleOffset("shotgunner")).toEqual({ side: 0, forward: 1.48, height: 1.02 });
     expect(getTowerMuzzleOffset("shotgunner", 1, 2)).toEqual({ side: 0.24, forward: 1.48, height: 1.02 });
     expect(getTowerMuzzleOffset("rocket")).toEqual({ side: 0, forward: 0.82, height: 1.02 });
+    expect(getTowerMuzzleOffset("sniper")).toEqual({ side: 0, forward: 1.83, height: 1.71 });
+    expect(getTowerMuzzleOffset("flamethrower")).toEqual({ side: 0, forward: 1.12, height: 1.3 });
+    expect(getTowerMuzzleOffset("laser")).toEqual({ side: 0, forward: 0.56, height: 1.42 });
   });
 });
 
