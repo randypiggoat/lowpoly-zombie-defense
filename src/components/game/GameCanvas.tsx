@@ -1,4 +1,3 @@
-import { RUN_MODIFIER_DEFS } from "@/game/runModifiers";
 import { Canvas } from "@react-three/fiber";
 import { Coins, Gem, Gift, Settings2, ShoppingBag, Sparkles, Swords, Trophy, Wrench } from "lucide-react";
 import {
@@ -766,7 +765,6 @@ export function GameCanvas() {
             selection={selection}
             onSelect={handleHudSelect}
             onPause={handlePause}
-            rewardedAvailable={rewardedAvailable}
             waveThreatPreview={waveThreatPreview}
             reducedMotion={player.reducedMotion}
             showMetaSections={false}
@@ -1800,9 +1798,6 @@ export function GameCanvas() {
                 <div key={label} className="rounded-xl bg-black/25 py-2"><p className="font-display text-lg text-panel-foreground">{value}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">{label}</p></div>
               ))}
             </div>
-            {state.activeRunModifiers.length > 0 ? (
-              <p className="mt-2 text-center text-[10px] leading-tight text-panel-muted">Build: {state.activeRunModifiers.map((id) => RUN_MODIFIER_DEFS.find((entry) => entry.id === id)?.name ?? id).join(" · ")}</p>
-            ) : null}
             {lastReward?.stageCompleted ? (
               <div className="mt-3 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
                 <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Stage goals</p>
