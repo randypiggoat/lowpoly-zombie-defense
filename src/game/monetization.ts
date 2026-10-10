@@ -3,7 +3,6 @@ import { track } from "./analytics";
 export type RewardedPlacement =
   | "double-run-rewards"
   | "revive"
-  | "modifier-reroll"
   | "bonus-cache"
   | "daily-bonus";
 
@@ -64,8 +63,6 @@ export function rewardedPlacementLabel(placement: RewardedPlacement) {
       return "Double run rewards";
     case "revive":
       return "Revive";
-    case "modifier-reroll":
-      return "Reroll power";
     case "bonus-cache":
       return "Bonus cache";
     case "daily-bonus":
