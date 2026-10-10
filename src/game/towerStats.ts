@@ -25,7 +25,8 @@ export type TowerCombatStats = {
   markBonus: number;
   markSpreadRadius: number;
   squadRadius: number;
-  squadRateBonus: number;
+  squadDamageBonus: number;
+  squadRangeBonus: number;
   shatterMultiplier: number;
   executeThreshold: number;
   executeMultiplier: number;

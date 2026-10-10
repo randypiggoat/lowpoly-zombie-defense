@@ -20,6 +20,7 @@ import { zombieModelScale, zombiePresentation } from "@/game/zombiePresentation"
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
+import { RIFLEMAN_SQUAD_SUPPORT } from "@/game/towerUpgradeDesign";
 import { StageEnvironment, EnvironmentPropMesh } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
 import {
@@ -517,6 +518,11 @@ function TowerMesh({
   const accent = equippedCosmetic?.accent || TOWER_INFO[tower.kind].accent;
   const bodyColor = equippedCosmetic?.body || "";
   const level = towerLevel(tower);
+  const squadRadius = tower.kind !== "rifleman" || tower.b < 3
+    ? 0
+    : tower.b >= 4
+      ? RIFLEMAN_SQUAD_SUPPORT.command.radius
+      : RIFLEMAN_SQUAD_SUPPORT.drill.radius;
 
   useFrame(({ clock }, dt) => {
     if (turret.current) {
@@ -525,7 +531,9 @@ function TowerMesh({
       let diff = target - cur;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      turret.current.rotation.y = cur + diff * (1 - Math.exp(-10 * dt));
+      // Snap on the actual shot frame so the model and simulation fire along the same aim.
+      const aimBlend = tower.recoil > 0.8 ? 1 : 1 - Math.exp(-10 * dt);
+      turret.current.rotation.y = cur + diff * aimBlend;
     }
     if (ring.current) {
       ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025);
@@ -541,6 +549,12 @@ function TowerMesh({
         onSelect(tower.id);
       }}
     >
+      {squadRadius > 0 && (
+        <mesh rotation-x={-Math.PI / 2} position={[0, 0.065, 0]}>
+          <ringGeometry args={[squadRadius - 0.08, squadRadius, 40]} />
+          <meshBasicMaterial color="#70d9c4" transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+      )}
       {selected && (
         <>
           <mesh ref={ring} rotation-x={-Math.PI / 2} position={[0, 0.12, 0]}>

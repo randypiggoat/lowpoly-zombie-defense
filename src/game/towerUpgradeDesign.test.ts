@@ -17,20 +17,22 @@ describe("tower upgrade design", () => {
     expect(getTowerUpgradeAbilities("rifleman", 0, 1).markBonus).toBeGreaterThan(0);
     expect(TOWER_PATHS.freezer.b.tiers[0]?.ability).toBe("mark");
     expect(getTowerUpgradeAbilities("freezer", 2, 0).shatterMultiplier).toBeGreaterThan(1);
-    expect(getTowerUpgradeAbilities("rocket", 0, 1).markBonus).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("rocket", 0, 1).markBonus).toBe(0);
+    expect(TOWER_PATHS.rocket.b.tiers[0]?.mods.slow).toBe(0.32);
   });
 });
 
 describe("behavioral upgrades", () => {
   test("new abilities change how towers are used", () => {
     expect(getTowerUpgradeAbilities("rifleman", 0, 4).volley).toBe(3);
-    expect(getTowerUpgradeAbilities("rifleman", 0, 4).squadRateBonus).toBeCloseTo(0.15);
+    expect(getTowerUpgradeAbilities("rifleman", 0, 4).squadDamageBonus).toBeCloseTo(0.15);
+    expect(getTowerUpgradeAbilities("rifleman", 0, 4).squadRangeBonus).toBeCloseTo(0.08);
     expect(getTowerUpgradeAbilities("rifleman", 0, 4).squadRadius).toBeGreaterThan(5);
     expect(getTowerUpgradeAbilities("tesla", 0, 3).stun).toBeGreaterThan(0);
-    expect(getTowerUpgradeAbilities("tesla", 4, 0).stunnedMultiplier).toBeGreaterThan(1);
+    expect(getTowerUpgradeAbilities("tesla", 4, 0).chainEscalation).toBeGreaterThan(0);
     expect(getTowerUpgradeAbilities("flamethrower", 2, 0).burningMultiplier).toBeGreaterThan(1);
     expect(getTowerUpgradeAbilities("flamethrower", 3, 0).swarmMultiplier).toBeGreaterThan(1);
-    expect(getTowerUpgradeAbilities("flamethrower", 4, 0).executeThreshold).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("flamethrower", 4, 0).burnSpread).toBeGreaterThan(0);
     expect(getTowerUpgradeAbilities("rocket", 3, 0).swarmMultiplier).toBeGreaterThan(1);
     expect(getTowerUpgradeAbilities("freezer", 0, 4).markSpreadRadius).toBeGreaterThan(0);
     expect(getTowerUpgradeAbilities("laser", 0, 3).burningMultiplier).toBeGreaterThan(1);
@@ -56,9 +58,21 @@ describe("second-wave behaviors", () => {
       expect(kind).toBeTruthy();
     }
     const squad = getTowerUpgradeAbilities("rifleman", 0, 4);
-    expect(squad.squadRateBonus).toBeLessThanOrEqual(0.15);
+    expect(squad.squadDamageBonus).toBeLessThanOrEqual(0.15);
+    expect(squad.squadRangeBonus).toBeLessThanOrEqual(0.08);
     expect(squad.markBonus).toBeLessThanOrEqual(0.22);
     expect(squad.markSpreadRadius).toBeGreaterThan(0);
+  });
+
+  test("stun specialization is reserved for Tesla's control identity", () => {
+    const stunAbilities = new Set(["stun", "stun-burst", "long-stun", "control-network"]);
+    for (const [kind, paths] of Object.entries(TOWER_PATHS)) {
+      for (const path of [paths.a, paths.b]) {
+        for (const entry of path.tiers) {
+          if (entry.ability && stunAbilities.has(entry.ability)) expect(kind).toBe("tesla");
+        }
+      }
+    }
   });
 
   test("every tower has at least one behavioral ability in each path", () => {

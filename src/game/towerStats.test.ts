@@ -79,7 +79,8 @@ describe("tower stat calculations", () => {
     expect(stats.markBonus).toBe(0);
     expect(stats.markSpreadRadius).toBe(0);
     expect(stats.squadRadius).toBe(0);
-    expect(stats.squadRateBonus).toBe(0);
+    expect(stats.squadDamageBonus).toBe(0);
+    expect(stats.squadRangeBonus).toBe(0);
     expect(stats.shatterMultiplier).toBe(0);
     expect(stats.executeThreshold).toBe(0);
     expect(stats.executeMultiplier).toBe(1);
@@ -125,7 +126,8 @@ describe("tower stat calculations", () => {
       markBonus: 0,
       markSpreadRadius: 0,
       squadRadius: 0,
-      squadRateBonus: 0,
+      squadDamageBonus: 0,
+      squadRangeBonus: 0,
       shatterMultiplier: 0,
       executeThreshold: 0,
       executeMultiplier: 1,
