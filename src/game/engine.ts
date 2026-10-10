@@ -73,6 +73,7 @@ import {
   getTowerUpgradeAbilities,
 } from "./towerUpgradeDesign";
 import { damageReactionMultiplier, hitDirection } from "./zombiePresentation";
+import { applyTargetMark, spreadMarkOnDeath } from "./markPropagation";
 import { isTowerUnlocked as isProgressionTowerUnlocked, towerUnlockLevel } from "./progression";
 
 export type Vec2 = { x: number; z: number };
@@ -146,6 +147,8 @@ export type Zombie = {
   stun?: number;
   markTime?: number;
   markBonus?: number;
+  /** Radius inherited from support upgrades that relay target calls on a kill. */
+  markSpreadRadius?: number;
   /** Radius a burning death spreads fire across (set by Wildfire / Scald). */
   burnSpread?: number;
   healTimer?: number;
@@ -1447,10 +1450,13 @@ export class Game {
     const previousRatio = Math.max(0, Math.min(1, z.hp / Math.max(1, z.maxHp)));
     z.hp = result.nextHp;
     if (!result.killed && ability.stun) z.stun = Math.max(z.stun ?? 0, ability.stun);
-    // A lethal impact can still pass its target call on to nearby enemies.
     if (ability.markDuration) {
-      z.markTime = Math.max(z.markTime ?? 0, ability.markDuration);
-      z.markBonus = Math.max(z.markBonus ?? 0, ability.markBonus ?? 0);
+      applyTargetMark(
+        z,
+        ability.markDuration,
+        ability.markBonus ?? 0,
+        ability.markSpreadRadius ?? 0,
+      );
     }
     const hit = hitDirection(z.x, z.z, originX, originZ);
     if (hit.x !== 0 || hit.z !== 0) {
@@ -1493,22 +1499,7 @@ export class Game {
 
     z.dead = true;
     z.fade = 0;
-    const markSpreadRadius = ability.markSpreadRadius ?? 0;
-    if ((z.markTime ?? 0) > 0 && markSpreadRadius > 0) {
-      const radiusSquared = markSpreadRadius * markSpreadRadius;
-      const spreadDuration = Math.max(0, ability.markDuration ?? 0);
-      const spreadBonus = Math.max(0, ability.markBonus ?? z.markBonus ?? 0);
-      if (spreadDuration > 0 && spreadBonus > 0) {
-        for (const nearby of s.zombies) {
-          if (nearby.dead || nearby.id === z.id) continue;
-          const dx = nearby.x - z.x;
-          const dz = nearby.z - z.z;
-          if (dx * dx + dz * dz > radiusSquared) continue;
-          nearby.markTime = Math.max(nearby.markTime ?? 0, spreadDuration);
-          nearby.markBonus = Math.max(nearby.markBonus ?? 0, spreadBonus);
-        }
-      }
-    }
+    spreadMarkOnDeath(z, s.zombies);
     s.kills += 1;
     if (damageKind && ability.originX !== undefined) {
       this.kindKills[damageKind] = (this.kindKills[damageKind] ?? 0) + (z.boss ? 10 : 1);
@@ -1923,6 +1914,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       z.stun = lifecycle.stun;
       z.markTime = lifecycle.markTime;
       z.markBonus = lifecycle.markBonus;
+      if (lifecycle.markTime <= 0) delete z.markSpreadRadius;
 
       if (lifecycle.burnDamage > 0) {
         this.damage(z, lifecycle.burnDamage, z.x, z.z, 1, 1, false, {
@@ -2263,7 +2255,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             );
             this.projectileEmissions += 1;
           }
-          sfx(SHOOT_SFX[t.kind]);
+          sfx(t.kind === "rifleman" && squadRateBonus > 0 ? "shootRifleCoordinated" : SHOOT_SFX[t.kind]);
         }
       }
     }
