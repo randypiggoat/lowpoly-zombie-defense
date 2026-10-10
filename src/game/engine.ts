@@ -945,7 +945,7 @@ export class Game {
     state.bossesRemaining = 0;
     state.waveDamageTaken = 0;
     state.runModifierOffer = [];
-    state.waveTimer = 0.65;
+    state.waveTimer = 2.2;
     state.waveMessage = `ENDLESS SIEGE · WAVE ${state.wave + 1}`;
     state.waveMessageLife = 3;
     state.waveMessageType = "complete";

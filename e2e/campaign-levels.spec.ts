@@ -62,12 +62,12 @@ test("campaign victory can continue into endless without resetting the active de
   expect(won.wave).toBe(won.stageWaveTarget);
   await expect(page.getByRole("button", { name: /CONTINUE IN ENDLESS/i })).toBeVisible();
   await page.getByRole("button", { name: /CONTINUE IN ENDLESS/i }).click();
-  await expect(page.getByText("Endless", { exact: true })).toBeVisible();
   const after = await page.evaluate(() => {
     const qa = (window as Window & { __ROTWOOD_QA__?: { getRunSnapshot: () => { towerCount: number; towerIds: number[]; gold: number; baseHp: number; wave: number; stageWaveTarget: number; gameOver: boolean; stageWon: boolean; endlessMode: boolean; continuedAfterVictory: boolean } } }).__ROTWOOD_QA__;
     if (!qa) throw new Error("QA run snapshot is unavailable");
     return qa.getRunSnapshot();
   });
+  await expect(page.getByText("Endless", { exact: true })).toBeVisible();
   expect(after.endlessMode).toBe(true);
   expect(after.continuedAfterVictory).toBe(true);
   expect(after.gameOver).toBe(false);
