@@ -77,6 +77,9 @@ describe("tower stat calculations", () => {
     expect(stats.stun).toBe(0);
     expect(stats.markDuration).toBe(0);
     expect(stats.markBonus).toBe(0);
+    expect(stats.markSpreadRadius).toBe(0);
+    expect(stats.squadRadius).toBe(0);
+    expect(stats.squadRateBonus).toBe(0);
     expect(stats.shatterMultiplier).toBe(0);
     expect(stats.executeThreshold).toBe(0);
     expect(stats.executeMultiplier).toBe(1);
@@ -120,6 +123,9 @@ describe("tower stat calculations", () => {
       stun: 0,
       markDuration: 0,
       markBonus: 0,
+      markSpreadRadius: 0,
+      squadRadius: 0,
+      squadRateBonus: 0,
       shatterMultiplier: 0,
       executeThreshold: 0,
       executeMultiplier: 1,
