@@ -17,7 +17,8 @@ describe("tower upgrade design", () => {
     expect(getTowerUpgradeAbilities("rifleman", 0, 1).markBonus).toBeGreaterThan(0);
     expect(TOWER_PATHS.freezer.b.tiers[0]?.ability).toBe("mark");
     expect(getTowerUpgradeAbilities("freezer", 2, 0).shatterMultiplier).toBeGreaterThan(1);
-    expect(getTowerUpgradeAbilities("rocket", 0, 1).markBonus).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("rocket", 0, 1).markBonus).toBe(0);
+    expect(TOWER_PATHS.rocket.b.tiers[0]?.mods.slow).toBe(0.32);
   });
 });
 
