@@ -950,6 +950,7 @@ export class Game {
     state.waveMessageLife = 3;
     state.waveMessageType = "complete";
     this.resetTransientState();
+    this.waveEndNotified = true;
     track("run_started", { stageId: state.stageId, endless: true, continuedAfterVictory: true, wave: state.wave });
     sfx("wave");
     this.emit();
@@ -1255,7 +1256,9 @@ export class Game {
       Boolean(this.stage.endless) && s.wave >= 10 && s.wave % 10 === 0;
     const bossWave =
       endlessBossWave || (this.stage.boss.enabled && this.stage.boss.wave === s.wave);
-    s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
+    s.waveMessage = this.stage.endless
+      ? bossWave ? `ENDLESS · BOSS WAVE ${s.wave}` : `ENDLESS · WAVE ${s.wave}`
+      : bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
 
