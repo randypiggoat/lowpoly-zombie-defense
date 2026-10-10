@@ -17,6 +17,7 @@ import { getChainTargets, getSplashTargets } from "./projectileImpact";
 import { applyProjectileStatusEffects } from "./projectileEffects";
 import {
   createTowerProjectile,
+  getTowerMuzzleOffset,
   KILL_RUSH_DURATION,
   chainJumpMultiplier,
   conditionalDamageMultiplier,
@@ -542,23 +543,35 @@ export function towerUpgradeAbilities(t: Tower) {
 }
 
 /**
- * Support-specialized Riflemen improve nearby Riflemen only. Overlapping squad
- * auras use the strongest eligible bonus rather than stacking multiplicatively.
+ * Support-specialized Riflemen improve other nearby Riflemen only. For each
+ * stat, overlapping squad auras use the strongest eligible bonus and never stack.
  */
-export function rifleSquadRateBonus(tower: Tower, towers: readonly Tower[]): number {
+function rifleSquadAuraBonus(
+  tower: Tower,
+  towers: readonly Tower[],
+  stat: "squadDamageBonus" | "squadRangeBonus",
+  cap: number,
+): number {
   if (tower.kind !== "rifleman") return 0;
   let bonus = 0;
   for (const commander of towers) {
     if (commander.id === tower.id || commander.kind !== "rifleman") continue;
     const support = towerCombatStats(commander);
-    if (support.squadRadius <= 0 || support.squadRateBonus <= bonus) continue;
+    const candidateBonus = support[stat];
+    if (support.squadRadius <= 0 || candidateBonus <= bonus) continue;
     const dx = commander.x - tower.x;
     const dz = commander.z - tower.z;
-    if (dx * dx + dz * dz <= support.squadRadius * support.squadRadius) {
-      bonus = support.squadRateBonus;
-    }
+    if (dx * dx + dz * dz <= support.squadRadius * support.squadRadius) bonus = candidateBonus;
   }
-  return Math.min(0.15, bonus);
+  return Math.min(cap, bonus);
+}
+
+export function rifleSquadDamageBonus(tower: Tower, towers: readonly Tower[]): number {
+  return rifleSquadAuraBonus(tower, towers, "squadDamageBonus", 0.15);
+}
+
+export function rifleSquadRangeBonus(tower: Tower, towers: readonly Tower[]): number {
+  return rifleSquadAuraBonus(tower, towers, "squadRangeBonus", 0.08);
 }
 
 /** Total tiers bought across both paths (used for visuals). */
@@ -2176,7 +2189,8 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       if ((t.surge ?? 0) > 0) t.surge = Math.max(0, (t.surge ?? 0) - dt);
 
       const baseCombat = towerCombatStats(t);
-      const range = baseCombat.range;
+      const squadRangeBonus = rifleSquadRangeBonus(t, s.towers);
+      const range = baseCombat.range * (1 + squadRangeBonus);
       let best: Zombie | null = null;
       if (t.targetRefreshTimer! > 0 && t.targetId !== undefined) {
         const cached = this.zombieById.get(t.targetId);
@@ -2199,28 +2213,31 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         if (cooldownReady) {
           const combat = baseCombat;
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
-          const squadRateBonus = rifleSquadRateBonus(t, s.towers);
-          const rate = baseCombat.rate * surgeRate * (1 + squadRateBonus);
+          const squadDamageBonus = rifleSquadDamageBonus(t, s.towers);
+          const rate = baseCombat.rate * surgeRate;
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < combat.crit;
           const volley = Math.max(1, Math.min(3, combat.volley));
-          // Multiple-shot volleys change attack shape, not base single-target DPS.
-          // Their value comes from coverage, multi-target effects and support abilities.
+          // Volleys divide a tower's normal shot damage across the intended rounds.
+          // This preserves baseline single-target DPS while adding real weapon muzzles.
           const volleyDamageFactor = 1 / volley;
-          for (let shot = 0; shot < volley && s.bullets.length < MAX_ACTIVE_BULLETS; shot++) {
+          const shotsToFire = Math.min(volley, Math.max(0, MAX_ACTIVE_BULLETS - s.bullets.length));
+          for (let shot = 0; shot < shotsToFire; shot++) {
+            const muzzle = getTowerMuzzleOffset(t.kind, shot, shotsToFire);
+            const muzzleX = t.x + Math.sin(t.aim) * muzzle.forward + Math.cos(t.aim) * muzzle.side;
+            const muzzleZ = t.z + Math.cos(t.aim) * muzzle.forward - Math.sin(t.aim) * muzzle.side;
             s.bullets.push(
               createTowerProjectile({
                 id: this.nextId++,
-                // fan multi-shot volleys sideways so a barrage reads as parallel rounds
-                x: t.x + Math.cos(t.aim) * (shot - (volley - 1) / 2) * 0.32,
-                z: t.z - Math.sin(t.aim) * (shot - (volley - 1) / 2) * 0.32,
+                x: muzzleX,
+                z: muzzleZ,
                 tx: best.x,
                 tz: best.z,
-                originX: t.x,
-                originZ: t.z,
+                originX: muzzleX,
+                originZ: muzzleZ,
                 speed: BULLET_SPEED[t.kind],
-                damage: combat.damage * volleyDamageFactor * (crit ? 2.5 : 1),
+                damage: combat.damage * (1 + squadDamageBonus) * volleyDamageFactor * (crit ? 2.5 : 1),
                 target: best.id,
                 kind: t.kind,
                 splash: combat.splash,
@@ -2230,6 +2247,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 gold: combat.gold,
                 crit,
                 level: t.level,
+                muzzleHeight: 1.18 + t.level * 0.1 + muzzle.height,
                 stun: combat.stun,
                 markDuration: combat.markDuration,
                 markBonus: combat.markBonus,
@@ -2255,7 +2273,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             );
             this.projectileEmissions += 1;
           }
-          sfx(t.kind === "rifleman" && squadRateBonus > 0 ? "shootRifleCoordinated" : SHOOT_SFX[t.kind]);
+          sfx(t.kind === "rifleman" && (squadDamageBonus > 0 || squadRangeBonus > 0) ? "shootRifleCoordinated" : SHOOT_SFX[t.kind]);
         }
       }
     }
