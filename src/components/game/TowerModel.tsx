@@ -39,34 +39,7 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
   const metal = <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.5} />;
   switch (kind) {
     case "rifleman":
-      return (
-        <>
-          {a >= 1 && (
-            <mesh position={[0, 1.16, 0.45]} castShadow>
-              <boxGeometry args={[0.14, 0.14, a >= 4 ? 0.7 : 0.42]} />
-              {metal}
-            </mesh>
-          )}
-          {a >= 4 && (
-            <mesh position={[0, 1.16, 0.88]} rotation-x={Math.PI / 2}>
-              <torusGeometry args={[0.09, 0.025, 5, 8]} />
-              <AccentMaterial color={accent} glow={0.8} />
-            </mesh>
-          )}
-          {b >= 1 && (
-            <mesh position={[0.22, 0.9, 1.0]} castShadow>
-              <boxGeometry args={[0.1, 0.1, 1.2]} />
-              {metal}
-            </mesh>
-          )}
-          {b >= 4 && (
-            <mesh position={[-0.22, 0.9, 1.0]} castShadow>
-              <boxGeometry args={[0.1, 0.1, 1.2]} />
-              {metal}
-            </mesh>
-          )}
-        </>
-      );
+      return null;
     case "shotgunner":
       return (
         <>
@@ -214,6 +187,8 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const weapon = useRef<THREE.Group>(null);
   const signature = useRef<THREE.Group>(null);
   const muzzle = useRef<THREE.Mesh>(null);
+  const muzzleSecondary = useRef<THREE.Mesh>(null);
+  const muzzleTertiary = useRef<THREE.Mesh>(null);
   const core = useRef<THREE.Mesh>(null);
   const identityCore = useRef<THREE.Mesh>(null);
   const identityHalo = useRef<THREE.Mesh>(null);
@@ -265,10 +240,20 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       identityHalo.current.rotation.z = t * 0.5 + idleSeed;
       identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04);
     }
+    const flash = Math.max(0, tower.recoil - 0.12) * 1.4;
     if (muzzle.current) {
       muzzle.current.visible = tower.recoil > 0.12;
-      const flash = Math.max(0, tower.recoil - 0.12) * 1.4;
       muzzle.current.scale.setScalar(0.45 + flash);
+    }
+    if (muzzleSecondary.current) {
+      const active = tower.recoil > 0.12 && ((tower.kind === "rifleman" && tower.b >= 1) || (tower.kind === "shotgunner" && tower.a >= 2));
+      muzzleSecondary.current.visible = active;
+      muzzleSecondary.current.scale.setScalar(0.45 + flash);
+    }
+    if (muzzleTertiary.current) {
+      const active = tower.recoil > 0.12 && tower.kind === "rifleman" && tower.b >= 4;
+      muzzleTertiary.current.visible = active;
+      muzzleTertiary.current.scale.setScalar(0.45 + flash);
     }
   });
 
@@ -295,14 +280,46 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           <boxGeometry args={[0.18, 0.18, 1.72]} />
           <meshStandardMaterial color={dark} flatShading metalness={0.38} roughness={0.45} />
         </mesh>
-        <mesh position={[0, 0.17, 0.16]} castShadow>
-          <boxGeometry args={[0.08, 0.12, 0.42]} />
-          <AccentMaterial color={accent} glow={0.35} />
-        </mesh>
+        {tower.b >= 1 && (
+          <mesh position={[0.22, 0, 0.68]} castShadow>
+            <boxGeometry args={[0.1, 0.1, 1.62]} />
+            <meshStandardMaterial color={dark} flatShading metalness={0.38} roughness={0.45} />
+          </mesh>
+        )}
+        {tower.b >= 4 && (
+          <mesh position={[-0.22, 0, 0.68]} castShadow>
+            <boxGeometry args={[0.1, 0.1, 1.62]} />
+            <meshStandardMaterial color={dark} flatShading metalness={0.38} roughness={0.45} />
+          </mesh>
+        )}
+        {tower.a >= 1 && (
+          <mesh position={[0, 0.17, 0.16]} castShadow>
+            <boxGeometry args={[0.08, 0.12, 0.42]} />
+            <AccentMaterial color={accent} glow={0.35} />
+          </mesh>
+        )}
+        {tower.a >= 4 && (
+          <mesh position={[0, 0.02, 1.37]} rotation-x={Math.PI / 2}>
+            <torusGeometry args={[0.13, 0.025, 5, 8]} />
+            <AccentMaterial color={accent} glow={0.65} />
+          </mesh>
+        )}
         <mesh ref={muzzle} position={[0, 0, 1.58]} rotation-x={Math.PI / 2} visible={false}>
           <coneGeometry args={[0.16, 0.34, 6]} />
           <AccentMaterial color="#fff1bd" glow={1.1} />
         </mesh>
+        {tower.b >= 1 && (
+          <mesh ref={muzzleSecondary} position={[0.22, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
+            <coneGeometry args={[0.11, 0.28, 6]} />
+            <AccentMaterial color="#fff1bd" glow={1.1} />
+          </mesh>
+        )}
+        {tower.b >= 4 && (
+          <mesh ref={muzzleTertiary} position={[-0.22, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
+            <coneGeometry args={[0.11, 0.28, 6]} />
+            <AccentMaterial color="#fff1bd" glow={1.1} />
+          </mesh>
+        )}
       </group>
     </>
   );
@@ -336,10 +353,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
             <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.44} />
           </mesh>
         ))}
-        <mesh ref={muzzle} position={[0, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
+        <mesh ref={muzzle} position={[-0.24, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
           <coneGeometry args={[0.28, 0.38, 7]} />
           <AccentMaterial color="#fff0bb" glow={1.15} />
         </mesh>
+        {tower.a >= 2 && (
+          <mesh ref={muzzleSecondary} position={[0.24, 0, 1.48]} rotation-x={Math.PI / 2} visible={false}>
+            <coneGeometry args={[0.28, 0.38, 7]} />
+            <AccentMaterial color="#fff0bb" glow={1.15} />
+          </mesh>
+        )}
       </group>
     </>
   );
