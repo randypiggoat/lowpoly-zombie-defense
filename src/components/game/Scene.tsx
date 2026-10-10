@@ -517,6 +517,7 @@ function TowerMesh({
   const accent = equippedCosmetic?.accent || TOWER_INFO[tower.kind].accent;
   const bodyColor = equippedCosmetic?.body || "";
   const level = towerLevel(tower);
+  const squadRadius = tower.kind === "rifleman" && tower.b >= 3 ? (tower.b >= 4 ? 6.2 : 5.2) : 0;
 
   useFrame(({ clock }, dt) => {
     if (turret.current) {
@@ -541,6 +542,12 @@ function TowerMesh({
         onSelect(tower.id);
       }}
     >
+      {squadRadius > 0 && (
+        <mesh rotation-x={-Math.PI / 2} position={[0, 0.065, 0]}>
+          <ringGeometry args={[squadRadius - 0.08, squadRadius, 40]} />
+          <meshBasicMaterial color="#70d9c4" transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+      )}
       {selected && (
         <>
           <mesh ref={ring} rotation-x={-Math.PI / 2} position={[0, 0.12, 0]}>
