@@ -35,6 +35,7 @@ import { getEndlessMilestone, getEndlessSector, getEndlessSectorLabel } from "@/
 import { getBossHealthSummary, getBossStatusFlags } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { enemyThreatLabel } from "@/game/enemyPresentation";
+import { getEnemiesRemaining, getRoundProgress } from "@/game/hudMetrics";
 
 function useProfileSnapshot() {
   useSyncExternalStore(
@@ -324,13 +325,12 @@ export function HUD({
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
-  const enemiesRemaining = Math.max(0, state.spawnQueue + state.zombies.filter((z) => !z.dead).length);
-  const maximumRounds = Math.max(1, state.stageWaveTarget);
-  const currentRound = Math.max(1, state.wave);
-  const roundsRemaining = Math.max(0, maximumRounds - state.wave);
-  const roundProgressPercent = state.endlessMode
-    ? state.wave > 0 ? (((state.wave - 1) % 10) + 1) * 10 : 0
-    : Math.min(100, Math.max(0, (state.wave / maximumRounds) * 100));
+  const enemiesRemaining = getEnemiesRemaining(state);
+  const { currentRound, maximumRounds, roundsRemaining, progressPercent: roundProgressPercent } = getRoundProgress(
+    state.wave,
+    state.stageWaveTarget,
+    state.endlessMode,
+  );
   const bossHealth = getBossHealthSummary(state.zombies);
   const bossFlags = bossHealth ? getBossStatusFlags(state.zombies) : null;
   const visibleSpecialEnemy = state.zombies.find((zombie) => !zombie.dead && (zombie.kind >= 2 || zombie.boss));
