@@ -1276,7 +1276,11 @@ export class Game {
       }
     }
 
-    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const bossCount = endlessBossWave
+      ? 1 + Math.floor(s.wave / 30)
+      : bossWave
+        ? Math.max(0, this.stage.boss.count)
+        : 0;
     s.bossesRemaining = bossCount;
     const endlessScaling = this.stage.endless ? getEndlessWaveScaling(s.wave, this.stage.waveCount) : null;
     const queueMult =

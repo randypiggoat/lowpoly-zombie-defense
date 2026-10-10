@@ -5,7 +5,6 @@ import {
   TOWER_PATHS,
   canBuyTier,
   game,
-  incomeCost,
   tierCost,
   towerSellValue,
   towerUnlocked,
@@ -287,7 +286,6 @@ export function HUD({
     selection?.kind === "tower" ? (state.towers.find((t) => t.id === selection.id) ?? null) : null;
   const spot = selection?.kind === "spot" ? selection.position : null;
   const placement = spot ? game.getPlacementStatus(spot.x, spot.z) : null;
-  const incCost = incomeCost(state.incomeLevel);
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
@@ -478,7 +476,7 @@ export function HUD({
       <div className="rw-hud-top space-y-1.5">
         <div className="rw-hud-status-row flex items-start gap-1.5">
           <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" />
-          <Stat label="Wave" value={`${state.wave || 1}`} />
+          <Stat label={state.endlessMode ? "Endless" : "Wave"} value={`${state.wave || 1}`} />
           <Stat
             label="Base"
             value={`${state.baseHp}/${state.baseMaxHp}`}
@@ -800,19 +798,11 @@ export function HUD({
           </div>
         )}
 
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => game.upgradeIncome()}
-            disabled={state.gold < incCost}
-            className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
-          >
-            Upgrade salvage income
-            <span className="block text-[10px] text-panel-muted">{incCost} SCRAP</span>
-          </button>
+        <div className="flex">
           <button
             onClick={() => game.repair()}
             disabled={state.gold < 30 || state.baseHp >= state.baseMaxHp}
-            className="flex-1 rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
+            className="w-full rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
             Repair base
             <span className="block text-[10px] text-panel-muted">30 scrap</span>

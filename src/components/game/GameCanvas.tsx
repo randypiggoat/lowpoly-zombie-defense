@@ -581,7 +581,7 @@ export function GameCanvas() {
 
   useEffect(() => {
     if (screen !== "results" || !state.gameOver || !lastReward) return;
-    if (player.adsRemoved || player.gamesPlayed < 2) return;
+    if (state.continuedAfterVictory || player.adsRemoved || player.gamesPlayed < 2) return;
 
     void import("@/game/monetization")
       .then(({ showInterstitial }) =>
@@ -592,7 +592,7 @@ export function GameCanvas() {
         }),
       )
       .catch(() => false);
-  }, [lastReward, player.adsRemoved, player.gamesPlayed, screen, state.gameOver]);
+  }, [lastReward, player.adsRemoved, player.gamesPlayed, screen, state.gameOver, state.continuedAfterVictory]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -646,6 +646,8 @@ export function GameCanvas() {
       selectTower: (id: number) => void;
       getTowerIds: () => number[];
       getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
+      forceStageVictoryForTest: () => boolean;
+      getRunSnapshot: () => { towerCount: number; towerIds: number[]; gold: number; baseHp: number; wave: number; stageWaveTarget: number; gameOver: boolean; stageWon: boolean; endlessMode: boolean; continuedAfterVictory: boolean };
     };
 
     const qaWindow = window as Window & { __ROTWOOD_QA__?: QaApi };
@@ -670,6 +672,28 @@ export function GameCanvas() {
         towerCount: game.state.towers.length,
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
         projectileEmissions: game.getProjectileEmissionCount(),
+      }),
+      forceStageVictoryForTest: () => {
+        const current = game.state;
+        if (current.gameOver || current.endlessMode) return false;
+        current.wave = current.stageWaveTarget;
+        current.spawnQueue = 0;
+        current.zombies.length = 0;
+        current.waveTimer = 0;
+        game.tick(1 / 30);
+        return game.state.stageWon;
+      },
+      getRunSnapshot: () => ({
+        towerCount: game.state.towers.length,
+        towerIds: game.state.towers.map((tower) => tower.id),
+        gold: game.state.gold,
+        baseHp: game.state.baseHp,
+        wave: game.state.wave,
+        stageWaveTarget: game.state.stageWaveTarget,
+        gameOver: game.state.gameOver,
+        stageWon: game.state.stageWon,
+        endlessMode: game.state.endlessMode,
+        continuedAfterVictory: game.state.continuedAfterVictory,
       }),
     };
 
@@ -1738,7 +1762,7 @@ export function GameCanvas() {
       )}
 
       {screen === "results" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/70 p-3">
+        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/70 p-3">
           <ScreenCard>
             <h2 className={"text-center font-display text-3xl tracking-wide " + (state.stageWon ? "text-accent" : state.endlessMode ? "text-accent" : "text-danger")}>{resultLabel}</h2>
             {state.bossTrial && activeBossTrial
@@ -1748,12 +1772,17 @@ export function GameCanvas() {
                 : activeSideMode
                   ? <p className="mt-1 text-center text-sm text-panel-muted">{activeSideMode.name} · {activeSideMode.category === "resource" ? "Resource Ops" : activeSideMode.category === "challenge" ? "Challenge Gauntlet" : "Seasonal Event"}</p>
                   : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
-            {lastReward ? (
+            {lastReward && !state.continuedAfterVictory ? (
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">+{lastReward.coins}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">Credits</p></div>
                 <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">+{lastReward.xp}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">XP</p></div>
                 <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">{"★".repeat(lastReward.starsEarned ?? 0) || "—"}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">Stars</p></div>
               </div>
+            ) : null}
+            {state.continuedAfterVictory ? (
+              <p className="mt-3 rounded-xl bg-black/25 px-3 py-2 text-center text-xs text-panel-muted">
+                Endless record saved. No extra player XP or repeat campaign rewards are granted.
+              </p>
             ) : null}
             <div className="mt-3 rounded-2xl bg-black/25 p-3 text-center">
               {state.endlessMode || state.bossTrial || state.sideModeId ? (
@@ -1817,8 +1846,23 @@ export function GameCanvas() {
             {!state.stageWon && !state.reviveUsed && state.baseHp <= 0 && rewardedAvailable ? (
               <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("revive"); if (earned && game.reviveRun()) setScreen("gameplay"); }} variant="secondary">SECOND CHANCE · WATCH AD</ScreenButton>
             ) : null}
-            {lastReward && !player.adsRemoved && rewardedAvailable && profile.canClaimLastRunRewardBoost ? (
+            {lastReward && !state.continuedAfterVictory && !player.adsRemoved && rewardedAvailable && profile.canClaimLastRunRewardBoost ? (
               <ScreenButton onClick={async () => { const { showRewarded } = await import("@/game/monetization"); const earned = await showRewarded("double-run-rewards"); if (earned) profile.claimLastRunRewardBoost(); }} variant="secondary">DOUBLE REWARDS · WATCH AD</ScreenButton>
+            ) : null}
+            {game.canContinueAfterVictory() ? (
+              <div className="mt-3 rounded-2xl border border-accent/25 bg-accent/10 p-3">
+                <p className="font-display text-base tracking-wide text-accent">YOUR DEFENSE CAN GO FURTHER</p>
+                <p className="mt-1 text-xs leading-relaxed text-panel-muted">
+                  Keep your current towers, upgrades, scrap, and base health. Endless waves grow tougher over time; continuing grants no additional player-level XP.
+                </p>
+                <ScreenButton onClick={() => {
+                  if (!game.continueAfterVictory()) return;
+                  profile.clearReward();
+                  setSelection(null);
+                  setOverlay(null);
+                  setScreen("gameplay");
+                }}>CONTINUE IN ENDLESS</ScreenButton>
+              </div>
             ) : null}
             <div className="mt-4 space-y-2">
               {state.stageWon && nextStage ? <ScreenButton onClick={() => startStage(nextStage.id)}>NEXT STAGE</ScreenButton>
@@ -1842,6 +1886,11 @@ export function GameCanvas() {
             </h2>
             <div className="mt-4 space-y-2">
               <ScreenButton onClick={() => setOverlay(null)}>RESUME</ScreenButton>
+              {state.endlessMode ? (
+                <ScreenButton onClick={() => {
+                  if (game.endEndlessRun()) setOverlay(null);
+                }} variant="secondary">END ENDLESS RUN</ScreenButton>
+              ) : null}
               <ScreenButton onClick={() => setOverlay("confirm-restart")} variant="secondary">
                 RESTART
               </ScreenButton>
