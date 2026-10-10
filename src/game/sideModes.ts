@@ -98,7 +98,7 @@ export const RESOURCE_OPS: SideModeLevel[] = [
     category: "resource",
     name: "Scrap Run III",
     shortName: "SCRAP III",
-    description: "A full salvage push with mixed threats designed for reliable late-game credit income.",
+    description: "A full salvage push with mixed threats designed to reward kill-earned scrap and careful spending.",
     purpose: "Endgame-focused credits run",
     duration: "5–8 min",
     unlockStageId: 10,
