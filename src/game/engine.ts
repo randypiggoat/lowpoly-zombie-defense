@@ -545,7 +545,7 @@ export function towerUpgradeAbilities(t: Tower) {
  * Support-specialized Riflemen improve nearby Riflemen only. Overlapping squad
  * auras use the strongest eligible bonus rather than stacking multiplicatively.
  */
-function rifleSquadRateBonus(tower: Tower, towers: readonly Tower[]): number {
+export function rifleSquadRateBonus(tower: Tower, towers: readonly Tower[]): number {
   if (tower.kind !== "rifleman") return 0;
   let bonus = 0;
   for (const commander of towers) {
