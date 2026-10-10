@@ -1224,7 +1224,7 @@ export class Game {
     if (path === "a") t.a += 1;
     else t.b += 1;
     t.level = Math.min(MAX_TOWER_LEVEL, 1 + t.a + t.b);
-    profile.recordTowerUpgrade(t.kind);
+    profile.recordTowerUpgrade(t.kind, 1, { trackXpBearingSeasonal: !s.endlessMode });
     sfx("upgrade");
     this.emit();
   }

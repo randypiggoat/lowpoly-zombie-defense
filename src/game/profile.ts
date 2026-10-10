@@ -925,7 +925,12 @@ class ProfileStore {
   recordZombieKill(kind: number, options?: { awardXp?: boolean }) {
     this.addSeasonalEventKillProgress();
     // Endless kills cannot finish seasonal XP milestones; currency and non-XP kill progress remain active.
-    if (options?.awardXp !== false && kind >= 2) this.addSeasonalEventActivity("special-kills");
+    const specialKillMilestoneAwardsXp = getSeasonalEvent().milestones.some(
+      (milestone) => milestone.activity === "special-kills" && (milestone.reward.xp ?? 0) > 0,
+    );
+    if ((options?.awardXp !== false || !specialKillMilestoneAwardsXp) && kind >= 2) {
+      this.addSeasonalEventActivity("special-kills");
+    }
     this.refreshRetentionState();
     const p = this.profile;
     const xp = options?.awardXp === false ? 0 : progressionXpForKill(kind);
@@ -1308,11 +1313,16 @@ class ProfileStore {
   }
 
   /** Track in-run upgrade activity separately from permanent upgrade levels. */
-  recordTowerUpgrade(kind: string, points = 1) {
+  recordTowerUpgrade(kind: string, points = 1, options?: { trackXpBearingSeasonal?: boolean }) {
     this.refreshRetentionState();
     const p = this.profile;
     const earned = Math.max(0, points);
-    this.addSeasonalEventActivity("tower-upgrades", earned);
+    const towerUpgradeMilestoneAwardsXp = getSeasonalEvent().milestones.some(
+      (milestone) => milestone.activity === "tower-upgrades" && (milestone.reward.xp ?? 0) > 0,
+    );
+    if (options?.trackXpBearingSeasonal !== false || !towerUpgradeMilestoneAwardsXp) {
+      this.addSeasonalEventActivity("tower-upgrades", earned);
+    }
     p.towerUpgradeActions += earned;
     p.towerMasteryXp ??= {};
     p.towerMasteryXp[kind] = (p.towerMasteryXp[kind] ?? 0) + earned * 25;

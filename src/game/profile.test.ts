@@ -126,6 +126,46 @@ describe("daily login rewards", () => {
 
 
 describe("kill-only run currency and endless XP rules", () => {
+  test("endless activity cannot farm XP-bearing seasonal milestones while retaining other progress", () => {
+    const originalProfile = structuredClone(profile.profile);
+    const originalReward = profile.lastReward;
+    const event = getSeasonalEvent();
+    const specialKillsAwardXp = event.milestones.some(
+      (milestone) => milestone.activity === "special-kills" && (milestone.reward.xp ?? 0) > 0,
+    );
+    const upgradesAwardXp = event.milestones.some(
+      (milestone) => milestone.activity === "tower-upgrades" && (milestone.reward.xp ?? 0) > 0,
+    );
+
+    try {
+      profile.profile.seasonalEventCycleKey = getSeasonalEventCycleKey();
+      profile.profile.seasonalEventProgress = 0;
+      profile.profile.seasonalEventActivityProgress = {
+        waves: 0,
+        runs: 0,
+        "tower-upgrades": 0,
+        "special-kills": 0,
+      };
+      profile.profile.towerMasteryXp ??= {};
+      const oldTowerMastery = profile.profile.towerMasteryXp.rifleman ?? 0;
+      const oldXp = profile.profile.xp;
+
+      profile.recordWaveReached(12, { awardXp: false });
+      profile.recordZombieKill(2, { awardXp: false });
+      profile.recordTowerUpgrade("rifleman", 1, { trackXpBearingSeasonal: false });
+
+      expect(profile.profile.seasonalEventActivityProgress.waves).toBe(0);
+      expect(profile.profile.seasonalEventActivityProgress["special-kills"]).toBe(specialKillsAwardXp ? 0 : 1);
+      expect(profile.profile.seasonalEventActivityProgress["tower-upgrades"]).toBe(upgradesAwardXp ? 0 : 1);
+      expect(profile.profile.towerMasteryXp.rifleman).toBe(oldTowerMastery + 25);
+      expect(profile.profile.xp).toBe(oldXp);
+    } finally {
+      Object.assign(profile.profile, originalProfile);
+      profile.lastReward = originalReward;
+    }
+  });
+
+
   test("endless kills and waves cannot advance seasonal XP milestones", () => {
     const originalProfile = structuredClone(profile.profile);
     const originalReward = profile.lastReward;
