@@ -49,6 +49,17 @@ function makeTestZombie(overrides: Partial<Zombie> = {}): Zombie {
 }
 
 describe("Game simulation", () => {
+  test("does not generate in-level scrap while no zombies are killed", () => {
+    const game = new Game();
+    game.startStage(getStageById(1));
+    const startingScrap = game.state.gold;
+
+    game.tick(0.5);
+
+    expect(game.state.kills).toBe(0);
+    expect(game.state.gold).toBe(startingScrap);
+  });
+
   test("initializes a stage with its configured starting state", () => {
     const game = new Game();
     const stage = getStageById(1);
@@ -210,9 +221,9 @@ describe("Game simulation", () => {
       }),
     );
 
+    const goldBeforeKill = game.state.gold;
     for (let i = 0; i < 60 && game.state.kills === 0; i++) {
-      const goldBeforeKill = game.state.gold;
-    game.tick(1 / 60);
+      game.tick(1 / 60);
     }
 
     expect(game.state.kills).toBe(1);
