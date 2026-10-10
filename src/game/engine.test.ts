@@ -90,7 +90,6 @@ describe("Game simulation", () => {
     game.tick(0.7);
     game.tick(0.7);
     expect(game.state.wave).toBe(1);
-    expect(game.state.runModifierOffer).toHaveLength(0);
   });
 
   test("every campaign stage boots against its configured map", () => {
@@ -110,7 +109,6 @@ describe("Game simulation", () => {
 
   test("campaign replay challenges enforce their restrictions", () => {
     const thinLine = CAMPAIGN_REPLAY_CHALLENGES.find((challenge) => challenge.id === "thin-line")!;
-    const noPowers = CAMPAIGN_REPLAY_CHALLENGES.find((challenge) => challenge.id === "no-powers")!;
     const buildGame = new Game();
     buildGame.startStage({
       ...getStageById(1),
@@ -122,17 +120,6 @@ describe("Game simulation", () => {
     }
     expect(buildGame.build(4, "rifleman")).toBe(false);
 
-    const modifierGame = new Game(() => 0.5);
-    modifierGame.startStage({
-      ...getStageById(1),
-      waveCount: 3,
-      campaignReplayChallenge: noPowers,
-    });
-    modifierGame.state.wave = 2;
-    modifierGame.state.waveTimer = 0;
-    modifierGame.tick(0.1);
-    expect(modifierGame.state.wave).toBe(3);
-    expect(modifierGame.state.runModifierOffer).toHaveLength(0);
   });
 
   test("campaign replay challenge clears and best scores use persisted profile records", () => {
@@ -308,30 +295,6 @@ describe("simulation speed", () => {
     game.tick(0.5);
 
     expect(game.state.wave).toBe(1);
-  });
-});
-
-
-describe("run modifier reroll", () => {
-  test("allows one reroll and excludes the current offer", () => {
-    const game = new Game(createSeededRandom(2026));
-    game.startStage(getStageById(1));
-    game.state.wave = 3;
-    game.state.runModifierOffer = [
-      { id: "overcharged", name: "Overcharged", description: "", effects: { rateMultiplier: 1.3 } },
-      { id: "bounty", name: "Blood Money", description: "", effects: { goldMultiplier: 1.35 } },
-      { id: "demolition", name: "Demolition", description: "", effects: { splashMultiplier: 1.4 } },
-    ];
-    
-    expect(game.rerollRunModifierOffer()).toBe(true);
-    expect(game.state.runModifierRerollUsed).toBe(true);
-    expect(
-      game.state.runModifierOffer.every(
-        (modifier) =>
-          !["overcharged", "bounty", "demolition"].includes(modifier.id),
-      ),
-    ).toBe(true);
-    expect(game.rerollRunModifierOffer()).toBe(false);
   });
 });
 

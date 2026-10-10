@@ -40,12 +40,6 @@ describe("first session guidance", () => {
     });
   });
 
-  test("explains modifier tradeoffs when a choice is offered", () => {
-    expect(getFirstSessionTip(0, 3, 1, 1, { modifierChoiceAvailable: true })).toMatchObject({
-      title: "CHOOSE A RUN MODIFIER",
-    });
-  });
-
   test("points to the next progression target", () => {
     expect(
       getFirstSessionTip(0, 1, 1, 1, {

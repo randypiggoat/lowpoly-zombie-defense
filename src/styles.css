@@ -1024,3 +1024,75 @@
   .rotwood-app > .rw-screen { animation:none!important; will-change:auto; }
   .rotwood-app .rotwood-button,.rotwood-app .rotwood-menu-tile,.rw-deploy-button svg { transition:none!important; }
 }
+
+
+/* Compact combat HUD: bold life status, clear round progress, and animated horde count. */
+.rw-hud-status-row {
+  grid-template-columns: minmax(0, 1.4fr) minmax(3.4rem, 0.55fr) auto;
+}
+.rw-lives-display {
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  justify-content:center;
+  padding:0.42rem 0.58rem 0.46rem;
+  border:1px solid oklch(0.82 0.16 137 / 0.2);
+  border-radius:0.78rem;
+  background:linear-gradient(145deg,oklch(0.25 0.035 245 / 0.97),oklch(0.14 0.023 250 / 0.98));
+  box-shadow:inset 0 1px 0 oklch(1 0 0 / 0.06),0 5px 12px oklch(0 0 0 / 0.18);
+}
+.rw-lives-head {display:flex;min-width:0;align-items:center;justify-content:space-between;gap:0.35rem;}
+.rw-lives-label {display:flex;min-width:0;align-items:center;gap:0.28rem;color:oklch(0.83 0.025 245);font-size:0.56rem;font-weight:900;letter-spacing:0.12em;white-space:nowrap;}
+.rw-lives-heart {color:var(--rw-toxic,oklch(0.82 0.16 137));font-size:0.95rem;line-height:1;text-shadow:0 0 10px oklch(0.82 0.16 137 / 0.25);}
+.rw-lives-numbers {display:flex;align-items:baseline;gap:0.12rem;white-space:nowrap;font-variant-numeric:tabular-nums;color:oklch(0.75 0.025 245);font-size:0.68rem;}
+.rw-lives-numbers strong {color:oklch(0.97 0.018 95);font-family:var(--font-display);font-size:1.14rem;font-weight:900;line-height:1;}
+.rw-lives-track {height:0.34rem;overflow:hidden;margin-top:0.36rem;border-radius:999px;background:oklch(0.07 0.015 250 / 0.95);box-shadow:inset 0 1px 2px oklch(0 0 0 / 0.5);}
+.rw-lives-fill {height:100%;border-radius:inherit;background:linear-gradient(90deg,oklch(0.67 0.15 143),var(--rw-toxic,oklch(0.82 0.16 137)));box-shadow:0 0 8px oklch(0.82 0.16 137 / 0.22);transition:width 220ms ease,background 160ms ease;}
+.rw-lives-display[data-critical="true"] .rw-lives-fill {background:linear-gradient(90deg,oklch(0.55 0.17 28),oklch(0.72 0.17 40));box-shadow:0 0 8px oklch(0.65 0.18 28 / 0.25);}
+.rw-lives-display[data-hit="true"] {animation:rw-life-hit 260ms ease-out;}
+.rw-lives-display[data-critical="true"] .rw-lives-heart {color:oklch(0.72 0.17 35);}
+.rw-hud-progress-row {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0.4rem;width:min(100%,34rem);}
+.rw-round-progress,.rw-enemies-card {min-width:0;border:1px solid oklch(1 0 0 / 0.1);border-radius:0.78rem;background:linear-gradient(145deg,oklch(0.22 0.032 250 / 0.94),oklch(0.12 0.021 250 / 0.97));box-shadow:inset 0 1px 0 oklch(1 0 0 / 0.045),0 5px 12px oklch(0 0 0 / 0.15);backdrop-filter:blur(8px);}
+.rw-round-progress {padding:0.42rem 0.58rem 0.4rem;}
+.rw-round-progress-copy {display:flex;align-items:center;justify-content:space-between;gap:0.45rem;}
+.rw-round-heading {display:flex;min-width:0;align-items:baseline;gap:0.38rem;}
+.rw-round-kicker {color:var(--rw-toxic,oklch(0.82 0.16 137));font-size:0.55rem;font-weight:900;letter-spacing:0.12em;white-space:nowrap;}
+.rw-round-heading strong {color:oklch(0.97 0.018 95);font-family:var(--font-display);font-size:1.04rem;font-weight:900;line-height:1;white-space:nowrap;}
+.rw-round-heading strong span {color:oklch(0.72 0.025 245);font-size:0.74rem;}
+.rw-round-remaining {overflow:hidden;color:oklch(0.72 0.025 245);font-size:0.52rem;font-weight:800;letter-spacing:0.08em;text-align:right;text-overflow:ellipsis;white-space:nowrap;}
+.rw-round-track {height:0.24rem;overflow:hidden;margin-top:0.34rem;border-radius:999px;background:oklch(0.06 0.014 250 / 0.9);}
+.rw-round-fill {height:100%;border-radius:inherit;background:linear-gradient(90deg,oklch(0.62 0.14 150),var(--rw-toxic,oklch(0.82 0.16 137)));box-shadow:0 0 8px oklch(0.82 0.16 137 / 0.18);transition:width 220ms ease;}
+.rw-enemies-card {display:flex;align-items:center;gap:0.42rem;padding:0.42rem 0.58rem;}
+.rw-enemies-stamp {display:grid;width:1.72rem;height:1.72rem;flex:0 0 auto;place-items:center;border:1px solid oklch(0.82 0.16 137 / 0.22);border-radius:0.48rem;background:oklch(0.17 0.035 150 / 0.82);color:var(--rw-toxic,oklch(0.82 0.16 137));font-family:var(--font-display);font-size:1.05rem;font-weight:900;box-shadow:inset 0 1px 0 oklch(1 0 0 / 0.05);}
+.rw-enemies-copy {display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:0.12rem;}
+.rw-enemies-label {color:oklch(0.76 0.025 245);font-size:0.51rem;font-weight:900;letter-spacing:0.1em;white-space:nowrap;}
+.rw-enemies-count {color:oklch(0.97 0.018 95);font-family:var(--font-display);font-size:1.16rem;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;}
+.rw-enemies-count[data-pulsing="true"] {animation:rw-counter-pop 230ms cubic-bezier(0.2,1.2,0.32,1);}
+@keyframes rw-counter-pop {0%{transform:scale(0.84);color:var(--rw-toxic,oklch(0.82 0.16 137));}65%{transform:scale(1.12);}100%{transform:scale(1);}}
+@keyframes rw-life-hit {0%{transform:scale(1);border-color:oklch(0.7 0.18 30 / 0.9);}45%{transform:scale(1.018);border-color:oklch(0.7 0.18 30 / 0.7);}100%{transform:scale(1);}}
+.rw-hud-actions {align-items:stretch;gap:0.3rem!important;}
+.rw-hud-actions button {padding-inline:0.55rem!important;}
+@media (max-width:390px) {
+  .rw-hud-status-row {grid-template-columns:minmax(0,1.25fr) minmax(3.1rem,0.5fr) auto;}
+  .rw-lives-display {padding:0.38rem 0.42rem 0.4rem;}
+  .rw-lives-label {font-size:0.49rem;letter-spacing:0.08em;gap:0.18rem;}
+  .rw-lives-heart {font-size:0.85rem;}
+  .rw-lives-numbers {font-size:0.6rem;}
+  .rw-lives-numbers strong {font-size:1.02rem;}
+  .rw-hud-actions button {padding-inline:0.38rem!important;font-size:0.67rem!important;}
+  .rw-hud-progress-row {gap:0.3rem;}
+  .rw-round-progress {padding-inline:0.42rem;}
+  .rw-round-progress-copy {gap:0.25rem;}
+  .rw-round-kicker {font-size:0.49rem;letter-spacing:0.08em;}
+  .rw-round-heading {gap:0.22rem;}
+  .rw-round-heading strong {font-size:0.94rem;}
+  .rw-round-remaining {font-size:0.45rem;letter-spacing:0.04em;}
+  .rw-enemies-card {gap:0.3rem;padding-inline:0.4rem;}
+  .rw-enemies-stamp {width:1.48rem;height:1.48rem;}
+  .rw-enemies-label {font-size:0.45rem;letter-spacing:0.07em;}
+  .rw-enemies-count {font-size:1.04rem;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .rw-lives-fill,.rw-round-fill {transition:none!important;}
+  .rw-lives-display[data-hit="true"],.rw-enemies-count[data-pulsing="true"] {animation:none!important;}
+}

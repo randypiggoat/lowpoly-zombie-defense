@@ -35,6 +35,15 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
   await expect(page.getByText("BUILD YOUR FIRST TOWER", { exact: true })).toBeVisible();
 
+  // The combat HUD must expose essential status at a glance without a power-selection overlay.
+  await expect(page.locator(".rw-lives-display")).toBeVisible();
+  await expect(page.locator(".rw-lives-numbers")).toContainText("/");
+  await expect(page.locator(".rw-enemies-card")).toBeVisible();
+  await expect(page.locator(".rw-enemies-count")).toHaveText(/^\d+$/);
+  await expect(page.locator(".rw-round-progress")).toBeVisible();
+  await expect(page.locator(".rw-round-track[role='progressbar']")).toBeVisible();
+  await expect(page.getByText("CHOOSE YOUR POWER", { exact: true })).toHaveCount(0);
+
   const canvasPng = await page.locator("canvas").screenshot({ type: "png" });
   const renderCheck = await page.evaluate(async (base64) => {
     const image = new Image();

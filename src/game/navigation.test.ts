@@ -35,11 +35,13 @@ describe("campaign progression", () => {
     expect(new Set(signatures).size).toBeGreaterThan(3);
   });
 
-  test("campaign replay challenges have distinct restrictions and stable stage keys", () => {
-    const [thinLine, noPowers] = CAMPAIGN_REPLAY_CHALLENGES;
-    expect(CAMPAIGN_REPLAY_CHALLENGES).toHaveLength(4);
+  test("campaign replay challenges have distinct meaningful restrictions and stable stage keys", () => {
+    const [thinLine, marksmanFrost, closeQuarters] = CAMPAIGN_REPLAY_CHALLENGES;
+    expect(CAMPAIGN_REPLAY_CHALLENGES).toHaveLength(3);
     expect(thinLine?.maxTowers).toBe(4);
-    expect(noPowers?.allowRunModifiers).toBe(false);
+    expect(marksmanFrost?.allowedTowerKinds).toEqual(["rifleman", "freezer"]);
+    expect(closeQuarters?.maxTowers).toBe(5);
+    expect(CAMPAIGN_REPLAY_CHALLENGES.some((challenge) => challenge.id === "no-powers")).toBe(false);
     expect(campaignReplayProgressKey(3, thinLine!.id)).not.toBe(
       campaignReplayProgressKey(4, thinLine!.id),
     );

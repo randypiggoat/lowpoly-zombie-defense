@@ -9,8 +9,6 @@ export type AnalyticsEventName =
   | "tower_upgraded"
   | "kill_streak_milestone"
   | "perfect_wave"
-  | "modifier_chosen"
-  | "modifier_rerolled"
   | "revive_used"
   | "boss_defeated"
   | "boss_enraged"

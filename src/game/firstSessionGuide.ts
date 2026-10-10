@@ -6,7 +6,6 @@ export type FirstSessionTip = {
 export type FirstSessionContext = {
   pathUpgradeCount?: number;
   specialEnemyLabel?: string | null;
-  modifierChoiceAvailable?: boolean;
   progressionTarget?: { label: string; detail: string } | null;
 };
 
@@ -51,13 +50,6 @@ export function getFirstSessionTip(
     } satisfies FirstSessionTip;
   }
 
-  if (context.modifierChoiceAvailable) {
-    return {
-      title: "CHOOSE A RUN MODIFIER",
-      body: "Compare the bonus and drawback; your choice stays active for the rest of this run.",
-    } satisfies FirstSessionTip;
-  }
-
   if (context.progressionTarget) {
     return {
       title: "NEXT PROGRESSION TARGET",
@@ -67,6 +59,6 @@ export function getFirstSessionTip(
 
   return {
     title: "YOU'RE READY",
-    body: "Keep the chain alive, save your SCRAP, and choose a power when the horde pauses.",
+    body: "Keep the chain alive, save your SCRAP, and watch for the next threat.",
   } satisfies FirstSessionTip;
 }
