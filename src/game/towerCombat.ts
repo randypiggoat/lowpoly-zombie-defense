@@ -64,12 +64,12 @@ export type TowerMuzzleOffset = Readonly<{ side: number; forward: number; height
 const TOWER_PRIMARY_MUZZLES: Record<TowerKind, TowerMuzzleOffset> = {
   rifleman: { side: 0, forward: 1.58, height: 0.9 },
   shotgunner: { side: 0, forward: 1.48, height: 1.02 },
-  sniper: { side: 0, forward: 1.83, height: 1.71 },
+  sniper: { side: 0, forward: 1.91, height: 1.71 },
   tesla: { side: 0, forward: 0, height: 1.74 },
-  flamethrower: { side: 0, forward: 1.12, height: 1.3 },
+  flamethrower: { side: 0, forward: 1.24, height: 1.3 },
   freezer: { side: 0, forward: 0.55, height: 0.96 },
   rocket: { side: 0, forward: 0.82, height: 1.02 },
-  laser: { side: 0, forward: 0.56, height: 1.42 },
+  laser: { side: 0, forward: 0.66, height: 1.42 },
 };
 const RIFLEMAN_DUAL_MUZZLES: readonly TowerMuzzleOffset[] = [
   { side: 0, forward: 1.58, height: 0.9 },
