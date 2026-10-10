@@ -922,18 +922,24 @@ class ProfileStore {
     return true;
   }
 
-  recordZombieKill(kind: number) {
+  recordZombieKill(kind: number, options?: { awardXp?: boolean }) {
     this.addSeasonalEventKillProgress();
-    if (kind >= 2) this.addSeasonalEventActivity("special-kills");
+    // Endless kills cannot finish seasonal XP milestones; currency and non-XP kill progress remain active.
+    const specialKillMilestoneAwardsXp = getSeasonalEvent().milestones.some(
+      (milestone) => milestone.activity === "special-kills" && (milestone.reward.xp ?? 0) > 0,
+    );
+    if ((options?.awardXp !== false || !specialKillMilestoneAwardsXp) && kind >= 2) {
+      this.addSeasonalEventActivity("special-kills");
+    }
     this.refreshRetentionState();
     const p = this.profile;
-    const xp = progressionXpForKill(kind);
+    const xp = options?.awardXp === false ? 0 : progressionXpForKill(kind);
     const coins =
       kind === 2 ? 3 : kind === 1 ? 2 : kind === 4 ? 4 : kind === 5 ? 3 : kind === 6 ? 4 : kind === 3 ? 2 : 1;
     p.totalKills += 1;
     if (kind === 2) p.bruteKills += 1;
     p.coins += coins;
-    const result = this.awardXp(xp);
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(xp);
     this.updateDailyMission("zombieKill", 1);
     this.syncAchievementProgress();
 
@@ -1082,22 +1088,27 @@ class ProfileStore {
       challengePeriod?: "free" | "daily" | "weekly";
       challengeKey?: string;
       rewardMultiplier?: number;
+      awardXp?: boolean;
+      continuedAfterVictory?: boolean;
     },
   ): RunReward & { score: number; bestWave: number; bestScore: number } {
-    this.addSeasonalEventActivity("runs");
+    const continuedAfterVictory = Boolean(options?.continuedAfterVictory);
+    if (!continuedAfterVictory) this.addSeasonalEventActivity("runs");
     this.refreshRetentionState();
     const p = this.profile;
     const multiplier = Math.max(0.5, options?.rewardMultiplier ?? 1);
     const score = Math.max(0, Math.round(wave * 100 + kills * 8 + p.level * 10));
     const newWaveRecord = wave > p.endlessBestWave;
     const newScoreRecord = score > p.endlessBestScore;
-    const baseXp = progressionXpForRun(wave, kills, multiplier);
+    const baseXp = options?.awardXp === false ? 0 : progressionXpForRun(wave, kills, multiplier);
     const baseCoins = Math.round((15 + wave * 4.5 + Math.floor(kills / 4)) * multiplier);
     const gems = Math.floor(wave / 10) + (newScoreRecord && wave >= 10 ? 2 : 0);
 
-    p.coins += baseCoins;
-    p.gems += gems;
-    p.gamesPlayed += 1;
+    if (!continuedAfterVictory) {
+      p.coins += baseCoins;
+      p.gems += gems;
+      p.gamesPlayed += 1;
+    }
     if (newWaveRecord) p.endlessBestWave = wave;
     if (newScoreRecord) p.endlessBestScore = score;
 
@@ -1116,15 +1127,18 @@ class ProfileStore {
       p.weeklyChallengeBestScore = Math.max(p.weeklyChallengeBestScore, score);
     }
 
-    const result = this.awardXp(baseXp);
-    this.updateDailyMission("gameCompleted", 1);
-    this.syncAchievementProgress();
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(baseXp);
+    if (!continuedAfterVictory) {
+      // Endless runs cannot satisfy the daily XP mission through a repeatable run-end path.
+      if (options?.awardXp !== false) this.updateDailyMission("gameCompleted", 1);
+      this.syncAchievementProgress();
+    }
     const reward: RunReward & { score: number; bestWave: number; bestScore: number } = {
       wave,
       kills,
       xp: baseXp,
-      coins: baseCoins,
-      gems: gems + result.levelsGained,
+      coins: continuedAfterVictory ? 0 : baseCoins,
+      gems: continuedAfterVictory ? 0 : gems + result.levelsGained,
       leveledTo: result.leveledTo,
       newRecord: newWaveRecord || newScoreRecord,
       stageId: null,
@@ -1143,18 +1157,16 @@ class ProfileStore {
     return reward;
   }
 
-  recordWaveReached(wave: number) {
-    this.recordSeasonalEventWave(wave);
+  recordWaveReached(wave: number, options?: { awardXp?: boolean }) {
+    // Endless survival must not unlock deferred player-level XP via seasonal wave milestones.
+    if (options?.awardXp !== false) this.recordSeasonalEventWave(wave);
     this.refreshRetentionState();
-    const coins = 5 + wave * 2;
-    const xp = progressionXpForWave(wave);
-    const p = this.profile;
-    p.coins += coins;
-    const result = this.awardXp(xp);
+    const xp = options?.awardXp === false ? 0 : progressionXpForWave(wave);
+    const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(xp);
     this.updateDailyMission("waveReached", wave);
     this.syncAchievementProgress();
     this.save();
-    return { xp, coins, ...result };
+    return { xp, coins: 0, ...result };
   }
 
   private stageEntry(stageId: number): StageProgress {
@@ -1302,11 +1314,16 @@ class ProfileStore {
   }
 
   /** Track in-run upgrade activity separately from permanent upgrade levels. */
-  recordTowerUpgrade(kind: string, points = 1) {
+  recordTowerUpgrade(kind: string, points = 1, options?: { trackXpBearingSeasonal?: boolean }) {
     this.refreshRetentionState();
     const p = this.profile;
     const earned = Math.max(0, points);
-    this.addSeasonalEventActivity("tower-upgrades", earned);
+    const towerUpgradeMilestoneAwardsXp = getSeasonalEvent().milestones.some(
+      (milestone) => milestone.activity === "tower-upgrades" && (milestone.reward.xp ?? 0) > 0,
+    );
+    if (options?.trackXpBearingSeasonal !== false || !towerUpgradeMilestoneAwardsXp) {
+      this.addSeasonalEventActivity("tower-upgrades", earned);
+    }
     p.towerUpgradeActions += earned;
     p.towerMasteryXp ??= {};
     p.towerMasteryXp[kind] = (p.towerMasteryXp[kind] ?? 0) + earned * 25;

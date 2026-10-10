@@ -105,3 +105,25 @@ describe("campaign progression", () => {
     ).toBe(0);
   });
 });
+
+
+describe("campaign economy and pacing balance", () => {
+  test("opening scrap constrains tower spam while preserving viable starts", () => {
+    expect(getStageById(1).startingCoins).toBe(120);
+    expect(getStageById(2).startingCoins).toBe(100);
+    expect(getStageById(1).enemyPool.normalKinds).not.toContain(7);
+    expect(getStageById(2).enemyPool.normalKinds).toContain(7);
+    expect(getStageById(2).enemyPool.weights?.swarm).toBe(0.18);
+    expect(getStageById(3).startingCoins).toBe(110);
+    expect(getStageById(6).startingCoins).toBe(125);
+    expect(STAGE_DEFS.every((stage) => stage.startingCoins >= 100 && stage.startingCoins <= 180)).toBe(true);
+  });
+  test("shorter early levels have room for escalation and finale bosses remain on final waves", () => {
+    expect(getStageById(2).waveCount).toBe(10);
+    expect(getStageById(3).waveCount).toBe(11);
+    expect(getStageById(6).waveCount).toBe(12);
+    expect(getStageById(10).boss.wave).toBe(getStageById(10).waveCount);
+    expect(getStageById(15).boss.wave).toBe(getStageById(15).waveCount);
+    expect(getStageById(20).boss.wave).toBe(getStageById(20).waveCount);
+  });
+});

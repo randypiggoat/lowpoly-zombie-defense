@@ -123,3 +123,24 @@ export function createEndlessStage(challenge: EndlessChallenge): StageDefinition
     endless: true,
   };
 }
+
+
+export type EndlessWaveScaling = {
+  enemyHealthMultiplier: number;
+  enemySpeedMultiplier: number;
+  waveSizeMultiplier: number;
+  spawnIntervalMultiplier: number;
+};
+
+/** Bounded, gradual difficulty added only after an endless run passes its authored wave target. */
+export function getEndlessWaveScaling(wave: number, stageWaveTarget: number): EndlessWaveScaling {
+  const target = Math.max(1, Math.floor(Number.isFinite(stageWaveTarget) ? stageWaveTarget : 1));
+  const currentWave = Math.max(1, Math.floor(Number.isFinite(wave) ? wave : 1));
+  const extendedWaves = Math.max(0, currentWave - target);
+  return {
+    enemyHealthMultiplier: Math.min(3, 1 + extendedWaves * 0.015),
+    enemySpeedMultiplier: Math.min(1.22, 1 + extendedWaves * 0.004),
+    waveSizeMultiplier: Math.min(1.8, 1 + extendedWaves * 0.02),
+    spawnIntervalMultiplier: Math.max(0.72, 1 - extendedWaves * 0.004),
+  };
+}

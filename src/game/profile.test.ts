@@ -123,3 +123,87 @@ describe("daily login rewards", () => {
     });
   });
 });
+
+
+describe("kill-only run currency and endless XP rules", () => {
+  test("endless activity cannot farm XP-bearing seasonal milestones while retaining other progress", () => {
+    const originalProfile = structuredClone(profile.profile);
+    const originalReward = profile.lastReward;
+    const event = getSeasonalEvent();
+    const specialKillsAwardXp = event.milestones.some(
+      (milestone) => milestone.activity === "special-kills" && (milestone.reward.xp ?? 0) > 0,
+    );
+    const upgradesAwardXp = event.milestones.some(
+      (milestone) => milestone.activity === "tower-upgrades" && (milestone.reward.xp ?? 0) > 0,
+    );
+
+    try {
+      profile.profile.seasonalEventCycleKey = getSeasonalEventCycleKey();
+      profile.profile.seasonalEventProgress = 0;
+      profile.profile.seasonalEventActivityProgress = {
+        waves: 0,
+        runs: 0,
+        "tower-upgrades": 0,
+        "special-kills": 0,
+      };
+      profile.profile.towerMasteryXp ??= {};
+      const oldTowerMastery = profile.profile.towerMasteryXp["rifleman"] ?? 0;
+      const oldXp = profile.profile.xp;
+
+      profile.recordWaveReached(12, { awardXp: false });
+      profile.recordZombieKill(2, { awardXp: false });
+      profile.recordTowerUpgrade("rifleman", 1, { trackXpBearingSeasonal: false });
+
+      expect(profile.profile.seasonalEventActivityProgress.waves).toBe(0);
+      expect(profile.profile.seasonalEventActivityProgress["special-kills"]).toBe(specialKillsAwardXp ? 0 : 1);
+      expect(profile.profile.seasonalEventActivityProgress["tower-upgrades"]).toBe(upgradesAwardXp ? 0 : 1);
+      expect(profile.profile.towerMasteryXp["rifleman"]).toBe(oldTowerMastery + 25);
+      expect(profile.profile.xp).toBe(oldXp);
+    } finally {
+      Object.assign(profile.profile, originalProfile);
+      profile.lastReward = originalReward;
+    }
+  });
+
+
+  test("wave milestones no longer mint credits and endless kills can withhold XP", () => {
+    const originalProfile = structuredClone(profile.profile), originalReward = profile.lastReward;
+    try {
+      profile.profile.coins = 321; profile.profile.xp = 17;
+      const coinsBeforeWave=profile.profile.coins, xpBeforeWave=profile.profile.xp;
+      profile.recordWaveReached(6,{awardXp:false});
+      expect(profile.profile.coins).toBe(coinsBeforeWave);
+      expect(profile.profile.xp).toBe(xpBeforeWave);
+      profile.recordZombieKill(2,{awardXp:false});
+      expect(profile.profile.xp).toBe(xpBeforeWave);
+      expect(profile.profile.coins).toBeGreaterThan(coinsBeforeWave);
+      expect(profile.profile.totalKills).toBe(originalProfile.totalKills+1);
+    } finally { Object.assign(profile.profile,originalProfile); profile.lastReward=originalReward; }
+  });
+  test("continued endless completion grants no player XP, currency or duplicate run-completed event", () => {
+    const originalProfile=structuredClone(profile.profile),originalReward=profile.lastReward;
+    try {
+      profile.profile.xp=42;profile.profile.coins=600;profile.profile.gems=14;profile.profile.gamesPlayed=3;
+      profile.profile.endlessBestWave=0;profile.profile.endlessBestScore=0;
+      const completedBefore=profile.profile.dailyMissionProgress["game-completed"]?.progress??0;
+      const reward=profile.completeEndlessRun(12,20,{awardXp:false,continuedAfterVictory:true});
+      expect(profile.profile.xp).toBe(42);expect(profile.profile.coins).toBe(600);expect(profile.profile.gems).toBe(14);
+      expect(profile.profile.gamesPlayed).toBe(3);
+      expect(profile.profile.dailyMissionProgress["game-completed"]?.progress??0).toBe(completedBefore);
+      expect(reward.xp).toBe(0);expect(reward.coins).toBe(0);expect(reward.gems).toBe(0);
+      expect(profile.profile.endlessBestWave).toBe(12);
+    } finally { Object.assign(profile.profile,originalProfile);profile.lastReward=originalReward; }
+  });
+  test("standalone endless rewards may retain credits but never player-level XP", () => {
+    const originalProfile=structuredClone(profile.profile),originalReward=profile.lastReward;
+    try {
+      profile.profile.xp=51;profile.profile.coins=700;
+      const playMissionProgress = profile.profile.dailyMissionProgress["daily-play-3"]?.progress ?? 0;
+      const reward=profile.completeEndlessRun(8,14,{awardXp:false});
+      expect(profile.profile.xp).toBe(51);
+      expect(reward.xp).toBe(0);
+      expect(profile.profile.coins).toBeGreaterThan(700);
+      expect(profile.profile.dailyMissionProgress["daily-play-3"]?.progress ?? 0).toBe(playMissionProgress);
+    } finally { Object.assign(profile.profile,originalProfile);profile.lastReward=originalReward; }
+  });
+});

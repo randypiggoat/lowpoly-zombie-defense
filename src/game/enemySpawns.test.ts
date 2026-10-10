@@ -78,3 +78,14 @@ describe("enemy spawn rules", () => {
     expect(late.speed).toBeGreaterThan(early.speed);
   });
 });
+
+
+describe("long-run enemy scaling", () => {
+  test("keeps the authored enemy curve bounded beyond a stage target", () => {
+    const stage = getStageById(5);
+    const finalAuthoredWave = getEnemySpawnStats(stage.gameplay, 0, stage.waveCount, stage.waveCount);
+    const farBeyondTarget = getEnemySpawnStats(stage.gameplay, 0, 500, stage.waveCount);
+    expect(farBeyondTarget.hp).toBeCloseTo(finalAuthoredWave.hp, 8);
+    expect(farBeyondTarget.speed).toBeCloseTo(finalAuthoredWave.speed, 8);
+  });
+});

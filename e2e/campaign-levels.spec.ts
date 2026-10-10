@@ -26,3 +26,57 @@ test("campaign exposes all twenty locations across four worlds", async ({ page }
   expect(pageErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });
+
+
+test("campaign victory can continue into endless without resetting the active defense", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/?qa=1");
+  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Campaign/i }).click();
+  await page.locator('[data-stage-id="1"]').getByRole("button", { name: "PLAY", exact: true }).click();
+  await page.waitForFunction(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__));
+  const before = await page.evaluate(() => {
+    const qa = (window as Window & { __ROTWOOD_QA__?: {
+      buildTower: (spot: number, kind: "rifleman" | "shotgunner" | "freezer") => boolean;
+      forceStageVictoryForTest: () => boolean;
+      getRunSnapshot: () => { towerCount: number; towerIds: number[]; gold: number; baseHp: number; wave: number; stageWaveTarget: number; gameOver: boolean; stageWon: boolean; endlessMode: boolean; continuedAfterVictory: boolean };
+    } }).__ROTWOOD_QA__;
+    if (!qa?.buildTower(0, "rifleman")) throw new Error("QA tower placement failed");
+    return qa.getRunSnapshot();
+  });
+  expect(before.towerCount).toBe(1);
+  await page.evaluate(() => {
+    const qa = (window as Window & { __ROTWOOD_QA__?: { forceStageVictoryForTest: () => boolean } }).__ROTWOOD_QA__;
+    if (!qa?.forceStageVictoryForTest()) throw new Error("QA stage victory could not be triggered");
+  });
+  const won = await page.evaluate(() => {
+    const qa = (window as Window & { __ROTWOOD_QA__?: {
+      getRunSnapshot: () => { towerCount: number; towerIds: number[]; gold: number; baseHp: number; wave: number; stageWaveTarget: number; gameOver: boolean; stageWon: boolean; endlessMode: boolean; continuedAfterVictory: boolean };
+    } }).__ROTWOOD_QA__;
+    if (!qa) throw new Error("QA run snapshot is unavailable after victory");
+    return qa.getRunSnapshot();
+  });
+  expect(won.gameOver).toBe(true);
+  expect(won.stageWon).toBe(true);
+  expect(won.wave).toBe(won.stageWaveTarget);
+  await expect(page.getByRole("button", { name: /CONTINUE IN ENDLESS/i })).toBeVisible();
+  await page.getByRole("button", { name: /CONTINUE IN ENDLESS/i }).click();
+  const after = await page.evaluate(() => {
+    const qa = (window as Window & { __ROTWOOD_QA__?: { getRunSnapshot: () => { towerCount: number; towerIds: number[]; gold: number; baseHp: number; wave: number; stageWaveTarget: number; gameOver: boolean; stageWon: boolean; endlessMode: boolean; continuedAfterVictory: boolean } } }).__ROTWOOD_QA__;
+    if (!qa) throw new Error("QA run snapshot is unavailable");
+    return qa.getRunSnapshot();
+  });
+  await expect(page.getByText("Endless", { exact: true })).toBeVisible();
+  expect(after.endlessMode).toBe(true);
+  expect(after.continuedAfterVictory).toBe(true);
+  expect(after.gameOver).toBe(false);
+  expect(after.stageWon).toBe(false);
+  expect(after.towerIds).toEqual(won.towerIds);
+  expect(after.towerCount).toBe(won.towerCount);
+  expect(after.gold).toBe(won.gold);
+  expect(after.baseHp).toBe(won.baseHp);
+  expect(after.stageWaveTarget).toBe(won.stageWaveTarget);
+  expect(after.wave).toBe(won.wave);
+  expect(pageErrors).toEqual([]);
+});

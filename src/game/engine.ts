@@ -55,12 +55,11 @@ import {
   type RunModifierId,
 } from "./runModifiers";
 import { towerEnemyDamageMultiplier } from "./towerCounterplay";
-import { perfectWaveGoldBonus } from "./waveRewards";
 import { bossKillGoldMultiplier } from "./bossRewards";
 import { bossSpeedMultiplier, shouldBossEnrage } from "./bossBehavior";
 import { calculateKillReward } from "./rewardSummary";
 import { track } from "./analytics";
-import { createEndlessStage, type EndlessChallenge } from "./endless";
+import { createEndlessStage, getEndlessWaveScaling, type EndlessChallenge } from "./endless";
 import {
   canPlaceTower,
   getPathLength,
@@ -622,13 +621,6 @@ export function towerUnlockLevelForProgression(kind: TowerKind) {
   return towerUnlockLevel(kind);
 }
 
-export function incomeCost(level: number) {
-  return Math.round(50 * Math.pow(1.8, level - 1));
-}
-export function incomePerSecond(level: number) {
-  return 2 + (level - 1) * 2.5;
-}
-
 export type GameState = {
   gold: number;
   baseHp: number;
@@ -645,8 +637,6 @@ export type GameState = {
   maxKillStreak: number;
   uniqueTowerKinds: string[];
   towersPlaced: number;
-  income: number;
-  incomeLevel: number;
   zombies: Zombie[];
   bullets: Bullet[];
   gibs: Gib[];
@@ -660,7 +650,6 @@ waveMessageType: "start" | "complete" | "boss" | "";
   reviveUsed: boolean;
   bossesRemaining: number;
   perfectWaves: number;
-  perfectWaveBonusGold: number;
   streakBonusGold: number;
   bossBonusGold: number;
   bossesDefeated: number;
@@ -669,6 +658,7 @@ waveMessageType: "start" | "complete" | "boss" | "";
   killStreakTimer: number;
   screenShake: number;
   endlessMode: boolean;
+  continuedAfterVictory: boolean;
   challengeId: string | null;
   challengeName: string | null;
   challengePeriod: "free" | "daily" | "weekly" | null;
@@ -780,8 +770,6 @@ function makeState(stage: StageRunConfig): GameState {
     maxKillStreak: 0,
     uniqueTowerKinds: [],
     towersPlaced: 0,
-    income: 0,
-    incomeLevel: 1,
     zombies: [],
     bullets: [],
    gibs: [],
@@ -795,7 +783,6 @@ waveMessageType: "",
     reviveUsed: false,
     bossesRemaining: 0,
     perfectWaves: 0,
-    perfectWaveBonusGold: 0,
     streakBonusGold: 0,
     bossBonusGold: 0,
     bossesDefeated: 0,
@@ -804,6 +791,7 @@ waveMessageType: "",
     killStreakTimer: 0,
     screenShake: 0,
     endlessMode: Boolean(stage.endless),
+    continuedAfterVictory: false,
     challengeId: stage.challenge?.id ?? null,
     challengeName: stage.challenge?.name ?? null,
     challengePeriod: stage.challenge?.period ?? null,
@@ -937,6 +925,52 @@ export class Game {
   this.emit();
 }
 
+  canContinueAfterVictory(): boolean {
+    const state = this.state;
+    return Boolean(state.gameOver && state.stageWon && !state.endlessMode &&
+      !this.stage.bossTrial && !this.stage.sideMode && !this.stage.campaignReplayChallenge);
+  }
+
+  continueAfterVictory(): boolean {
+    if (!this.canContinueAfterVictory()) return false;
+    const state = this.state;
+    this.stage = { ...this.stage, endless: true };
+    state.endlessMode = true;
+    state.continuedAfterVictory = true;
+    state.gameMode = "endless";
+    state.stageWon = false;
+    state.gameOver = false;
+    state.spawnQueue = 0;
+    state.spawnTimer = 0;
+    state.bossesRemaining = 0;
+    state.waveDamageTaken = 0;
+    state.runModifierOffer = [];
+    state.waveTimer = 2.2;
+    state.waveMessage = `ENDLESS SIEGE · WAVE ${state.wave + 1}`;
+    state.waveMessageLife = 3;
+    state.waveMessageType = "complete";
+    this.resetTransientState();
+    this.waveEndNotified = true;
+    track("run_started", { stageId: state.stageId, endless: true, continuedAfterVictory: true, wave: state.wave });
+    sfx("wave");
+    this.emit();
+    return true;
+  }
+
+  endEndlessRun(): boolean {
+    const state = this.state;
+    if (!state.endlessMode || state.gameOver) return false;
+    state.gameOver = true;
+    state.stageWon = false;
+    state.waveMessage = "SIEGE ENDED";
+    state.waveMessageLife = 2;
+    state.waveMessageType = "complete";
+    this.finalizeEndlessRunResult();
+    sfx("gameOver");
+    this.emit();
+    return true;
+  }
+
   startBossTrial(trial: BossTrialDefinition, weekKey: string) {
     this.zombieById.clear();
     this.cachedEffectsKey = null;
@@ -1023,9 +1057,11 @@ export class Game {
     state.waveMessageType = "complete";
     track("modifier_chosen", { modifier: id, wave: state.wave });
     const plan = getWaveSpawnPlan(state.wave, state.stageWaveTarget);
+    const endlessScaling = this.stage.endless ? getEndlessWaveScaling(state.wave, this.stage.waveCount) : null;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
-      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
+      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier) *
+      (endlessScaling?.waveSizeMultiplier ?? 1);
     const endlessBossWave =
       Boolean(this.stage.endless) && state.wave >= 10 && state.wave % 10 === 0;
     const bossWave =
@@ -1188,23 +1224,11 @@ export class Game {
     if (path === "a") t.a += 1;
     else t.b += 1;
     t.level = Math.min(MAX_TOWER_LEVEL, 1 + t.a + t.b);
-    profile.recordTowerUpgrade(t.kind);
+    profile.recordTowerUpgrade(t.kind, 1, { trackXpBearingSeasonal: !s.endlessMode });
     sfx("upgrade");
     this.emit();
   }
 
-  upgradeIncome() {
-    const s = this.state;
-    const cost = incomeCost(s.incomeLevel);
-    if (s.gold < cost) {
-      sfx("deny");
-      return;
-    }
-    s.gold -= cost;
-    s.incomeLevel += 1;
-    sfx("upgrade");
-    this.emit();
-  }
 
   repair() {
     const s = this.state;
@@ -1232,7 +1256,9 @@ export class Game {
       Boolean(this.stage.endless) && s.wave >= 10 && s.wave % 10 === 0;
     const bossWave =
       endlessBossWave || (this.stage.boss.enabled && this.stage.boss.wave === s.wave);
-    s.waveMessage = bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
+    s.waveMessage = this.stage.endless
+      ? bossWave ? `ENDLESS · BOSS WAVE ${s.wave}` : `ENDLESS · WAVE ${s.wave}`
+      : bossWave ? `BOSS WAVE ${s.wave}` : `WAVE ${s.wave}`;
     s.waveMessageLife = 2.2;
     s.waveMessageType = bossWave ? "boss" : "start";
 
@@ -1246,18 +1272,24 @@ export class Game {
         s.waveMessage = "CHOOSE YOUR POWER";
         s.waveMessageLife = 999;
         s.waveMessageType = "complete";
-        profile.recordWaveReached(s.wave);
+        profile.recordWaveReached(s.wave, { awardXp: !s.endlessMode });
         sfx("wave");
         this.emit();
         return;
       }
     }
 
-    const bossCount = bossWave ? Math.max(0, this.stage.boss.count) : 0;
+    const bossCount = endlessBossWave
+      ? 1 + Math.floor(s.wave / 30)
+      : bossWave
+        ? Math.max(0, this.stage.boss.count)
+        : 0;
     s.bossesRemaining = bossCount;
+    const endlessScaling = this.stage.endless ? getEndlessWaveScaling(s.wave, this.stage.waveCount) : null;
     const queueMult =
       Math.max(0.8, this.stage.gameplay.waveSizeMultiplier) *
-      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier);
+      Math.max(0.8, this.stage.gameplay.waveDifficultyMultiplier) *
+      (endlessScaling?.waveSizeMultiplier ?? 1);
     const plan = getWaveSpawnPlan(s.wave, s.stageWaveTarget);
     const queue = waveQueueSize(
       s.wave,
@@ -1269,7 +1301,7 @@ export class Game {
     s.spawnQueue = Math.min(64, Math.max(1, queue));
     s.spawnTimer = 0;
     s.waveTimer = plan.clearDelay * Math.max(0.55, this.stage.gameplay.waveDelayMultiplier);
-    profile.recordWaveReached(s.wave);
+    profile.recordWaveReached(s.wave, { awardXp: !s.endlessMode });
     this.flushMasteryKills();
     sfx("wave");
     this.emit();
@@ -1319,7 +1351,9 @@ export class Game {
       hp *= Math.max(0.5, traits.bossHealthMultiplier ?? 1);
       speed *= Math.max(0.5, traits.bossSpeedMultiplier ?? 1);
     }
-    hp *= this.runEffects().enemyHealthMultiplier;
+    const endlessScaling = this.stage.endless ? getEndlessWaveScaling(w, this.stage.waveCount) : null;
+    hp *= (endlessScaling?.enemyHealthMultiplier ?? 1) * this.runEffects().enemyHealthMultiplier;
+    speed *= endlessScaling?.enemySpeedMultiplier ?? 1;
 
     const spawnDist = startDist ?? -this.random() * 2;
     const spawned: Zombie = {
@@ -1393,6 +1427,19 @@ export class Game {
     if (Object.keys(this.kindKills).length === 0) return;
     profile.recordTowerKills(this.kindKills);
     this.kindKills = {};
+  }
+
+  private finalizeEndlessRunResult() {
+    const state = this.state;
+    this.flushMasteryKills();
+    profile.completeEndlessRun(Math.max(1, state.wave), state.kills, {
+      ...(this.stage.challenge?.id !== undefined && { challengeId: this.stage.challenge.id }),
+      ...(this.stage.challenge?.period !== undefined && { challengePeriod: this.stage.challenge.period }),
+      ...(this.stage.challengeKey !== undefined && { challengeKey: this.stage.challengeKey }),
+      rewardMultiplier: this.stage.rewardMultiplier,
+      awardXp: false,
+      continuedAfterVictory: state.continuedAfterVictory,
+    });
   }
 
   /** Shared damage application — used by bullets, splash, chains and burning. */
@@ -1612,7 +1659,7 @@ export class Game {
       });
     }
 
-    profile.recordZombieKill(z.kind);
+    profile.recordZombieKill(z.kind, { awardXp: !s.endlessMode });
 
     if (z.kind === 3) {
       const trialTraits = this.stage.bossTrial?.variant?.traits;
@@ -1770,13 +1817,6 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
 }
 
 
-    // Passive income is intentionally quiet so the base is not constantly flashing or chiming.
-    s.income += incomePerSecond(s.incomeLevel) * dt;
-    if (s.income >= 1) {
-      const whole = Math.floor(s.income);
-      s.gold += whole;
-      s.income -= whole;
-    }
 
     // waves
     if (s.spawnQueue > 0) {
@@ -1791,10 +1831,11 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
           s.spawnQueue -= 1;
           if (spawningBoss) s.bossesRemaining -= 1;
         }
+        const endlessScaling = this.stage.endless ? getEndlessWaveScaling(s.wave, this.stage.waveCount) : null;
         const spawnIntervalMult = Math.max(0.6, this.stage.gameplay.spawnIntervalMultiplier);
         s.spawnTimer = Math.max(
           0.12,
-          (0.85 - s.wave * 0.02) * spawnIntervalMult * plan.intervalMultiplier,
+          (0.85 - s.wave * 0.02) * spawnIntervalMult * plan.intervalMultiplier * (endlessScaling?.spawnIntervalMultiplier ?? 1),
         );
       }
     }
@@ -2055,17 +2096,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
             );
             track("side_mode_completed", { mode: side.category, levelId: side.id, score, wave: s.wave, cleared: false });
           } else if (this.stage.endless) {
-            this.flushMasteryKills();
-            profile.completeEndlessRun(
-              Math.max(1, s.wave),
-              s.kills,
-              {
-                ...(this.stage.challenge?.id !== undefined && { challengeId: this.stage.challenge.id }),
-                ...(this.stage.challenge?.period !== undefined && { challengePeriod: this.stage.challenge.period }),
-                ...(this.stage.challengeKey !== undefined && { challengeKey: this.stage.challengeKey }),
-                rewardMultiplier: this.stage.rewardMultiplier,
-              },
-            );
+            this.finalizeEndlessRunResult();
           } else {
             this.flushMasteryKills();
             profile.completeRun(Math.max(1, s.wave), s.kills, {
@@ -2100,7 +2131,6 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         maxKillStreak: s.maxKillStreak,
         uniqueTowerKinds: s.uniqueTowerKinds.length,
       }).stars;
-      const finalPerfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
       if (this.stage.bossTrial) {
         const trialScore = Math.max(
           0,
@@ -2170,7 +2200,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         stageId: this.stage.id,
         stageCompleted: true,
         starsEarned: stars,
-        bonusCoins: this.stage.rewards.completionCoins + finalPerfectBonus,
+        bonusCoins: this.stage.rewards.completionCoins,
         bonusXp: this.stage.rewards.completionXp,
         bonusStars: this.stage.rewards.completionStars,
         firstCompletionBonus: this.stage.rewards.firstCompletionBonus,
@@ -2180,21 +2210,17 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
       this.emit();
     } else if (
       !s.gameOver &&
-      s.wave < s.stageWaveTarget &&
+      (this.stage.endless || s.wave < s.stageWaveTarget) &&
       s.spawnQueue === 0 &&
       !aliveZombies
     ) {
       if (!this.waveEndNotified) {
         this.waveEndNotified = true;
-        const perfectBonus = perfectWaveGoldBonus(s.wave, s.waveDamageTaken);
-        s.gold += perfectBonus;
-        if (perfectBonus > 0) {
+        if (s.waveDamageTaken === 0) {
           s.perfectWaves += 1;
-          s.perfectWaveBonusGold += perfectBonus;
-          track("perfect_wave", { wave: s.wave, bonusGold: perfectBonus });
+          track("perfect_wave", { wave: s.wave });
         }
-        s.waveMessage =
-          perfectBonus > 0 ? `PERFECT WAVE! +${perfectBonus} SCRAP` : "WAVE COMPLETE!";
+        s.waveMessage = "WAVE COMPLETE!";
         s.waveMessageLife = Math.max(1.5, s.waveTimer);
         s.waveMessageType = "complete";
         sfx("wave");

@@ -29,7 +29,7 @@ export function chooseEnemyKind(
   if (kinds.length === 0) return 0;
 
   const weights = enemyPool.weights;
-  const progress = Math.max(0, (wave - 1) / Math.max(1, waveTarget - 1));
+  const progress = Math.min(1, Math.max(0, (wave - 1) / Math.max(1, waveTarget - 1)));
   const pool: Array<{ kind: StageEnemyKind; weight: number }> = [];
 
   for (const kind of kinds) {
@@ -95,11 +95,11 @@ export function getEnemySpawnStats(
   const difficultyMult = Math.max(0.75, gameplay.waveDifficultyMultiplier);
   const healthMult = Math.max(0.7, gameplay.enemyHealthMultiplier);
   const speedMult = Math.max(0.7, gameplay.enemySpeedMultiplier);
-  const progress = Math.max(0, (wave - 1) / Math.max(1, waveTarget - 1));
+  const progress = Math.min(1, Math.max(0, (wave - 1) / Math.max(1, waveTarget - 1)));
   // Scale primarily with progression through the stage rather than raw wave number.
   // This keeps longer campaign stages challenging without making later waves exponentially
   // more punishing simply because the stage has more rounds.
-  const progressionHp = Math.pow(1.06, Math.max(0, wave - 1));
+  const progressionHp = Math.pow(1.06, Math.min(Math.max(0, wave - 1), Math.max(0, waveTarget - 1)));
   const baseHp =
     18 *
     progressionHp *
