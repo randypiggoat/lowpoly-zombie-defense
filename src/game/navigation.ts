@@ -128,7 +128,6 @@ export type CampaignReplayChallengeDefinition = {
   description: string;
   maxTowers?: number;
   allowedTowerKinds?: string[];
-  allowRunModifiers?: boolean;
   reward: { coins: number; xp: number; gems?: number };
   firstClearBonus: { coins: number; xp: number; gems?: number };
 };
@@ -141,14 +140,6 @@ export const CAMPAIGN_REPLAY_CHALLENGES: readonly CampaignReplayChallengeDefinit
     maxTowers: 4,
     reward: { coins: 110, xp: 80 },
     firstClearBonus: { coins: 70, xp: 40, gems: 1 },
-  },
-  {
-    id: "no-powers",
-    name: "No Powers",
-    description: "Defend without choosing run modifiers.",
-    allowRunModifiers: false,
-    reward: { coins: 90, xp: 100, gems: 1 },
-    firstClearBonus: { coins: 60, xp: 50, gems: 1 },
   },
   {
     id: "marksman-frost",
