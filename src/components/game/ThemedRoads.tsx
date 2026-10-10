@@ -24,24 +24,55 @@ export function ThemedRoads({ map, theme }: { map: StageMap; theme: StageTheme }
     profile.roadStyle === "military" ||
     profile.roadStyle === "blacksite";
 
+  const roadSurface =
+    profile.roadStyle === "urban"
+      ? "#606d73"
+      : profile.roadStyle === "industrial"
+        ? "#5d6666"
+        : profile.roadStyle === "military"
+          ? "#626a58"
+          : profile.roadStyle === "blacksite"
+            ? "#4b565c"
+            : profile.roadStyle === "ice"
+              ? "#9fc7d0"
+              : profile.roadStyle === "harbor" || profile.roadStyle === "river" || profile.roadStyle === "swamp"
+                ? "#7f9289"
+                : profile.roadStyle === "desert"
+                  ? "#b69a70"
+                  : profile.roadStyle === "canyon"
+                    ? "#b77c60"
+                    : profile.roadStyle === "mine"
+                      ? "#77756e"
+                      : profile.roadStyle === "volcanic"
+                        ? "#79584d"
+                        : profile.roadStyle === "forest" || profile.roadStyle === "jungle" || profile.roadStyle === "graveyard"
+                          ? "#96866c"
+                          : theme.path;
+
+  const cityRoad = profile.roadStyle === "urban";
+
   const marking =
     profile.roadStyle === "ice"
-      ? "#dff8fa"
+      ? "#effcff"
       : profile.roadStyle === "volcanic"
-        ? "#e48b53"
-        : profile.palette.roadAccent;
+        ? "#ffbd78"
+        : profile.roadStyle === "urban"
+          ? "#fff0c6"
+          : profile.roadStyle === "industrial" || profile.roadStyle === "military" || profile.roadStyle === "blacksite"
+            ? "#f1c96d"
+            : profile.palette.roadAccent;
 
   return (
     <group>
       {map.path.map((point, index) => (
-        <mesh key={"road-node-" + index} position={[point.x, 0.072, point.z]}>
-          <cylinderGeometry args={[map.pathWidth * 0.58, map.pathWidth * 0.58, 0.08, 10]} />
-          <meshStandardMaterial color={theme.path} flatShading />
+        <mesh key={"road-node-" + index} position={[point.x, 0.11, point.z]}>
+          <cylinderGeometry args={[map.pathWidth * 0.58, map.pathWidth * 0.58, 0.10, 10]} />
+          <meshStandardMaterial color={roadSurface} flatShading />
         </mesh>
       ))}
       {segments.map((segment, index) => {
         const w = map.pathWidth;
-        const bed = w + 0.36;
+        const bed = w + 0.58;
         const marks = urban ? Math.max(0, Math.floor(segment.len / 3.8)) : 0;
         return (
           <group
@@ -55,16 +86,28 @@ export function ThemedRoads({ map, theme }: { map: StageMap; theme: StageTheme }
             </mesh>
             <mesh position={[0, 0.11, 0]} receiveShadow>
               <boxGeometry args={[w, 0.10, segment.len]} />
-              <meshStandardMaterial color={theme.path} flatShading />
+              <meshStandardMaterial color={roadSurface} flatShading />
             </mesh>
-            <mesh position={[-w / 2 - 0.07, 0.16, 0]}>
-              <boxGeometry args={[0.12, 0.08, Math.max(0.5, segment.len - 0.18)]} />
-              <meshStandardMaterial color={profile.palette.trim} flatShading />
+            <mesh position={[-w / 2 + 0.045, 0.16, 0]}>
+              <boxGeometry args={[0.07, 0.025, Math.max(0.5, segment.len - 0.18)]} />
+              <meshStandardMaterial color={cityRoad ? "#e4e2d5" : profile.palette.roadAccent} flatShading />
             </mesh>
-            <mesh position={[w / 2 + 0.07, 0.16, 0]}>
-              <boxGeometry args={[0.12, 0.08, Math.max(0.5, segment.len - 0.18)]} />
-              <meshStandardMaterial color={profile.palette.trim} flatShading />
+            <mesh position={[w / 2 - 0.045, 0.16, 0]}>
+              <boxGeometry args={[0.07, 0.025, Math.max(0.5, segment.len - 0.18)]} />
+              <meshStandardMaterial color={cityRoad ? "#e4e2d5" : profile.palette.roadAccent} flatShading />
             </mesh>
+            {cityRoad && (
+              <>
+                <mesh position={[-w / 2 - 0.18, 0.12, 0]} receiveShadow>
+                  <boxGeometry args={[0.22, 0.08, segment.len + 0.02]} />
+                  <meshStandardMaterial color={profile.palette.trim} flatShading />
+                </mesh>
+                <mesh position={[w / 2 + 0.18, 0.12, 0]} receiveShadow>
+                  <boxGeometry args={[0.22, 0.08, segment.len + 0.02]} />
+                  <meshStandardMaterial color={profile.palette.trim} flatShading />
+                </mesh>
+              </>
+            )}
             {Array.from({ length: marks }, (_, markerIndex) => {
               const offset = (markerIndex + 0.5) * 3.8 - segment.len / 2;
               return (

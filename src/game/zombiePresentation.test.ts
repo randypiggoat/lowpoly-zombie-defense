@@ -3,6 +3,7 @@ import {
   DAMAGE_REACTION_MULTIPLIER,
   ZOMBIE_PRESENTATION,
   hitDirection,
+  zombieModelScale,
 } from "./zombiePresentation";
 import { enemyIdentity } from "./enemyPresentation";
 import type { StageEnemyKind } from "./navigation";
@@ -20,6 +21,24 @@ describe("zombie presentation", () => {
     );
     expect(ZOMBIE_PRESENTATION[2].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
     expect(ZOMBIE_PRESENTATION[5].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
+  });
+
+  test("keeps archetype scale deterministic and applies the boss multiplier once", () => {
+    const expected: Record<StageEnemyKind, number> = {
+      0: 1,
+      1: 0.88,
+      2: 1.24,
+      3: 1.02,
+      4: 1.06,
+      5: 1.18,
+      6: 0.9,
+      7: 0.72,
+    };
+    const kinds: StageEnemyKind[] = [0, 1, 2, 3, 4, 5, 6, 7];
+    for (const kind of kinds) {
+      expect(zombieModelScale(kind)).toBe(expected[kind]);
+      expect(zombieModelScale(kind, true)).toBeCloseTo(expected[kind] * 1.16);
+    }
   });
 
   test("normalizes hit direction and handles a zero-length source", () => {

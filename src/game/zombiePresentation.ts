@@ -199,6 +199,30 @@ export const DAMAGE_REACTION_MULTIPLIER: Record<
   laser: 0.82,
 };
 
+/**
+ * Stable world scale for each enemy archetype. The optional boss multiplier is
+ * applied in one place so pooled render groups can be restored deterministically.
+ */
+export function zombieModelScale(kind: StageEnemyKind, boss = false): number {
+  const archetypeScale =
+    kind === 2
+      ? 1.24
+      : kind === 1
+        ? 0.88
+        : kind === 5
+          ? 1.18
+          : kind === 7
+            ? 0.72
+            : kind === 4
+              ? 1.06
+              : kind === 3
+                ? 1.02
+                : kind === 6
+                  ? 0.9
+                  : 1;
+  return archetypeScale * (boss ? 1.16 : 1);
+}
+
 export function zombiePresentation(kind: StageEnemyKind) {
   return ZOMBIE_PRESENTATION[kind];
 }
