@@ -147,7 +147,7 @@ describe("kill-only run currency and endless XP rules", () => {
         "special-kills": 0,
       };
       profile.profile.towerMasteryXp ??= {};
-      const oldTowerMastery = profile.profile.towerMasteryXp.rifleman ?? 0;
+      const oldTowerMastery = profile.profile.towerMasteryXp["rifleman"] ?? 0;
       const oldXp = profile.profile.xp;
 
       profile.recordWaveReached(12, { awardXp: false });
@@ -157,7 +157,7 @@ describe("kill-only run currency and endless XP rules", () => {
       expect(profile.profile.seasonalEventActivityProgress.waves).toBe(0);
       expect(profile.profile.seasonalEventActivityProgress["special-kills"]).toBe(specialKillsAwardXp ? 0 : 1);
       expect(profile.profile.seasonalEventActivityProgress["tower-upgrades"]).toBe(upgradesAwardXp ? 0 : 1);
-      expect(profile.profile.towerMasteryXp.rifleman).toBe(oldTowerMastery + 25);
+      expect(profile.profile.towerMasteryXp["rifleman"]).toBe(oldTowerMastery + 25);
       expect(profile.profile.xp).toBe(oldXp);
     } finally {
       Object.assign(profile.profile, originalProfile);
