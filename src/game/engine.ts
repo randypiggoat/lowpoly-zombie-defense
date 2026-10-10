@@ -950,7 +950,7 @@ export class Game {
     state.waveMessageLife = 3;
     state.waveMessageType = "complete";
     this.resetTransientState();
-    track("endless_continued", { stageId: state.stageId, wave: state.wave });
+    track("run_started", { stageId: state.stageId, endless: true, continuedAfterVictory: true, wave: state.wave });
     sfx("wave");
     this.emit();
     return true;

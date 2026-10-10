@@ -449,7 +449,7 @@ describe("campaign victory endless continuation", () => {
   });
   test("does not offer campaign continuation for separate challenge runs", () => {
     const game = new Game();
-    game.startStage({ ...getStageById(1), campaignReplayChallenge: CAMPAIGN_REPLAY_CHALLENGES[0] });
+    game.startStage({ ...getStageById(1), campaignReplayChallenge: CAMPAIGN_REPLAY_CHALLENGES[0]! });
     game.state.gameOver = true; game.state.stageWon = true;
     expect(game.canContinueAfterVictory()).toBe(false);
     expect(game.continueAfterVictory()).toBe(false);
