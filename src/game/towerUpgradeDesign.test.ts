@@ -32,7 +32,7 @@ describe("behavioral upgrades", () => {
     expect(getTowerUpgradeAbilities("flamethrower", 3, 0).swarmMultiplier).toBeGreaterThan(1);
     expect(getTowerUpgradeAbilities("flamethrower", 4, 0).executeThreshold).toBeGreaterThan(0);
     expect(getTowerUpgradeAbilities("rocket", 3, 0).swarmMultiplier).toBeGreaterThan(1);
-    expect(getTowerUpgradeAbilities("freezer", 0, 3).markSpreadRadius).toBeGreaterThan(0);
+    expect(getTowerUpgradeAbilities("freezer", 0, 4).markSpreadRadius).toBeGreaterThan(0);
     expect(getTowerUpgradeAbilities("laser", 0, 3).burningMultiplier).toBeGreaterThan(1);
   });
 });
