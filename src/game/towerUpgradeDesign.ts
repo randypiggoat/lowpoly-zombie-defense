@@ -62,10 +62,10 @@ export const TOWER_PATHS = {
       name: "SQUAD DOCTRINE",
       focus: "Mark threats and make nearby Riflemen fight as a team",
       tiers: [
-        tier("Double Tap", "Two controlled shots tag the target; tagged zombies take 12% more damage from the whole defense.", 50, {}, "double-tap-mark"),
-        tier("Radio Discipline", "Keep target calls active longer and expose marked threats more clearly to allied fire.", 105, {}, "strong-mark"),
-        tier("Buddy Drill", "Nearby Riflemen gain 12% fire rate from this tower's squad drills; squad auras do not stack.", 235, {}, "squad-drill"),
-        tier("Overwatch Network", "Three-round volleys, stronger shared target calls, and a wider 15% Rifleman fire-rate aura.", 520, { rate: 1.05 }, "squad-command"),
+        tier("Twin Guns", "Two barrels fire together; marked targets take 12% more damage from all towers.", 50, {}, "double-tap-mark"),
+        tier("Long Calls", "Marked targets stay exposed longer to focused fire.", 105, {}, "strong-mark"),
+        tier("Squad Drill", "Nearby Riflemen deal more damage and gain a little range; bonuses do not stack.", 235, {}, "squad-drill"),
+        tier("Overwatch Network", "A three-gun volley marks targets; nearby Riflemen gain 15% damage and 8% range.", 520, {}, "squad-command"),
       ],
     },
   },
@@ -82,12 +82,12 @@ export const TOWER_PATHS = {
     },
     b: {
       name: "BREACH CONTROL",
-      focus: "Interrupt a crowd and open enemies for allied fire",
+      focus: "Slow close crowds so the rest of the defense has more time to fire",
       tiers: [
-        tier("Concussion Shell", "The blast briefly stuns every enemy it hits, including targets caught in the splash.", 60, {}, "stun"),
-        tier("Suppression Buck", "Pellets slow survivors, buying nearby towers more time to shoot.", 130, { slow: 0.22 }),
+        tier("Concussive Buck", "Close blasts briefly slow hit enemies.", 60, { slow: 0.16 }),
+        tier("Suppression Buck", "A stronger slow gives nearby towers more time to fire.", 130, { slow: 0.25 }),
         tier("Exposed Guard", "Blasted targets stay marked and take 20% more damage from all towers.", 290, {}, "strong-mark"),
-        tier("Breach Shockwave", "A heavier concussive blast applies a longer stun; marked kills relay target calls to nearby enemies.", 620, { splash: 0.25 }, "control-network"),
+        tier("Breach Shockwave", "A wider blast slows a pack; marked kills relay target calls to nearby enemies.", 620, { splash: 0.25, slow: 0.32 }, "mark-spread"),
       ],
     },
   },
@@ -120,8 +120,8 @@ export const TOWER_PATHS = {
       tiers: [
         tier("Extra Arc", "Arc one additional target; each jump hits 25% harder than the last.", 95, { chain: 1 }, "chain-escalation"),
         tier("Conductors", "Arcs reach a wider pocket.", 195, { range: 1.2, chain: 1 }),
-        tier("Storm Net", "Arcs briefly stun secondary targets, setting them up for the next discharge.", 390, { chain: 2 }, "stun"),
-        tier("Tempest", "Stunned zombies are overloaded and take 50% more damage from every arc.", 820, { chain: 2, range: 1.25, dmg: 1.08 }, "stun-burst"),
+        tier("Storm Net", "Reach two more enemies with each discharge.", 390, { chain: 2 }, "chain-escalation"),
+        tier("Tempest", "Expand the chain and make each jump hit harder.", 820, { chain: 2, range: 1.25, dmg: 1.08 }, "chain-escalation"),
       ],
     },
     b: {
@@ -143,17 +143,17 @@ export const TOWER_PATHS = {
         tier("Hot Fuel", "Burns persist longer after the first hit.", 65, { burn: 5 }, "burn-duration"),
         tier("Sticky Napalm", "Burning targets stay aflame longer and take 35% more flame damage.", 145, { burn: 7, splash: 0.45 }, "burn-pressure"),
         tier("Firestorm", "A wider cone punishes tightly packed groups.", 310, { range: 1.2, splash: 0.55 }, "swarm"),
-        tier("Hellmouth", "Deep burn; badly wounded targets are cremated outright.", 650, { burn: 14, splash: 0.65, gore: 2.2 }, "execute"),
+        tier("Wildfire", "Burning kills spread fire to nearby zombies.", 650, { burn: 14, splash: 0.65, gore: 1.6 }, "burn-spread"),
       ],
     },
     b: {
       name: "FIREBREAK",
-      focus: "Slow the wave, spread pressure, and make burning targets easier to finish",
+      focus: "Cover a lane with heat that slows and spreads through crowds",
       tiers: [
         tier("Wide Cone", "A broader stream slows the crowd and covers more of a bend.", 70, { splash: 0.65, range: 1.1, slow: 0.14 }),
         tier("Scald", "Burning kills spread their flames to nearby zombies.", 150, { burn: 5 }, "burn-spread"),
-        tier("Scorch Signal", "Burning targets are marked for follow-up attacks from the whole defense.", 320, {}, "strong-mark"),
-        tier("Wildfire Relay", "A burning kill spreads fire and shared target marks across a wider pocket.", 680, { splash: 0.45 }, "wildfire-network"),
+        tier("Heat Haze", "A broader stream slows enemies for longer exposure to flames.", 320, { slow: 0.22, range: 1.08 }),
+        tier("Wildfire Relay", "Burning kills spread fire across a wider pocket.", 680, { splash: 0.45 }, "wildfire-network"),
       ],
     },
   },
@@ -170,12 +170,12 @@ export const TOWER_PATHS = {
     },
     b: {
       name: "COLD FRONT",
-      focus: "Hold enemy packs in place and prepare them for the whole team",
+      focus: "Slow packs and make them easier for the whole defense to finish",
       tiers: [
         tier("Chill Mist", "A wider chill pocket slows clustered zombies so other towers get more firing time.", 60, { slow: 0.42, splash: 0.7 }, "mark"),
         tier("Wide Nozzle", "Reach farther into the lane and keep exposed enemies marked for allied attacks.", 135, { range: 1.2, splash: 0.7 }, "strong-mark"),
-        tier("Cryo Core", "A stronger chill pulse briefly locks down targets.", 280, { slow: 0.58, rate: 1.08 }, "long-stun"),
-        tier("Absolute Zero", "A broad freeze pulse stuns and marks the crowd; kills then relay target calls through the pack.", 590, { slow: 0.7, splash: 1.2, range: 1.18 }, "control-network"),
+        tier("Cryo Core", "A stronger chill pulse slows enemies instead of freezing them in place.", 280, { slow: 0.58, rate: 1.08 }),
+        tier("Absolute Zero", "A wide chill pulse slows and marks the crowd; marked kills relay the signal.", 590, { slow: 0.7, splash: 1.2, range: 1.18 }, "mark-spread"),
       ],
     },
   },
@@ -192,12 +192,12 @@ export const TOWER_PATHS = {
     },
     b: {
       name: "TACTICAL BARRAGE",
-      focus: "Slow, stagger, and mark whole groups so allied towers can finish them",
+      focus: "Use broad blast slows and shared target calls to manage crowded lanes",
       tiers: [
-        tier("Tar Shells", "Explosions slow and mark their targets for the whole defense.", 80, { slow: 0.32, splash: 0.4 }, "mark"),
-        tier("Concussion Warhead", "Direct and splash impacts briefly stagger the enemies they hit.", 170, { slow: 0.4, splash: 0.2 }, "stun"),
+        tier("Tar Shells", "Explosions slow targets so other towers have more time to fire.", 80, { slow: 0.32, splash: 0.4 }),
+        tier("Concussion Warhead", "A heavy shockwave slows direct and splash targets.", 170, { slow: 0.4, splash: 0.2 }),
         tier("Signal Flare", "Marked enemies take 20% more damage from every tower for longer.", 350, {}, "strong-mark"),
-        tier("Suppressing Salvo", "Concussive blasts apply longer stuns; marked kills relay target calls through nearby enemies.", 740, { splash: 0.35, slow: 0.5 }, "control-network"),
+        tier("Suppressing Salvo", "Large slow fields spread target calls when marked enemies fall.", 740, { splash: 0.35, slow: 0.5 }, "mark-spread"),
       ],
     },
   },
@@ -234,7 +234,8 @@ export type TowerUpgradeAbilities = {
   markBonus: number;
   markSpreadRadius: number;
   squadRadius: number;
-  squadRateBonus: number;
+  squadDamageBonus: number;
+  squadRangeBonus: number;
   shatterMultiplier: number;
   executeThreshold: number;
   executeMultiplier: number;
@@ -259,7 +260,8 @@ const EMPTY_ABILITIES: TowerUpgradeAbilities = {
   markBonus: 0,
   markSpreadRadius: 0,
   squadRadius: 0,
-  squadRateBonus: 0,
+  squadDamageBonus: 0,
+  squadRangeBonus: 0,
   shatterMultiplier: 0,
   executeThreshold: 0,
   executeMultiplier: 1,
@@ -302,14 +304,15 @@ const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = 
   "mark-spread": { markDuration: 4.5, markBonus: 0.2, markSpreadRadius: 2.3 },
   "commanding-mark": { markDuration: 5.5, markBonus: 0.22, markSpreadRadius: 2.8 },
   "marking-arc": { markDuration: 4, markBonus: 0.16, chainEscalation: 0.25 },
-  "squad-drill": { squadRadius: 5.2, squadRateBonus: 0.12 },
+  "squad-drill": { squadRadius: 5.2, squadDamageBonus: 0.1, squadRangeBonus: 0.04 },
   "squad-command": {
     volley: 3,
     markDuration: 4.8,
     markBonus: 0.2,
     markSpreadRadius: 2.4,
     squadRadius: 6.2,
-    squadRateBonus: 0.15,
+    squadDamageBonus: 0.15,
+    squadRangeBonus: 0.08,
   },
   "long-stun": { stun: 0.42 },
   "control-network": {
@@ -318,12 +321,7 @@ const ABILITY_EFFECTS: Record<UpgradeAbility, Partial<TowerUpgradeAbilities>> = 
     markBonus: 0.2,
     markSpreadRadius: 2.4,
   },
-  "wildfire-network": {
-    burnSpread: 3.4,
-    markDuration: 4.5,
-    markBonus: 0.2,
-    markSpreadRadius: 2.4,
-  },
+  "wildfire-network": { burnSpread: 3.4 },
 };
 
 export function getTowerUpgradeAbilities(
@@ -346,7 +344,8 @@ export function getTowerUpgradeAbilities(
       if (effects.markBonus) out.markBonus = Math.max(out.markBonus, effects.markBonus);
       if (effects.markSpreadRadius) out.markSpreadRadius = Math.max(out.markSpreadRadius, effects.markSpreadRadius);
       if (effects.squadRadius) out.squadRadius = Math.max(out.squadRadius, effects.squadRadius);
-      if (effects.squadRateBonus) out.squadRateBonus = Math.max(out.squadRateBonus, effects.squadRateBonus);
+      if (effects.squadDamageBonus) out.squadDamageBonus = Math.max(out.squadDamageBonus, effects.squadDamageBonus);
+      if (effects.squadRangeBonus) out.squadRangeBonus = Math.max(out.squadRangeBonus, effects.squadRangeBonus);
       if (effects.shatterMultiplier) out.shatterMultiplier = Math.max(out.shatterMultiplier, effects.shatterMultiplier);
       if (effects.executeThreshold) out.executeThreshold = Math.max(out.executeThreshold, effects.executeThreshold);
       if (effects.executeMultiplier) out.executeMultiplier = Math.max(out.executeMultiplier, effects.executeMultiplier);
