@@ -924,7 +924,8 @@ class ProfileStore {
 
   recordZombieKill(kind: number, options?: { awardXp?: boolean }) {
     this.addSeasonalEventKillProgress();
-    if (kind >= 2) this.addSeasonalEventActivity("special-kills");
+    // Endless kills cannot finish seasonal XP milestones; currency and non-XP kill progress remain active.
+    if (options?.awardXp !== false && kind >= 2) this.addSeasonalEventActivity("special-kills");
     this.refreshRetentionState();
     const p = this.profile;
     const xp = options?.awardXp === false ? 0 : progressionXpForKill(kind);
@@ -1151,7 +1152,8 @@ class ProfileStore {
   }
 
   recordWaveReached(wave: number, options?: { awardXp?: boolean }) {
-    this.recordSeasonalEventWave(wave);
+    // Endless survival must not unlock deferred player-level XP via seasonal wave milestones.
+    if (options?.awardXp !== false) this.recordSeasonalEventWave(wave);
     this.refreshRetentionState();
     const xp = options?.awardXp === false ? 0 : progressionXpForWave(wave);
     const result = options?.awardXp === false ? { levelsGained: 0, leveledTo: null } : this.awardXp(xp);
