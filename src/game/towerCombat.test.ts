@@ -6,6 +6,7 @@ import {
   projectileStatusTint,
   advanceTowerCooldown,
   createTowerProjectile,
+  getTowerMuzzleOffset,
   PROJECTILE_CHAIN_DAMAGE_MULTIPLIER,
   PROJECTILE_SPLASH_DAMAGE_MULTIPLIER,
   stepProjectile,
@@ -184,6 +185,21 @@ describe("tower combat loop rules", () => {
   test("secondary damage multipliers preserve the existing impact rules", () => {
     expect(PROJECTILE_SPLASH_DAMAGE_MULTIPLIER).toBe(0.5);
     expect(PROJECTILE_CHAIN_DAMAGE_MULTIPLIER).toBe(0.6);
+  });
+});
+
+describe("weapon muzzle mapping", () => {
+  test("Rifleman multi-gun tiers fire from the barrels that are actually modeled", () => {
+    expect(getTowerMuzzleOffset("rifleman")).toEqual({ side: 0, forward: 1.58, height: 0.9 });
+    expect(getTowerMuzzleOffset("rifleman", 1, 2)).toEqual({ side: 0.22, forward: 1.48, height: 0.9 });
+    expect(getTowerMuzzleOffset("rifleman", 0, 3)).toEqual({ side: -0.22, forward: 1.48, height: 0.9 });
+    expect(getTowerMuzzleOffset("rifleman", 2, 3)).toEqual({ side: 0.22, forward: 1.48, height: 0.9 });
+  });
+
+  test("Shotgunner dual barrels and single-muzzle weapons use correct offsets", () => {
+    expect(getTowerMuzzleOffset("shotgunner")).toEqual({ side: -0.24, forward: 1.48, height: 1.02 });
+    expect(getTowerMuzzleOffset("shotgunner", 1, 2)).toEqual({ side: 0.24, forward: 1.48, height: 1.02 });
+    expect(getTowerMuzzleOffset("rocket")).toEqual({ side: 0, forward: 0.82, height: 1.02 });
   });
 });
 
