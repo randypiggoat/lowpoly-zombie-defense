@@ -2212,21 +2212,27 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
         t.aim = Math.atan2(best.x - t.x, best.z - t.z);
         if (cooldownReady) {
           const combat = baseCombat;
+          const combatVolley = Math.max(1, Math.min(3, baseCombat.volley));
+          // Never split a visible multi-weapon volley just because the effect pool is full.
+          if (s.bullets.length + combatVolley > MAX_ACTIVE_BULLETS) continue;
           const surgeRate = (t.surge ?? 0) > 0 ? Math.max(1, combat.killRush) : 1;
           const squadDamageBonus = rifleSquadDamageBonus(t, s.towers);
           const rate = baseCombat.rate * surgeRate;
           t.cooldown = 1 / rate;
           t.recoil = 1;
           const crit = this.random() < combat.crit;
-          const volley = Math.max(1, Math.min(3, combat.volley));
+          const volley = combatVolley;
           // Volleys divide a tower's normal shot damage across the intended rounds.
           // This preserves baseline single-target DPS while adding real weapon muzzles.
           const volleyDamageFactor = 1 / volley;
-          const shotsToFire = Math.min(volley, Math.max(0, MAX_ACTIVE_BULLETS - s.bullets.length));
+          const shotsToFire = volley;
+          const muzzleScale = 1 + Math.min(t.level - 1, 8) * 0.025;
           for (let shot = 0; shot < shotsToFire; shot++) {
             const muzzle = getTowerMuzzleOffset(t.kind, shot, shotsToFire);
-            const muzzleX = t.x + Math.sin(t.aim) * muzzle.forward + Math.cos(t.aim) * muzzle.side;
-            const muzzleZ = t.z + Math.cos(t.aim) * muzzle.forward - Math.sin(t.aim) * muzzle.side;
+            const muzzleForward = muzzle.forward * muzzleScale;
+            const muzzleSide = muzzle.side * muzzleScale;
+            const muzzleX = t.x + Math.sin(t.aim) * muzzleForward + Math.cos(t.aim) * muzzleSide;
+            const muzzleZ = t.z + Math.cos(t.aim) * muzzleForward - Math.sin(t.aim) * muzzleSide;
             s.bullets.push(
               createTowerProjectile({
                 id: this.nextId++,
@@ -2247,7 +2253,7 @@ for (let i = s.damagePopups.length - 1; i >= 0; i--) {
                 gold: combat.gold,
                 crit,
                 level: t.level,
-                muzzleHeight: 1.18 + t.level * 0.1 + muzzle.height,
+                muzzleHeight: 1.18 + t.level * 0.1 + muzzle.height * muzzleScale,
                 stun: combat.stun,
                 markDuration: combat.markDuration,
                 markBonus: combat.markBonus,
