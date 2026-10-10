@@ -2,13 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { applyTargetMark, spreadMarkOnDeath, type MarkPropagationTarget } from "./markPropagation";
 
 function target(overrides: Partial<MarkPropagationTarget> & Pick<MarkPropagationTarget, "id" | "x" | "z">): MarkPropagationTarget {
-  return {
-    id: overrides.id,
-    x: overrides.x,
-    z: overrides.z,
-    dead: false,
-    ...overrides,
-  };
+  const { id, x, z, dead = false, ...state } = overrides;
+  return { id, x, z, dead, ...state };
 }
 
 describe("support target marks", () => {
