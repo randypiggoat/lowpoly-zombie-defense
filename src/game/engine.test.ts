@@ -411,3 +411,56 @@ describe("boss enrage integration", () => {
     expect(boss.dist).toBeGreaterThan(before);
   });
 });
+
+
+describe("campaign victory endless continuation", () => {
+  test("continues the won run without resetting towers, scrap, base health, or the original wave", () => {
+    const game = new Game(() => 0.5);
+    game.startStage({ ...getStageById(1), waveCount: 1 });
+    expect(game.build(0, "rifleman")).toBe(true);
+    game.state.wave = 1; game.state.gold = 57; game.state.baseHp = 13;
+    game.state.gameOver = true; game.state.stageWon = true;
+    const towerIds = game.state.towers.map((tower) => tower.id), maxHp = game.state.baseMaxHp;
+    expect(game.canContinueAfterVictory()).toBe(true);
+    expect(game.continueAfterVictory()).toBe(true);
+    expect(game.state.gameOver).toBe(false);
+    expect(game.state.stageWon).toBe(false);
+    expect(game.state.endlessMode).toBe(true);
+    expect(game.state.continuedAfterVictory).toBe(true);
+    expect(game.state.gameMode).toBe("endless");
+    expect(game.state.wave).toBe(1);
+    expect(game.state.stageWaveTarget).toBe(1);
+    expect(game.state.towers.map((tower) => tower.id)).toEqual(towerIds);
+    expect(game.state.gold).toBe(57);
+    expect(game.state.baseHp).toBe(13);
+    expect(game.state.baseMaxHp).toBe(maxHp);
+    expect(game.continueAfterVictory()).toBe(false);
+  });
+  test("does not offer campaign continuation for separate challenge runs", () => {
+    const game = new Game();
+    game.startStage({ ...getStageById(1), campaignReplayChallenge: CAMPAIGN_REPLAY_CHALLENGES[0] });
+    game.state.gameOver = true; game.state.stageWon = true;
+    expect(game.canContinueAfterVictory()).toBe(false);
+    expect(game.continueAfterVictory()).toBe(false);
+  });
+  test("ending a continued run saves a score without extra XP or campaign currency rewards", () => {
+    const originalProfile = structuredClone(profile.profile), originalReward = profile.lastReward;
+    try {
+      profile.profile.xp = 27; profile.profile.coins = 500; profile.profile.gems = 9;
+      profile.profile.endlessBestWave = 0; profile.profile.endlessBestScore = 0;
+      const game = new Game(() => 0.5);
+      game.startStage({ ...getStageById(1), waveCount: 1 });
+      game.state.wave = 1; game.state.gameOver = true; game.state.stageWon = true;
+      expect(game.continueAfterVictory()).toBe(true);
+      expect(game.endEndlessRun()).toBe(true);
+      expect(profile.profile.xp).toBe(27);
+      expect(profile.profile.coins).toBe(500);
+      expect(profile.profile.gems).toBe(9);
+      expect(profile.lastReward?.xp).toBe(0);
+      expect(profile.lastReward?.coins).toBe(0);
+      expect(profile.lastReward?.gems).toBe(0);
+      expect(profile.profile.endlessBestWave).toBe(1);
+      expect(game.endEndlessRun()).toBe(false);
+    } finally { Object.assign(profile.profile,originalProfile); profile.lastReward=originalReward; }
+  });
+});

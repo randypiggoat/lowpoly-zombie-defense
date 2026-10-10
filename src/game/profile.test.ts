@@ -123,3 +123,43 @@ describe("daily login rewards", () => {
     });
   });
 });
+
+
+describe("kill-only run currency and endless XP rules", () => {
+  test("wave milestones no longer mint credits and endless kills can withhold XP", () => {
+    const originalProfile = structuredClone(profile.profile), originalReward = profile.lastReward;
+    try {
+      profile.profile.coins = 321; profile.profile.xp = 17;
+      const coinsBeforeWave=profile.profile.coins, xpBeforeWave=profile.profile.xp;
+      profile.recordWaveReached(6,{awardXp:false});
+      expect(profile.profile.coins).toBe(coinsBeforeWave);
+      expect(profile.profile.xp).toBe(xpBeforeWave);
+      profile.recordZombieKill(2,{awardXp:false});
+      expect(profile.profile.xp).toBe(xpBeforeWave);
+      expect(profile.profile.coins).toBeGreaterThan(coinsBeforeWave);
+      expect(profile.profile.totalKills).toBe(originalProfile.totalKills+1);
+    } finally { Object.assign(profile.profile,originalProfile); profile.lastReward=originalReward; }
+  });
+  test("continued endless completion grants no player XP, currency or duplicate run-completed event", () => {
+    const originalProfile=structuredClone(profile.profile),originalReward=profile.lastReward;
+    try {
+      profile.profile.xp=42;profile.profile.coins=600;profile.profile.gems=14;profile.profile.gamesPlayed=3;
+      profile.profile.endlessBestWave=0;profile.profile.endlessBestScore=0;
+      const completedBefore=profile.profile.dailyMissionProgress["game-completed"]?.progress??0;
+      const reward=profile.completeEndlessRun(12,20,{awardXp:false,continuedAfterVictory:true});
+      expect(profile.profile.xp).toBe(42);expect(profile.profile.coins).toBe(600);expect(profile.profile.gems).toBe(14);
+      expect(profile.profile.gamesPlayed).toBe(3);
+      expect(profile.profile.dailyMissionProgress["game-completed"]?.progress??0).toBe(completedBefore);
+      expect(reward.xp).toBe(0);expect(reward.coins).toBe(0);expect(reward.gems).toBe(0);
+      expect(profile.profile.endlessBestWave).toBe(12);
+    } finally { Object.assign(profile.profile,originalProfile);profile.lastReward=originalReward; }
+  });
+  test("standalone endless rewards may retain credits but never player-level XP", () => {
+    const originalProfile=structuredClone(profile.profile),originalReward=profile.lastReward;
+    try {
+      profile.profile.xp=51;profile.profile.coins=700;
+      const reward=profile.completeEndlessRun(8,14,{awardXp:false});
+      expect(profile.profile.xp).toBe(51);expect(reward.xp).toBe(0);expect(profile.profile.coins).toBeGreaterThan(700);
+    } finally { Object.assign(profile.profile,originalProfile);profile.lastReward=originalReward; }
+  });
+});
