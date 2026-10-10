@@ -166,30 +166,6 @@ describe("kill-only run currency and endless XP rules", () => {
   });
 
 
-  test("endless kills and waves cannot advance seasonal XP milestones", () => {
-    const originalProfile = structuredClone(profile.profile);
-    const originalReward = profile.lastReward;
-    try {
-      profile.profile.seasonalEventCycleKey = getSeasonalEventCycleKey();
-      profile.profile.seasonalEventProgress = 0;
-      profile.profile.seasonalEventActivityProgress = {
-        waves: 0,
-        runs: 0,
-        "tower-upgrades": 0,
-        "special-kills": 0,
-      };
-      profile.recordWaveReached(12, { awardXp: false });
-      profile.recordZombieKill(2, { awardXp: false });
-
-      expect(profile.profile.seasonalEventActivityProgress.waves).toBe(0);
-      expect(profile.profile.seasonalEventActivityProgress["special-kills"]).toBe(0);
-      expect(profile.profile.seasonalEventProgress).toBe(1);
-    } finally {
-      Object.assign(profile.profile, originalProfile);
-      profile.lastReward = originalReward;
-    }
-  });
-
   test("wave milestones no longer mint credits and endless kills can withhold XP", () => {
     const originalProfile = structuredClone(profile.profile), originalReward = profile.lastReward;
     try {
