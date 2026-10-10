@@ -25,13 +25,13 @@ import {
 import type { Selection } from "./Scene";
 import { isKillStreakMilestone, killStreakGoldMultiplier } from "@/game/combatRewards";
 import { sfx } from "@/game/audio";
+import { triggerHaptic } from "@/game/haptics";
 import { track } from "@/game/analytics";
 import { getFirstSessionTip } from "@/game/firstSessionGuide";
 import type { WaveThreatPreview } from "@/game/waveThreatPreview";
 import { getBaseDangerLevel } from "@/game/baseDanger";
 import { getEndlessMilestone, getEndlessSector, getEndlessSectorLabel } from "@/game/sideModes";
 
-import { RUN_MODIFIER_DEFS } from "@/game/runModifiers";
 import { getBossHealthSummary, getBossStatusFlags } from "@/game/bossHealth";
 import { FIELD_KNOWLEDGE, knowledgeUnlocked } from "@/game/fieldKnowledge";
 import { enemyThreatLabel } from "@/game/enemyPresentation";
@@ -104,6 +104,50 @@ function Stat({
   );
 }
 
+
+function LivesBar({ current, maximum, reducedMotion }: { current: number; maximum: number; reducedMotion: boolean }) {
+  const [hit, setHit] = useState(false);
+  const previous = useRef(current);
+  useEffect(() => {
+    const lostLife = current < previous.current;
+    previous.current = current;
+    if (!lostLife || reducedMotion) return;
+    setHit(true);
+    const timeout = window.setTimeout(() => setHit(false), 260);
+    return () => window.clearTimeout(timeout);
+  }, [current, reducedMotion]);
+  const safeMaximum = Math.max(1, maximum);
+  const safeCurrent = Math.max(0, Math.floor(current));
+  const ratio = Math.max(0, Math.min(1, safeCurrent / safeMaximum));
+  return (
+    <div className="rw-lives-display" data-critical={ratio <= 0.25} data-hit={hit} aria-label={`Base lives ${safeCurrent} of ${safeMaximum}`}>
+      <div className="rw-lives-head">
+        <span className="rw-lives-label"><span aria-hidden="true" className="rw-lives-heart">♥</span> BASE LIVES</span>
+        <span className="rw-lives-numbers"><strong>{safeCurrent}</strong><span> / {safeMaximum}</span></span>
+      </div>
+      <div className="rw-lives-track" role="progressbar" aria-label="Base lives remaining" aria-valuemin={0} aria-valuemax={safeMaximum} aria-valuenow={safeCurrent}>
+        <div className="rw-lives-fill" style={{ width: `${ratio * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function AnimatedNumber({ value, reducedMotion }: { value: number; reducedMotion: boolean }) {
+  const initial = useRef(true);
+  const [pulsing, setPulsing] = useState(false);
+  useEffect(() => {
+    if (initial.current) {
+      initial.current = false;
+      return;
+    }
+    if (reducedMotion) return;
+    setPulsing(true);
+    const timeout = window.setTimeout(() => setPulsing(false), 230);
+    return () => window.clearTimeout(timeout);
+  }, [value, reducedMotion]);
+  return <span className="rw-enemies-count" data-pulsing={pulsing}>{value}</span>;
+}
+
 function progressPercent(progress: AchievementProgress | undefined, target: number) {
   const current = progress?.progress ?? 0;
   return Math.min(100, (current / Math.max(1, target)) * 100);
@@ -154,37 +198,14 @@ function ClaimButton({
   );
 }
 
-function abilityLabel(ability: string | undefined) {
-  switch (ability) {
-    case "burst": return "BURST";
-    case "stun": return "STUN";
-    case "mark": return "MARK";
-    case "shatter": return "SHATTER";
-    case "execute": return "EXECUTE";
-    case "boss-hunter": return "ELITE HUNTER";
-    case "close-range": return "POINT BLANK";
-    case "burn-duration": return "LONG BURN";
-    case "barrage": return "BARRAGE";
-    case "stun-burst": return "STUN BURST";
-    case "burn-pressure": return "BURN PRESSURE";
-    case "swarm": return "SWARM";
-    case "brittle": return "BRITTLE";
-    case "kill-rush": return "KILL RUSH";
-    case "burn-spread": return "WILDFIRE";
-    case "chain-escalation": return "ESCALATING ARC";
-    case "elite-hunter": return "HEAVY HUNTER";
-    case "precision": return "PRECISION";
-    case "fast-hunter": return "PEST CONTROL";
-    default: return "";
-  }
-}
-
 function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scrap: number }) {
+  const [showAllTiers, setShowAllTiers] = useState(false);
   const def = TOWER_PATHS[tower.kind][path];
   const owned = path === "a" ? tower.a : tower.b;
   const locked = !canBuyTier(tower, path);
   const cost = tierCost(tower, path);
   const next = owned < 4 ? def.tiers[owned]! : null;
+  const visibleTierCount = showAllTiers ? def.tiers.length : Math.min(def.tiers.length, owned + 1);
 
   return (
     <section className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-2">
@@ -198,10 +219,9 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
         </span>
       </div>
       <div className="space-y-1.5">
-        {def.tiers.map((tier, index) => {
+        {def.tiers.slice(0, visibleTierCount).map((tier, index) => {
           const purchased = index < owned;
           const isNext = index === owned && Boolean(next);
-          const ability = abilityLabel(tier.ability);
           return (
             <div
               key={tier.name}
@@ -232,22 +252,21 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate font-display text-[11px] tracking-wide text-panel-foreground">{tier.name}</p>
-                    {ability ? <span className="shrink-0 rounded-full bg-accent/10 px-1 py-0.5 text-[7px] font-black tracking-[0.12em] text-accent">{ability}</span> : null}
                   </div>
-                  {purchased || isNext ? (
-                    <p className="mt-0.5 text-[9px] leading-tight text-panel-muted">{tier.desc}</p>
+                  {purchased || isNext || showAllTiers ? (
+                    <p className="mt-0.5 text-[10px] leading-snug text-panel-muted">{tier.desc}</p>
                   ) : (
-                    <p className="mt-0.5 text-[9px] uppercase tracking-wider text-panel-muted/70">Unlock later</p>
+                    <p className="mt-0.5 text-[9px] text-panel-muted/70">Tier {index + 1} · future upgrade</p>
                   )}
                   {isNext && !locked ? (
                     <button
                       type="button"
-                      onClick={() => game.buyTier(tower.id, path)}
+                      onClick={() => { triggerHaptic("confirm"); game.buyTier(tower.id, path); }}
                       disabled={scrap < cost}
                       aria-label={"Buy " + tier.name}
                       className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-2 py-1 font-display text-[10px] tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
                     >
-                      {cost} SCRAP
+                      UPGRADE · {cost} SCRAP
                     </button>
                   ) : null}
                 </div>
@@ -256,6 +275,24 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
           );
         })}
       </div>
+      {visibleTierCount < def.tiers.length && (
+        <button
+          type="button"
+          className="mt-2 min-h-9 w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold tracking-wide text-panel-muted transition hover:border-accent/40 hover:text-accent"
+          onClick={() => { setShowAllTiers(true); triggerHaptic("selection"); }}
+        >
+          SHOW {def.tiers.length - visibleTierCount} MORE TIERS ↓
+        </button>
+      )}
+      {showAllTiers && owned < def.tiers.length && (
+        <button
+          type="button"
+          className="mt-1 min-h-8 w-full text-[9px] font-bold tracking-wide text-panel-muted/80"
+          onClick={() => { setShowAllTiers(false); triggerHaptic("selection"); }}
+        >
+          SHOW LESS ↑
+        </button>
+      )}
     </section>
   );
 }
@@ -264,7 +301,6 @@ export function HUD({
   selection,
   onSelect,
   onPause,
-  rewardedAvailable = false,
   waveThreatPreview = null,
   reducedMotion = false,
   showMetaSections = false,
@@ -274,7 +310,6 @@ export function HUD({
   selection: Selection;
   onSelect: (s: Selection) => void;
   onPause?: () => void;
-  rewardedAvailable?: boolean;
   waveThreatPreview?: WaveThreatPreview | null;
   reducedMotion?: boolean;
   showMetaSections?: boolean;
@@ -289,7 +324,13 @@ export function HUD({
   const nextTarget = nextProgressionTarget(player);
   const today = dateKey();
   const claimedLoginToday = player.lastLoginClaimDate === today;
-  const enemiesRemaining = state.spawnQueue + state.zombies.filter((z) => !z.dead).length;
+  const enemiesRemaining = Math.max(0, state.spawnQueue + state.zombies.filter((z) => !z.dead).length);
+  const maximumRounds = Math.max(1, state.stageWaveTarget);
+  const currentRound = Math.max(1, state.wave);
+  const roundsRemaining = Math.max(0, maximumRounds - state.wave);
+  const roundProgressPercent = state.endlessMode
+    ? state.wave > 0 ? (((state.wave - 1) % 10) + 1) * 10 : 0
+    : Math.min(100, Math.max(0, (state.wave / maximumRounds) * 100));
   const bossHealth = getBossHealthSummary(state.zombies);
   const bossFlags = bossHealth ? getBossStatusFlags(state.zombies) : null;
   const visibleSpecialEnemy = state.zombies.find((zombie) => !zombie.dead && (zombie.kind >= 2 || zombie.boss));
@@ -301,7 +342,6 @@ export function HUD({
     {
       pathUpgradeCount: state.towers.reduce((total, tower) => total + tower.a + tower.b, 0),
       specialEnemyLabel: visibleSpecialEnemy ? enemyThreatLabel(visibleSpecialEnemy.kind) : null,
-      modifierChoiceAvailable: state.runModifierOffer.length > 0,
       progressionTarget: nextTarget,
     },
   );
@@ -333,53 +373,6 @@ export function HUD({
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 animate-pulse border-[10px] border-danger/25"
         />
-      )}
-      {state.runModifierOffer.length > 0 && (
-        <div className="rotwood-modal pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
-          <div className="rotwood-shell w-full max-w-md p-4">
-            <p className="text-center text-[10px] uppercase tracking-[0.24em] text-accent">Wave {state.wave} reward</p>
-            <h2 className="mt-1 text-center font-display text-3xl tracking-wide text-panel-foreground">Choose Your Power</h2>
-            <p className="mt-1 text-center text-xs text-panel-muted">This choice lasts for the rest of the run.</p>
-            {firstSessionTip?.title === "CHOOSE A RUN MODIFIER" && (
-              <p className="mt-2 text-center text-[10px] leading-tight text-accent">{firstSessionTip.body}</p>
-            )}
-            <div className="mt-4 space-y-2">
-              {state.runModifierOffer.map((modifier) => (
-                <button
-                  key={modifier.id}
-                  type="button"
-                  onClick={() => game.chooseRunModifier(modifier.id)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/25 p-3 text-left transition active:scale-[0.98] hover:border-accent/50"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-display text-lg tracking-wide text-panel-foreground">{modifier.name}</p>
-                    <div className="flex shrink-0 gap-1">
-                      {modifier.tags?.map((tag) => (
-                        <span key={tag} className="rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="mt-0.5 text-xs text-panel-muted">{modifier.description}</p>
-                </button>
-              ))}
-            </div>
-            {!state.runModifierRerollUsed && rewardedAvailable && (
-              <button
-                type="button"
-                onClick={async () => {
-                  const { showRewarded } = await import("@/game/monetization");
-                  const earned = await showRewarded("modifier-reroll");
-                  if (earned) game.rerollRunModifierOffer();
-                }}
-                className="mt-2 min-h-10 w-full rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 font-display text-sm tracking-wide text-accent transition active:scale-[0.98]"
-              >
-                REROLL ONCE · WATCH AD
-              </button>
-            )}
-          </div>
-        </div>
       )}
       {state.killStreak >= 3 && state.killStreakTimer > 0 && !state.gameOver && (
         <div
@@ -474,21 +467,17 @@ export function HUD({
       )}
 
       <div className="rw-hud-top space-y-1.5">
-        <div className="rw-hud-status-row flex items-start gap-1.5">
+        <div className="rw-hud-status-row flex items-stretch gap-1.5">
+          <LivesBar current={state.baseHp} maximum={state.baseMaxHp} reducedMotion={reducedMotion} />
           <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" />
-          <Stat label={state.endlessMode ? "Endless" : "Wave"} value={`${state.wave || 1}`} />
-          <Stat
-            label="Base"
-            value={`${state.baseHp}/${state.baseMaxHp}`}
-            tone={baseDanger === "safe" ? undefined : "danger"}
-          />
-          <div className="pointer-events-auto ml-auto flex gap-1.5">
+          <div className="rw-hud-actions pointer-events-auto ml-auto flex gap-1.5">
             <button
               type="button"
               onClick={() => {
                 const nextSpeed = state.simulationSpeed === 1 ? 2 : 1;
                 game.setSimulationSpeed(nextSpeed);
                 track("simulation_speed_changed", { speed: nextSpeed });
+                triggerHaptic("selection");
               }}
               aria-label={state.simulationSpeed === 1 ? "Speed up gameplay" : "Return to normal speed"}
               className="min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.97]"
@@ -496,16 +485,46 @@ export function HUD({
               {state.simulationSpeed}×
             </button>
             <button
-              onClick={() => onPause?.()}
+              onClick={() => { triggerHaptic("selection"); onPause?.(); }}
               className="min-h-10 rounded-xl bg-panel/90 px-3 py-2 font-display text-sm tracking-wide text-panel-foreground shadow-panel backdrop-blur"
             >
               Pause
             </button>
           </div>
         </div>
-        <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg bg-panel/75 px-2.5 py-1 text-[10px] tracking-wide text-panel-muted shadow-panel backdrop-blur">
-          <span>Lv {player.level}</span>
-          <span>Enemies {enemiesRemaining}</span>
+        <div className="rw-hud-progress-row pointer-events-none">
+          <div className="rw-round-progress">
+            <div className="rw-round-progress-copy">
+              <div className="rw-round-heading">
+                <span className="rw-round-kicker">{state.endlessMode ? "ENDLESS · ROUND" : "ROUND"}</span>
+                <strong>{currentRound}{!state.endlessMode && <span> / {maximumRounds}</span>}</strong>
+              </div>
+              <span className="rw-round-remaining">
+                {state.endlessMode
+                  ? "THE HORDE KEEPS COMING"
+                  : roundsRemaining === 0
+                    ? "FINAL ROUND"
+                    : `${roundsRemaining} ${roundsRemaining === 1 ? "ROUND" : "ROUNDS"} LEFT`}
+              </span>
+            </div>
+            <div
+              className="rw-round-track"
+              role="progressbar"
+              aria-label={state.endlessMode ? "Endless sector progress" : "Level round progress"}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(roundProgressPercent)}
+            >
+              <div className="rw-round-fill" style={{ width: `${roundProgressPercent}%` }} />
+            </div>
+          </div>
+          <div className="rw-enemies-card" aria-label={`${enemiesRemaining} zombies remaining this round`}>
+            <span className="rw-enemies-stamp" aria-hidden="true">Z</span>
+            <div className="rw-enemies-copy">
+              <span className="rw-enemies-label">ZOMBIES LEFT</span>
+              <AnimatedNumber value={enemiesRemaining} reducedMotion={reducedMotion} />
+            </div>
+          </div>
         </div>
         {state.gameMode === "endless" && !state.gameOver ? (
           <div className="pointer-events-none inline-flex w-fit items-center gap-2 rounded-lg border border-accent/20 bg-accent/5 px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] text-accent shadow-panel backdrop-blur">
@@ -719,7 +738,12 @@ export function HUD({
                     <p className="mt-1 line-clamp-2 text-[9px] leading-tight text-panel-muted">{info.blurb}</p>
                     <button
                       onClick={() => {
-                        if (game.buildAt(spot.x, spot.z, k)) onSelect(null);
+                        if (game.buildAt(spot.x, spot.z, k)) {
+                          triggerHaptic("confirm");
+                          onSelect(null);
+                        } else {
+                          triggerHaptic("error");
+                        }
                       }}
                       disabled={!canBuild}
                       className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-1.5 py-1 font-display text-xs tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
@@ -744,7 +768,7 @@ export function HUD({
               return (
                 <button
                   key={t.id}
-                  onClick={() => onSelect({ kind: "tower", id: t.id })}
+                  onClick={() => { triggerHaptic("selection"); onSelect({ kind: "tower", id: t.id }); }}
                   className="rounded-lg border border-white/10 bg-panel/85 px-1 py-1 text-center shadow-panel backdrop-blur transition data-[active=true]:border-accent data-[active=true]:bg-panel"
                   data-active={active}
                   data-tower-id={t.id}
@@ -775,6 +799,7 @@ export function HUD({
               <button
                 onClick={() => {
                   game.sell(tower.id);
+                  triggerHaptic("confirm");
                   onSelect(null);
                 }}
                 className="shrink-0 rounded-md bg-black/25 px-2 py-1 text-[10px] text-panel-muted"
@@ -800,7 +825,7 @@ export function HUD({
 
         <div className="flex">
           <button
-            onClick={() => game.repair()}
+            onClick={() => { game.repair(); triggerHaptic("confirm"); }}
             disabled={state.gold < 30 || state.baseHp >= state.baseMaxHp}
             className="w-full rounded-lg bg-panel/85 px-2.5 py-2 text-[11px] font-semibold text-panel-foreground shadow-panel backdrop-blur transition active:scale-[0.98] disabled:opacity-40"
           >
@@ -828,11 +853,6 @@ export function HUD({
               </div>
             ))}
           </div>
-          {state.activeRunModifiers.length > 0 && (
-            <p className="max-w-xs text-center text-[11px] text-panel-muted">
-              Build: {state.activeRunModifiers.map((id) => RUN_MODIFIER_DEFS.find((entry) => entry.id === id)?.name ?? id).join(" · ")}
-            </p>
-          )}
           {lastReward && (
             <div className="w-full max-w-xs rounded-2xl bg-panel/90 p-3 text-center shadow-panel">
               {lastReward.leveledTo !== null && (
