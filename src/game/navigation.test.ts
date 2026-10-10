@@ -111,6 +111,9 @@ describe("campaign economy and pacing balance", () => {
   test("opening scrap constrains tower spam while preserving viable starts", () => {
     expect(getStageById(1).startingCoins).toBe(120);
     expect(getStageById(2).startingCoins).toBe(100);
+    expect(getStageById(1).enemyPool.normalKinds).not.toContain(7);
+    expect(getStageById(2).enemyPool.normalKinds).toContain(7);
+    expect(getStageById(2).enemyPool.weights?.swarm).toBe(0.18);
     expect(getStageById(3).startingCoins).toBe(110);
     expect(getStageById(6).startingCoins).toBe(125);
     expect(STAGE_DEFS.every((stage) => stage.startingCoins >= 100 && stage.startingCoins <= 180)).toBe(true);

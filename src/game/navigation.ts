@@ -198,10 +198,10 @@ export const STAGE_DEFS: StageDefinition[] = [
     name: "Amber Orchard",
     description: "Orchard rows frame a long lane and a tight return, teaching the value of range followed by a close-range cleanup post.",
     difficulty: "Easy", unlockRequirement: { type: "complete-stage", stageId: 1 }, startingCoins: 100, startingBaseHealth: 20, waveCount: 10,
-    enemyPool: { normalKinds: [0, 1], weights: { walker: 0.55, runner: 0.45 } },
+    enemyPool: { normalKinds: [0, 1, 7], weights: { walker: 0.44, runner: 0.38, swarm: 0.18 } },
     gameplay: { waveDifficultyMultiplier: 1, waveSizeMultiplier: 0.98, spawnIntervalMultiplier: 1, waveDelayMultiplier: 0.98, enemySpeedMultiplier: 1.02, enemyHealthMultiplier: 1 },
     boss: { enabled: false, wave: null, kind: null, count: 0 },
-    rewardMultiplier: 1.05, specialRules: ["Runner pressure: earlier speed checks reward a balanced first setup"],
+    rewardMultiplier: 1.05, specialRules: ["Mixed-speed opening: runners and small swarms punish a single lane of single-target fire"],
     rewards: { completionCoins: 90, completionXp: 135, completionStars: 0, firstCompletionBonus: { coins: 65, xp: 95, stars: 1 } },
     objectives: [
       { id: "complete-stage", label: "Complete the stage", type: "complete-stage" },
