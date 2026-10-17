@@ -1208,6 +1208,7 @@
 .rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile:nth-child(5) { animation-delay: 115ms; }
 
 .rotwood-app .rw-hud-actions button {
+  min-width: 44px;
   min-height: 44px;
 }
 
