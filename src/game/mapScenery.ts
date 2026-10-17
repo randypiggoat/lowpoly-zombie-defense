@@ -155,7 +155,7 @@ function findSafePosition(
   start: MapVec2,
   radius: number,
   occupied: readonly OccupiedEnvironmentFootprint[],
-  roadRadiusFactor = 0.36,
+  roadRadiusFactor = 1,
 ): MapVec2 | null {
   if (isMapEnvironmentPlacementClear(map, start.x, start.z, radius, occupied, roadRadiusFactor)) {
     return start;
