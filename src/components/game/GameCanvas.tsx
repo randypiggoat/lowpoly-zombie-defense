@@ -837,7 +837,7 @@ export function GameCanvas() {
             <section className="rw-home-navigation" aria-labelledby="rw-nav-title">
               <div className="rw-section-heading">
                 <div><p className="rw-eyebrow">TACTICAL NETWORK</p><h2 id="rw-nav-title">Quick Menu</h2></div>
-                <span>CHOOSE A MODE</span>
+                <span>OPEN A SECTION</span>
               </div>
               <div className="rw-menu-grid">
                 <HomeShortcut title="Operations" subtitle="Campaigns & combat modes" icon={<Swords size={20} />} onClick={() => setScreen("operations")} />
