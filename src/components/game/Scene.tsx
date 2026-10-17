@@ -234,19 +234,20 @@ function Ground({
         <meshStandardMaterial color={theme.ground} flatShading />
       </mesh>
       {accents.map(({ x, z, radius, rotation, variant }, index) => (
-        <mesh
+        <group
           key={"terrain-accent-" + index}
           position={[x, 0.025 + (variant % 3) * 0.012, z]}
-          rotation={[-Math.PI / 2, 0, rotation]}
-          receiveShadow
+          rotation-y={rotation}
         >
-          <circleGeometry args={[radius, variant === 1 ? 6 : 5]} />
-          <meshStandardMaterial
-            color={variant === 1 ? theme.groundAlt : theme.ground}
-            flatShading
-            roughness={1}
-          />
-        </mesh>
+          <mesh rotation-x={-Math.PI / 2} receiveShadow>
+            <circleGeometry args={[radius, variant === 1 ? 6 : 5]} />
+            <meshStandardMaterial
+              color={variant === 1 ? theme.groundAlt : theme.ground}
+              flatShading
+              roughness={1}
+            />
+          </mesh>
+        </group>
       ))}
       <ThemedRoads map={map} theme={theme} />
     </group>
