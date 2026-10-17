@@ -124,23 +124,23 @@ export function isMapEnvironmentPlacementClear(
   z: number,
   radius: number,
   occupied: readonly OccupiedEnvironmentFootprint[] = [],
-  roadRadiusFactor = 0.36,
+  roadRadiusFactor = 1,
 ) {
   const point: MapVec2 = { x, z };
   if (!isInsideBounds(map, x, z, radius)) return false;
 
-  const roadClearance = map.pathWidth / 2 + 0.32 + radius * roadRadiusFactor;
+  const roadClearance = map.pathWidth / 2 + 0.62 + radius * roadRadiusFactor;
   if (distanceToPath(map, point) < roadClearance) return false;
 
   if (Math.hypot(x - map.base.x, z - map.base.z) < 4.0 + radius * 0.24) {
     return false;
   }
 
-  if (map.obstacles.some((obstacle) => insideRect(point, obstacle, 0.18 + radius * 0.34))) {
+  if (map.obstacles.some((obstacle) => insideRect(point, obstacle, 0.18 + radius * 0.9))) {
     return false;
   }
 
-  if ((map.blockedZones ?? []).some((zone) => insideRect(point, zone, 0.12 + radius * 0.28))) {
+  if ((map.blockedZones ?? []).some((zone) => insideRect(point, zone, 0.12 + radius * 0.8))) {
     return false;
   }
 
@@ -325,7 +325,11 @@ export function createTerrainAccents(
   const result: TerrainAccent[] = [];
   const { minX, maxX, minZ, maxZ } = map.bounds;
 
-  for (let attempt = 0; attempt < Math.max(300, safeCount * 80) && result.length < safeCount; attempt++) {
+  for (
+    let attempt = 0;
+    attempt < Math.max(300, safeCount * 80) && result.length < safeCount;
+    attempt++
+  ) {
     const radius = 1.0 + random() * 1.05;
     const x = minX + radius + random() * (maxX - minX - radius * 2);
     const z = minZ + radius + random() * (maxZ - minZ - radius * 2);
