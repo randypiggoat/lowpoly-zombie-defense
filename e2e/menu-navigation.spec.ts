@@ -6,7 +6,7 @@ test("command center routes players into focused submenus and back", async ({ pa
   await expect(page.getByRole("heading", { name: /ROTWOOD.*DEFENSE/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /THE LAST LIGHT/i })).toBeVisible();
 
-  const backToCommandCenter = () => page.getByRole("button", { name: /COMMAND CENTER/i });
+  const backToCommandCenter = () => page.getByRole("button", { name: /BACK/i });
 
   await page.getByRole("button", { name: /Operations/i }).click();
   await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
