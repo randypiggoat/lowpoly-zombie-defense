@@ -19,7 +19,7 @@ import { ThemedRoads } from "./ThemedRoads";
 import { ThemedBuilding } from "./ThemedBuildings";
 import { ThemedBase } from "./ThemedBase";
 import { MapSpecialTerrain } from "./SpecialTerrain";
-import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
+import { canPlaceTower, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
 import { gorePartBit } from "@/game/enemyGore";
 import { zombieModelScale, zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
