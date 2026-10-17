@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { STAGE_MAPS } from "./maps";
+import { getEnvironmentArtTone } from "./environmentVisuals";
 import {
   composeMapEnvironment,
   createAmbientScenery,
@@ -10,6 +11,13 @@ import {
 } from "./mapScenery";
 
 describe("map environment composition", () => {
+  test("every map has a unique, valid material tone for environmental props", () => {
+    const tones = Object.values(STAGE_MAPS).map((map) => getEnvironmentArtTone(map.environmentId));
+    expect(tones).toHaveLength(20);
+    expect(new Set(tones).size).toBe(20);
+    for (const tone of tones) expect(tone).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
   test("all twenty environments have deterministic, safely placed authored assets", () => {
     for (const map of Object.values(STAGE_MAPS)) {
       const first = composeMapEnvironment(map);

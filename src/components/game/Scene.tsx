@@ -26,7 +26,7 @@ import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
 import { RIFLEMAN_SQUAD_SUPPORT } from "@/game/towerUpgradeDesign";
-import { StageEnvironment, EnvironmentPropVisual } from "./StageEnvironment";
+import { EnvironmentArtToneProvider, StageEnvironment, EnvironmentPropVisual } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
@@ -1535,7 +1535,9 @@ export const Scene = memo(function Scene({
         <StageEnvironment layout={environmentLayout} reducedMotion={reducedMotion} />
         <MapSpecialTerrain map={map} />
         <MapObstacles map={map} />
-        <Scenery items={sceneryItems} reducedMotion={reducedMotion} />
+        <EnvironmentArtToneProvider environmentId={map.environmentId}>
+          <Scenery items={sceneryItems} reducedMotion={reducedMotion} />
+        </EnvironmentArtToneProvider>
         <ThemedBase position={map.base} environmentId={map.environmentId} />
         <BuildSurface
           map={map}
