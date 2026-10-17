@@ -165,9 +165,16 @@ function findSafePosition(
   const centerZ = (map.bounds.minZ + map.bounds.maxZ) / 2;
   const outwardAngle = Math.atan2(start.z - centerZ, start.x - centerX);
 
-  for (let ring = 0.5; ring <= 7.5; ring += 0.5) {
-    for (let sector = 0; sector < 16; sector++) {
-      const angle = outwardAngle + (sector * Math.PI * 2) / 16;
+  const maxRadius = Math.hypot(
+    map.bounds.maxX - map.bounds.minX,
+    map.bounds.maxZ - map.bounds.minZ,
+  );
+  for (let ring = 0.5; ring <= maxRadius; ring += 0.5) {
+    // Keep candidates close enough together that narrow pockets are not skipped
+    // as the search expands toward the far side of a map.
+    const sectors = Math.max(16, Math.ceil((Math.PI * 2 * ring) / 0.7));
+    for (let sector = 0; sector < sectors; sector++) {
+      const angle = outwardAngle + (sector * Math.PI * 2) / sectors;
       const x = start.x + Math.cos(angle) * ring;
       const z = start.z + Math.sin(angle) * ring;
       if (isMapEnvironmentPlacementClear(map, x, z, radius, occupied, roadRadiusFactor)) {
