@@ -41,7 +41,46 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
   const metal = <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.5} />;
   switch (kind) {
     case "rifleman":
-      return null;
+      return (
+        <>
+          {a >= 2 && (
+            <mesh position={[0.34, 0.64, 0.16]} castShadow>
+              <boxGeometry args={[0.16, 0.16, 0.3]} />
+              {metal}
+            </mesh>
+          )}
+          {a >= 3 && (
+            <mesh position={[0, 0.9, 1.42]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.13, 0.025, 5, 8]} />
+              <AccentMaterial color={accent} glow={0.38} />
+            </mesh>
+          )}
+          {b >= 2 && (
+            <group position={[0, 0.76, -0.56]}>
+              <mesh castShadow>
+                <boxGeometry args={[0.38, 0.26, 0.22]} />
+                {metal}
+              </mesh>
+              <mesh position={[0, 0.18, 0]}>
+                <cylinderGeometry args={[0.025, 0.025, 0.2, 5]} />
+                {metal}
+              </mesh>
+            </group>
+          )}
+          {b >= 3 && (
+            <mesh position={[0, 1.02, -0.56]}>
+              <cylinderGeometry args={[0.035, 0.035, 0.28, 5]} />
+              {metal}
+            </mesh>
+          )}
+          {b >= 4 && (
+            <mesh position={[0, 1.22, -0.56]}>
+              <icosahedronGeometry args={[0.12, 0]} />
+              <AccentMaterial color={accent} glow={0.9} />
+            </mesh>
+          )}
+        </>
+      );
     case "shotgunner":
       return (
         <>
