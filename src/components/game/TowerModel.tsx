@@ -50,7 +50,7 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
             </mesh>
           )}
           {a >= 3 && (
-            <mesh position={[0, 0.9, 1.42]} rotation-x={Math.PI / 2}>
+            <mesh position={[0, 0.9, 1.42]}>
               <torusGeometry args={[0.13, 0.025, 5, 8]} />
               <AccentMaterial color={accent} glow={0.38} />
             </mesh>
