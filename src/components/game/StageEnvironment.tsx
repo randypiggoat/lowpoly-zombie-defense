@@ -3,9 +3,8 @@ import type {
   EnvironmentLandmark,
   EnvironmentProp,
   EnvironmentPropKind,
-  StageEnvironmentId,
+  StageEnvironmentDefinition,
 } from "@/game/stageEnvironments";
-import { getStageEnvironment } from "@/game/stageEnvironments";
 
 const C = {
   wood: "#6f4c35",
@@ -238,12 +237,13 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   }
 }
 
-export function StageEnvironment({ environmentId }: { environmentId: StageEnvironmentId }) {
-  const environment = getStageEnvironment(environmentId);
+export function StageEnvironment({ layout }: { layout: StageEnvironmentDefinition }) {
   return (
     <group>
-      {environment.props.map((item, index) => <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />)}
-      <LandmarkMesh item={environment.landmark} />
+      {layout.props.map((item, index) => (
+        <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />
+      ))}
+      <LandmarkMesh item={layout.landmark} />
     </group>
   );
 }
