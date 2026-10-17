@@ -529,9 +529,13 @@ export function TowerModel({ tower, accent, level, bodyColor, reducedMotion = fa
         <dodecahedronGeometry args={[0.92, 0]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.62} />
       </mesh>
-      <mesh position={[0, 0.96, 0.55]} rotation-x={Math.PI / 2} castShadow>
+      <mesh position={[0, 0.96, 0.36]} rotation-x={Math.PI / 2} castShadow>
         <cylinderGeometry args={[0.38, 0.42, 0.38, 8]} />
         <AccentMaterial color={accent} glow={0.58} />
+      </mesh>
+      <mesh ref={muzzle} position={[0, 0.96, 0.55]} rotation-x={Math.PI / 2} visible={false}>
+        <coneGeometry args={[0.18, 0.3, 6]} />
+        <AccentMaterial color="#eafaff" glow={1.2} />
       </mesh>
       <group ref={signature} position={[0, 0.98, -0.55]}>
         <Core color={accent} size={0.42} />
@@ -632,7 +636,7 @@ export function TowerModel({ tower, accent, level, bodyColor, reducedMotion = fa
             <AccentMaterial color={accent} glow={0.32} />
           </mesh>
         </group>
-        <mesh ref={muzzle} position={[0, 0, 0.82]} rotation-x={Math.PI / 2} visible={false}>
+        <mesh ref={muzzle} position={[0, 0, 0.82]} visible={false}>
           <ringGeometry args={[0.32, 0.5, 8]} />
           <meshBasicMaterial color="#ffe6a8" transparent opacity={0.95} />
         </mesh>
@@ -659,7 +663,7 @@ export function TowerModel({ tower, accent, level, bodyColor, reducedMotion = fa
           <cylinderGeometry args={[0.52, 0.64, 0.38, 8]} />
           <meshStandardMaterial color={dark} flatShading metalness={0.38} />
         </mesh>
-        <mesh position={[0, 0, 0.35]} rotation-x={Math.PI / 2}>
+        <mesh position={[0, 0, 0.35]}>
           <torusGeometry args={[0.46, 0.08, 5, 10]} />
           <AccentMaterial color={accent} glow={0.8} />
         </mesh>
