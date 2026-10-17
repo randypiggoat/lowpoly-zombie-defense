@@ -228,13 +228,19 @@ function treeVariant(item: EnvironmentProp) {
   return Math.abs(Math.floor(item.position[0] * 17 + item.position[2] * 31)) % 3;
 }
 
-export function EnvironmentPropMesh({ item }: { item: EnvironmentProp }) {
+export function EnvironmentPropMesh({
+  item,
+  variant = treeVariant(item),
+}: {
+  item: EnvironmentProp;
+  variant?: number;
+}) {
   let node: ReactNode;
   switch (item.kind) {
-    case "tree": node = <Tree variant={treeVariant(item)} />; break;
-    case "pine": node = <Tree pine variant={treeVariant(item)} />; break;
+    case "tree": node = <Tree variant={variant} />; break;
+    case "pine": node = <Tree pine variant={variant} />; break;
     case "palm": node = <Palm />; break;
-    case "dead-tree": node = <Tree dead variant={treeVariant(item)} />; break;
+    case "dead-tree": node = <Tree dead variant={variant} />; break;
     case "rock": node = <Rock />; break;
     case "boulder": node = <Rock big />; break;
     case "cactus": node = <Cactus />; break;
@@ -302,7 +308,7 @@ function SwayingEnvironmentPropMesh({
 
   return (
     <group ref={group} position={item.position}>
-      <EnvironmentPropMesh item={localItem} />
+      <EnvironmentPropMesh item={localItem} variant={treeVariant(item)} />
     </group>
   );
 }
