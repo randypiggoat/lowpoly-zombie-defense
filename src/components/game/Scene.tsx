@@ -26,7 +26,7 @@ import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
 import { RIFLEMAN_SQUAD_SUPPORT } from "@/game/towerUpgradeDesign";
-import { StageEnvironment, EnvironmentPropMesh } from "./StageEnvironment";
+import { StageEnvironment, EnvironmentPropVisual } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
@@ -276,7 +276,13 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
 
 
-function Scenery({ items }: { items: EnvironmentProp[] }) {
+function Scenery({
+  items,
+  reducedMotion,
+}: {
+  items: EnvironmentProp[];
+  reducedMotion: boolean;
+}) {
   const root = useRef<THREE.Group>(null);
 
   useEffect(() => {
@@ -288,7 +294,11 @@ function Scenery({ items }: { items: EnvironmentProp[] }) {
   return (
     <group ref={root}>
       {items.map((item, index) => (
-        <EnvironmentPropMesh key={"scenery-" + index} item={item} />
+        <EnvironmentPropVisual
+          key={"scenery-" + index}
+          item={item}
+          reducedMotion={reducedMotion}
+        />
       ))}
     </group>
   );
@@ -1522,10 +1532,10 @@ export const Scene = memo(function Scene({
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
         <Ground theme={theme} map={map} accents={terrainAccents} />
-        <StageEnvironment layout={environmentLayout} />
+        <StageEnvironment layout={environmentLayout} reducedMotion={reducedMotion} />
         <MapSpecialTerrain map={map} />
         <MapObstacles map={map} />
-        <Scenery items={sceneryItems} />
+        <Scenery items={sceneryItems} reducedMotion={reducedMotion} />
         <ThemedBase position={map.base} environmentId={map.environmentId} />
         <BuildSurface
           map={map}
