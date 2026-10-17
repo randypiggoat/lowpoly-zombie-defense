@@ -504,10 +504,12 @@ function TowerMesh({
   tower,
   selected,
   onSelect,
+  reducedMotion = false,
 }: {
   tower: Tower;
   selected: boolean;
   onSelect: (id: number) => void;
+  reducedMotion?: boolean;
 }) {
   const turret = useRef<THREE.Group>(null);
   const ring = useRef<THREE.Mesh>(null);
@@ -536,7 +538,8 @@ function TowerMesh({
       turret.current.rotation.y = cur + diff * aimBlend;
     }
     if (ring.current) {
-      ring.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025);
+      const pulse = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 2.2 + tower.id) * 0.025;
+      ring.current.scale.setScalar(1 + pulse);
     }
   });
 
@@ -572,7 +575,13 @@ function TowerMesh({
         </>
       )}
       <group ref={turret} position={[0, 1.18 + level * 0.1, 0]}>
-        <TowerModel tower={tower} accent={accent} level={level} bodyColor={bodyColor} />
+        <TowerModel
+          tower={tower}
+          accent={accent}
+          level={level}
+          bodyColor={bodyColor}
+          reducedMotion={reducedMotion}
+        />
       </group>
 
     </group>
@@ -1561,6 +1570,7 @@ export const Scene = memo(function Scene({
             tower={t}
             selected={selection?.kind === "tower" && selection.id === t.id}
             onSelect={onSelectTower}
+            reducedMotion={reducedMotion}
           />
         ))}
         <Zombies map={map} reducedMotion={reducedMotion} towerRevision={towerRevision} />
