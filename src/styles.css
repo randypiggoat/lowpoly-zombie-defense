@@ -850,8 +850,7 @@
 }
 
 .rotwood-app > .rw-screen {
-  animation: rw-screen-enter 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, transform;
+  animation: rw-screen-enter 230ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
 }
 
 @keyframes rw-screen-enter {
@@ -1095,4 +1094,144 @@
 @media (prefers-reduced-motion:reduce) {
   .rw-lives-fill,.rw-round-fill {transition:none!important;}
   .rw-lives-display[data-hit="true"],.rw-enemies-count[data-pulsing="true"] {animation:none!important;}
+}
+
+
+/* Cohesive mobile UI motion: immediate touch feedback, clear focus, and short entrances. */
+.rotwood-app {
+  --rw-motion-fast: 125ms;
+  --rw-motion-base: 185ms;
+  --rw-motion-enter: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.rotwood-app :where(button, a, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.rotwood-app :where(button, a, [role="button"]):focus-visible {
+  outline: 2px solid var(--rw-toxic, oklch(0.82 0.16 137));
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px oklch(0.82 0.16 137 / 0.16);
+}
+
+.rotwood-app .rotwood-button,
+.rotwood-app .rotwood-menu-tile,
+.rotwood-app .rw-settings-button,
+.rotwood-app .rw-hud-actions button,
+.rotwood-app .rotwood-hud button,
+.rotwood-app .rotwood-hud-button {
+  transform-origin: center;
+  transition:
+    transform var(--rw-motion-fast) var(--rw-motion-enter),
+    filter var(--rw-motion-fast) ease,
+    border-color var(--rw-motion-base) ease,
+    background-color var(--rw-motion-base) ease,
+    box-shadow var(--rw-motion-base) ease;
+}
+
+.rotwood-app .rotwood-button:active:not(:disabled),
+.rotwood-app .rotwood-menu-tile:active:not(:disabled),
+.rotwood-app .rw-settings-button:active:not(:disabled),
+.rotwood-app .rw-hud-actions button:active:not(:disabled),
+.rotwood-app .rotwood-hud button:active:not(:disabled),
+.rotwood-app .rotwood-hud-button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.975);
+  filter: brightness(1.07);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rotwood-app .rotwood-button:hover:not(:disabled),
+  .rotwood-app .rotwood-menu-tile:hover:not(:disabled),
+  .rotwood-app .rw-settings-button:hover:not(:disabled) {
+    filter: brightness(1.055);
+  }
+
+  .rotwood-app .rotwood-menu-tile:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes rw-overlay-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rw-panel-enter {
+  from { opacity: 0; transform: translateY(9px) scale(0.985); }
+  to { opacity: 1; }
+}
+
+@keyframes rw-menu-item-enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; }
+}
+
+.rotwood-app > [class~="z-30"]:not(.rw-screen),
+.rotwood-app > [class~="z-40"]:not(.rw-screen),
+.rotwood-app > [class~="z-50"]:not(.rw-screen) {
+  animation: rw-overlay-enter 165ms ease-out both;
+}
+
+.rotwood-app > [class~="z-30"] > .rotwood-shell,
+.rotwood-app > [class~="z-40"] > .rotwood-shell,
+.rotwood-app > [class~="z-50"] > .rotwood-shell {
+  animation: rw-panel-enter 215ms var(--rw-motion-enter) both;
+}
+
+.rotwood-app .rw-screen .rw-player-strip,
+.rotwood-app .rw-screen .rw-deploy-panel,
+.rotwood-app .rw-screen .rw-hub-intro,
+.rotwood-app .rw-screen .rw-supply-card,
+.rotwood-app .rw-screen .rw-hub-note {
+  animation: rw-panel-enter 230ms var(--rw-motion-enter) both;
+}
+
+.rotwood-app .rw-screen .rw-player-strip { animation-delay: 25ms; }
+.rotwood-app .rw-screen .rw-deploy-panel { animation-delay: 45ms; }
+.rotwood-app .rw-screen .rw-hub-intro { animation-delay: 20ms; }
+.rotwood-app .rw-screen .rw-supply-card { animation-delay: 45ms; }
+.rotwood-app .rw-screen .rw-hub-note { animation-delay: 85ms; }
+
+.rotwood-app .rw-screen .rw-menu-grid > .rotwood-menu-tile,
+.rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile {
+  animation: rw-menu-item-enter 205ms var(--rw-motion-enter) both;
+}
+.rotwood-app .rw-screen .rw-menu-grid > .rotwood-menu-tile:nth-child(1),
+.rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile:nth-child(1) { animation-delay: 35ms; }
+.rotwood-app .rw-screen .rw-menu-grid > .rotwood-menu-tile:nth-child(2),
+.rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile:nth-child(2) { animation-delay: 55ms; }
+.rotwood-app .rw-screen .rw-menu-grid > .rotwood-menu-tile:nth-child(3),
+.rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile:nth-child(3) { animation-delay: 75ms; }
+.rotwood-app .rw-screen .rw-menu-grid > .rotwood-menu-tile:nth-child(4),
+.rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile:nth-child(4) { animation-delay: 95ms; }
+.rotwood-app .rw-screen .rw-hub-list > .rotwood-menu-tile:nth-child(5) { animation-delay: 115ms; }
+
+.rotwood-app .rw-hud-actions button {
+  min-height: 44px;
+}
+
+.rotwood-app .rw-lives-fill,
+.rotwood-app .rw-round-fill {
+  transition: width 185ms ease-out, background-color 150ms ease;
+}
+
+.rotwood-app[data-reduced-motion="true"] *,
+.rotwood-app[data-reduced-motion="true"] *::before,
+.rotwood-app[data-reduced-motion="true"] *::after {
+  animation: none !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotwood-app > [class~="z-30"],
+  .rotwood-app > [class~="z-40"],
+  .rotwood-app > [class~="z-50"],
+  .rotwood-app .rw-screen,
+  .rotwood-app .rw-screen *,
+  .rotwood-app .rw-screen *::before,
+  .rotwood-app .rw-screen *::after {
+    animation: none !important;
+  }
 }
