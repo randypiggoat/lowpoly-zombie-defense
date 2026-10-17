@@ -26,7 +26,7 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Field Intel/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Supply Depot/i })).toBeVisible();
 
-  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE/ });
   await expect(playButton).toBeVisible();
 
   await playButton.click();

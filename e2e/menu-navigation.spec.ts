@@ -6,7 +6,7 @@ test("command center routes players into focused submenus and back", async ({ pa
   await expect(page.getByRole("heading", { name: /ROTWOOD.*DEFENSE/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /THE LAST LIGHT/i })).toBeVisible();
 
-  const backToCommandCenter = () => page.getByRole("button", { name: /COMMAND CENTER/i });
+  const backToCommandCenter = () => page.getByRole("button", { name: /BACK/i });
 
   await page.getByRole("button", { name: /Operations/i }).click();
   await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
@@ -28,9 +28,9 @@ test("command center routes players into focused submenus and back", async ({ pa
 
   await page.getByRole("button", { name: /Supply Depot/i }).click();
   await expect(page.getByRole("heading", { name: "Supply Depot" })).toBeVisible();
-  await expect(page.getByText("DAILY SUPPLY DROP")).toBeVisible();
+  await expect(page.getByText("DAILY REWARD")).toBeVisible();
   await expect(page.getByRole("button", { name: /CLAIM|CLAIMED/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Shop & Optional Extras/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Shop/i })).toBeVisible();
 
   const viewport = page.viewportSize();
   if (viewport && viewport.width <= 430) {

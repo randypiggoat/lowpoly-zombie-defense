@@ -18,7 +18,7 @@ test("Rotwood UI foundation has tactile touch targets and screen context", async
   await expect(page.locator(".rotwood-shell")).toHaveCount(0);
   await expect(page.locator(".rotwood-menu-tile")).toHaveCount(4);
 
-  const primaryButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+  const primaryButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE/ });
   await expect(primaryButton).toBeVisible();
 
   const minHeight = await primaryButton.evaluate((element) => Number.parseFloat(getComputedStyle(element).minHeight));
@@ -37,7 +37,7 @@ test("tower placement follows pointer across both world axes and builds at the s
   test.setTimeout(120_000);
   await page.goto("/?qa=1");
 
-  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE/ });
   await expect(playButton).toBeVisible();
   await playButton.click();
   await expect(page.locator("canvas")).toHaveCount(1);
@@ -148,7 +148,7 @@ test("tower placement responds to touch coordinates on mobile", async ({ page },
   test.skip(!testInfo.project.name.includes("iphone"), "Touch-specific regression runs on the iPhone project.");
 
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ }).click();
+  await page.getByRole("button", { name: /DEFEND NOW|CONTINUE/ }).click();
   await expect(page.locator("canvas")).toHaveCount(1);
   await page.getByRole("button", { name: "Pause" }).click();
 

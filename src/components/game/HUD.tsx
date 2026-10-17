@@ -70,28 +70,32 @@ function Stat({
   label,
   value,
   tone,
+  reducedMotion = false,
 }: {
   label: string;
   value: string;
   tone?: "gold" | "danger" | undefined;
+  reducedMotion?: boolean;
 }) {
-  const initial = useRef(true);
+  const previousValue = useRef(value);
   const [pulsing, setPulsing] = useState(false);
 
   useEffect(() => {
-    if (initial.current) {
-      initial.current = false;
+    const changed = previousValue.current !== value;
+    previousValue.current = value;
+    if (!changed || reducedMotion) {
+      if (reducedMotion) setPulsing(false);
       return;
     }
     setPulsing(true);
     const timeout = window.setTimeout(() => setPulsing(false), 240);
     return () => window.clearTimeout(timeout);
-  }, [value]);
+  }, [value, reducedMotion]);
 
   return (
     <div
       className="rotwood-stat flex min-w-[4.2rem] flex-col items-center rounded-lg bg-panel/85 px-2 py-1 shadow-panel backdrop-blur"
-      data-pulsing={pulsing}
+      data-pulsing={pulsing && !reducedMotion}
       data-tone={tone}
     >
       <span
@@ -123,7 +127,7 @@ function LivesBar({ current, maximum, reducedMotion }: { current: number; maximu
   return (
     <div className="rw-lives-display" data-critical={ratio <= 0.25} data-hit={hit} aria-label={`Base lives ${safeCurrent} of ${safeMaximum}`}>
       <div className="rw-lives-head">
-        <span className="rw-lives-label"><span aria-hidden="true" className="rw-lives-heart">♥</span> BASE LIVES</span>
+        <span className="rw-lives-label"><span aria-hidden="true" className="rw-lives-heart">♥</span> LIVES</span>
         <span className="rw-lives-numbers"><strong>{safeCurrent}</strong><span> / {safeMaximum}</span></span>
       </div>
       <div className="rw-lives-track" role="progressbar" aria-label="Base lives remaining" aria-valuemin={0} aria-valuemax={safeMaximum} aria-valuenow={safeCurrent}>
@@ -214,7 +218,7 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
         <div className="min-w-0">
           <h3 className="truncate font-display text-xs tracking-[0.12em] text-panel-foreground">{def.name}</h3>
           <p className={"mt-0.5 text-[8px] font-bold uppercase tracking-[0.12em] " + (path === "a" ? "text-accent" : "text-[#70d9c4]")}>
-            {path === "a" ? "Damage specialization" : "Support & control"}
+            {path === "a" ? "DAMAGE PATH" : "SUPPORT PATH"}
           </p>
           <p className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-panel-muted">{def.focus}</p>
         </div>
@@ -260,7 +264,7 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
                   {purchased || isNext || showAllTiers ? (
                     <p className="mt-0.5 text-[10px] leading-snug text-panel-muted">{tier.desc}</p>
                   ) : (
-                    <p className="mt-0.5 text-[9px] text-panel-muted/70">Tier {index + 1} · future upgrade</p>
+                    <p className="mt-0.5 text-[9px] text-panel-muted/70">Tier {index + 1} · locked</p>
                   )}
                   {isNext && !locked ? (
                     <button
@@ -285,7 +289,7 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
           className="mt-2 min-h-9 w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold tracking-wide text-panel-muted transition hover:border-accent/40 hover:text-accent"
           onClick={() => { setShowAllTiers(true); triggerHaptic("selection"); }}
         >
-          SHOW {def.tiers.length - visibleTierCount} MORE TIERS ↓
+          SHOW {def.tiers.length - visibleTierCount} MORE UPGRADES ↓
         </button>
       )}
       {showAllTiers && owned < def.tiers.length && (
@@ -462,7 +466,7 @@ export function HUD({
               {bossFlags.burning && <span className="rounded bg-white/10 px-1.5 py-0.5 text-panel-foreground">Burning</span>}
               {bossFlags.slowed && <span className="rounded bg-white/10 px-1.5 py-0.5 text-panel-foreground">Slowed</span>}
               {!bossFlags.marked && !bossFlags.stunned && !bossFlags.slowed && !bossFlags.enraged && (
-                <span className="rounded bg-white/5 px-1.5 py-0.5 text-panel-muted">Mark · Slow · Stun it</span>
+                <span className="rounded bg-white/5 px-1.5 py-0.5 text-panel-muted">Mark · Slow · Stun</span>
               )}
             </div>
           )}
@@ -472,7 +476,7 @@ export function HUD({
       <div className="rw-hud-top space-y-1.5">
         <div className="rw-hud-status-row flex items-stretch gap-1.5">
           <LivesBar current={state.baseHp} maximum={state.baseMaxHp} reducedMotion={reducedMotion} />
-          <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" />
+          <Stat label="Scrap" value={`${Math.floor(state.gold)}`} tone="gold" reducedMotion={reducedMotion} />
           <div className="rw-hud-actions pointer-events-auto ml-auto flex gap-1.5">
             <button
               type="button"
@@ -500,14 +504,14 @@ export function HUD({
             <div className="rw-round-progress-copy">
               <div className="rw-round-heading">
                 <span className="rw-round-kicker">{state.endlessMode ? "Endless" : "ROUND"}</span>
-                {state.endlessMode && <span className="rw-round-kicker">· ROUND</span>}
+                
                 <strong>{currentRound}{!state.endlessMode && <span> / {maximumRounds}</span>}</strong>
               </div>
               <span className="rw-round-remaining">
                 {state.endlessMode
-                  ? "THE HORDE KEEPS COMING"
+                  ? "SURVIVE"
                   : roundsRemaining === 0
-                    ? "FINAL ROUND"
+                    ? "LAST ROUND"
                     : `${roundsRemaining} ${roundsRemaining === 1 ? "ROUND" : "ROUNDS"} LEFT`}
               </span>
             </div>
@@ -525,7 +529,7 @@ export function HUD({
           <div className="rw-enemies-card" aria-label={`${enemiesRemaining} zombies remaining this round`}>
             <span className="rw-enemies-stamp" aria-hidden="true">Z</span>
             <div className="rw-enemies-copy">
-              <span className="rw-enemies-label">ZOMBIES LEFT</span>
+              <span className="rw-enemies-label">ZOMBIES</span>
               <AnimatedNumber value={enemiesRemaining} reducedMotion={reducedMotion} />
             </div>
           </div>
@@ -554,7 +558,7 @@ export function HUD({
                     Daily Login Reward
                   </h2>
                   <p className="text-[11px] text-panel-muted">
-                    7-day cycle · missing a day does not reset your main progression
+                    7-day rewards. Main progress never resets.
                   </p>
                 </div>
                 <ClaimButton
@@ -598,7 +602,7 @@ export function HUD({
                     Daily Missions
                   </h2>
                   <p className="text-[11px] text-panel-muted">
-                    3 missions · progress saves and resets daily
+                    3 missions. Resets daily.
                   </p>
                 </div>
               </div>
@@ -640,7 +644,7 @@ export function HUD({
                   Achievements
                 </h2>
                 <p className="text-[11px] text-panel-muted">
-                  Data-driven milestones with persistent rewards
+                  Long-term goals with rewards
                 </p>
               </div>
               <div className="mt-2 space-y-2">
@@ -677,7 +681,7 @@ export function HUD({
         {!tower && spot === null && state.towers.length === 0 && (
           <div className="rounded-xl bg-panel/85 px-3 py-2 text-center shadow-panel backdrop-blur">
             <p className="font-display text-sm tracking-wide text-panel-foreground">
-              Tap open ground to place a tower
+              Tap a clear spot to build a tower
             </p>
           </div>
         )}
@@ -698,20 +702,20 @@ export function HUD({
             </div>
             <div className="mt-1 flex items-center justify-between rounded-lg border border-white/10 bg-black/25 px-2 py-1.5">
               <span className="text-[9px] uppercase tracking-[0.16em] text-panel-muted">
-                Placement target
+                Placement
               </span>
               <span className={placement?.valid ? "font-display text-xs tracking-wide text-accent" : "font-display text-xs tracking-wide text-danger"}>
                 {placement?.valid
-                  ? "LEGAL PLACEMENT"
+                  ? "CLEAR"
                   : placement?.reason === "road"
                     ? "TOO CLOSE TO ROAD"
                     : placement?.reason === "blocked-terrain"
-                      ? "BROKEN ICE"
+                      ? "ICE BLOCKED"
                       : placement?.reason === "obstacle"
-                        ? "BLOCKED TERRAIN"
+                        ? "BLOCKED"
                       : placement?.reason === "too-close"
                         ? "TOO CLOSE"
-                        : "OUT OF BOUNDS"}
+                        : "OUTSIDE MAP"}
               </span>
             </div>
             <div className="mt-1.5 grid grid-cols-2 gap-1.5">
