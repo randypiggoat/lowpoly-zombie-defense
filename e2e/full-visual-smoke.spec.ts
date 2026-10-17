@@ -50,11 +50,11 @@ test("Rotwood menu and settings visual smoke", async ({ page }) => {
   await sound.click();
   await expect(sound).toHaveText("Sound: On");
 
-  const motion = page.getByRole("button", { name: /^Reduced Motion: / });
+  const motion = page.getByRole("button", { name: /^Reduce Motion: / });
   await motion.click();
-  await expect(motion).toHaveText("Reduced Motion: On");
+  await expect(motion).toHaveText("Reduce Motion: On");
   await motion.click();
-  await expect(motion).toHaveText("Reduced Motion: Off");
+  await expect(motion).toHaveText("Reduce Motion: Off");
 
   await assertShell(page);
 
