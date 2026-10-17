@@ -105,7 +105,7 @@ export function getEnvironmentLandmarkRadius(item: EnvironmentLandmark) {
 }
 
 function isInsideBounds(map: StageMap, x: number, z: number, radius: number) {
-  const padding = 0.25 + radius * 0.34;
+  const padding = 0.25 + radius;
   return (
     x >= map.bounds.minX + padding &&
     x <= map.bounds.maxX - padding &&
@@ -136,16 +136,16 @@ export function isMapEnvironmentPlacementClear(
     return false;
   }
 
-  if (map.obstacles.some((obstacle) => insideRect(point, obstacle, 0.18 + radius * 0.9))) {
+  if (map.obstacles.some((obstacle) => insideRect(point, obstacle, 0.18 + radius))) {
     return false;
   }
 
-  if ((map.blockedZones ?? []).some((zone) => insideRect(point, zone, 0.12 + radius * 0.8))) {
+  if ((map.blockedZones ?? []).some((zone) => insideRect(point, zone, 0.12 + radius))) {
     return false;
   }
 
   return !occupied.some((asset) => {
-    const clearance = radius * 0.55 + asset.radius * 0.55 + 0.3;
+    const clearance = radius + asset.radius + 0.3;
     return Math.hypot(x - asset.x, z - asset.z) < clearance;
   });
 }
