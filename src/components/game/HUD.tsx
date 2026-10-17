@@ -509,7 +509,7 @@ export function HUD({
               </div>
               <span className="rw-round-remaining">
                 {state.endlessMode
-                  ? "ENDLESS MODE"
+                  ? "SURVIVE"
                   : roundsRemaining === 0
                     ? "LAST ROUND"
                     : `${roundsRemaining} ${roundsRemaining === 1 ? "ROUND" : "ROUNDS"} LEFT`}
