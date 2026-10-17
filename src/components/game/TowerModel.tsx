@@ -2,12 +2,14 @@ import { useFrame } from "@react-three/fiber";
 import { useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import type { Tower } from "@/game/engine";
+import { getTowerAnticipation, getTowerShotKick, TOWER_ANIMATION_PROFILES } from "@/game/towerAnimation";
 
 type TowerModelProps = {
   tower: Tower;
   accent: string;
   level: number;
   bodyColor: string;
+  reducedMotion?: boolean;
 };
 
 function AccentMaterial({ color, glow = 0.25 }: { color: string; glow?: number }) {
@@ -200,10 +202,11 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
   }
 }
 
-export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps) {
+export function TowerModel({ tower, accent, level, bodyColor, reducedMotion = false }: TowerModelProps) {
   const rig = useRef<THREE.Group>(null);
   const weapon = useRef<THREE.Group>(null);
   const weaponBasePosition = useRef<THREE.Vector3 | null>(null);
+  const weaponBaseRotation = useRef<THREE.Euler | null>(null);
   const signature = useRef<THREE.Group>(null);
   const muzzle = useRef<THREE.Mesh>(null);
   const muzzleSecondary = useRef<THREE.Mesh>(null);
@@ -213,9 +216,8 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const identityHalo = useRef<THREE.Mesh>(null);
   const idleSeed = tower.id * 0.71;
   const baseScale = 1 + Math.min(level - 1, 8) * 0.025;
-  const signatureSpin =
-    tower.kind === "tesla" ? 0.52 : tower.kind === "laser" ? -0.24 : tower.kind === "freezer" ? 0.18 :
-    tower.kind === "rocket" ? -0.12 : tower.kind === "flamethrower" ? 0.1 : 0.07;
+  const animation = TOWER_ANIMATION_PROFILES[tower.kind];
+  const motionScale = reducedMotion ? 0.35 : 1;
 
   const primary = bodyColor || "#6d7477";
   const secondary = bodyColor ? "#d8d2c5" : "#b5b0a3";
@@ -224,56 +226,97 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const bob = Math.sin(t * 2.1 + idleSeed) * 0.035;
+    const recoil = THREE.MathUtils.clamp(Number.isFinite(tower.recoil) ? tower.recoil : 0, 0, 1);
+    const shotKick = getTowerShotKick(recoil);
+    // The simulation resets cooldown on the actual shot frame. Attenuating wind-up
+    // by recoil guarantees the weapon's authored muzzle transform at launch.
+    const anticipation =
+      getTowerAnticipation(tower.cooldown, tower.targetId !== undefined) * (1 - recoil);
+    const motion = Math.max(recoil, anticipation);
+    const bob =
+      Math.sin(t * animation.idleSpeed + idleSeed) *
+      animation.idleAmplitude *
+      motionScale *
+      (1 - recoil);
+    const idleSway =
+      Math.sin(t * animation.idleSpeed * 0.62 + idleSeed) *
+      animation.idleSway *
+      motionScale *
+      (1 - motion);
+
     if (rig.current) {
-      const punch = Math.max(0, tower.recoil);
-      rig.current.position.y = bob + punch * 0.025;
+      // Recoil is zero on the shot frame and builds immediately afterward, rather
+      // than shifting/scaling the muzzle away from the projectile's spawn point.
+      rig.current.position.y =
+        bob + anticipation * animation.anticipationLift * motionScale + shotKick * animation.bodyKick;
       rig.current.scale.set(
-        baseScale * (1 + punch * 0.035),
-        baseScale * (1 - punch * 0.065),
-        baseScale * (1 + punch * 0.035),
+        baseScale * (1 + shotKick * animation.bodySquash * 0.45),
+        baseScale * (1 - shotKick * animation.bodySquash),
+        baseScale * (1 + shotKick * animation.bodySquash * 0.45),
       );
-      rig.current.rotation.z = Math.sin(t * 13 + idleSeed) * punch * 0.035;
+      rig.current.rotation.x = anticipation * animation.anticipationPitch * motionScale;
+      rig.current.rotation.z =
+        idleSway + shotKick * Math.sin(t * 19 + idleSeed) * animation.recoilRoll;
     }
+
     if (weapon.current) {
       if (!weaponBasePosition.current) weaponBasePosition.current = weapon.current.position.clone();
+      if (!weaponBaseRotation.current) weaponBaseRotation.current = weapon.current.rotation.clone();
       const base = weaponBasePosition.current;
-      weapon.current.position.set(base.x, base.y + tower.recoil * 0.018, base.z - tower.recoil * 0.18);
+      const rotation = weaponBaseRotation.current;
+      weapon.current.position.set(
+        base.x,
+        base.y + anticipation * animation.anticipationLift * motionScale + shotKick * animation.bodyKick * 0.25,
+        base.z - shotKick * animation.weaponRecoil,
+      );
+      weapon.current.rotation.set(
+        rotation.x + anticipation * animation.anticipationPitch * motionScale,
+        rotation.y,
+        rotation.z,
+      );
     }
+
     if (signature.current) {
-      signature.current.rotation.y = t * signatureSpin;
-      signature.current.scale.setScalar(1 + Math.sin(t * 3.2 + idleSeed) * 0.025);
+      signature.current.rotation.y = t * animation.signatureSpin * motionScale;
+      signature.current.scale.setScalar(1 + Math.sin(t * 3.2 + idleSeed) * 0.025 * motionScale);
     }
     if (core.current) {
-      const pulse = 1 + Math.sin(t * 5 + idleSeed) * 0.1;
+      const pulse = 1 + Math.sin(t * 5 + idleSeed) * 0.1 * motionScale;
       core.current.scale.setScalar(pulse);
       const material = core.current.material as THREE.MeshStandardMaterial;
-      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8 + ((tower.surge ?? 0) > 0 ? 0.6 : 0);
+      material.emissiveIntensity =
+        0.7 + recoil * 0.8 + ((tower.surge ?? 0) > 0 ? 0.6 : 0);
     }
     if (identityCore.current) {
-      const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08;
+      const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08 * motionScale;
       identityCore.current.scale.setScalar(pulse);
       const material = identityCore.current.material as THREE.MeshStandardMaterial;
-      material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.55;
+      material.emissiveIntensity = 0.7 + recoil * 0.55;
     }
     if (identityHalo.current) {
-      identityHalo.current.rotation.z = t * 0.5 + idleSeed;
-      identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04);
+      identityHalo.current.rotation.z = t * 0.5 * motionScale + idleSeed;
+      identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04 * motionScale);
     }
-    const flash = Math.max(0, tower.recoil - 0.12) * 1.4;
+
+    // A short flash is tied to the simulation's shot pulse. All muzzle meshes
+    // remain at their exact authored offsets when recoil first becomes 1.
+    const flash = Math.max(0, recoil - 0.72) * 2.4;
     if (muzzle.current) {
-      muzzle.current.visible = tower.recoil > 0.12;
-      muzzle.current.scale.setScalar(0.45 + flash);
+      muzzle.current.visible = recoil > 0.72;
+      muzzle.current.scale.setScalar(0.7 + flash);
     }
     if (muzzleSecondary.current) {
-      const active = tower.recoil > 0.12 && ((tower.kind === "rifleman" && tower.b >= 1) || (tower.kind === "shotgunner" && tower.a >= 2));
+      const active =
+        recoil > 0.72 &&
+        ((tower.kind === "rifleman" && tower.b >= 1) ||
+          (tower.kind === "shotgunner" && tower.a >= 2));
       muzzleSecondary.current.visible = active;
-      muzzleSecondary.current.scale.setScalar(0.45 + flash);
+      muzzleSecondary.current.scale.setScalar(0.7 + flash);
     }
     if (muzzleTertiary.current) {
-      const active = tower.recoil > 0.12 && tower.kind === "rifleman" && tower.b >= 4;
+      const active = recoil > 0.72 && tower.kind === "rifleman" && tower.b >= 4;
       muzzleTertiary.current.visible = active;
-      muzzleTertiary.current.scale.setScalar(0.45 + flash);
+      muzzleTertiary.current.scale.setScalar(0.7 + flash);
     }
   });
 
