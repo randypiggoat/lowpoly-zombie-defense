@@ -877,7 +877,7 @@ export function GameCanvas() {
               <MenuTile title="Field Knowledge" subtitle="Buy permanent upgrades." onClick={() => setScreen("knowledge")} />
               <MenuTile title="Collection" subtitle="View tower and zombie skins." onClick={() => setScreen("collection")} />
             </div>
-            <div className="rw-hub-note"><Sparkles size={18} /><p><strong>Use different towers to counter different threats.</p></div>
+            <div className="rw-hub-note"><Sparkles size={18} /><p>Use different towers to counter different threats.</p></div>
           </main>
         </div>
       )}
