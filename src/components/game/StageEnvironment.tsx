@@ -1,4 +1,7 @@
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
 import type { ReactNode } from "react";
+import * as THREE from "three";
 import type {
   EnvironmentLandmark,
   EnvironmentProp,
@@ -37,7 +40,17 @@ function Mat({ color }: { color: string }) {
   return <meshStandardMaterial color={color} flatShading />;
 }
 
-function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }) {
+function Tree({
+  pine = false,
+  dead = false,
+  variant = 0,
+}: {
+  pine?: boolean;
+  dead?: boolean;
+  variant?: number;
+}) {
+  const foliageScale = variant === 1 ? 0.92 : variant === 2 ? 1.1 : 1;
+  const foliageOffset = variant === 1 ? 0.16 : variant === 2 ? -0.18 : 0;
   return (
     <>
       <mesh position={[0, pine ? 1 : 0.6, 0]}>
@@ -57,14 +70,35 @@ function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }
         </>
       ) : pine ? (
         <>
-          <mesh position={[0, 2, 0]}><coneGeometry args={[0.95, 1.8, 6]} /><Mat color={C.pine} /></mesh>
-          <mesh position={[0, 2.75, 0]}><coneGeometry args={[0.72, 1.35, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 3.35, 0]}><coneGeometry args={[0.45, 0.95, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 2, 0]}>
+            <coneGeometry args={[0.95 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.pine} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.75, 0]}>
+            <coneGeometry args={[0.72 * foliageScale, 1.35, 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset, 3.35, 0]}>
+            <coneGeometry args={[0.45 * foliageScale, 0.95, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
         </>
       ) : (
         <>
-          <mesh position={[0, 1.55, 0]}><coneGeometry args={[1.05, 1.8, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 2.3, 0]}><coneGeometry args={[0.75, 1.25, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 1.55, variant === 2 ? 0.1 : 0]}>
+            <coneGeometry args={[1.05 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.3, 0]}>
+            <coneGeometry args={[0.75 * foliageScale, 1.25, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
+          {variant !== 0 && (
+            <mesh position={[foliageOffset * 1.8 + 0.34, 1.42, -0.16]}>
+              <coneGeometry args={[0.48, 0.82, 5]} />
+              <Mat color={variant === 1 ? C.leaf2 : C.leaf} />
+            </mesh>
+          )}
         </>
       )}
     </>
@@ -190,13 +224,17 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   }
 }
 
+function treeVariant(item: EnvironmentProp) {
+  return Math.abs(Math.floor(item.position[0] * 17 + item.position[2] * 31)) % 3;
+}
+
 export function EnvironmentPropMesh({ item }: { item: EnvironmentProp }) {
   let node: ReactNode;
   switch (item.kind) {
-    case "tree": node = <Tree />; break;
-    case "pine": node = <Tree pine />; break;
+    case "tree": node = <Tree variant={treeVariant(item)} />; break;
+    case "pine": node = <Tree pine variant={treeVariant(item)} />; break;
     case "palm": node = <Palm />; break;
-    case "dead-tree": node = <Tree dead />; break;
+    case "dead-tree": node = <Tree dead variant={treeVariant(item)} />; break;
     case "rock": node = <Rock />; break;
     case "boulder": node = <Rock big />; break;
     case "cactus": node = <Cactus />; break;
@@ -237,11 +275,67 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   }
 }
 
-export function StageEnvironment({ layout }: { layout: StageEnvironmentDefinition }) {
+const SWAYING_PROP_KINDS = new Set<EnvironmentPropKind>([
+  "tree",
+  "pine",
+  "palm",
+  "dead-tree",
+]);
+
+function SwayingEnvironmentPropMesh({
+  item,
+  reducedMotion,
+}: {
+  item: EnvironmentProp;
+  reducedMotion: boolean;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const phase = item.position[0] * 0.37 + item.position[2] * 0.19;
+  const localItem: EnvironmentProp = { ...item, position: [0, 0, 0] };
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    group.current.rotation.z = reducedMotion
+      ? 0
+      : Math.sin(clock.elapsedTime * 0.48 + phase) * 0.012;
+  });
+
+  return (
+    <group ref={group} position={item.position}>
+      <EnvironmentPropMesh item={localItem} />
+    </group>
+  );
+}
+
+export function EnvironmentPropVisual({
+  item,
+  reducedMotion = false,
+}: {
+  item: EnvironmentProp;
+  reducedMotion?: boolean;
+}) {
+  return SWAYING_PROP_KINDS.has(item.kind) ? (
+    <SwayingEnvironmentPropMesh item={item} reducedMotion={reducedMotion} />
+  ) : (
+    <EnvironmentPropMesh item={item} />
+  );
+}
+
+export function StageEnvironment({
+  layout,
+  reducedMotion = false,
+}: {
+  layout: StageEnvironmentDefinition;
+  reducedMotion?: boolean;
+}) {
   return (
     <group>
       {layout.props.map((item, index) => (
-        <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />
+        <EnvironmentPropVisual
+          key={`${item.kind}-${index}`}
+          item={item}
+          reducedMotion={reducedMotion}
+        />
       ))}
       <LandmarkMesh item={layout.landmark} />
     </group>
