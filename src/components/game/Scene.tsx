@@ -8,20 +8,25 @@ import {
   type EnemyHealthBarPresentation,
 } from "@/game/enemyPresentation";
 import { getSceneRenderQuality } from "@/game/renderQuality";
-import { getEnvironmentVisualProfile } from "@/game/environmentVisuals";
 import type { EnvironmentProp } from "@/game/stageEnvironments";
+import {
+  composeMapEnvironment,
+  createAmbientScenery,
+  createTerrainAccents,
+  type TerrainAccent,
+} from "@/game/mapScenery";
 import { ThemedRoads } from "./ThemedRoads";
 import { ThemedBuilding } from "./ThemedBuildings";
 import { ThemedBase } from "./ThemedBase";
 import { MapSpecialTerrain } from "./SpecialTerrain";
-import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
+import { canPlaceTower, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
 import { gorePartBit } from "@/game/enemyGore";
 import { zombieModelScale, zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
 import { RIFLEMAN_SQUAD_SUPPORT } from "@/game/towerUpgradeDesign";
-import { StageEnvironment, EnvironmentPropMesh } from "./StageEnvironment";
+import { EnvironmentArtToneProvider, StageEnvironment, EnvironmentPropVisual } from "./StageEnvironment";
 import { CombatVFX } from "./CombatVFX";
 import {
   TOWER_INFO,
@@ -213,32 +218,36 @@ export type Selection =
 
 /* ---------------- ground, path, props ---------------- */
 
-function Ground({ theme, map }: { theme: StageTheme; map: ReturnType<typeof getStageMapByStageId> }) {
-  const facets = useMemo(
-    () => Array.from({ length: 26 }, (_, i) => {
-      const a = (i / 26) * Math.PI * 2 + i;
-      const r = 12 + ((i * 7) % 22);
-      return { a, r, i };
-    }),
-    [],
-  );
-
+function Ground({
+  theme,
+  map,
+  accents,
+}: {
+  theme: StageTheme;
+  map: ReturnType<typeof getStageMapByStageId>;
+  accents: TerrainAccent[];
+}) {
   return (
     <group>
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[80, 80]} />
         <meshStandardMaterial color={theme.ground} flatShading />
       </mesh>
-      {facets.map(({ a, r, i }) => (
-        <mesh
-          key={i}
-          position={[Math.cos(a) * r, 0.02 + (i % 3) * 0.02, Math.sin(a) * r]}
-          rotation={[-Math.PI / 2, 0, a]}
-          receiveShadow
+      {accents.map(({ x, z, radius, rotation, variant }, index) => (
+        <group
+          key={"terrain-accent-" + index}
+          position={[x, 0.025 + (variant % 3) * 0.012, z]}
+          rotation-y={rotation}
         >
-          <circleGeometry args={[2.2 + (i % 4) * 0.9, 5]} />
-          <meshStandardMaterial color={i % 2 ? theme.groundAlt : theme.ground} flatShading />
-        </mesh>
+          <mesh rotation-x={-Math.PI / 2} receiveShadow>
+            <circleGeometry args={[radius, variant === 1 ? 6 : 5]} />
+            <meshStandardMaterial
+              color={variant === 1 ? theme.groundAlt : theme.ground}
+              flatShading
+              roughness={1}
+            />
+          </mesh>
+        </group>
       ))}
       <ThemedRoads map={map} theme={theme} />
     </group>
@@ -267,46 +276,14 @@ function MapObstacles({ map }: { map: ReturnType<typeof getStageMapByStageId> })
 
 
 
-function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof getStageMapByStageId> }) {
+function Scenery({
+  items,
+  reducedMotion,
+}: {
+  items: EnvironmentProp[];
+  reducedMotion: boolean;
+}) {
   const root = useRef<THREE.Group>(null);
-  const profile = getEnvironmentVisualProfile(map.environmentId);
-  const items = useMemo<EnvironmentProp[]>(() => {
-    const result: EnvironmentProp[] = [];
-    const kinds = profile.ambientKinds;
-    let seed = 13;
-    const rnd = () => {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
-    };
-
-    for (let attempt = 0; attempt < count * 4 && result.length < count; attempt++) {
-      const x = map.bounds.minX + 0.8 + rnd() * (map.bounds.maxX - map.bounds.minX - 1.6);
-      const z = map.bounds.minZ + 0.8 + rnd() * (map.bounds.maxZ - map.bounds.minZ - 1.6);
-      const clear =
-        distanceToPath(map, { x, z }) >= 3.45 &&
-        Math.hypot(x - map.base.x, z - map.base.z) >= 5.4 &&
-        !map.obstacles.some((obstacle) =>
-          x >= obstacle.x - obstacle.width / 2 - 1.35 &&
-          x <= obstacle.x + obstacle.width / 2 + 1.35 &&
-          z >= obstacle.z - obstacle.depth / 2 - 1.35 &&
-          z <= obstacle.z + obstacle.depth / 2 + 1.35,
-        ) &&
-        !(map.blockedZones ?? []).some((zone) =>
-          x >= zone.x - zone.width / 2 - 0.7 &&
-          x <= zone.x + zone.width / 2 + 0.7 &&
-          z >= zone.z - zone.depth / 2 - 0.7 &&
-          z <= zone.z + zone.depth / 2 + 0.7,
-        );
-      if (!clear || kinds.length === 0) continue;
-      result.push({
-        kind: kinds[Math.floor(rnd() * kinds.length)]!,
-        position: [x, 0, z],
-        scale: 0.68 + rnd() * 0.34,
-        rotation: rnd() * Math.PI * 2,
-      });
-    }
-    return result;
-  }, [count, map, profile]);
 
   useEffect(() => {
     root.current?.traverse((object) => {
@@ -317,7 +294,11 @@ function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof g
   return (
     <group ref={root}>
       {items.map((item, index) => (
-        <EnvironmentPropMesh key={"scenery-" + index} item={item} />
+        <EnvironmentPropVisual
+          key={"scenery-" + index}
+          item={item}
+          reducedMotion={reducedMotion}
+        />
       ))}
     </group>
   );
@@ -1521,6 +1502,15 @@ export const Scene = memo(function Scene({
   const renderQuality = useMemo(() => getSceneRenderQuality(size.width), [size.width]);
   const theme = useMemo(() => getStageTheme(stageId, endlessMode, bossTrial), [stageId, endlessMode, bossTrial]);
   const map = useMemo(() => getStageMapByStageId(stageId), [stageId]);
+  const environmentLayout = useMemo(() => composeMapEnvironment(map), [map]);
+  const sceneryItems = useMemo(
+    () => createAmbientScenery(map, renderQuality.sceneryCount, environmentLayout),
+    [map, renderQuality.sceneryCount, environmentLayout],
+  );
+  const terrainAccents = useMemo(
+    () => createTerrainAccents(map, 18, environmentLayout),
+    [map, environmentLayout],
+  );
   return (
     <>
       <color attach="background" args={[theme.sky]} />
@@ -1541,11 +1531,13 @@ export const Scene = memo(function Scene({
       <CameraRig reducedMotion={reducedMotion} />
       <Simulation paused={paused} />
       <group scale={0.74} position={[0, 0, -7]}>
-        <Ground theme={theme} map={map} />
-        <StageEnvironment environmentId={map.environmentId} />
+        <Ground theme={theme} map={map} accents={terrainAccents} />
+        <StageEnvironment layout={environmentLayout} reducedMotion={reducedMotion} />
         <MapSpecialTerrain map={map} />
         <MapObstacles map={map} />
-        <Scenery count={renderQuality.sceneryCount} map={map} />
+        <EnvironmentArtToneProvider environmentId={map.environmentId}>
+          <Scenery items={sceneryItems} reducedMotion={reducedMotion} />
+        </EnvironmentArtToneProvider>
         <ThemedBase position={map.base} environmentId={map.environmentId} />
         <BuildSurface
           map={map}

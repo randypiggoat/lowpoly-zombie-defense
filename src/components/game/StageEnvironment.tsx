@@ -1,11 +1,15 @@
+import { useFrame } from "@react-three/fiber";
+import { createContext, useContext, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
+import * as THREE from "three";
 import type {
   EnvironmentLandmark,
   EnvironmentProp,
   EnvironmentPropKind,
+  StageEnvironmentDefinition,
   StageEnvironmentId,
 } from "@/game/stageEnvironments";
-import { getStageEnvironment } from "@/game/stageEnvironments";
+import { getEnvironmentArtTone } from "@/game/environmentVisuals";
 
 const C = {
   wood: "#6f4c35",
@@ -34,11 +38,59 @@ const C = {
   sandbag: "#9a8a63",
 };
 
-function Mat({ color }: { color: string }) {
-  return <meshStandardMaterial color={color} flatShading />;
+const EnvironmentArtToneContext = createContext<StageEnvironmentId>("suburban");
+
+export function EnvironmentArtToneProvider({
+  environmentId,
+  children,
+}: {
+  environmentId: StageEnvironmentId;
+  children: ReactNode;
+}) {
+  return (
+    <EnvironmentArtToneContext.Provider value={environmentId}>
+      {children}
+    </EnvironmentArtToneContext.Provider>
+  );
 }
 
-function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }) {
+function Mat({
+  color,
+  transparent = false,
+  opacity = 1,
+}: {
+  color: string;
+  transparent?: boolean;
+  opacity?: number;
+}) {
+  const environmentId = useContext(EnvironmentArtToneContext);
+  const tonedColor = useMemo(() => {
+    const materialColor = new THREE.Color(color);
+    materialColor.lerp(new THREE.Color(getEnvironmentArtTone(environmentId)), 0.14);
+    return `#${materialColor.getHexString()}`;
+  }, [color, environmentId]);
+
+  return (
+    <meshStandardMaterial
+      color={tonedColor}
+      flatShading
+      transparent={transparent}
+      opacity={opacity}
+    />
+  );
+}
+
+function Tree({
+  pine = false,
+  dead = false,
+  variant = 0,
+}: {
+  pine?: boolean;
+  dead?: boolean;
+  variant?: number;
+}) {
+  const foliageScale = variant === 1 ? 0.92 : variant === 2 ? 1.1 : 1;
+  const foliageOffset = variant === 1 ? 0.16 : variant === 2 ? -0.18 : 0;
   return (
     <>
       <mesh position={[0, pine ? 1 : 0.6, 0]}>
@@ -58,14 +110,35 @@ function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }
         </>
       ) : pine ? (
         <>
-          <mesh position={[0, 2, 0]}><coneGeometry args={[0.95, 1.8, 6]} /><Mat color={C.pine} /></mesh>
-          <mesh position={[0, 2.75, 0]}><coneGeometry args={[0.72, 1.35, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 3.35, 0]}><coneGeometry args={[0.45, 0.95, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 2, 0]}>
+            <coneGeometry args={[0.95 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.pine} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.75, 0]}>
+            <coneGeometry args={[0.72 * foliageScale, 1.35, 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset, 3.35, 0]}>
+            <coneGeometry args={[0.45 * foliageScale, 0.95, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
         </>
       ) : (
         <>
-          <mesh position={[0, 1.55, 0]}><coneGeometry args={[1.05, 1.8, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 2.3, 0]}><coneGeometry args={[0.75, 1.25, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 1.55, variant === 2 ? 0.1 : 0]}>
+            <coneGeometry args={[1.05 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.3, 0]}>
+            <coneGeometry args={[0.75 * foliageScale, 1.25, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
+          {variant !== 0 && (
+            <mesh position={[foliageOffset * 1.8 + 0.34, 1.42, -0.16]}>
+              <coneGeometry args={[0.48, 0.82, 5]} />
+              <Mat color={variant === 1 ? C.leaf2 : C.leaf} />
+            </mesh>
+          )}
         </>
       )}
     </>
@@ -103,19 +176,19 @@ function Igloo() {
     <group>
       <mesh position={[0, 0.72, 0]} castShadow>
         <sphereGeometry args={[1.05, 8, 6]} />
-        <meshStandardMaterial color={C.ice2} flatShading />
+        <Mat color={C.ice2} />
       </mesh>
       <mesh position={[0, 0.43, 0.94]} rotation-z={Math.PI / 2}>
         <cylinderGeometry args={[0.25, 0.28, 0.62, 8]} />
-        <meshStandardMaterial color={C.ice} flatShading />
+        <Mat color={C.ice} />
       </mesh>
       <mesh position={[-0.72, 0.55, 0]} scale={[0.26, 0.18, 0.22]}>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={C.ice} flatShading />
+        <Mat color={C.ice} />
       </mesh>
       <mesh position={[0.72, 0.55, 0]} scale={[0.26, 0.18, 0.22]}>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={C.ice} flatShading />
+        <Mat color={C.ice} />
       </mesh>
     </group>
   );
@@ -132,10 +205,42 @@ function Cactus() {
 }
 
 function BoxProp({ barrel = false, color = C.wood2 }: { barrel?: boolean; color?: string }) {
-  return barrel ? (
-    <mesh position={[0, 0.45, 0]}><cylinderGeometry args={[0.46, 0.5, 0.9, 10]} /><Mat color={C.wood} /></mesh>
-  ) : (
-    <mesh position={[0, 0.48, 0]} rotation-y={0.18}><boxGeometry args={[0.88, 0.96, 0.88]} /><Mat color={color} /></mesh>
+  if (barrel) {
+    return (
+      <group>
+        <mesh position={[0, 0.45, 0]}>
+          <cylinderGeometry args={[0.46, 0.5, 0.9, 10]} />
+          <Mat color={C.wood} />
+        </mesh>
+        {[0.22, 0.68].map((y) => (
+          <mesh key={y} position={[0, y, 0]}>
+            <cylinderGeometry args={[0.505, 0.505, 0.055, 10]} />
+            <Mat color={C.metal2} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.91, 0]}>
+          <cylinderGeometry args={[0.44, 0.44, 0.035, 10]} />
+          <Mat color={color} />
+        </mesh>
+      </group>
+    );
+  }
+
+  return (
+    <group>
+      <mesh position={[0, 0.48, 0]} rotation-y={0.18}>
+        <boxGeometry args={[0.88, 0.96, 0.88]} />
+        <Mat color={color} />
+      </mesh>
+      <mesh position={[0, 0.48, 0.46]} rotation-z={0.64}>
+        <boxGeometry args={[1.08, 0.075, 0.045]} />
+        <Mat color={C.wood} />
+      </mesh>
+      <mesh position={[0, 0.48, 0.46]} rotation-z={-0.64}>
+        <boxGeometry args={[1.08, 0.075, 0.045]} />
+        <Mat color={C.wood} />
+      </mesh>
+    </group>
   );
 }
 
@@ -161,16 +266,52 @@ function Lamp() {
 function Car() {
   return (
     <group rotation-y={Math.PI / 2}>
-      <mesh position={[0, 0.55, 0]}><boxGeometry args={[2.2, 0.55, 1.05]} /><Mat color="#516875" /></mesh>
-      <mesh position={[0.22, 0.92, 0]}><boxGeometry args={[1.1, 0.35, 0.86]} /><Mat color={C.glass} /></mesh>
-      {[-0.78, 0.78].flatMap((x) => [-0.5, 0.5].map((z) => <mesh key={`${x}-${z}`} position={[x, 0.33, z]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.22, 0.22, 0.12, 8]} /><Mat color={C.dark} /></mesh>))}
+      <mesh position={[0, 0.55, 0]}>
+        <boxGeometry args={[2.2, 0.55, 1.05]} />
+        <Mat color="#516875" />
+      </mesh>
+      <mesh position={[0.22, 0.92, 0]}>
+        <boxGeometry args={[1.1, 0.35, 0.86]} />
+        <Mat color={C.glass} />
+      </mesh>
+      {[-0.78, 0.78].flatMap((x) =>
+        [-0.5, 0.5].map((z) => (
+          <mesh key={`${x}-${z}`} position={[x, 0.33, z]} rotation-z={Math.PI / 2}>
+            <cylinderGeometry args={[0.22, 0.22, 0.12, 8]} />
+            <Mat color={C.dark} />
+          </mesh>
+        )),
+      )}
+      {[-1, 1].flatMap((x) =>
+        [-0.33, 0.33].map((z) => (
+          <mesh key={`lamp-${x}-${z}`} position={[x * 1.05, 0.57, z]}>
+            <boxGeometry args={[0.1, 0.13, 0.055]} />
+            <Mat color={x > 0 ? C.gold : C.hazard} />
+          </mesh>
+        )),
+      )}
     </group>
   );
 }
 
 function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   switch (kind) {
-    case "container": return <mesh position={[0, 0.75, 0]}><boxGeometry args={[2.2, 1.5, 1]} /><Mat color={C.metal} /></mesh>;
+    case "container": return <group>
+      <mesh position={[0, 0.75, 0]}>
+        <boxGeometry args={[2.2, 1.5, 1]} />
+        <Mat color={C.metal} />
+      </mesh>
+      {[-0.56, 0.56].map((x) => (
+        <mesh key={x} position={[x, 0.75, 0.515]}>
+          <boxGeometry args={[0.055, 1.34, 0.035]} />
+          <Mat color={C.metal2} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.75, 0.524]}>
+        <boxGeometry args={[1.98, 0.075, 0.025]} />
+        <Mat color={C.hazard} />
+      </mesh>
+    </group>;
     case "ice": return <Rock ice />;
     case "crystal": return <Rock crystal />;
     case "dock": return <mesh position={[0, 0.35, 0]}><boxGeometry args={[2.2, 0.22, 1.3]} /><Mat color={C.wood} /></mesh>;
@@ -191,13 +332,23 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   }
 }
 
-export function EnvironmentPropMesh({ item }: { item: EnvironmentProp }) {
+function treeVariant(item: EnvironmentProp) {
+  return Math.abs(Math.floor(item.position[0] * 17 + item.position[2] * 31)) % 3;
+}
+
+export function EnvironmentPropMesh({
+  item,
+  variant = treeVariant(item),
+}: {
+  item: EnvironmentProp;
+  variant?: number;
+}) {
   let node: ReactNode;
   switch (item.kind) {
-    case "tree": node = <Tree />; break;
-    case "pine": node = <Tree pine />; break;
+    case "tree": node = <Tree variant={variant} />; break;
+    case "pine": node = <Tree pine variant={variant} />; break;
     case "palm": node = <Palm />; break;
-    case "dead-tree": node = <Tree dead />; break;
+    case "dead-tree": node = <Tree dead variant={variant} />; break;
     case "rock": node = <Rock />; break;
     case "boulder": node = <Rock big />; break;
     case "cactus": node = <Cactus />; break;
@@ -226,11 +377,38 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
     case "frozen-lab": return <group {...common}><mesh position={[0,1.25,0]}><boxGeometry args={[3.6,2.5,2.6]}/><Mat color={C.snow}/></mesh><mesh position={[0,2.65,0]}><boxGeometry args={[2.4,0.35,2.1]}/><Mat color={C.ice}/></mesh></group>;
     case "ice-cave": return <group {...common}>{[-1.5,0,1.5].map((x,i)=><mesh key={x} position={[x,1.8+(i===1?0.8:0),0]}><coneGeometry args={[1.5,3.8+(i===1?1:0),6]}/><Mat color={C.ice2}/></mesh>)}</group>;
     case "lighthouse": return <group {...common}><mesh position={[0,2.2,0]}><cylinderGeometry args={[0.7,1.05,4.4,8]}/><Mat color={C.snow}/></mesh><mesh position={[0,4.65,0]}><cylinderGeometry args={[0.78,0.82,0.5,8]}/><Mat color={C.hazard}/></mesh><mesh position={[0,5.15,0]}><coneGeometry args={[0.9,0.55,8]}/><Mat color={C.metal2}/></mesh></group>;
-    case "oasis": return <group {...common}><mesh position={[0,0.08,0]}><cylinderGeometry args={[2,2,0.12,16]}/><meshStandardMaterial color={C.water} transparent opacity={0.8}/></mesh><group position={[-1.2,0,0]}><Palm/></group><group position={[1.3,0,0.2]} scale={0.8}><Palm/></group></group>;
+    case "oasis": return <group {...common}><mesh position={[0,0.08,0]}><cylinderGeometry args={[2,2,0.12,16]}/><Mat color={C.water} transparent opacity={0.8} /></mesh><group position={[-1.2,0,0]}><Palm/></group><group position={[1.3,0,0.2]} scale={0.8}><Palm/></group></group>;
     case "canyon-bridge": return <group {...common}><mesh position={[0,1.2,0]}><boxGeometry args={[5.5,0.35,1.6]}/><Mat color={C.wood2}/></mesh>{[-2.2,2.2].map(x=><mesh key={x} position={[x,0.55,0]}><boxGeometry args={[0.3,1.5,1.1]}/><Mat color={C.stone2}/></mesh>)}</group>;
     case "mine-headframe": return <group {...common}>{[-1.4,1.4].map(x=><mesh key={x} position={[x,1.8,0]} rotation-z={x*0.16}><boxGeometry args={[0.3,3.6,0.3]}/><Mat color={C.wood}/></mesh>)}<mesh position={[0,3.1,0]}><boxGeometry args={[3.5,0.32,0.35]}/><Mat color={C.wood2}/></mesh></group>;
     case "radar-dish": return <group {...common}><mesh position={[0,1.4,0]}><cylinderGeometry args={[0.12,0.18,2.8,6]}/><Mat color={C.metal2}/></mesh><mesh position={[0,2.75,0.18]} scale={[1,0.65,0.35]} rotation-x={-0.55}><sphereGeometry args={[1,10,6]}/><Mat color={C.metal}/></mesh></group>;
-    case "skyscraper": return <group {...common}><mesh position={[0,4,0]}><boxGeometry args={[3,8,2.4]}/><Mat color={C.stone2}/></mesh><mesh position={[0,7.1,0]}><boxGeometry args={[2.2,0.25,1.8]}/><Mat color={C.neon}/></mesh></group>;
+    case "skyscraper": return (
+      <group {...common}>
+        <mesh position={[0, 4, 0]}>
+          <boxGeometry args={[3, 8, 2.4]} />
+          <Mat color={C.stone2} />
+        </mesh>
+        <mesh position={[0, 4, 1.235]}>
+          <boxGeometry args={[2.2, 5.6, 0.055]} />
+          <Mat color={C.glass} />
+        </mesh>
+        {[-0.7, 0.7].map((x) => (
+          <mesh key={x} position={[x, 4, 1.28]}>
+            <boxGeometry args={[0.07, 5.6, 0.035]} />
+            <Mat color={C.stone2} />
+          </mesh>
+        ))}
+        {[2.0, 3.35, 4.7, 6.0].map((y) => (
+          <mesh key={y} position={[0, y, 1.28]}>
+            <boxGeometry args={[2.2, 0.07, 0.035]} />
+            <Mat color={C.stone2} />
+          </mesh>
+        ))}
+        <mesh position={[0, 7.1, 0]}>
+          <boxGeometry args={[2.2, 0.25, 1.8]} />
+          <Mat color={C.neon} />
+        </mesh>
+      </group>
+    );
     case "foundry-furnace": return <group {...common}><mesh position={[0,2.1,0]}><cylinderGeometry args={[1.2,1.5,4.2,10]}/><Mat color={C.brick}/></mesh><mesh position={[0,4.25,0]}><cylinderGeometry args={[0.85,0.9,0.45,10]}/><Mat color={C.lava}/></mesh><mesh position={[0,4.75,0]}><cylinderGeometry args={[0.34,0.45,0.8,8]}/><Mat color={C.lava2}/></mesh></group>;
     case "cathedral": return <group {...common}><mesh position={[0,2.2,0]}><boxGeometry args={[3.6,4.4,2.4]}/><Mat color={C.stone2}/></mesh>{[-1.4,1.4].map(x=><mesh key={x} position={[x,4.2,0]}><coneGeometry args={[0.7,3.8,5]}/><Mat color={C.stone}/></mesh>)}</group>;
     case "volcano-crater": return <group {...common}><mesh position={[0,2.2,0]}><coneGeometry args={[2.8,4.4,8]}/><Mat color={C.sand}/></mesh><mesh position={[0,4.35,0]}><cylinderGeometry args={[1.25,1.45,0.25,10]}/><Mat color={C.dark}/></mesh><mesh position={[0,4.55,0]}><cylinderGeometry args={[0.8,0.8,0.3,10]}/><Mat color={C.lava2}/></mesh></group>;
@@ -238,12 +416,71 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   }
 }
 
-export function StageEnvironment({ environmentId }: { environmentId: StageEnvironmentId }) {
-  const environment = getStageEnvironment(environmentId);
+const SWAYING_PROP_KINDS = new Set<EnvironmentPropKind>([
+  "tree",
+  "pine",
+  "palm",
+  "dead-tree",
+]);
+
+function SwayingEnvironmentPropMesh({
+  item,
+  reducedMotion,
+}: {
+  item: EnvironmentProp;
+  reducedMotion: boolean;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const phase = item.position[0] * 0.37 + item.position[2] * 0.19;
+  const localItem: EnvironmentProp = { ...item, position: [0, 0, 0] };
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    group.current.rotation.z = reducedMotion
+      ? 0
+      : Math.sin(clock.elapsedTime * 0.48 + phase) * 0.012;
+  });
+
   return (
-    <group>
-      {environment.props.map((item, index) => <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />)}
-      <LandmarkMesh item={environment.landmark} />
+    <group ref={group} position={item.position}>
+      <EnvironmentPropMesh item={localItem} variant={treeVariant(item)} />
     </group>
+  );
+}
+
+export function EnvironmentPropVisual({
+  item,
+  reducedMotion = false,
+}: {
+  item: EnvironmentProp;
+  reducedMotion?: boolean;
+}) {
+  return SWAYING_PROP_KINDS.has(item.kind) ? (
+    <SwayingEnvironmentPropMesh item={item} reducedMotion={reducedMotion} />
+  ) : (
+    <EnvironmentPropMesh item={item} />
+  );
+}
+
+export function StageEnvironment({
+  layout,
+  reducedMotion = false,
+}: {
+  layout: StageEnvironmentDefinition;
+  reducedMotion?: boolean;
+}) {
+  return (
+    <EnvironmentArtToneProvider environmentId={layout.id}>
+      <group>
+        {layout.props.map((item, index) => (
+          <EnvironmentPropVisual
+            key={`${item.kind}-${index}`}
+            item={item}
+            reducedMotion={reducedMotion}
+          />
+        ))}
+        <LandmarkMesh item={layout.landmark} />
+      </group>
+    </EnvironmentArtToneProvider>
   );
 }
