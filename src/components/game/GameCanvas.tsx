@@ -780,7 +780,7 @@ export function GameCanvas() {
               <div className="rw-brand-lockup">
                 <span className="rw-brand-emblem"><ShieldMark size={25} /></span>
                 <div className="min-w-0">
-                  <p className="rw-eyebrow">LAST DEFENSE NETWORK</p>
+                  <p className="rw-eyebrow">FIELD COMMAND</p>
                   <h1 className="rw-brand-title">ROTWOOD <span>DEFENSE</span></h1>
                 </div>
               </div>
@@ -792,17 +792,17 @@ export function GameCanvas() {
               <div className="rw-hero-art"><OutbreakIllustration /></div>
               <div className="rw-hero-scrim" aria-hidden="true" />
               <div className="rw-hero-content">
-                <p className="rw-eyebrow rw-hero-eyebrow"><span className="rw-live-dot" /> CONTAINMENT ALERT · SECTOR 04</p>
+                <p className="rw-eyebrow rw-hero-eyebrow"><span className="rw-live-dot" /> SECTOR 04 · DEFENSE ALERT</p>
                 <h2 id="rw-home-hero-title">THE LAST LIGHT<br /><span>HOLDS.</span></h2>
-                <p className="rw-hero-copy">Build your defenses. Hold the line. Survive the night.</p>
-                <div className="rw-sector-stamp"><span>RW-04</span><span>THREAT LEVEL: HIGH</span></div>
+                <p className="rw-hero-copy">Build. Defend. Survive.</p>
+                <div className="rw-sector-stamp"><span>RW-04</span><span>THREAT: HIGH</span></div>
               </div>
             </section>
             <section className="rw-player-strip" aria-label="Player progress and resources">
               <div className="rw-player-level">
                 <span className="rw-level-token"><span>LVL</span>{player.level}</span>
                 <div className="rw-level-progress">
-                  <div className="rw-level-row"><span>DEFENSE RANK</span><span>{currentLevelXp} / {currentLevelTarget} XP</span></div>
+                  <div className="rw-level-row"><span>RANK</span><span>{currentLevelXp} / {currentLevelTarget} XP</span></div>
                   <div className="rw-xp-track"><span style={{ width: Math.min(100, (currentLevelXp / Math.max(1, currentLevelTarget)) * 100) + "%" }} /></div>
                 </div>
               </div>
@@ -815,7 +815,7 @@ export function GameCanvas() {
             <section className="rw-deploy-panel rotwood-card" aria-label="Recommended defense mission">
               <div className="rw-deploy-heading">
                 <div className="min-w-0">
-                  <p className="rw-eyebrow">CURRENT DIRECTIVE</p>
+                  <p className="rw-eyebrow">NEXT MISSION</p>
                   <h2>STAGE {recommendedStage.stageNumber}</h2>
                   <p className="rw-mission-name">{recommendedStage.name} <span>·</span> {recommendedStage.difficulty}</p>
                 </div>
@@ -823,7 +823,7 @@ export function GameCanvas() {
                   <span>★</span><strong>{recommendedStage.stars ? "×" + recommendedStage.stars : "NEW"}</strong>
                 </div>
               </div>
-              <p className="rw-next-unlock">{nextTower ? "NEXT UNLOCK: " + TOWER_INFO[nextTower.kind].name + " · LEVEL " + nextTower.level : "FULL ROSTER · ALL TOWERS UNLOCKED"}</p>
+              <p className="rw-next-unlock">{nextTower ? "NEXT: " + TOWER_INFO[nextTower.kind].name + " · LEVEL " + nextTower.level : "ALL TOWERS UNLOCKED"}</p>
               <ScreenButton className="rw-deploy-button" onClick={() => {
                 resetGameplayState();
                 setActiveStageId(recommendedStage.id);
@@ -831,13 +831,13 @@ export function GameCanvas() {
                 game.startStage(recommendedStage);
                 setScreen("gameplay");
               }}>
-                <span>{isFirstRun ? "DEFEND NOW" : "CONTINUE DEFENSE"}</span><Swords size={19} />
+                <span>{isFirstRun ? "DEFEND NOW" : "CONTINUE"}</span><Swords size={19} />
               </ScreenButton>
             </section>
             <section className="rw-home-navigation" aria-labelledby="rw-nav-title">
               <div className="rw-section-heading">
-                <div><p className="rw-eyebrow">TACTICAL NETWORK</p><h2 id="rw-nav-title">Command Center</h2></div>
-                <span>SELECT DESTINATION</span>
+                <div><p className="rw-eyebrow">TACTICAL NETWORK</p><h2 id="rw-nav-title">Quick Menu</h2></div>
+                <span>CHOOSE A MODE</span>
               </div>
               <div className="rw-menu-grid">
                 <HomeShortcut title="Operations" subtitle="Campaigns & combat modes" icon={<Swords size={20} />} onClick={() => setScreen("operations")} />
@@ -854,14 +854,14 @@ export function GameCanvas() {
       {screen === "operations" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
-            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 01</p><h1>Operations</h1><p>Pick a deployment. Every route leads to a different kind of fight.</p></header>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 01</p><h1>Operations</h1><p>Choose your next fight.</p></header>
             <div className="rw-hub-list">
-              <MenuTile title="Campaign" subtitle="Structured stages, stars, and tower unlocks." onClick={() => setScreen("stage-select")} />
-              <MenuTile title="Endless Siege" subtitle="Push your build as far as it can go." onClick={() => setScreen("endless-select")} />
-              <MenuTile title="Boss Trials" subtitle="Take on the weekly boss and its mastery rules." onClick={() => setScreen("boss-trial-select")} />
-              <MenuTile title="Side Operations" subtitle="Short resource runs and focused challenges." onClick={() => setScreen("side-mode-select")} />
-              <MenuTile title="Live Events" subtitle="Rotating objectives and seasonal milestones." {...(readyEventCount > 0 ? { badge: "READY · " + readyEventCount } : {})} onClick={() => setScreen("events")} />
+              <MenuTile title="Campaign" subtitle="Play stages, earn stars, unlock towers." onClick={() => setScreen("stage-select")} />
+              <MenuTile title="Endless Siege" subtitle="Survive as long as you can." onClick={() => setScreen("endless-select")} />
+              <MenuTile title="Boss Trials" subtitle="Fight a tougher boss each week." onClick={() => setScreen("boss-trial-select")} />
+              <MenuTile title="Side Operations" subtitle="Quick runs and special challenges." onClick={() => setScreen("side-mode-select")} />
+              <MenuTile title="Live Events" subtitle="New goals and seasonal rewards." {...(readyEventCount > 0 ? { badge: "READY · " + readyEventCount } : {})} onClick={() => setScreen("events")} />
             </div>
           </main>
         </div>
@@ -870,14 +870,14 @@ export function GameCanvas() {
       {screen === "arsenal" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
-            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 02</p><h1>Armory</h1><p>Know your tools before the next wave reaches the walls.</p></header>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 02</p><h1>Armory</h1><p>Towers, roles, and upgrades.</p></header>
             <div className="rw-hub-list">
-              <MenuTile title="Tower Armory" subtitle="Browse towers, roles, unlocks, and upgrade paths." onClick={() => setScreen("towers")} />
-              <MenuTile title="Field Knowledge" subtitle="Spend permanent knowledge on your long-term strategy." onClick={() => setScreen("knowledge")} />
-              <MenuTile title="Collection" subtitle="View your earned tower and zombie cosmetics." onClick={() => setScreen("collection")} />
+              <MenuTile title="Tower Armory" subtitle="Browse towers and upgrade paths." onClick={() => setScreen("towers")} />
+              <MenuTile title="Field Knowledge" subtitle="Buy permanent upgrades." onClick={() => setScreen("knowledge")} />
+              <MenuTile title="Collection" subtitle="View tower and zombie skins." onClick={() => setScreen("collection")} />
             </div>
-            <div className="rw-hub-note"><Sparkles size={18} /><p><strong>Build with intent.</strong><br />Different towers solve different threats. A balanced defense gives you more answers when the horde changes.</p></div>
+            <div className="rw-hub-note"><Sparkles size={18} /><p><strong>Use different towers to counter different threats.</p></div>
           </main>
         </div>
       )}
@@ -885,11 +885,11 @@ export function GameCanvas() {
       {screen === "field-intel" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
-            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 03</p><h1>Field Intel</h1><p>Your next objective, recent milestones, and the progress worth chasing.</p></header>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 03</p><h1>Field Intel</h1><p>Track goals and claim rewards.</p></header>
             <div className="rw-hub-list">
-              <MenuTile title="Daily Missions" subtitle="Complete field tasks and claim available rewards." {...(readyMissionCount > 0 ? { badge: "READY · " + readyMissionCount } : {})} onClick={() => setScreen("missions")} />
-              <MenuTile title="Achievements" subtitle="Track milestones earned across your defenses." {...(readyAchievementCount > 0 ? { badge: "READY · " + readyAchievementCount } : {})} onClick={() => setScreen("achievements")} />
+              <MenuTile title="Daily Missions" subtitle="Finish missions and claim rewards." {...(readyMissionCount > 0 ? { badge: "READY · " + readyMissionCount } : {})} onClick={() => setScreen("missions")} />
+              <MenuTile title="Achievements" subtitle="See the milestones you've earned." {...(readyAchievementCount > 0 ? { badge: "READY · " + readyAchievementCount } : {})} onClick={() => setScreen("achievements")} />
             </div>
           </main>
         </div>
@@ -898,12 +898,12 @@ export function GameCanvas() {
       {screen === "supply-depot" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
-            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 04</p><h1>Supply Depot</h1><p>Collect the supplies you have earned. Optional purchases never replace progression earned through play.</p></header>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 04</p><h1>Supply Depot</h1><p>Claim earned rewards. Purchases are optional.</p></header>
             <section className="rw-supply-card">
               <div className="rw-supply-icon"><Gift size={21} /></div>
               <div className="rw-supply-copy">
-                <p className="rw-eyebrow">DAILY SUPPLY DROP</p><h2>DAY {player.loginCycleDay}/7 · {dailyLoginReward.title}</h2><p>{dailyLoginReward.reward.label}</p>
+                <p className="rw-eyebrow">DAILY REWARD</p><h2>DAY {player.loginCycleDay}/7 · {dailyLoginReward.title}</h2><p>{dailyLoginReward.reward.label}</p>
               </div>
               <button type="button" disabled={!dailyLoginAvailable} onPointerDown={() => sfx("uiClick")} onClick={() => {
                 if (!profile.claimDailyLoginReward()) return;
@@ -914,7 +914,7 @@ export function GameCanvas() {
               <section className="rw-supply-card rw-bonus-card">
                 <div className="rw-supply-icon"><Sparkles size={21} /></div>
                 <div className="rw-supply-copy">
-                  <p className="rw-eyebrow">VOLUNTARY DAILY BONUS</p><h2>+150 CREDITS · +1 GEM</h2><p>One optional rewarded ad each day.</p>
+                  <p className="rw-eyebrow">OPTIONAL DAILY BONUS</p><h2>+150 CREDITS · +1 GEM</h2><p>One optional rewarded ad each day.</p>
                 </div>
                 <button type="button" disabled={!dailyBonusAvailable} onPointerDown={() => sfx("uiClick")} onClick={async () => {
                   const { showRewarded } = await import("@/game/monetization");
@@ -923,8 +923,8 @@ export function GameCanvas() {
                 }} className="rotwood-button rotwood-button-secondary rw-supply-action">{dailyBonusAvailable ? "WATCH" : "DONE"}</button>
               </section>
             )}
-            <div className="rw-hub-list rw-supply-shop"><MenuTile title="Shop & Optional Extras" subtitle="Cosmetics, support options, and available purchases." onClick={() => setScreen("shop")} /></div>
-            <p className="rw-supply-footnote"><Coins size={14} /> Credits and gems earned through play remain central to progression.</p>
+            <div className="rw-hub-list rw-supply-shop"><MenuTile title="Shop" subtitle="Cosmetics, support options, and available purchases." onClick={() => setScreen("shop")} /></div>
+            <p className="rw-supply-footnote"><Coins size={14} /> Earn credits and gems by playing.</p>
           </main>
         </div>
       )}
@@ -1716,7 +1716,7 @@ export function GameCanvas() {
                         </button>
                       ) : (
                         <div className="rounded-xl bg-black/20 px-3 py-2 text-center text-[10px] leading-tight text-panel-muted">
-                          Purchase activates in the native mobile store build.
+                          Purchases are available in the mobile app.
                         </div>
                       )}
                     </div>
@@ -1749,7 +1749,7 @@ export function GameCanvas() {
                 onClick={() => profile.setReducedMotion(!player.reducedMotion)}
                 variant="secondary"
               >
-                Reduced Motion: {player.reducedMotion ? "On" : "Off"}
+                Reduce Motion: {player.reducedMotion ? "On" : "Off"}
               </ScreenButton>
               <ScreenButton onClick={closeSettings} variant="secondary">
                 ← BACK
@@ -1769,7 +1769,7 @@ export function GameCanvas() {
                 ? <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
                 : activeSideMode
                   ? <p className="mt-1 text-center text-sm text-panel-muted">{activeSideMode.name} · {activeSideMode.category === "resource" ? "Resource Ops" : activeSideMode.category === "challenge" ? "Challenge Gauntlet" : "Seasonal Event"}</p>
-                  : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
+                  : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "You held the line. Rewards earned." : "The horde got through. Try a different tower mix."}</p>}
             {lastReward && !state.continuedAfterVictory ? (
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-2xl bg-black/30 p-3 text-center"><p className="font-display text-xl text-panel-foreground">+{lastReward.coins}</p><p className="text-[9px] uppercase tracking-wider text-panel-muted">Credits</p></div>
@@ -1779,7 +1779,7 @@ export function GameCanvas() {
             ) : null}
             {state.continuedAfterVictory ? (
               <p className="mt-3 rounded-xl bg-black/25 px-3 py-2 text-center text-xs text-panel-muted">
-                Endless record saved. No extra player XP or repeat campaign rewards are granted.
+                Endless record saved. No extra player XP or campaign rewards in Endless.
               </p>
             ) : null}
             <div className="mt-3 rounded-2xl bg-black/25 p-3 text-center">
@@ -1800,7 +1800,7 @@ export function GameCanvas() {
             </div>
             {lastReward?.stageCompleted ? (
               <div className="mt-3 rounded-2xl bg-black/30 p-3 text-sm text-panel-foreground">
-                <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Stage goals</p>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-panel-muted">Goals</p>
                 <div className="mt-1 space-y-1">
                   {evaluateStageObjectives(activeStage.objectives, { stageCompleted: true, baseHealth: state.baseHp, baseMaxHealth: state.baseMaxHp, towersPlaced: state.towersPlaced, maxKillStreak: state.maxKillStreak, uniqueTowerKinds: state.uniqueTowerKinds.length }).results.map((result) => (
                     <p key={result.objective.id}>{result.passed ? "★" : "☆"} {result.objective.label}</p>
@@ -1821,8 +1821,8 @@ export function GameCanvas() {
               </div>
             ) : (
               <div className="mt-3 rounded-2xl border border-accent/15 bg-accent/5 p-3 text-center">
-                <p className="font-display text-lg text-accent">FULL ROSTER</p>
-                <p className="text-[10px] text-panel-muted">All towers unlocked. Chase mastery and cosmetics next.</p>
+                <p className="font-display text-lg text-accent">ALL TOWERS UNLOCKED</p>
+                <p className="text-[10px] text-panel-muted">All towers unlocked. Try mastery and skins.</p>
               </div>
             )}
             {state.stageWon && !activeSideMode && !state.endlessMode && !state.bossTrial ? (() => {
@@ -1846,9 +1846,9 @@ export function GameCanvas() {
             ) : null}
             {game.canContinueAfterVictory() ? (
               <div className="mt-3 rounded-2xl border border-accent/25 bg-accent/10 p-3">
-                <p className="font-display text-base tracking-wide text-accent">YOUR DEFENSE CAN GO FURTHER</p>
+                <p className="font-display text-base tracking-wide text-accent">KEEP GOING</p>
                 <p className="mt-1 text-xs leading-relaxed text-panel-muted">
-                  Keep your current towers, upgrades, scrap, and base health. Endless waves grow tougher over time; continuing grants no additional player-level XP.
+                  Keep your towers, upgrades, scrap, and lives. Waves get tougher. Endless play gives no extra player XP.
                 </p>
                 <ScreenButton onClick={() => {
                   if (!game.continueAfterVictory()) return;
@@ -1884,7 +1884,7 @@ export function GameCanvas() {
               {state.endlessMode ? (
                 <ScreenButton onClick={() => {
                   if (game.endEndlessRun()) setOverlay(null);
-                }} variant="secondary">END ENDLESS RUN</ScreenButton>
+                }} variant="secondary">END RUN</ScreenButton>
               ) : null}
               <ScreenButton onClick={() => setOverlay("confirm-restart")} variant="secondary">
                 RESTART
@@ -1907,13 +1907,13 @@ export function GameCanvas() {
         <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-3">
           <ScreenCard>
             <h3 className="text-center font-display text-2xl tracking-wide text-panel-foreground">
-              Restart Stage {activeStageId}?
+              Restart this level?
             </h3>
             <p className="mt-2 text-center text-sm text-panel-muted">
-              Current run progress will be lost.
+              This run will be lost.
             </p>
             <div className="mt-4 space-y-2">
-              <ScreenButton onClick={() => startStage(activeStageId)}>YES, RESTART</ScreenButton>
+              <ScreenButton onClick={() => startStage(activeStageId)}>RESTART</ScreenButton>
               <ScreenButton onClick={() => setOverlay("pause")} variant="secondary">
                 ← BACK
               </ScreenButton>
