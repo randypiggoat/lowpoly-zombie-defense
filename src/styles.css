@@ -1112,3 +1112,88 @@
     outline-offset:1px;
   }
 }
+
+
+/* Path-specific upgrade feedback: progress belongs to the real A/B tier state. */
+@layer components {
+  .rotwood-app .rotwood-upgrade-path {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, oklch(0.22 0.028 252 / 0.96), oklch(0.13 0.02 250 / 0.98)) !important;
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.045), 0 6px 16px oklch(0 0 0 / 0.12);
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="a"] {
+    border-color: oklch(0.82 0.15 80 / 0.23) !important;
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="b"] {
+    border-color: oklch(0.77 0.12 185 / 0.25) !important;
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="a"]::before,
+  .rotwood-app .rotwood-upgrade-path[data-path="b"]::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 2px;
+    pointer-events: none;
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="a"]::before {
+    background: var(--rw-gold);
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="b"]::before {
+    background: oklch(0.78 0.12 185);
+  }
+
+  .rotwood-app .rotwood-path-meter {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin: 0.5rem 0 0.6rem;
+    padding-left: 1px;
+  }
+
+  .rotwood-app .rotwood-path-meter-segment {
+    display: block;
+    height: 4px;
+    border-radius: 999px;
+    background: oklch(0.34 0.025 250);
+    box-shadow: inset 0 1px 1px oklch(0 0 0 / 0.24);
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="a"] .rotwood-path-meter-segment[data-complete="true"] {
+    background: linear-gradient(90deg, oklch(0.72 0.13 70), oklch(0.87 0.16 84));
+    box-shadow: 0 0 7px oklch(0.82 0.15 80 / 0.14);
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="b"] .rotwood-path-meter-segment[data-complete="true"] {
+    background: linear-gradient(90deg, oklch(0.62 0.12 190), oklch(0.84 0.1 185));
+    box-shadow: 0 0 7px oklch(0.77 0.12 185 / 0.14);
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="b"] .rotwood-upgrade-buy {
+    border: 1px solid oklch(0.9 0.08 185 / 0.3);
+    background: linear-gradient(180deg, oklch(0.84 0.1 185), oklch(0.68 0.12 190)) !important;
+    color: oklch(0.2 0.03 205) !important;
+    box-shadow: inset 0 1px 0 oklch(1 0.02 185 / 0.32), 0 3px 0 oklch(0.35 0.09 195) !important;
+  }
+
+  .rotwood-app .rotwood-upgrade-tier[data-upgrade-state="next"] {
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.035), 0 0 0 1px oklch(0.82 0.15 80 / 0.035);
+  }
+
+  .rotwood-app .rotwood-upgrade-path[data-path="b"] .rotwood-upgrade-tier[data-upgrade-state="next"] {
+    border-color: oklch(0.77 0.12 185 / 0.42) !important;
+    background: linear-gradient(110deg, oklch(0.77 0.12 185 / 0.09), oklch(0.14 0.02 250 / 0.92)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotwood-app .rotwood-upgrade-buy {
+    transition: none !important;
+  }
+}

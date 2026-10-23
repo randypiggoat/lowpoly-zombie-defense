@@ -403,3 +403,10 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Updated the existing pooled combat burst presentation so **hit** bursts spread compactly along the ground plane, **kill** bursts expand with rising shards and a stronger short-lived center, and **heal** bursts use an upright ring with upward drifting particles.
 - Effects continue to be driven by the existing enemy hit/death/heal state transitions, stay within the existing 24-burst pool, and remain suppressed by reduced-motion mode.
 - No gameplay triggers, combat status, damage values or spawn caps were changed. Run and verify the latest automated workflow and inspect crowded-wave visuals at phone scale.
+
+
+### Upgrade panel refinement — 2026-10-23
+
+- The in-match A/B upgrade columns now expose an accessible four-segment progress meter backed by the existing owned-tier value, and carry explicit path/state attributes for deterministic styling.
+- Damage specialization and support/control have distinct restrained accent treatments in the panel; the support/control purchase action uses its aqua accent while preserving real prices, unlock rules and purchase callback.
+- This is UI presentation only. No additional upgrade, currency or progression mechanics were introduced.
