@@ -680,7 +680,6 @@ function Zombies({
         });
         emissiveMaterials.current[i] = materials;
       }
-      const palette = zombiePaletteForKind(z.kind, equippedZombieSkin);
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
       const kindChanged = lastKind.current[i] !== z.kind;
@@ -772,6 +771,7 @@ function Zombies({
       }
       const baseScale = zombieModelScale(z.kind, z.boss);
       if (kindChanged) {
+        const palette = zombiePaletteForKind(z.kind, equippedZombieSkin);
         lastKind.current[i] = z.kind;
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
