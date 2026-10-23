@@ -50,6 +50,11 @@ export function ThemedRoads({ map, theme }: { map: StageMap; theme: StageTheme }
                           : theme.path;
 
   const cityRoad = profile.roadStyle === "urban";
+  const constructedRoad =
+    urban ||
+    profile.roadStyle === "harbor" ||
+    profile.roadStyle === "river" ||
+    profile.roadStyle === "mine";
 
   const marking =
     profile.roadStyle === "ice"
@@ -74,6 +79,7 @@ export function ThemedRoads({ map, theme }: { map: StageMap; theme: StageTheme }
         const w = map.pathWidth;
         const bed = w + 0.58;
         const marks = urban ? Math.max(0, Math.floor(segment.len / 3.8)) : 0;
+        const seams = constructedRoad ? Math.max(0, Math.floor(segment.len / 5.4) - 1) : 0;
         return (
           <group
             key={"road-segment-" + index}
@@ -86,8 +92,23 @@ export function ThemedRoads({ map, theme }: { map: StageMap; theme: StageTheme }
             </mesh>
             <mesh position={[0, 0.11, 0]} receiveShadow>
               <boxGeometry args={[w, 0.10, segment.len]} />
-              <meshStandardMaterial color={roadSurface} flatShading />
+              <meshStandardMaterial color={roadSurface} flatShading roughness={0.9} />
             </mesh>
+            {seams > 0 && Array.from({ length: seams }, (_, seamIndex) => {
+              const offset = (seamIndex + 1) * segment.len / (seams + 1) - segment.len / 2;
+              return (
+                <mesh key={"surface-seam-" + seamIndex} position={[0, 0.164, offset]}>
+                  <boxGeometry args={[w * 0.84, 0.012, 0.028]} />
+                  <meshBasicMaterial color={profile.palette.roadAccent} transparent opacity={0.24} />
+                </mesh>
+              );
+            })}
+            {urban && !cityRoad && [-1, 1].map((side) => (
+              <mesh key={"reinforced-shoulder-" + side} position={[side * (w / 2 + 0.1), 0.105, 0]} receiveShadow>
+                <boxGeometry args={[0.18, 0.13, segment.len + 0.08]} />
+                <meshStandardMaterial color={profile.palette.trim} flatShading roughness={0.78} />
+              </mesh>
+            ))}
             <mesh position={[-w / 2 + 0.045, 0.16, 0]}>
               <boxGeometry args={[0.07, 0.025, Math.max(0.5, segment.len - 0.18)]} />
               <meshStandardMaterial color={cityRoad ? "#e4e2d5" : profile.palette.roadAccent} flatShading />

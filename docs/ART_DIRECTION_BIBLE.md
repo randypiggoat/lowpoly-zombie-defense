@@ -371,3 +371,20 @@ Supporting code already present and worth using rather than duplicating includes
 - **Environment/road/UI:** added structural and facade detail to the water tower, frozen lab, skyscraper, foundry and cathedral landmarks; changed urban road dashes to narrow longitudinal lane marks; added visible keyboard focus and a restrained accent edge for the currently available upgrade tier. No route, placement, purchase or navigation rules changed.
 - **Validation evidence:** the focused zombie presentation tests and Bun TSX parse pass locally. Full dependency installation was blocked by DNS failures fetching the existing lockfile; no local browser screenshot or physical-device/frame-time review was possible. The previous PR head's GitHub run passed lint, unit, TypeScript, build and 25 Playwright checks (one skipped), but that run does not validate this follow-up.
 - **Remaining:** inspect all models, upgrade combinations, attacks and screens in a running browser/device; refine the other themed landmarks and attack-specific impacts where visual review shows a need; rerun the complete repository checks after dependencies are available.
+
+
+---
+
+## Direct visual follow-up — 2026-10-23
+
+This follow-up adds the following source changes on top of the prior tower/enemy visual commit:
+
+- **Tower footing:** raised the octagonal bearing, added low mechanical skids, and made the shared identity halo/core less universal so the three energy-focused towers retain a more coherent energy read while ballistic towers look more mechanical.
+- **Weapon animation:** reduced the amount of recoil squash applied to the complete tower chassis and added a small weapon pitch response keyed to the tower's recoil. The existing recoil travel remains tower-specific and the reduced-motion multiplier remains in place.
+- **Zombie silhouettes:** gave Splitter, Bomber, Guardian, Healer and Swarm dedicated pooled body/head/limb proportions so their visual identity is not carried by colors or role markers alone. Runner and Brute keep their existing specialized geometry.
+- **Lighting and surfaces:** added low-intensity cool fill without shadows; environment materials now separate rough organic/stone finishes from industrial metal and icy/glass accents.
+- **Road and base construction:** added subtle joints to constructed road styles and reinforced shoulders for industrial/military/blacksite roads. Added color-coordinated reinforcement belts to city, ice, industrial and tower-like base designs.
+
+No tower stats, enemy stats, route geometry, collision/placement rules, currency, progression, or combat formulas were intentionally changed.
+
+**Validation note:** source changes are committed as an implementation step. Visual appearance at phone zoom, precise muzzle-to-projectile alignment, memory/frame-time impact, and full automated test results remain unverified until checked against the updated commit and an actual running session.

@@ -841,17 +841,78 @@ function Zombies({
             rightArm.scale.copy(leftArm.scale);
             leftLeg.scale.set(1.3, 1.12, 1.3);
             rightLeg.scale.copy(leftLeg.scale);
-          } else {
+          } else if (z.kind === 3) {
+            // Splitter: a hunched, slightly asymmetric core carrier.
+            body.position.set(0, 0.94, -0.02);
+            body.scale.set(0.94, 1.08, 0.88);
+            head.position.set(0.035, 1.6, 0.02);
+            head.scale.set(0.9, 0.94, 0.86);
+            leftArm.position.set(0.46, 1.12, 0.31);
+            rightArm.position.set(-0.4, 1.18, 0.29);
+            leftArm.scale.set(0.92, 1.05, 0.92);
+            rightArm.scale.set(0.88, 0.98, 0.9);
+            leftLeg.scale.set(0.96, 1.02, 0.92);
+            rightLeg.scale.copy(leftLeg.scale);
+          } else if (z.kind === 4) {
+            // Bomber: broader pack-heavy silhouette with a forward-set head.
+            body.position.set(0, 0.98, -0.025);
+            body.scale.set(1.12, 1.02, 1.05);
+            head.position.set(0, 1.59, 0.04);
+            head.scale.set(1.04, 0.94, 0.98);
+            leftArm.position.set(0.48, 1.13, 0.27);
+            rightArm.position.set(-0.48, 1.13, 0.27);
+            leftArm.scale.set(1.08, 1.0, 1.0);
+            rightArm.scale.copy(leftArm.scale);
+            leftLeg.scale.set(1.04, 1.02, 1.04);
+            rightLeg.scale.copy(leftLeg.scale);
+          } else if (z.kind === 5) {
+            // Guardian: wide shoulders, thick arms and a planted defensive stance.
+            body.position.set(0, 1.0, 0);
+            body.scale.set(1.22, 1.1, 1.13);
+            head.position.set(0, 1.72, 0.02);
+            head.scale.set(0.92, 1.04, 0.96);
+            leftArm.position.set(0.6, 1.16, 0.24);
+            rightArm.position.set(-0.6, 1.16, 0.24);
+            leftArm.scale.set(1.18, 1.13, 1.16);
+            rightArm.scale.copy(leftArm.scale);
+            leftLeg.scale.set(1.15, 1.08, 1.12);
+            rightLeg.scale.copy(leftLeg.scale);
+          } else if (z.kind === 6) {
+            // Healer: lighter frame, taller head and narrower limbs.
             body.position.set(0, 0.95, 0);
-            body.scale.set(1, 1, 1);
-            head.position.set(0, 1.62, 0);
-            head.scale.set(1, 1, 1);
-            leftArm.position.set(0.42, 1.15, 0.3);
-            rightArm.position.set(-0.42, 1.15, 0.3);
+            body.scale.set(0.82, 1.12, 0.84);
+            head.position.set(0, 1.67, 0.01);
+            head.scale.set(0.88, 1.05, 0.9);
+            leftArm.position.set(0.36, 1.14, 0.31);
+            rightArm.position.set(-0.36, 1.14, 0.31);
+            leftArm.scale.set(0.84, 1.05, 0.84);
+            rightArm.scale.copy(leftArm.scale);
+            leftLeg.scale.set(0.86, 1.08, 0.86);
+            rightLeg.scale.copy(leftLeg.scale);
+          } else if (z.kind === 7) {
+            // Swarm: small compact torso/head and closer limbs to support its quick silhouette.
+            body.position.set(0, 0.76, 0);
+            body.scale.set(0.78, 0.8, 0.78);
+            head.position.set(0, 1.29, 0.02);
+            head.scale.set(0.88, 0.86, 0.88);
+            leftArm.position.set(0.32, 0.91, 0.25);
+            rightArm.position.set(-0.32, 0.91, 0.25);
+            leftArm.scale.set(0.8, 0.82, 0.8);
+            rightArm.scale.copy(leftArm.scale);
+            leftLeg.scale.set(0.84, 0.82, 0.84);
+            rightLeg.scale.copy(leftLeg.scale);
+          } else {
+            // Walker: the baseline infected has a forward hunch and broad face.
+            body.position.set(0, 0.93, 0);
+            body.scale.set(1, 1.04, 0.94);
+            head.position.set(0, 1.59, 0.025);
+            head.scale.set(1.02, 0.98, 0.96);
+            leftArm.position.set(0.42, 1.13, 0.31);
+            rightArm.position.set(-0.42, 1.13, 0.31);
             leftArm.scale.set(1, 1, 1);
-            rightArm.scale.set(1, 1, 1);
+            rightArm.scale.copy(leftArm.scale);
             leftLeg.scale.set(1, 1, 1);
-            rightLeg.scale.set(1, 1, 1);
+            rightLeg.scale.copy(leftLeg.scale);
           }
           for (const mesh of [head, leftArm, rightArm]) {
             (mesh.material as THREE.MeshStandardMaterial).color.set(palette.skin);
@@ -1536,6 +1597,12 @@ export const Scene = memo(function Scene({
       <color attach="background" args={[theme.sky]} />
       <fog attach="fog" args={[theme.fog, theme.night ? 34 : 46, theme.night ? 82 : 95]} />
       <hemisphereLight args={[theme.hemiSky, theme.hemiGround, theme.night ? 0.72 : 0.85]} />
+      {/* Cool, non-shadow-casting fill light reveals faceted models without an expensive second shadow pass. */}
+      <directionalLight
+        color={theme.hemiSky}
+        position={[-12, 9, -14]}
+        intensity={theme.night ? 0.16 : 0.26}
+      />
       <directionalLight
         color={theme.light}
         position={[12, 18, 8]}

@@ -307,6 +307,12 @@ export function TowerModel({
   const recoilTravel =
     tower.kind === "shotgunner" ? 0.3 : tower.kind === "rocket" ? 0.24 :
       tower.kind === "sniper" ? 0.15 : tower.kind === "laser" ? 0.045 : 0.12;
+  const recoilPitch =
+    tower.kind === "shotgunner" ? 0.09 :
+    tower.kind === "rocket" ? 0.075 :
+    tower.kind === "sniper" ? 0.06 : 0.025;
+  const heavyChassis = tower.kind === "shotgunner" || tower.kind === "rocket";
+  const energyTower = tower.kind === "tesla" || tower.kind === "freezer" || tower.kind === "laser";
 
   const primary = bodyColor || "#6d7477";
   const secondary = bodyColor ? "#d8d2c5" : "#b5b0a3";
@@ -319,19 +325,21 @@ export function TowerModel({
     const bob = Math.sin(t * 2.1 + idleSeed) * 0.035 * motionScale;
     if (rig.current) {
       const punch = Math.max(0, tower.recoil) * motionScale;
-      rig.current.position.y = bob + punch * 0.025;
+      // Keep the chassis planted and reserve most of the shot response for the weapon assembly.
+      rig.current.position.y = bob + punch * 0.012;
       rig.current.scale.set(
-        baseScale * (1 + punch * 0.035),
-        baseScale * (1 - punch * 0.065),
-        baseScale * (1 + punch * 0.035),
+        baseScale * (1 + punch * (heavyChassis ? 0.016 : 0.01)),
+        baseScale * (1 - punch * (heavyChassis ? 0.028 : 0.018)),
+        baseScale * (1 + punch * (heavyChassis ? 0.016 : 0.01)),
       );
-      rig.current.rotation.z = Math.sin(t * 13 + idleSeed) * punch * 0.035 * motionScale;
+      rig.current.rotation.z = Math.sin(t * 13 + idleSeed) * punch * (heavyChassis ? 0.045 : 0.022) * motionScale;
     }
     if (weapon.current) {
       if (!weaponBasePosition.current) weaponBasePosition.current = weapon.current.position.clone();
       const base = weaponBasePosition.current;
       const kick = Math.max(0, tower.recoil) * motionScale;
-      weapon.current.position.set(base.x, base.y + kick * 0.018, base.z - kick * recoilTravel);
+      weapon.current.position.set(base.x, base.y + kick * 0.012, base.z - kick * recoilTravel);
+      weapon.current.rotation.x = -kick * recoilPitch;
     }
     if (signature.current) {
       signature.current.rotation.y = t * signatureSpin * motionScale;
@@ -731,11 +739,22 @@ export function TowerModel({
         <cylinderGeometry args={[0.9, 1.05, 0.18, 8]} />
         <meshStandardMaterial color="#343a3e" flatShading roughness={0.82} metalness={0.12} />
       </mesh>
+      {/* A raised octagonal bearing and low skids ground the turret like a physical defense platform. */}
+      <mesh position={[0, 0.215, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[0.92, 1.02, 0.09, 8]} />
+        <meshStandardMaterial color="#56616a" flatShading roughness={0.52} metalness={0.32} />
+      </mesh>
+      {[-0.68, 0.68].map((x) => (
+        <mesh key={x} position={[x, 0.13, -0.02]} castShadow receiveShadow>
+          <boxGeometry args={[0.24, 0.12, 1.34]} />
+          <meshStandardMaterial color="#252c31" flatShading roughness={0.7} metalness={0.2} />
+        </mesh>
+      ))}
       <mesh ref={identityHalo} position={[0, 0.24, 0]} rotation-x={Math.PI / 2}>
         <ringGeometry args={[0.68, 0.84, 8]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.22} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={accent} transparent opacity={energyTower ? 0.22 : 0.08} side={THREE.DoubleSide} />
       </mesh>
-      <mesh ref={identityCore} position={[0, 0.31, -0.08]}>
+      <mesh ref={identityCore} visible={energyTower} position={[0, 0.31, -0.08]}>
         <icosahedronGeometry args={[0.16, 0]} />
         <AccentMaterial color={accent} glow={0.9} />
       </mesh>

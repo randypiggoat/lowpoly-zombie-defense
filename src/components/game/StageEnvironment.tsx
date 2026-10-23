@@ -35,7 +35,16 @@ const C = {
 };
 
 function Mat({ color }: { color: string }) {
-  return <meshStandardMaterial color={color} flatShading />;
+  const metal = color === C.metal || color === C.metal2;
+  const crystal = color === C.ice || color === C.ice2 || color === C.glass || color === C.neon;
+  return (
+    <meshStandardMaterial
+      color={color}
+      flatShading
+      roughness={metal ? 0.48 : crystal ? 0.42 : 0.86}
+      metalness={metal ? 0.28 : 0.035}
+    />
+  );
 }
 
 function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }) {
