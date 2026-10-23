@@ -63,6 +63,7 @@ describe("zombie presentation", () => {
       expect(profile.deathFold).toBeGreaterThan(0);
     }
   });
+
   test("keeps archetype colors distinct by default and lets earned skins override them", () => {
     const defaultSkin = {
       id: "zombie-default",
@@ -84,5 +85,4 @@ describe("zombie presentation", () => {
     };
     expect(zombiePaletteForKind(7, earnedSkin)).toEqual(earnedSkin);
   });
-
 });
