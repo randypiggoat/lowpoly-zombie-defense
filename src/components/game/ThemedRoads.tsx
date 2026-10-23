@@ -112,7 +112,7 @@ export function ThemedRoads({ map, theme }: { map: StageMap; theme: StageTheme }
               const offset = (markerIndex + 0.5) * 3.8 - segment.len / 2;
               return (
                 <mesh key={markerIndex} position={[0, 0.17, offset]}>
-                  <boxGeometry args={[0.22, 0.025, 1.45]} />
+                  <boxGeometry args={[0.12, 0.025, 1.45]} />
                   <meshStandardMaterial color={marking} flatShading />
                 </mesh>
               );

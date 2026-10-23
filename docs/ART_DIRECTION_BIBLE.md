@@ -310,18 +310,18 @@ The inspected helper does not define a GPU, draw-call, memory or thermal budget.
 | Asset / system | Source entry points | Existing tests / integration | Status for this change |
 |---|---|---|---|
 | Tower catalog/accents | src/game/engine.ts: TOWER_KINDS, TOWER_INFO | towerStats.test.ts, towerUpgradeDesign.test.ts and combat tests | Audited; unchanged |
-| Tower geometry/tier hardware | src/components/game/TowerModel.tsx: TowerModel, render helpers, UpgradeGear | Scene.tsx; full-visual-smoke E2E | Audited; unchanged in focused fix |
+| Tower geometry/tier hardware | src/components/game/TowerModel.tsx: TowerModel, render helpers, UpgradeGear | Scene.tsx; full-visual-smoke E2E | Follow-up: per-path hardware and weapon-specific recoil |
 | Tower aim/range/squad ring | src/components/game/Scene.tsx: TowerMesh | towerCombat/synergy tests and core-loop E2E | Audited; retained |
 | Upgrade state/copy | src/game/towerUpgradeDesign.ts; src/game/towerStats.ts | towerUpgradeDesign.test.ts; towerStats.test.ts | Audited; no mechanics changed |
 | Zombie identity palette | src/game/zombiePresentation.ts: ZOMBIE_ARCHETYPE_PALETTES, zombiePaletteForKind | src/game/zombiePresentation.test.ts | **Changed:** default uses eight palettes; cosmetic skins still override |
-| Zombie pooled model/animation | src/components/game/Scene.tsx: Zombies, named parts | zombiePresentation, enemyPresentation, enemyLifecycle tests; visual-smoke E2E | Audited; runtime still needed |
+| Zombie pooled model/animation | src/components/game/Scene.tsx: Zombies, named parts | zombiePresentation, enemyPresentation, enemyLifecycle tests; visual-smoke E2E | Follow-up: hit response, stable pooled animation, shield/payload silhouettes |
 | Enemy labels/health | src/game/enemyPresentation.ts | enemyPresentation.test.ts | Existing; documented |
 | Projectile origin/flight | src/game/towerCombat.ts; Scene.tsx: Bullets | towerCombat, projectileImpact, projectileEffects tests | Audited; unchanged |
 | Hit/kill/heal VFX | src/components/game/CombatVFX.tsx: CombatVFX | full-visual-smoke E2E | Existing capped pool; no new VFX |
 | Environment props/landmarks | src/components/game/StageEnvironment.tsx: EnvironmentPropMesh, StageEnvironment | stageEnvironments/stageThemes tests | Audited; no collision changes |
-| Roads/buildings/base/terrain | src/game/maps.ts; ThemedRoads.tsx, ThemedBuildings.tsx, ThemedBase.tsx, SpecialTerrain.tsx | maps, stageThemes, stageEnvironments tests | Audited; placement/render separation documented |
+| Roads/buildings/base/terrain | src/game/maps.ts; ThemedRoads.tsx, ThemedBuildings.tsx, ThemedBase.tsx, SpecialTerrain.tsx | maps, stageThemes, stageEnvironments tests | Follow-up: narrowed urban center dashes; map logic unchanged |
 | Render quality | src/game/renderQuality.ts: getSceneRenderQuality | src/game/renderQuality.test.ts | Existing three profiles retained |
-| HUD, menus, Canvas | HUD.tsx, GameCanvas.tsx, src/styles.css | e2e/ui-foundation.spec.ts, menu-navigation and visual-smoke E2E | Audited; no unrelated redesign |
+| HUD, menus, Canvas | HUD.tsx, GameCanvas.tsx, src/styles.css | e2e/ui-foundation.spec.ts, menu-navigation and visual-smoke E2E | Follow-up: keyboard focus and next-tier panel emphasis |
 | CI validation | .github/workflows/game-test.yml | lint, unit, TypeScript, build, Playwright | CI is validation source; results must be reported separately |
 
 Supporting code already present and worth using rather than duplicating includes src/game/environmentVisuals.ts, stageThemes.ts, stageEnvironments.ts, zombiePresentation.ts, enemyPresentation.ts, towerUpgradeDesign.ts, towerCombat.ts, projectileEffects.ts and renderQuality.ts. The docs directory did not exist on the audited default-branch tree, so this file establishes the primary entry point.
@@ -361,3 +361,13 @@ Supporting code already present and worth using rather than duplicating includes
 - **Reason:** restore existing enemy-role differentiation with current geometry/materials and no changes to stats, progression, combat, placement or render budget.
 - **Tests:** the regression test has been authored; successful execution has not yet been established at the time of writing.
 - **Remaining:** inspect all eight archetypes and cosmetics during live browser/device play, review tower and effect origins in motion, and complete the validation suite before merge.
+
+## Change log — 2026-10-23
+
+### Implement presentation follow-up
+
+- **Tower models:** added tier-specific silhouette hardware across the existing A/B paths, replaced generic path-side markers with tower-specific parts, and differentiated recoil travel by weapon while keeping the weapon movement on the shot axis. Static projectile muzzle offsets and combat rules are unchanged. Idle motion and weapon recoil are suppressed when reduced motion is enabled.
+- **Pooled enemies:** added a brief hit lean/twist and body response driven by the existing flash value, made pooled status/signature rotation time-based so it does not accumulate across reused slots, and replaced the Guardian's horizontal ring with a forward-facing shield and the Bomber's box pack with a payload canister. The shared shield geometry is disposed with the zombie pool.
+- **Road/UI:** changed urban road dashes to narrow longitudinal lane marks; added visible keyboard focus and a restrained accent edge for the currently available upgrade tier. No route, placement, purchase or navigation rules changed.
+- **Validation evidence:** the focused zombie presentation tests and Bun TSX parse pass locally. Full dependency installation was blocked by DNS failures fetching the existing lockfile; no local browser screenshot or physical-device/frame-time review was possible. The previous PR head's GitHub run passed lint, unit, TypeScript, build and 25 Playwright checks (one skipped), but that run does not validate this follow-up.
+- **Remaining:** inspect all models, upgrade combinations, attacks and screens in a running browser/device; refine the other themed landmarks and attack-specific impacts where visual review shows a need; rerun the complete repository checks after dependencies are available.

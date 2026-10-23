@@ -1096,3 +1096,19 @@
   .rw-lives-fill,.rw-round-fill {transition:none!important;}
   .rw-lives-display[data-hit="true"],.rw-enemies-count[data-pulsing="true"] {animation:none!important;}
 }
+
+.rotwood-app :is(.rotwood-button,.rotwood-menu-tile,.rw-hud-context button):focus-visible {
+  outline:2px solid var(--rw-toxic,oklch(0.82 0.16 137));
+  outline-offset:2px;
+  box-shadow:0 0 0 4px oklch(0.82 0.16 137 / 0.16);
+}
+
+.rw-hud-context [data-upgrade-state="next"] {
+  box-shadow:inset 3px 0 0 oklch(0.82 0.16 137 / 0.82),inset 0 1px 0 oklch(1 0 0 / 0.06);
+}
+
+@media (max-width:390px) {
+  .rotwood-app :is(.rotwood-button,.rotwood-menu-tile,.rw-hud-context button):focus-visible {
+    outline-offset:1px;
+  }
+}

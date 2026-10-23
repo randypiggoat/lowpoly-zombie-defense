@@ -4,6 +4,7 @@ import {
   ZOMBIE_ARCHETYPE_PALETTES,
   ZOMBIE_PRESENTATION,
   hitDirection,
+  zombieHitAmount,
   zombieModelScale,
   zombiePaletteForKind,
 } from "./zombiePresentation";
@@ -46,6 +47,14 @@ describe("zombie presentation", () => {
   test("normalizes hit direction and handles a zero-length source", () => {
     expect(hitDirection(3, 4, 0, 0)).toEqual({ x: 0.6, z: 0.8 });
     expect(hitDirection(0, 0, 0, 0)).toEqual({ x: 0, z: 0 });
+  });
+
+  test("clamps hit animation and reduces its intensity for reduced motion", () => {
+    expect(zombieHitAmount(-0.2)).toBe(0);
+    expect(zombieHitAmount(0.5)).toBe(0.5);
+    expect(zombieHitAmount(2)).toBe(1);
+    expect(zombieHitAmount(0.5, true)).toBe(0.175);
+    expect(zombieHitAmount(Number.NaN)).toBe(0);
   });
 
   test("keeps heavy and precision attacks visibly stronger than light hits", () => {

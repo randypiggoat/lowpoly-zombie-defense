@@ -20,6 +20,7 @@ import {
   ZOMBIE_ARCHETYPE_PALETTES,
   zombieModelScale,
   zombiePaletteForKind,
+  zombieHitAmount,
   zombiePresentation,
 } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
@@ -496,10 +497,12 @@ function BuildSurface({
 function TowerMesh({
   tower,
   selected,
+  reducedMotion,
   onSelect,
 }: {
   tower: Tower;
   selected: boolean;
+  reducedMotion: boolean;
   onSelect: (id: number) => void;
 }) {
   const turret = useRef<THREE.Group>(null);
@@ -565,7 +568,13 @@ function TowerMesh({
         </>
       )}
       <group ref={turret} position={[0, 1.18 + level * 0.1, 0]}>
-        <TowerModel tower={tower} accent={accent} level={level} bodyColor={bodyColor} />
+        <TowerModel
+          tower={tower}
+          accent={accent}
+          level={level}
+          bodyColor={bodyColor}
+          reducedMotion={reducedMotion}
+        />
       </group>
 
     </group>
@@ -623,13 +632,25 @@ function Zombies({
     6: new THREE.IcosahedronGeometry(0.34, 0),
     7: new THREE.TetrahedronGeometry(0.35, 0),
   } as Record<number, THREE.BufferGeometry>), []);
+  const guardianShieldGeometry = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.58);
+    shape.lineTo(0.45, 0.34);
+    shape.lineTo(0.4, -0.16);
+    shape.lineTo(0, -0.58);
+    shape.lineTo(-0.4, -0.16);
+    shape.lineTo(-0.45, 0.34);
+    shape.closePath();
+    return new THREE.ShapeGeometry(shape);
+  }, []);
   useEffect(
     () => () => {
       Object.values(bodyGeometries).forEach((geometry) => geometry.dispose());
       Object.values(headGeometries).forEach((geometry) => geometry.dispose());
       Object.values(faceGeometries).forEach((geometry) => geometry.dispose());
+      guardianShieldGeometry.dispose();
     },
-    [bodyGeometries, headGeometries, faceGeometries],
+    [bodyGeometries, headGeometries, faceGeometries, guardianShieldGeometry],
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
@@ -681,6 +702,7 @@ function Zombies({
         emissiveMaterials.current[i] = materials;
       }
       const presentation = zombiePresentation(z.kind);
+      const animationFactor = reducedMotion ? 0.35 : 1;
       const goreMask = z.gibMask ?? 0;
       const kindChanged = lastKind.current[i] !== z.kind;
       const goreChanged = lastGoreMask.current[i] !== goreMask;
@@ -689,15 +711,15 @@ function Zombies({
       if (statusMark) {
         statusMark.visible = (z.markTime ?? 0) > 0 && !z.dead;
         if (statusMark.visible) {
-          statusMark.rotation.y += 0.03;
-          statusMark.position.y = 1.1 + Math.sin(now * 0.008 + i) * 0.025;
+          statusMark.rotation.y = now * 0.0012 * animationFactor + i * 0.1;
+          statusMark.position.y = 1.1 + Math.sin(now * 0.008 * animationFactor + i) * 0.025;
         }
       }
       if (statusStun) {
         statusStun.visible = (z.stun ?? 0) > 0 && !z.dead;
         if (statusStun.visible) {
-          statusStun.rotation.y -= 0.05;
-          statusStun.scale.setScalar(0.85 + Math.sin(now * 0.012 + i) * 0.08);
+          statusStun.rotation.y = -now * 0.0015 * animationFactor + i * 0.08;
+          statusStun.scale.setScalar(0.85 + Math.sin(now * 0.012 * animationFactor + i) * 0.08);
         }
       }
       const bossChanged = lastBoss.current[i] !== z.boss;
@@ -730,32 +752,32 @@ function Zombies({
         if (swarmMark) swarmMark.visible = z.boss && z.kind === 7;
         if (z.boss) {
           if (bossAura) {
-            bossAura.rotation.y += z.bossEnraged ? 0.032 : 0.018;
-            const pulse = 1 + Math.sin(now * 0.006 + i) * (z.bossEnraged ? 0.12 : 0.055);
+          bossAura.rotation.y = now * (z.bossEnraged ? 0.0016 : 0.0009) * animationFactor + i * 0.1;
+          const pulse = 1 + Math.sin(now * 0.006 * animationFactor + i) * (z.bossEnraged ? 0.12 : 0.055);
             bossAura.scale.setScalar(pulse);
           }
           if (bossCrown) {
-            bossCrown.rotation.y += z.bossEnraged ? 0.026 : 0.012;
-            bossCrown.position.y = 1.95 + Math.sin(now * 0.004 + i) * 0.025;
+          bossCrown.rotation.y = now * (z.bossEnraged ? 0.0013 : 0.0006) * animationFactor + i * 0.1;
+          bossCrown.position.y = 1.95 + Math.sin(now * 0.004 * animationFactor + i) * 0.025;
           }
           if (bossSignature) {
-            bossSignature.rotation.y += 0.01 + z.kind * 0.0015;
-            bossSignature.scale.setScalar(1 + Math.sin(now * 0.004 + i) * 0.03);
+          bossSignature.rotation.y = now * (0.0005 + z.kind * 0.000075) * animationFactor + i * 0.1;
+          bossSignature.scale.setScalar(1 + Math.sin(now * 0.004 * animationFactor + i) * 0.03);
           }
-          if (bruteMark) bruteMark.rotation.z = Math.sin(now * 0.004 + i) * 0.16;
-          if (splitterMark) splitterMark.rotation.y += 0.035;
+        if (bruteMark) bruteMark.rotation.z = Math.sin(now * 0.004 * animationFactor + i) * 0.16;
+        if (splitterMark) splitterMark.rotation.y = now * 0.00175 * animationFactor + i * 0.1;
           if (bomberMark) {
-            bomberMark.rotation.z += 0.026;
-            bomberMark.scale.setScalar(1 + Math.sin(now * 0.009 + i) * 0.09);
+          bomberMark.rotation.z = now * 0.0013 * animationFactor + i * 0.1;
+          bomberMark.scale.setScalar(1 + Math.sin(now * 0.009 * animationFactor + i) * 0.09);
           }
-          if (guardianMark) guardianMark.rotation.y += 0.022;
+        if (guardianMark) guardianMark.rotation.y = now * 0.0011 * animationFactor + i * 0.1;
           if (healerMark) {
-            healerMark.rotation.z += 0.018;
-            healerMark.scale.setScalar(1 + Math.sin(now * 0.006 + i) * 0.05);
+          healerMark.rotation.z = now * 0.0009 * animationFactor + i * 0.1;
+          healerMark.scale.setScalar(1 + Math.sin(now * 0.006 * animationFactor + i) * 0.05);
           }
           if (swarmMark) {
-            swarmMark.rotation.y += 0.05;
-            swarmMark.rotation.x = Math.sin(now * 0.005 + i) * 0.18;
+          swarmMark.rotation.y = now * 0.0025 * animationFactor + i * 0.1;
+          swarmMark.rotation.x = Math.sin(now * 0.005 * animationFactor + i) * 0.18;
           }
           if (bossCore) {
             const material = bossCore.material as THREE.MeshStandardMaterial;
@@ -765,7 +787,7 @@ function Zombies({
             material.color.set(bossColor);
             material.emissive.set(z.bossEnraged ? "#ff4f36" : baseBossColor);
             material.emissiveIntensity = z.bossEnraged ? 1.25 : 0.85;
-            bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01) * 0.12 : 1);
+            bossCore.scale.setScalar(z.bossEnraged ? 1.15 + Math.sin(now * 0.01 * animationFactor) * 0.12 : 1);
           }
         }
       }
@@ -901,18 +923,18 @@ function Zombies({
         const idleWave = Math.sin(phase * presentation.idleRate) * animationFactor;
         const facingY = z.facingY ?? 0;
         // Restore archetype/boss scale every active frame so a prior pooled death fade
-        // cannot leak into a new enemy. Damage response is material-only: hits must not
-        // squash, twist, or lean the model.
+        // cannot leak into a new enemy.
         g.scale.setScalar(baseScale);
+        const impact = zombieHitAmount(z.flash, reducedMotion);
         g.position.set(
           z.x,
-          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp,
+          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp + impact * presentation.hitRecoil * 0.05,
           z.z,
         );
         const movementSway = idleWave * presentation.bodySway;
         g.rotation.y = facingY;
-        g.rotation.x = presentation.forwardLean;
-        g.rotation.z = movementSway;
+        g.rotation.x = presentation.forwardLean - impact * presentation.damageLean;
+        g.rotation.z = movementSway + impact * presentation.hitTwist * 0.18;
 
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
@@ -926,11 +948,11 @@ function Zombies({
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
           body.rotation.y = 0;
           const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
-          body.scale.y = baseBodyScaleY;
+          body.scale.y = baseBodyScaleY * (1 - impact * 0.07);
         }
         if (head) {
-          head.rotation.x = Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75;
-          head.rotation.z = Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45;
+          head.rotation.x = Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75 - impact * presentation.hitRecoil * 0.12;
+          head.rotation.z = Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45 + impact * presentation.hitTwist * 0.16;
         }
         if (face) {
           face.visible = true;
@@ -962,7 +984,8 @@ function Zombies({
           z.kind === 7 ? "swarm-crest" : null;
         const signature = signatureName ? refs[signatureName] : null;
         if (signature) {
-          signature.rotation.y += (z.kind === 7 ? 0.06 : z.kind === 3 ? 0.035 : 0.018);
+          const signatureRate = z.kind === 7 ? 0.0024 : z.kind === 3 ? 0.0014 : 0.0007;
+          signature.rotation.y = now * signatureRate * animationFactor + i * 0.1;
           const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
           signature.scale.setScalar(signaturePulse);
         }
@@ -1063,13 +1086,8 @@ function Zombies({
               ))}
             </group>
             <group name="boss-mark-guardian" position={[0, 1.05, 0]}>
-              <mesh rotation-x={Math.PI / 2}>
-                <torusGeometry args={[0.92, 0.1, 6, 12]} />
-                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[5]} emissive={BOSS_SIGNATURE_COLORS[5]} emissiveIntensity={0.7} transparent opacity={0.72} flatShading />
-              </mesh>
-              <mesh position={[0, 0, 0.78]} rotation-x={Math.PI / 2}>
-                <circleGeometry args={[0.26, 6]} />
-                <meshBasicMaterial color={BOSS_SIGNATURE_COLORS[5]} transparent opacity={0.42} />
+              <mesh geometry={guardianShieldGeometry} position={[0, 0, 0.44]} scale={[1.5, 1.55, 1]} castShadow>
+                <meshStandardMaterial color={BOSS_SIGNATURE_COLORS[5]} emissive={BOSS_SIGNATURE_COLORS[5]} emissiveIntensity={0.38} transparent opacity={0.88} flatShading side={THREE.DoubleSide} />
               </mesh>
             </group>
             <group name="boss-mark-healer" position={[0, 1.7, 0]}>
@@ -1137,12 +1155,11 @@ function Zombies({
             <meshStandardMaterial color="#e1a04f" emissive="#e1a04f" emissiveIntensity={0.3} flatShading />
           </mesh>
           <mesh name="bomber-pack" position={[0, 0.92, -0.36]} visible={false} castShadow>
-            <boxGeometry args={[0.5, 0.6, 0.34]} />
+            <cylinderGeometry args={[0.25, 0.25, 0.62, 6]} />
             <meshStandardMaterial color="#d55c43" flatShading />
           </mesh>
-          <mesh name="guardian-shield" position={[0, 1.05, 0]} rotation-x={Math.PI / 2} visible={false}>
-            <torusGeometry args={[0.82, 0.08, 6, 12]} />
-            <meshStandardMaterial color="#83c8d1" emissive="#83c8d1" emissiveIntensity={0.45} flatShading />
+          <mesh name="guardian-shield" geometry={guardianShieldGeometry} position={[0.52, 1.06, 0.4]} visible={false} castShadow>
+            <meshStandardMaterial color="#83c8d1" emissive="#83c8d1" emissiveIntensity={0.28} flatShading side={THREE.DoubleSide} />
           </mesh>
           <mesh name="healer-aura" position={[0, 0.12, 0]} rotation-x={-Math.PI / 2} visible={false}>
             <ringGeometry args={[0.45, 0.7, 12]} />
@@ -1553,6 +1570,7 @@ export const Scene = memo(function Scene({
             key={t.id}
             tower={t}
             selected={selection?.kind === "tower" && selection.id === t.id}
+            reducedMotion={reducedMotion}
             onSelect={onSelectTower}
           />
         ))}

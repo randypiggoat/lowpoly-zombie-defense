@@ -261,6 +261,12 @@ export function zombiePresentation(kind: StageEnemyKind) {
   return ZOMBIE_PRESENTATION[kind];
 }
 
+export function zombieHitAmount(flash: number, reducedMotion = false) {
+  if (!Number.isFinite(flash)) return 0;
+  const intensity = Math.min(1, Math.max(0, flash));
+  return intensity * (reducedMotion ? 0.35 : 1);
+}
+
 export function damageReactionMultiplier(kind?: string) {
   return kind ? DAMAGE_REACTION_MULTIPLIER[kind] ?? 1 : 1;
 }
