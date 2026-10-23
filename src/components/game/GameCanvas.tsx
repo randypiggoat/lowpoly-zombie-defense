@@ -745,10 +745,10 @@ export function GameCanvas() {
             if (import.meta.env.DEV) {
               const canvas = gl.domElement;
               const contextAttributes = gl.getContext().getContextAttributes();
-              canvas.dataset.renderPixelRatio = gl.getPixelRatio().toFixed(2);
-              canvas.dataset.renderCssSize = `${canvas.clientWidth}x${canvas.clientHeight}`;
-              canvas.dataset.renderDrawingBuffer = `${canvas.width}x${canvas.height}`;
-              canvas.dataset.renderAntialias = String(contextAttributes?.antialias ?? false);
+              canvas.dataset["renderPixelRatio"] = gl.getPixelRatio().toFixed(2);
+              canvas.dataset["renderCssSize"] = `${canvas.clientWidth}x${canvas.clientHeight}`;
+              canvas.dataset["renderDrawingBuffer"] = `${canvas.width}x${canvas.height}`;
+              canvas.dataset["renderAntialias"] = String(contextAttributes?.antialias ?? false);
             }
           }}
         >
