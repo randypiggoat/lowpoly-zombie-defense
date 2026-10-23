@@ -1566,9 +1566,9 @@ function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
     // Expose read-only renderer/camera diagnostics in development so image
     // quality and responsive framing can be checked in the browser and E2E tests.
     if (import.meta.env.DEV) {
-      gl.domElement.dataset.cameraProfile = profile;
-      gl.domElement.dataset.cameraFov = cam.fov.toFixed(1);
-      gl.domElement.dataset.cameraTargetZ = targetZ.toFixed(1);
+      gl.domElement.dataset["cameraProfile"] = profile;
+      gl.domElement.dataset["cameraFov"] = cam.fov.toFixed(1);
+      gl.domElement.dataset["cameraTargetZ"] = targetZ.toFixed(1);
     }
   }, [camera, gl, size.width, size.height]);
 
