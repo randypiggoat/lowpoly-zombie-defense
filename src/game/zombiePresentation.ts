@@ -1,6 +1,40 @@
 import type { StageEnemyKind } from "./navigation";
 import { enemyIdentity } from "./enemyPresentation";
 
+export type ZombiePalette = {
+  skin: string;
+  cloth: string;
+  legs: string;
+};
+
+/** Authored per-archetype colors used by the default Outbreak cosmetic. */
+export const ZOMBIE_ARCHETYPE_PALETTES: Record<StageEnemyKind, ZombiePalette> = {
+  0: { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
+  1: { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
+  2: { skin: "#8f332f", cloth: "#5d2428", legs: "#3f292d" },
+  3: { skin: "#89a36c", cloth: "#53614a", legs: "#36443d" },
+  4: { skin: "#c7b59b", cloth: "#8b4c35", legs: "#4c3940" },
+  5: { skin: "#9bb4b7", cloth: "#3f5960", legs: "#2e3c43" },
+  6: { skin: "#d49aa5", cloth: "#6a4d63", legs: "#40384d" },
+  7: { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
+};
+
+export type EquippedZombiePalette = ZombiePalette & { id: string };
+
+/**
+ * The default Outbreak skin preserves each enemy archetype's authored identity.
+ * Earned cosmetics intentionally override the entire roster with a unified finish.
+ */
+export function zombiePaletteForKind(
+  kind: StageEnemyKind,
+  equippedPalette: EquippedZombiePalette,
+): ZombiePalette {
+  return equippedPalette.id === "zombie-default"
+    ? ZOMBIE_ARCHETYPE_PALETTES[kind]
+    : equippedPalette;
+}
+
+
 export type ZombiePresentation = {
   name: string;
   silhouette: string;
@@ -225,6 +259,12 @@ export function zombieModelScale(kind: StageEnemyKind, boss = false): number {
 
 export function zombiePresentation(kind: StageEnemyKind) {
   return ZOMBIE_PRESENTATION[kind];
+}
+
+export function zombieHitAmount(flash: number, reducedMotion = false) {
+  if (!Number.isFinite(flash)) return 0;
+  const intensity = Math.min(1, Math.max(0, flash));
+  return intensity * (reducedMotion ? 0.35 : 1);
 }
 
 export function damageReactionMultiplier(kind?: string) {

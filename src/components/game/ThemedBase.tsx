@@ -54,7 +54,11 @@ export function ThemedBase({
       <group position={[position.x, 0, position.z]}>
         <mesh position={[0, 0.34, 0]} castShadow receiveShadow>
           <boxGeometry args={[6.2, 0.68, 4.8]} />
-          <meshStandardMaterial color={profile.palette.roadEdge} flatShading />
+          <meshStandardMaterial color={profile.palette.roadEdge} flatShading roughness={0.88} />
+        </mesh>
+        <mesh position={[0, 0.68, 0]} castShadow>
+          <boxGeometry args={[4.25, 0.14, 3.42]} />
+          <meshStandardMaterial color={a} flatShading roughness={0.62} metalness={0.18} />
         </mesh>
         <mesh ref={body} position={[0, 1.55, 0]} castShadow>
           <boxGeometry args={[3.8, 2.1, 3]} />
@@ -85,7 +89,11 @@ export function ThemedBase({
       <group position={[position.x, 0, position.z]}>
         <mesh position={[0, 0.3, 0]} castShadow>
           <cylinderGeometry args={[3.3, 3.6, 0.6, 10]} />
-          <meshStandardMaterial color={profile.palette.roadEdge} flatShading />
+          <meshStandardMaterial color={profile.palette.roadEdge} flatShading roughness={0.88} />
+        </mesh>
+        <mesh position={[0, 0.62, 0]} castShadow>
+          <cylinderGeometry args={[2.26, 2.42, 0.13, 10]} />
+          <meshStandardMaterial color={a} flatShading roughness={0.58} metalness={0.14} />
         </mesh>
         <mesh ref={body} position={[0, 1.42, 0]} castShadow>
           <sphereGeometry args={[2.35, 10, 6]} />
@@ -112,7 +120,11 @@ export function ThemedBase({
       <group position={[position.x, 0, position.z]}>
         <mesh position={[0, 0.32, 0]} castShadow>
           <boxGeometry args={[6.4, 0.64, 5]} />
-          <meshStandardMaterial color={profile.palette.roadEdge} flatShading />
+          <meshStandardMaterial color={profile.palette.roadEdge} flatShading roughness={0.88} />
+        </mesh>
+        <mesh position={[0, 0.68, 0]} castShadow>
+          <boxGeometry args={[4.72, 0.14, 3.58]} />
+          <meshStandardMaterial color={a} flatShading roughness={0.62} metalness={0.18} />
         </mesh>
         <mesh ref={body} position={[0, 1.35, 0]} castShadow>
           <boxGeometry args={[4.3, 1.95, 3.2]} />
@@ -142,7 +154,11 @@ export function ThemedBase({
     <group position={[position.x, 0, position.z]}>
       <mesh position={[0, 0.32, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[3.3, 3.7, 0.64, 9]} />
-        <meshStandardMaterial color={profile.palette.roadEdge} flatShading />
+        <meshStandardMaterial color={profile.palette.roadEdge} flatShading roughness={0.88} />
+      </mesh>
+      <mesh position={[0, 0.67, 0]} castShadow>
+        <cylinderGeometry args={[2.05, 2.28, 0.13, 7]} />
+        <meshStandardMaterial color={a} flatShading roughness={0.62} metalness={0.18} />
       </mesh>
       <mesh ref={body} position={[0, 1.55, 0]} castShadow>
         <cylinderGeometry args={[1.85, 2.15, 2.2, 7]} />

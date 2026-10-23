@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   DAMAGE_REACTION_MULTIPLIER,
+  ZOMBIE_ARCHETYPE_PALETTES,
   ZOMBIE_PRESENTATION,
   hitDirection,
+  zombieHitAmount,
   zombieModelScale,
+  zombiePaletteForKind,
 } from "./zombiePresentation";
 import { enemyIdentity } from "./enemyPresentation";
 import type { StageEnemyKind } from "./navigation";
@@ -46,6 +49,14 @@ describe("zombie presentation", () => {
     expect(hitDirection(0, 0, 0, 0)).toEqual({ x: 0, z: 0 });
   });
 
+  test("clamps hit animation and reduces its intensity for reduced motion", () => {
+    expect(zombieHitAmount(-0.2)).toBe(0);
+    expect(zombieHitAmount(0.5)).toBe(0.5);
+    expect(zombieHitAmount(2)).toBe(1);
+    expect(zombieHitAmount(0.5, true)).toBe(0.175);
+    expect(zombieHitAmount(Number.NaN)).toBe(0);
+  });
+
   test("keeps heavy and precision attacks visibly stronger than light hits", () => {
     expect(DAMAGE_REACTION_MULTIPLIER["rocket"]!).toBeGreaterThan(DAMAGE_REACTION_MULTIPLIER["rifleman"]!);
     expect(DAMAGE_REACTION_MULTIPLIER["sniper"]!).toBeGreaterThan(DAMAGE_REACTION_MULTIPLIER["rifleman"]!);
@@ -60,5 +71,27 @@ describe("zombie presentation", () => {
       expect(Number.isFinite(profile.deathFold)).toBe(true);
       expect(profile.deathFold).toBeGreaterThan(0);
     }
+  });
+
+  test("keeps archetype colors distinct by default and lets earned skins override them", () => {
+    const defaultSkin = {
+      id: "zombie-default",
+      skin: "#6f9f55",
+      cloth: "#42513f",
+      legs: "#35404a",
+    };
+    const kinds: StageEnemyKind[] = [0, 1, 2, 3, 4, 5, 6, 7];
+    const palettes = kinds.map((kind) => zombiePaletteForKind(kind, defaultSkin));
+
+    expect(palettes).toEqual(kinds.map((kind) => ZOMBIE_ARCHETYPE_PALETTES[kind]));
+    expect(new Set(palettes.map((palette) => palette.skin)).size).toBe(8);
+
+    const earnedSkin = {
+      id: "zombie-nightfall",
+      skin: "#536f63",
+      cloth: "#28333a",
+      legs: "#202932",
+    };
+    expect(zombiePaletteForKind(7, earnedSkin)).toEqual(earnedSkin);
   });
 });

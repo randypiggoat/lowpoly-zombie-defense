@@ -8,6 +8,7 @@ type TowerModelProps = {
   accent: string;
   level: number;
   bodyColor: string;
+  reducedMotion?: boolean;
 };
 
 function AccentMaterial({ color, glow = 0.25 }: { color: string; glow?: number }) {
@@ -39,7 +40,31 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
   const metal = <meshStandardMaterial color={dark} flatShading metalness={0.4} roughness={0.5} />;
   switch (kind) {
     case "rifleman":
-      return null;
+      return (
+        <>
+          {a >= 1 && (
+            <group position={[0, 1.08, 0.14]}>
+              <mesh castShadow><boxGeometry args={[0.18, 0.12, 0.38]} />{metal}</mesh>
+              <mesh position={[0, 0.13, 0.02]}><boxGeometry args={[0.11, 0.1, 0.08]} /><AccentMaterial color={accent} glow={0.45} /></mesh>
+            </group>
+          )}
+          {a >= 2 && <mesh position={[0, 0.78, -0.1]} castShadow><boxGeometry args={[0.3, 0.28, 0.38]} />{metal}</mesh>}
+          {a >= 3 && <mesh position={[0, 0.92, 0.56]} rotation-x={Math.PI / 2}><cylinderGeometry args={[0.13, 0.16, 0.18, 6]} />{metal}</mesh>}
+          {a >= 4 && (
+            <group position={[0, 1.22, -0.02]}>
+              <mesh><cylinderGeometry args={[0.07, 0.07, 0.34, 6]} />{metal}</mesh>
+              <mesh position={[0, 0.2, 0]}><icosahedronGeometry args={[0.11, 0]} /><AccentMaterial color={accent} glow={0.65} /></mesh>
+            </group>
+          )}
+          {b >= 2 && (
+            <group position={[-0.58, 0.82, -0.34]}>
+              <mesh castShadow><boxGeometry args={[0.2, 0.24, 0.3]} />{metal}</mesh>
+              <mesh position={[0, 0.2, -0.02]}><cylinderGeometry args={[0.035, 0.05, 0.3, 5]} />{metal}</mesh>
+            </group>
+          )}
+          {b >= 3 && <mesh position={[0.55, 0.78, -0.3]} rotation-y={Math.PI / 4} castShadow><boxGeometry args={[0.28, 0.2, 0.18]} /><AccentMaterial color={accent} glow={0.28} /></mesh>}
+        </>
+      );
     case "shotgunner":
       return (
         <>
@@ -55,6 +80,16 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
               {metal}
             </mesh>
           )}
+          {a >= 3 && <mesh position={[0, 1.08, 0.42]} castShadow><boxGeometry args={[0.56, 0.24, 0.46]} />{metal}</mesh>}
+          {a >= 4 && <mesh position={[0, 1.04, 1.43]} rotation-x={Math.PI / 2}><torusGeometry args={[0.31, 0.055, 5, 8]} /><AccentMaterial color={accent} glow={0.32} /></mesh>}
+          {b >= 1 && <mesh position={[0, 0.75, -0.62]} castShadow><boxGeometry args={[0.7, 0.2, 0.36]} />{metal}</mesh>}
+          {b >= 3 && (
+            <group position={[0.62, 0.92, -0.28]}>
+              <mesh castShadow><boxGeometry args={[0.24, 0.32, 0.24]} />{metal}</mesh>
+              <mesh position={[0, 0.23, 0]}><octahedronGeometry args={[0.09, 0]} /><AccentMaterial color={accent} glow={0.6} /></mesh>
+            </group>
+          )}
+          {b >= 4 && <mesh position={[0, 0.4, 0.08]} rotation-z={Math.PI / 2} castShadow><cylinderGeometry args={[0.09, 0.09, 1.7, 6]} />{metal}</mesh>}
         </>
       );
     case "sniper":
@@ -72,6 +107,8 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
               <AccentMaterial color={accent} glow={0.7} />
             </mesh>
           )}
+          {a >= 2 && <mesh position={[0, 1.48, 0.28]} castShadow><boxGeometry args={[0.42, 0.24, 0.55]} />{metal}</mesh>}
+          {a >= 3 && <mesh position={[0, 1.72, 0.72]} rotation-x={Math.PI / 2}><cylinderGeometry args={[0.12, 0.16, 0.22, 6]} />{metal}</mesh>}
           {b >= 1 && (
             <mesh position={[0, 0.95, 1.35]} castShadow>
               <boxGeometry args={[0.36, 0.22, 0.22]} />
@@ -90,6 +127,8 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
               </mesh>
             </group>
           )}
+          {b >= 2 && <mesh position={[-0.4, 1.25, -0.22]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.035, 0.045, 0.56, 5]} />{metal}</mesh>}
+          {b >= 3 && <mesh position={[0.4, 1.23, -0.22]} castShadow><boxGeometry args={[0.32, 0.24, 0.3]} /><AccentMaterial color={accent} glow={0.3} /></mesh>}
         </>
       );
     case "tesla":
@@ -113,45 +152,67 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
               </mesh>
             </>
           )}
+          {b >= 1 && <mesh position={[0, 0.52, -0.52]} castShadow><boxGeometry args={[0.52, 0.3, 0.28]} />{metal}</mesh>}
+          {b >= 3 && (
+            <>
+              <mesh position={[0.72, 0.55, -0.24]} rotation-z={-0.34} castShadow><boxGeometry args={[0.14, 0.55, 0.18]} />{metal}</mesh>
+              <mesh position={[-0.72, 0.55, -0.24]} rotation-z={0.34} castShadow><boxGeometry args={[0.14, 0.55, 0.18]} />{metal}</mesh>
+            </>
+          )}
+          {b >= 4 && <mesh position={[0, 1.54, 0]} rotation-x={Math.PI / 2}><torusGeometry args={[0.56, 0.035, 5, 10]} /><AccentMaterial color={accent} glow={0.5} /></mesh>}
+          {a >= 4 && <mesh position={[0, 1.84, 0]}><octahedronGeometry args={[0.2, 0]} /><AccentMaterial color={accent} glow={0.85} /></mesh>}
         </>
       );
     case "flamethrower":
       return (
         <>
+          {a >= 1 && <mesh position={[-0.48, 1.42, -0.14]} rotation-x={Math.PI / 2}><torusGeometry args={[0.2, 0.045, 5, 8]} /><AccentMaterial color={accent} glow={0.3} /></mesh>}
           {a >= 2 && (
             <mesh position={[0, 0.6, -0.55]} castShadow>
               <cylinderGeometry args={[0.28, 0.28, 0.7, 6]} />
               <AccentMaterial color={accent} glow={0.3} />
             </mesh>
           )}
+          {a >= 3 && <mesh position={[0, 1.3, 0.84]} rotation-x={Math.PI / 2} castShadow><cylinderGeometry args={[0.34, 0.4, 0.28, 6]} />{metal}</mesh>}
+          {a >= 4 && <mesh position={[0.48, 1.48, -0.14]}><octahedronGeometry args={[0.16, 0]} /><AccentMaterial color={accent} glow={0.5} /></mesh>}
+          {b >= 1 && <mesh position={[0, 1.3, 0.56]} rotation-x={Math.PI / 2}><torusGeometry args={[0.3, 0.045, 5, 8]} /><AccentMaterial color={accent} glow={0.32} /></mesh>}
+          {b >= 2 && <mesh position={[0.48, 1.2, -0.14]} castShadow><boxGeometry args={[0.18, 0.4, 0.22]} />{metal}</mesh>}
           {b >= 3 && (
             <mesh position={[0.34, 0.92, -0.22]} rotation-x={Math.PI / 2}>
               <torusGeometry args={[0.11, 0.025, 5, 8]} />
               <AccentMaterial color={accent} glow={0.5} />
             </mesh>
           )}
+          {b >= 4 && <mesh position={[0, 1.3, 1.04]} rotation-x={Math.PI / 2}><coneGeometry args={[0.42, 0.22, 7]} /><AccentMaterial color={accent} glow={0.38} /></mesh>}
         </>
       );
     case "freezer":
       return (
         <>
+          {a >= 1 && <mesh position={[-0.42, 1.0, 0.2]} rotation-z={0.3}><octahedronGeometry args={[0.17, 0]} /><AccentMaterial color="#cfefff" glow={0.55} /></mesh>}
           {a >= 2 && (
             <mesh position={[0.4, 1.0, 0.2]} rotation-z={-0.3}>
               <icosahedronGeometry args={[0.2, 0]} />
               <AccentMaterial color="#cfefff" glow={0.6} />
             </mesh>
           )}
+          {a >= 3 && <mesh position={[0, 1.14, 0.68]} rotation-x={Math.PI / 2}><torusGeometry args={[0.24, 0.045, 5, 8]} /><AccentMaterial color="#cfefff" glow={0.45} /></mesh>}
+          {a >= 4 && <mesh position={[0, 1.45, -0.35]}><icosahedronGeometry args={[0.2, 0]} /><AccentMaterial color="#cfefff" glow={0.7} /></mesh>}
+          {b >= 1 && <mesh position={[0.5, 0.86, 0]} rotation-z={0.4}><boxGeometry args={[0.12, 0.7, 0.18]} />{metal}</mesh>}
           {b >= 2 && (
             <mesh position={[-0.4, 1.0, 0.2]} rotation-z={0.3}>
               <coneGeometry args={[0.14, 0.6, 5]} />
               <AccentMaterial color="#cfefff" glow={0.6} />
             </mesh>
           )}
+          {b >= 3 && <mesh position={[-0.5, 0.86, 0]} rotation-z={-0.4}><boxGeometry args={[0.12, 0.7, 0.18]} />{metal}</mesh>}
+          {b >= 4 && <mesh position={[0, 0.98, 0.78]} rotation-x={Math.PI / 2}><cylinderGeometry args={[0.25, 0.3, 0.24, 6]} /><AccentMaterial color={accent} glow={0.4} /></mesh>}
         </>
       );
     case "rocket":
       return (
         <>
+          {a >= 1 && <mesh position={[0, 1.34, 0.26]} castShadow><boxGeometry args={[0.54, 0.16, 0.28]} />{metal}</mesh>}
           {a >= 2 && (
             <group position={[0.58, 0.82, -0.28]}>
               <mesh castShadow>
@@ -164,6 +225,15 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
               </mesh>
             </group>
           )}
+          {a >= 3 && (
+            <>
+              <mesh position={[0.65, 0.65, -0.12]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.07, 0.07, 0.68, 5]} />{metal}</mesh>
+              <mesh position={[-0.65, 0.65, -0.12]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.07, 0.07, 0.68, 5]} />{metal}</mesh>
+            </>
+          )}
+          {a >= 4 && <mesh position={[0, 1.28, -0.58]} rotation-x={Math.PI / 2}><torusGeometry args={[0.34, 0.045, 5, 8]} /><AccentMaterial color={accent} glow={0.35} /></mesh>}
+          {b >= 1 && <mesh position={[0, 0.7, -0.5]} castShadow><boxGeometry args={[1.2, 0.18, 0.22]} />{metal}</mesh>}
+          {b >= 2 && <mesh position={[0, 0.98, 0.92]} rotation-x={Math.PI / 2}><torusGeometry args={[0.25, 0.05, 5, 8]} /><AccentMaterial color={accent} glow={0.25} /></mesh>}
           {b >= 3 && (
             <group position={[0, 1.3, -0.22]}>
               <mesh position={[0, 0.12, 0]} castShadow>
@@ -176,23 +246,35 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
               </mesh>
             </group>
           )}
+          {b >= 4 && <mesh position={[0, 1.34, -0.3]}><octahedronGeometry args={[0.15, 0]} /><AccentMaterial color={accent} glow={0.72} /></mesh>}
         </>
       );
     case "laser":
       return (
         <>
+          {a >= 1 && <mesh position={[0, 1.34, 0.78]} rotation-x={Math.PI / 2}><torusGeometry args={[0.3, 0.05, 5, 8]} /><AccentMaterial color={accent} glow={0.42} /></mesh>}
+          {a >= 2 && <mesh position={[0, 1.48, 0.4]} rotation-y={Math.PI / 4}><octahedronGeometry args={[0.18, 0]} /><AccentMaterial color="#e8fbff" glow={0.65} /></mesh>}
           {a >= 3 && (
             <mesh position={[0, 1.2, 0.6]} rotation-y={Math.PI / 4}>
               <octahedronGeometry args={[0.2, 0]} />
               <AccentMaterial color={accent} glow={0.9} />
             </mesh>
           )}
+          {a >= 4 && <mesh position={[0, 1.4, -0.32]} rotation-y={Math.PI / 4} castShadow><boxGeometry args={[0.66, 0.14, 0.18]} />{metal}</mesh>}
+          {b >= 1 && <mesh position={[0, 1.18, 0.78]} rotation-x={Math.PI / 2}><torusGeometry args={[0.24, 0.035, 5, 8]} /><AccentMaterial color={accent} glow={0.38} /></mesh>}
           {b >= 2 && (
             <mesh position={[0, 0.9, 1.1]} rotation-x={Math.PI / 2}>
               <torusGeometry args={[0.2, 0.03, 5, 8]} />
               <AccentMaterial color={accent} glow={0.7} />
             </mesh>
           )}
+          {b >= 3 && (
+            <>
+              <mesh position={[0.65, 0.98, -0.08]}><octahedronGeometry args={[0.16, 0]} /><AccentMaterial color={accent} glow={0.55} /></mesh>
+              <mesh position={[-0.65, 0.98, -0.08]}><octahedronGeometry args={[0.16, 0]} /><AccentMaterial color={accent} glow={0.55} /></mesh>
+            </>
+          )}
+          {b >= 4 && <mesh position={[0, 1.52, -0.16]} rotation-x={Math.PI / 2}><torusGeometry args={[0.42, 0.035, 5, 10]} /><AccentMaterial color={accent} glow={0.55} /></mesh>}
         </>
       );
     default:
@@ -200,7 +282,13 @@ function UpgradeGear({ kind, a, b, accent, dark }: GearProps) {
   }
 }
 
-export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps) {
+export function TowerModel({
+  tower,
+  accent,
+  level,
+  bodyColor,
+  reducedMotion = false,
+}: TowerModelProps) {
   const rig = useRef<THREE.Group>(null);
   const weapon = useRef<THREE.Group>(null);
   const weaponBasePosition = useRef<THREE.Vector3 | null>(null);
@@ -216,6 +304,15 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
   const signatureSpin =
     tower.kind === "tesla" ? 0.52 : tower.kind === "laser" ? -0.24 : tower.kind === "freezer" ? 0.18 :
     tower.kind === "rocket" ? -0.12 : tower.kind === "flamethrower" ? 0.1 : 0.07;
+  const recoilTravel =
+    tower.kind === "shotgunner" ? 0.3 : tower.kind === "rocket" ? 0.24 :
+      tower.kind === "sniper" ? 0.15 : tower.kind === "laser" ? 0.045 : 0.12;
+  const recoilPitch =
+    tower.kind === "shotgunner" ? 0.09 :
+    tower.kind === "rocket" ? 0.075 :
+    tower.kind === "sniper" ? 0.06 : 0.025;
+  const heavyChassis = tower.kind === "shotgunner" || tower.kind === "rocket";
+  const energyTower = tower.kind === "tesla" || tower.kind === "freezer" || tower.kind === "laser";
 
   const primary = bodyColor || "#6d7477";
   const secondary = bodyColor ? "#d8d2c5" : "#b5b0a3";
@@ -224,41 +321,45 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const bob = Math.sin(t * 2.1 + idleSeed) * 0.035;
+    const motionScale = reducedMotion ? 0 : 1;
+    const bob = Math.sin(t * 2.1 + idleSeed) * 0.035 * motionScale;
     if (rig.current) {
-      const punch = Math.max(0, tower.recoil);
-      rig.current.position.y = bob + punch * 0.025;
+      const punch = Math.max(0, tower.recoil) * motionScale;
+      // Keep the chassis planted and reserve most of the shot response for the weapon assembly.
+      rig.current.position.y = bob + punch * 0.012;
       rig.current.scale.set(
-        baseScale * (1 + punch * 0.035),
-        baseScale * (1 - punch * 0.065),
-        baseScale * (1 + punch * 0.035),
+        baseScale * (1 + punch * (heavyChassis ? 0.016 : 0.01)),
+        baseScale * (1 - punch * (heavyChassis ? 0.028 : 0.018)),
+        baseScale * (1 + punch * (heavyChassis ? 0.016 : 0.01)),
       );
-      rig.current.rotation.z = Math.sin(t * 13 + idleSeed) * punch * 0.035;
+      rig.current.rotation.z = Math.sin(t * 13 + idleSeed) * punch * (heavyChassis ? 0.045 : 0.022) * motionScale;
     }
     if (weapon.current) {
       if (!weaponBasePosition.current) weaponBasePosition.current = weapon.current.position.clone();
       const base = weaponBasePosition.current;
-      weapon.current.position.set(base.x, base.y + tower.recoil * 0.018, base.z - tower.recoil * 0.18);
+      const kick = Math.max(0, tower.recoil) * motionScale;
+      weapon.current.position.set(base.x, base.y + kick * 0.012, base.z - kick * recoilTravel);
+      weapon.current.rotation.x = -kick * recoilPitch;
     }
     if (signature.current) {
-      signature.current.rotation.y = t * signatureSpin;
-      signature.current.scale.setScalar(1 + Math.sin(t * 3.2 + idleSeed) * 0.025);
+      signature.current.rotation.y = t * signatureSpin * motionScale;
+      signature.current.scale.setScalar(1 + Math.sin(t * 3.2 + idleSeed) * 0.025 * motionScale);
     }
     if (core.current) {
-      const pulse = 1 + Math.sin(t * 5 + idleSeed) * 0.1;
+      const pulse = 1 + Math.sin(t * 5 + idleSeed) * 0.1 * motionScale;
       core.current.scale.setScalar(pulse);
       const material = core.current.material as THREE.MeshStandardMaterial;
       material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.8 + ((tower.surge ?? 0) > 0 ? 0.6 : 0);
     }
     if (identityCore.current) {
-      const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08;
+      const pulse = 1 + Math.sin(t * 4.5 + idleSeed) * 0.08 * motionScale;
       identityCore.current.scale.setScalar(pulse);
       const material = identityCore.current.material as THREE.MeshStandardMaterial;
       material.emissiveIntensity = 0.7 + Math.max(0, tower.recoil) * 0.55;
     }
     if (identityHalo.current) {
-      identityHalo.current.rotation.z = t * 0.5 + idleSeed;
-      identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04);
+      identityHalo.current.rotation.z = t * 0.5 * motionScale + idleSeed;
+      identityHalo.current.scale.setScalar(1 + Math.sin(t * 2.8 + idleSeed) * 0.04 * motionScale);
     }
     const flash = Math.max(0, tower.recoil - 0.12) * 1.4;
     if (muzzle.current) {
@@ -294,6 +395,14 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
       <mesh position={[0.82, 0.35, 0]} rotation-z={0.18} castShadow>
         <boxGeometry args={[0.18, 0.68, 0.78]} />
         <AccentMaterial color={accent} glow={0.22} />
+      </mesh>
+      <mesh position={[0, 0.62, -0.44]} castShadow>
+        <boxGeometry args={[0.42, 0.24, 0.46]} />
+        <meshStandardMaterial color={deep} flatShading roughness={0.72} metalness={0.18} />
+      </mesh>
+      <mesh position={[0, 0.76, -0.4]}>
+        <boxGeometry args={[0.24, 0.045, 0.34]} />
+        <AccentMaterial color={accent} glow={0.28} />
       </mesh>
       <group ref={weapon} position={[0, 0.9, 0]}>
         <mesh position={[0, 0, 0.72]} castShadow>
@@ -366,6 +475,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           <meshStandardMaterial color={deep} flatShading />
         </mesh>
       ))}
+      <mesh position={[0, 0.47, 0.36]} castShadow>
+        <boxGeometry args={[1.15, 0.22, 0.45]} />
+        <meshStandardMaterial color={deep} flatShading roughness={0.74} metalness={0.22} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.72, 0.57, 0.08]} rotation-z={side * -0.12} castShadow>
+          <boxGeometry args={[0.12, 0.34, 0.52]} />
+          <AccentMaterial color={accent} glow={0.18} />
+        </mesh>
+      ))}
       <group ref={weapon} position={[0, 1.02, 0]}>
         {tower.a >= 2 ? (
           <>
@@ -415,6 +534,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           <boxGeometry args={[0.12, 0.16, 2.08]} />
           <meshStandardMaterial color={dark} flatShading metalness={0.35} roughness={0.4} />
         </mesh>
+        <mesh position={[0, 0.15, 0.74]} castShadow>
+          <boxGeometry args={[0.08, 0.06, 1.68]} />
+          <AccentMaterial color={accent} glow={0.16} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <mesh key={side} position={[side * 0.18, -0.18, 0.94]} rotation-x={-0.28} rotation-z={side * -0.18} castShadow>
+            <boxGeometry args={[0.055, 0.48, 0.06]} />
+            <meshStandardMaterial color={deep} flatShading metalness={0.32} roughness={0.55} />
+          </mesh>
+        ))}
         <mesh position={[0, 0.3, 0.36]} castShadow>
           <cylinderGeometry args={[0.17, 0.17, 0.62, 8]} />
           <AccentMaterial color={accent} glow={0.25} />
@@ -451,6 +580,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <cylinderGeometry args={[0.38, 0.42, 0.38, 8]} />
         <AccentMaterial color={accent} glow={0.58} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 0.64, 0.94, 0.24]} rotation-z={side * -0.08}>
+          {[0, 1, 2].map((fin) => (
+            <mesh key={fin} position={[0, fin * 0.16, 0]} castShadow>
+              <boxGeometry args={[0.11, 0.09, 0.48]} />
+              <meshStandardMaterial color={fin === 1 ? "#9ab7c0" : dark} flatShading metalness={0.18} roughness={0.58} />
+            </mesh>
+          ))}
+        </group>
+      ))}
       <group ref={signature} position={[0, 0.98, -0.55]}>
         <Core color={accent} size={0.42} />
         <mesh position={[0, 0.1, 0]} rotation-z={0.72}>
@@ -475,6 +614,12 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <cylinderGeometry args={[0.42, 0.72, 1.34, 8]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.56} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.55, 0.91, 0.22]} rotation-z={side * -0.18} castShadow>
+          <boxGeometry args={[0.14, 0.86, 0.14]} />
+          <meshStandardMaterial color={dark} flatShading metalness={0.36} roughness={0.5} />
+        </mesh>
+      ))}
       <group ref={signature} position={[0, 0.85, 0]}>
         {[0.2, 0.46, 0.72, 0.98].map((y) => (
           <mesh key={y} position={[0, y, 0]} rotation-x={Math.PI / 2}>
@@ -508,6 +653,12 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
           </mesh>
         </group>
       ))}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.28, 1.1, 0.23]} rotation-z={side * -0.4} castShadow>
+          <cylinderGeometry args={[0.055, 0.055, 0.68, 5]} />
+          <meshStandardMaterial color={accent} flatShading roughness={0.5} metalness={0.18} />
+        </mesh>
+      ))}
       <mesh position={[0, 1.24, 0.08]} castShadow>
         <dodecahedronGeometry args={[0.52, 0]} />
         <meshStandardMaterial color={dark} flatShading metalness={0.25} />
@@ -539,6 +690,12 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <boxGeometry args={[1.22, 0.5, 1.04]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.62} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.49, 1.0, 0.02]} rotation-x={-0.08} castShadow>
+          <boxGeometry args={[0.11, 0.16, 0.92]} />
+          <meshStandardMaterial color={dark} flatShading metalness={0.34} roughness={0.5} />
+        </mesh>
+      ))}
       <group ref={weapon} position={[0, 1.02, 0]}>
         <group position={[0, 0, 0.26]}>
           <mesh rotation-x={Math.PI / 2} castShadow>
@@ -572,6 +729,16 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <boxGeometry args={[1.05, 1.18, 1.05]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.5} metalness={0.28} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 0.62, 0.82, -0.32]}>
+          {[0, 1, 2].map((fin) => (
+            <mesh key={fin} position={[0, (fin - 1) * 0.22, 0]} castShadow>
+              <boxGeometry args={[0.12, 0.09, 0.52]} />
+              <meshStandardMaterial color={fin === 1 ? "#75868b" : dark} flatShading metalness={0.28} roughness={0.5} />
+            </mesh>
+          ))}
+        </group>
+      ))}
       <group ref={weapon} position={[0, 1.42, 0.1]}>
         <mesh castShadow>
           <cylinderGeometry args={[0.52, 0.64, 0.38, 8]} />
@@ -638,53 +805,25 @@ export function TowerModel({ tower, accent, level, bodyColor }: TowerModelProps)
         <cylinderGeometry args={[0.9, 1.05, 0.18, 8]} />
         <meshStandardMaterial color="#343a3e" flatShading roughness={0.82} metalness={0.12} />
       </mesh>
+      {/* A raised octagonal bearing and low skids ground the turret like a physical defense platform. */}
+      <mesh position={[0, 0.215, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[0.92, 1.02, 0.09, 8]} />
+        <meshStandardMaterial color="#56616a" flatShading roughness={0.52} metalness={0.32} />
+      </mesh>
+      {[-0.68, 0.68].map((x) => (
+        <mesh key={x} position={[x, 0.13, -0.02]} castShadow receiveShadow>
+          <boxGeometry args={[0.24, 0.12, 1.34]} />
+          <meshStandardMaterial color="#252c31" flatShading roughness={0.7} metalness={0.2} />
+        </mesh>
+      ))}
       <mesh ref={identityHalo} position={[0, 0.24, 0]} rotation-x={Math.PI / 2}>
         <ringGeometry args={[0.68, 0.84, 8]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.22} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={accent} transparent opacity={energyTower ? 0.22 : 0.08} side={THREE.DoubleSide} />
       </mesh>
-      {tower.b > 0 && (
-        <mesh position={[0, 0.255, 0]} rotation-x={Math.PI / 2}>
-          <ringGeometry args={[0.9 + tower.b * 0.035, 1.01 + tower.b * 0.035, 8]} />
-          <meshBasicMaterial
-            color="#70d9c4"
-            transparent
-            opacity={0.18 + tower.b * 0.035}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
-      <mesh ref={identityCore} position={[0, 0.31, -0.08]}>
+      <mesh ref={identityCore} visible={energyTower} position={[0, 0.31, -0.08]}>
         <icosahedronGeometry args={[0.16, 0]} />
         <AccentMaterial color={accent} glow={0.9} />
       </mesh>
-      {tower.a > 0 && (
-        <group position={[-0.72, 0.52, -0.05]} rotation-z={0.18 + tower.a * 0.015}>
-          <mesh castShadow>
-            <boxGeometry args={[0.12 + tower.a * 0.025, 0.24 + tower.a * 0.05, 0.18]} />
-            <AccentMaterial color={accent} glow={0.35 + tower.a * 0.05} />
-          </mesh>
-          {tower.a >= 3 && (
-            <mesh position={[0, 0.18, 0.02]} rotation-x={Math.PI / 2}>
-              <torusGeometry args={[0.17, 0.025, 5, 8]} />
-              <AccentMaterial color={accent} glow={0.55} />
-            </mesh>
-          )}
-        </group>
-      )}
-      {tower.b > 0 && (
-        <group position={[0.72, 0.52, -0.05]} rotation-z={-0.18 - tower.b * 0.015}>
-          <mesh castShadow rotation-y={tower.b >= 3 ? Math.PI / 4 : 0}>
-            <boxGeometry args={[0.12 + tower.b * 0.025, 0.24 + tower.b * 0.05, 0.18]} />
-            <AccentMaterial color={accent} glow={0.35 + tower.b * 0.05} />
-          </mesh>
-          {tower.b >= 3 && (
-            <mesh position={[0, 0.18, 0.02]} rotation-z={Math.PI / 2}>
-              <torusGeometry args={[0.17, 0.025, 5, 8]} />
-              <AccentMaterial color={accent} glow={0.55} />
-            </mesh>
-          )}
-        </group>
-      )}
       <UpgradeGear kind={tower.kind} a={tower.a} b={tower.b} accent={accent} dark={dark} />
       {level >= 3 && (
         <>

@@ -209,7 +209,12 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
   const visibleTierCount = showAllTiers ? def.tiers.length : Math.min(def.tiers.length, owned + 1);
 
   return (
-    <section className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-2">
+    <section
+      className={"rotwood-upgrade-path rotwood-upgrade-path-" + path + " min-w-0 rounded-xl border border-white/10 bg-black/20 p-2"}
+      data-path={path}
+      data-owned={owned}
+      data-locked={locked}
+    >
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate font-display text-xs tracking-[0.12em] text-panel-foreground">{def.name}</h3>
@@ -222,6 +227,23 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
           {owned === 4 ? "MAXED" : locked ? "LOCKED" : "UP NEXT"}
         </span>
       </div>
+      <div
+        className="rotwood-path-meter"
+        role="progressbar"
+        aria-label={def.name + " upgrade path progress"}
+        aria-valuemin={0}
+        aria-valuemax={def.tiers.length}
+        aria-valuenow={owned}
+      >
+        {def.tiers.map((tier, index) => (
+          <span
+            key={tier.name}
+            className="rotwood-path-meter-segment"
+            data-complete={index < owned}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
       <div className="space-y-1.5">
         {def.tiers.slice(0, visibleTierCount).map((tier, index) => {
           const purchased = index < owned;
@@ -231,7 +253,7 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
               key={tier.name}
               data-upgrade-state={purchased ? "owned" : isNext && !locked ? "next" : "future"}
               className={
-                "rounded-lg border px-2 py-1.5 " +
+                "rotwood-upgrade-tier rounded-lg border px-2 py-1.5 " +
                 (purchased
                   ? "border-accent/20 bg-accent/5"
                   : isNext && !locked
@@ -268,7 +290,7 @@ function PathColumn({ tower, path, scrap }: { tower: Tower; path: "a" | "b"; scr
                       onClick={() => { triggerHaptic("confirm"); game.buyTier(tower.id, path); }}
                       disabled={scrap < cost}
                       aria-label={"Buy " + tier.name}
-                      className="mt-1.5 min-h-9 w-full rounded-md bg-accent px-2 py-1 font-display text-[10px] tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
+                      className="rotwood-upgrade-buy mt-1.5 min-h-9 w-full rounded-md bg-accent px-2 py-1 font-display text-[10px] tracking-wide text-accent-foreground transition active:scale-[0.98] disabled:opacity-40"
                     >
                       UPGRADE · {cost} SCRAP
                     </button>
