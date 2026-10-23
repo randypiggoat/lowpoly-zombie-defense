@@ -16,7 +16,12 @@ import { ThemedBase } from "./ThemedBase";
 import { MapSpecialTerrain } from "./SpecialTerrain";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
 import { gorePartBit } from "@/game/enemyGore";
-import { ZOMBIE_ARCHETYPE_PALETTES, zombieModelScale, zombiePaletteForKind, zombiePresentation } from "@/game/zombiePresentation";
+import {
+  ZOMBIE_ARCHETYPE_PALETTES,
+  zombieModelScale,
+  zombiePaletteForKind,
+  zombiePresentation,
+} from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
