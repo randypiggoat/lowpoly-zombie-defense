@@ -388,3 +388,11 @@ This follow-up adds the following source changes on top of the prior tower/enemy
 No tower stats, enemy stats, route geometry, collision/placement rules, currency, progression, or combat formulas were intentionally changed.
 
 **Validation note:** source changes are committed as an implementation step. Visual appearance at phone zoom, precise muzzle-to-projectile alignment, memory/frame-time impact, and full automated test results remain unverified until checked against the updated commit and an actual running session.
+
+
+### Landmark and emissive-material follow-up — 2026-10-23
+
+- Refined high-salience **market arcade, frozen lab, skyscraper, foundry furnace, cathedral, volcano crater and reactor** landmark geometry with caps, bases, facade/floor bands, supports and biome-specific structural layering.
+- The shared environment prop material helper now gives restrained emissive response to existing lava, hot-highlight and neon material tokens; this is standard-material emissive, not a new post-processing effect.
+- The changes affect presentation geometry only. Map path, obstacle placement, collisions, tower placement, stats, and combat logic are unchanged.
+- **Verification boundary:** these source changes are not a substitute for browser/device screenshots. Inspect scale and silhouette at phone gameplay distance and confirm CI for the exact commit.

@@ -240,7 +240,7 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
           </group>
         ))}
         <mesh position={[0, 2.95, 0]} castShadow><boxGeometry args={[5, 0.38, 1.35]} /><Mat color={C.wood2} /></mesh>
-        <mesh position={[0, 3.16, -0.02]} castShadow><boxGeometry args={[5.15, 0.12, 1.52]} /><Mat color={C.roof ?? C.brick} /></mesh>
+        <mesh position={[0, 3.16, -0.02]} castShadow><boxGeometry args={[5.15, 0.12, 1.52]} /><Mat color={C.wood2} /></mesh>
         {[-1.65, -0.55, 0.55, 1.65].map((x, index) => (
           <mesh key={x} position={[x, 3.02, 0.72]} rotation-z={index % 2 === 0 ? 0.045 : -0.045}>
             <boxGeometry args={[0.98, 0.12, 0.9]} />
