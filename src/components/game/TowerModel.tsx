@@ -396,6 +396,14 @@ export function TowerModel({
         <boxGeometry args={[0.18, 0.68, 0.78]} />
         <AccentMaterial color={accent} glow={0.22} />
       </mesh>
+      <mesh position={[0, 0.62, -0.44]} castShadow>
+        <boxGeometry args={[0.42, 0.24, 0.46]} />
+        <meshStandardMaterial color={deep} flatShading roughness={0.72} metalness={0.18} />
+      </mesh>
+      <mesh position={[0, 0.76, -0.4]}>
+        <boxGeometry args={[0.24, 0.045, 0.34]} />
+        <AccentMaterial color={accent} glow={0.28} />
+      </mesh>
       <group ref={weapon} position={[0, 0.9, 0]}>
         <mesh position={[0, 0, 0.72]} castShadow>
           <boxGeometry args={[0.18, 0.18, 1.72]} />
@@ -467,6 +475,16 @@ export function TowerModel({
           <meshStandardMaterial color={deep} flatShading />
         </mesh>
       ))}
+      <mesh position={[0, 0.47, 0.36]} castShadow>
+        <boxGeometry args={[1.15, 0.22, 0.45]} />
+        <meshStandardMaterial color={deep} flatShading roughness={0.74} metalness={0.22} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.72, 0.57, 0.08]} rotation-z={side * -0.12} castShadow>
+          <boxGeometry args={[0.12, 0.34, 0.52]} />
+          <AccentMaterial color={accent} glow={0.18} />
+        </mesh>
+      ))}
       <group ref={weapon} position={[0, 1.02, 0]}>
         {tower.a >= 2 ? (
           <>
@@ -516,6 +534,16 @@ export function TowerModel({
           <boxGeometry args={[0.12, 0.16, 2.08]} />
           <meshStandardMaterial color={dark} flatShading metalness={0.35} roughness={0.4} />
         </mesh>
+        <mesh position={[0, 0.15, 0.74]} castShadow>
+          <boxGeometry args={[0.08, 0.06, 1.68]} />
+          <AccentMaterial color={accent} glow={0.16} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <mesh key={side} position={[side * 0.18, -0.18, 0.94]} rotation-x={-0.28} rotation-z={side * -0.18} castShadow>
+            <boxGeometry args={[0.055, 0.48, 0.06]} />
+            <meshStandardMaterial color={deep} flatShading metalness={0.32} roughness={0.55} />
+          </mesh>
+        ))}
         <mesh position={[0, 0.3, 0.36]} castShadow>
           <cylinderGeometry args={[0.17, 0.17, 0.62, 8]} />
           <AccentMaterial color={accent} glow={0.25} />
@@ -552,6 +580,16 @@ export function TowerModel({
         <cylinderGeometry args={[0.38, 0.42, 0.38, 8]} />
         <AccentMaterial color={accent} glow={0.58} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 0.64, 0.94, 0.24]} rotation-z={side * -0.08}>
+          {[0, 1, 2].map((fin) => (
+            <mesh key={fin} position={[0, fin * 0.16, 0]} castShadow>
+              <boxGeometry args={[0.11, 0.09, 0.48]} />
+              <meshStandardMaterial color={fin === 1 ? "#9ab7c0" : dark} flatShading metalness={0.18} roughness={0.58} />
+            </mesh>
+          ))}
+        </group>
+      ))}
       <group ref={signature} position={[0, 0.98, -0.55]}>
         <Core color={accent} size={0.42} />
         <mesh position={[0, 0.1, 0]} rotation-z={0.72}>
@@ -576,6 +614,12 @@ export function TowerModel({
         <cylinderGeometry args={[0.42, 0.72, 1.34, 8]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.56} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.55, 0.91, 0.22]} rotation-z={side * -0.18} castShadow>
+          <boxGeometry args={[0.14, 0.86, 0.14]} />
+          <meshStandardMaterial color={dark} flatShading metalness={0.36} roughness={0.5} />
+        </mesh>
+      ))}
       <group ref={signature} position={[0, 0.85, 0]}>
         {[0.2, 0.46, 0.72, 0.98].map((y) => (
           <mesh key={y} position={[0, y, 0]} rotation-x={Math.PI / 2}>
@@ -609,6 +653,12 @@ export function TowerModel({
           </mesh>
         </group>
       ))}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.28, 1.1, 0.23]} rotation-z={side * -0.4} castShadow>
+          <cylinderGeometry args={[0.055, 0.055, 0.68, 5]} />
+          <meshStandardMaterial color={accent} flatShading roughness={0.5} metalness={0.18} />
+        </mesh>
+      ))}
       <mesh position={[0, 1.24, 0.08]} castShadow>
         <dodecahedronGeometry args={[0.52, 0]} />
         <meshStandardMaterial color={dark} flatShading metalness={0.25} />
@@ -640,6 +690,12 @@ export function TowerModel({
         <boxGeometry args={[1.22, 0.5, 1.04]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.62} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.49, 1.0, 0.02]} rotation-x={-0.08} castShadow>
+          <boxGeometry args={[0.11, 0.16, 0.92]} />
+          <meshStandardMaterial color={dark} flatShading metalness={0.34} roughness={0.5} />
+        </mesh>
+      ))}
       <group ref={weapon} position={[0, 1.02, 0]}>
         <group position={[0, 0, 0.26]}>
           <mesh rotation-x={Math.PI / 2} castShadow>
@@ -673,6 +729,16 @@ export function TowerModel({
         <boxGeometry args={[1.05, 1.18, 1.05]} />
         <meshStandardMaterial color={secondary} flatShading roughness={0.5} metalness={0.28} />
       </mesh>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 0.62, 0.82, -0.32]}>
+          {[0, 1, 2].map((fin) => (
+            <mesh key={fin} position={[0, (fin - 1) * 0.22, 0]} castShadow>
+              <boxGeometry args={[0.12, 0.09, 0.52]} />
+              <meshStandardMaterial color={fin === 1 ? "#75868b" : dark} flatShading metalness={0.28} roughness={0.5} />
+            </mesh>
+          ))}
+        </group>
+      ))}
       <group ref={weapon} position={[0, 1.42, 0.1]}>
         <mesh castShadow>
           <cylinderGeometry args={[0.52, 0.64, 0.38, 8]} />
