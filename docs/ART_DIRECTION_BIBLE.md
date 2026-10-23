@@ -396,3 +396,10 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - The shared environment prop material helper now gives restrained emissive response to existing lava, hot-highlight and neon material tokens; this is standard-material emissive, not a new post-processing effect.
 - The changes affect presentation geometry only. Map path, obstacle placement, collisions, tower placement, stats, and combat logic are unchanged.
 - **Verification boundary:** these source changes are not a substitute for browser/device screenshots. Inspect scale and silhouette at phone gameplay distance and confirm CI for the exact commit.
+
+
+### Combat feedback motion pass — 2026-10-23
+
+- Updated the existing pooled combat burst presentation so **hit** bursts spread compactly along the ground plane, **kill** bursts expand with rising shards and a stronger short-lived center, and **heal** bursts use an upright ring with upward drifting particles.
+- Effects continue to be driven by the existing enemy hit/death/heal state transitions, stay within the existing 24-burst pool, and remain suppressed by reduced-motion mode.
+- No gameplay triggers, combat status, damage values or spawn caps were changed. Run and verify the latest automated workflow and inspect crowded-wave visuals at phone scale.

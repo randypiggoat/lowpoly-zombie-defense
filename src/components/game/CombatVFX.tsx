@@ -138,18 +138,47 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
       const ring = rings.current[index];
       const core = cores.current[index];
       if (ring) {
-        ring.scale.setScalar(1 + (1 - progress) * 0.12);
+        // Hits spread across the ground plane; healing forms an upright rising pulse.
+        ring.rotation.set(state.kind === "heal" ? 0 : Math.PI / 2, 0, 0);
+        const ringScale = state.kind === "kill"
+          ? 1.18 + (1 - progress) * 0.3
+          : state.kind === "heal"
+            ? 0.76 + eased * 0.42
+            : 1 + (1 - progress) * 0.12;
+        ring.scale.setScalar(ringScale);
         (ring.material as THREE.MeshBasicMaterial).color.set(state.color);
-        (ring.material as THREE.MeshBasicMaterial).opacity = 0.72 * (1 - progress * 0.85);
+        (ring.material as THREE.MeshBasicMaterial).opacity =
+          (state.kind === "heal" ? 0.6 : 0.72) * (1 - progress * 0.85);
       }
       if (core) {
-        core.scale.setScalar(1 + (1 - progress) * 0.45);
+        const coreScale = state.kind === "kill"
+          ? 1.25 + (1 - progress) * 0.55
+          : state.kind === "heal"
+            ? 0.72 + (1 - progress) * 0.4
+            : 1 + (1 - progress) * 0.45;
+        core.scale.setScalar(coreScale);
+        core.position.y = state.kind === "heal" ? eased * 0.32 : 0;
         (core.material as THREE.MeshBasicMaterial).color.set(state.color);
       }
       const sparkRefs = sparks.current[index];
       for (let shard = 0; shard < 4; shard++) {
         const spark = sparkRefs?.[shard];
         if (spark) {
+          const angle = shard * Math.PI * 0.5 + progress * (state.kind === "kill" ? 0.7 : 0.28);
+          const spread = state.kind === "kill"
+            ? 0.22 + eased * 0.72
+            : state.kind === "heal"
+              ? 0.16 + eased * 0.24
+              : 0.2 + eased * 0.34;
+          if (state.kind === "heal") {
+            spark.position.set(Math.cos(angle) * spread, 0.08 + eased * 0.48 + Math.sin(angle) * spread * 0.4, Math.sin(angle) * spread);
+          } else if (state.kind === "kill") {
+            spark.position.set(Math.cos(angle) * spread, Math.sin(angle) * spread + eased * 0.2, Math.cos(angle * 0.7) * spread * 0.46);
+          } else {
+            spark.position.set(Math.cos(angle) * spread, 0.045 + eased * 0.13, Math.sin(angle) * spread);
+          }
+          spark.rotation.x = angle * 0.35;
+          spark.rotation.z = angle;
           (spark.material as THREE.MeshBasicMaterial).color.set(state.color);
           (spark.material as THREE.MeshBasicMaterial).opacity = 0.78 * (1 - progress);
         }
