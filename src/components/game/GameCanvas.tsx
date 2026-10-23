@@ -647,7 +647,7 @@ export function GameCanvas() {
       getTowerPositions: () => Array<{ id: number; x: number; z: number; kind: TowerKind }>;
       selectTower: (id: number) => void;
       getTowerIds: () => number[];
-      getCombatSnapshot: () => { towerCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
+      getCombatSnapshot: () => { towerCount: number; activeZombieCount: number; projectileKinds: TowerKind[]; projectileEmissions: number };
       forceStageVictoryForTest: () => boolean;
       getRunSnapshot: () => { towerCount: number; towerIds: number[]; gold: number; baseHp: number; wave: number; stageWaveTarget: number; gameOver: boolean; stageWon: boolean; endlessMode: boolean; continuedAfterVictory: boolean };
     };
@@ -672,6 +672,7 @@ export function GameCanvas() {
       getTowerIds: () => game.state.towers.map((tower) => tower.id),
       getCombatSnapshot: () => ({
         towerCount: game.state.towers.length,
+        activeZombieCount: game.state.zombies.filter((zombie) => !zombie.dead).length,
         projectileKinds: game.state.bullets.map((bullet) => bullet.kind),
         projectileEmissions: game.getProjectileEmissionCount(),
       }),
