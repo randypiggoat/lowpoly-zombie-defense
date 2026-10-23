@@ -122,8 +122,23 @@ for (const viewport of CAPTURE_VIEWPORTS) {
       animations: "disabled",
       caret: "hide",
     });
-    const canvasPng = await canvas.screenshot({
+    // The HUD is an HTML overlay above the WebGL canvas. Hide it for the
+    // canvas-only capture, then clip a page screenshot to the canvas bounds.
+    // page.screenshot avoids locator.screenshot's short action-timeout while it
+    // waits for external fonts to settle in desktop Chromium.
+    const canvasBounds = await canvas.boundingBox();
+    expect(canvasBounds).not.toBeNull();
+    await page.locator(".rotwood-hud").evaluate((element) => {
+      (element as HTMLElement).style.visibility = "hidden";
+    });
+    const canvasPng = await page.screenshot({
       path: canvasOnlyPath,
+      clip: {
+        x: canvasBounds!.x,
+        y: canvasBounds!.y,
+        width: canvasBounds!.width,
+        height: canvasBounds!.height,
+      },
       animations: "disabled",
       caret: "hide",
     });
