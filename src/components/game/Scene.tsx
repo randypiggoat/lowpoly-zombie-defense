@@ -16,7 +16,7 @@ import { ThemedBase } from "./ThemedBase";
 import { MapSpecialTerrain } from "./SpecialTerrain";
 import { canPlaceTower, distanceToPath, getStageMapByStageId, snapBuildPosition } from "@/game/maps";
 import { gorePartBit } from "@/game/enemyGore";
-import { zombieModelScale, zombiePresentation } from "@/game/zombiePresentation";
+import { ZOMBIE_ARCHETYPE_PALETTES, zombieModelScale, zombiePaletteForKind, zombiePresentation } from "@/game/zombiePresentation";
 import { profile } from "@/game/profile";
 import { projectileStatusTint } from "@/game/towerCombat";
 import { TowerModel } from "./TowerModel";
@@ -161,18 +161,6 @@ function createZombieFaceGeometry(kind: number) {
   geometry.computeBoundingSphere();
   return geometry;
 }
-
-const ZOMBIE_LOOKS = [
-  { skin: "#6f9f55", cloth: "#42513f", legs: "#35404a" },
-  { skin: "#e4ad37", cloth: "#c9662d", legs: "#6f452d" },
-  { skin: "#8f332f", cloth: "#5d2428", legs: "#3f292d" },
-  { skin: "#89a36c", cloth: "#53614a", legs: "#36443d" },
-  { skin: "#c7b59b", cloth: "#8b4c35", legs: "#4c3940" },
-  { skin: "#9bb4b7", cloth: "#3f5960", legs: "#2e3c43" },
-  { skin: "#d49aa5", cloth: "#6a4d63", legs: "#40384d" },
-  { skin: "#77b85b", cloth: "#35583d", legs: "#2e4035" },
-] as const;
-
 
 const ZOMBIE_PART_NAMES = [
   "status-mark",
@@ -687,7 +675,7 @@ function Zombies({
         });
         emissiveMaterials.current[i] = materials;
       }
-      const look = ZOMBIE_LOOKS[z.kind] ?? ZOMBIE_LOOKS[0];
+      const palette = zombiePaletteForKind(z.kind, equippedZombieSkin);
       const presentation = zombiePresentation(z.kind);
       const goreMask = z.gibMask ?? 0;
       const kindChanged = lastKind.current[i] !== z.kind;
@@ -839,11 +827,11 @@ function Zombies({
             rightLeg.scale.set(1, 1, 1);
           }
           for (const mesh of [head, leftArm, rightArm]) {
-            (mesh.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.skin);
+            (mesh.material as THREE.MeshStandardMaterial).color.set(palette.skin);
           }
-          (body.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.cloth);
-          (leftLeg.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.legs);
-          (rightLeg.material as THREE.MeshStandardMaterial).color.set(equippedZombieSkin.legs);
+          (body.material as THREE.MeshStandardMaterial).color.set(palette.cloth);
+          (leftLeg.material as THREE.MeshStandardMaterial).color.set(palette.legs);
+          (rightLeg.material as THREE.MeshStandardMaterial).color.set(palette.legs);
         }
         if (leftShoulder && rightShoulder) {
           leftShoulder.visible = z.kind === 2;
@@ -1011,11 +999,11 @@ function Zombies({
         <group key={i} ref={(el) => void (groups.current[i] = el)} visible={false}>
           <mesh name="body" position={[0, 0.95, 0]} castShadow>
             <boxGeometry args={[0.62, 0.85, 0.42]} />
-            <meshStandardMaterial color={ZOMBIE_LOOKS[0].cloth} flatShading />
+            <meshStandardMaterial color={ZOMBIE_ARCHETYPE_PALETTES[0].cloth} flatShading />
           </mesh>
           <mesh name="head" position={[0, 1.62, 0]} castShadow>
             <boxGeometry args={[0.46, 0.46, 0.46]} />
-            <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
+            <meshStandardMaterial color={ZOMBIE_ARCHETYPE_PALETTES[0].skin} flatShading />
           </mesh>
           <mesh
             name="face"
@@ -1121,11 +1109,11 @@ function Zombies({
           {/* arms reaching forward */}
           <mesh name="left-arm" position={[0.42, 1.15, 0.3]} rotation={[-1.2, 0, 0]} castShadow>
             <boxGeometry args={[0.2, 0.72, 0.2]} />
-            <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
+            <meshStandardMaterial color={ZOMBIE_ARCHETYPE_PALETTES[0].skin} flatShading />
           </mesh>
           <mesh name="right-arm" position={[-0.42, 1.15, 0.3]} rotation={[-1.35, 0, 0]} castShadow>
             <boxGeometry args={[0.2, 0.72, 0.2]} />
-            <meshStandardMaterial color={ZOMBIE_LOOKS[0].skin} flatShading />
+            <meshStandardMaterial color={ZOMBIE_ARCHETYPE_PALETTES[0].skin} flatShading />
           </mesh>
           <mesh name="left-shoulder" position={[0.54, 1.48, 0]} visible={false} castShadow>
             <dodecahedronGeometry args={[0.3, 0]} />
@@ -1162,11 +1150,11 @@ function Zombies({
           <group position={[0, 0.5, 0]}>
             <mesh name="left-leg" position={[0.17, -0.25, 0]} castShadow>
               <boxGeometry args={[0.22, 0.6, 0.22]} />
-              <meshStandardMaterial color={ZOMBIE_LOOKS[0].legs} flatShading />
+              <meshStandardMaterial color={ZOMBIE_ARCHETYPE_PALETTES[0].legs} flatShading />
             </mesh>
             <mesh name="right-leg" position={[-0.17, -0.25, 0]} castShadow>
               <boxGeometry args={[0.22, 0.6, 0.22]} />
-              <meshStandardMaterial color={ZOMBIE_LOOKS[0].legs} flatShading />
+              <meshStandardMaterial color={ZOMBIE_ARCHETYPE_PALETTES[0].legs} flatShading />
             </mesh>
           </group>
         </group>
