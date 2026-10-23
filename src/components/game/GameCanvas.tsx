@@ -391,7 +391,7 @@ export function GameCanvas() {
   const [activeSideMode, setActiveSideMode] = useState<SideModeLevel | null>(null);
   const [muted, setMutedState] = useState(isMuted());
   const [canvasReady, setCanvasReady] = useState(false);
-  const [lowGraphics, setLowGraphics] = useState(true);
+  const [lowGraphics, setLowGraphics] = useState(false);
   const [rewardedAvailable, setRewardedAvailable] = useState(false);
   const [purchasedProducts, setPurchasedProducts] = useState<Partial<Record<PurchaseProduct, boolean>>>({});
 
@@ -555,7 +555,10 @@ export function GameCanvas() {
     const lowCpu = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
     const lowMemory = memory !== undefined && memory <= 4;
-    setLowGraphics(coarsePointer || lowCpu || lowMemory);
+    // Touch-first devices stay on the mobile-safe profile. On desktops, only
+    // combine CPU and memory signals when both indicate a constrained device;
+    // a four-thread CPU alone should not force a capable desktop into low quality.
+    setLowGraphics(coarsePointer || (lowCpu && lowMemory));
     void import("@/game/monetization")
       .then(({ installCapacitorAdMobProvider, isRewardedAvailable }) => {
         if (!active) return;
@@ -726,19 +729,27 @@ export function GameCanvas() {
       {canvasReady && (
         <Canvas
           frameloop={screen === "gameplay" ? "always" : "never"}
-          // Shadows are disabled on touch/low-end hardware; desktop keeps a basic shadow
-          // pass with only the base and towers casting, which preserves depth without the
-          // cost of animating dozens of zombie/environment shadow casters.
+          // Keep mobile rendering at or above native CSS-pixel resolution while
+          // capping its cost; capable desktops can use a higher device-pixel ratio
+          // and multisampling without adding a postprocessing pass.
           shadows={lowGraphics ? false : "basic"}
-          dpr={lowGraphics ? 0.85 : 1}
+          dpr={lowGraphics ? [1, 1.25] : [1, 1.75]}
           gl={{
-            antialias: false,
+            antialias: !lowGraphics,
             powerPreference: "high-performance",
             failIfMajorPerformanceCaveat: false,
           }}
-          camera={{ position: [2, 26, 30], fov: 40 }}
+          camera={{ position: [0, 32, 20], fov: 35 }}
           onCreated={({ gl }) => {
             gl.setClearColor("#8fc4d8");
+            if (import.meta.env.DEV) {
+              const canvas = gl.domElement;
+              const contextAttributes = gl.getContext().getContextAttributes();
+              canvas.dataset.renderPixelRatio = gl.getPixelRatio().toFixed(2);
+              canvas.dataset.renderCssSize = `${canvas.clientWidth}x${canvas.clientHeight}`;
+              canvas.dataset.renderDrawingBuffer = `${canvas.width}x${canvas.height}`;
+              canvas.dataset.renderAntialias = String(contextAttributes?.antialias ?? false);
+            }
           }}
         >
           <Scene
