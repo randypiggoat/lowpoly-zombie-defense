@@ -18,7 +18,7 @@ describe("scene render quality", () => {
 
   test("keeps full visual detail on desktop", () => {
     expect(getSceneRenderQuality(1400)).toEqual({
-      shadowMapSize: 768,
+      shadowMapSize: 1024,
       sceneryCount: 38,
     });
   });
