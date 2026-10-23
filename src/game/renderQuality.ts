@@ -12,5 +12,5 @@ export function getSceneRenderQuality(viewportWidth: number): SceneRenderQuality
     return { shadowMapSize: 768, sceneryCount: 30 };
   }
 
-  return { shadowMapSize: 768, sceneryCount: 38 };
+  return { shadowMapSize: 1024, sceneryCount: 38 };
 }
