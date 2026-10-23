@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   DAMAGE_REACTION_MULTIPLIER,
+  ZOMBIE_ARCHETYPE_PALETTES,
   ZOMBIE_PRESENTATION,
   hitDirection,
   zombieModelScale,
+  zombiePaletteForKind,
 } from "./zombiePresentation";
 import { enemyIdentity } from "./enemyPresentation";
 import type { StageEnemyKind } from "./navigation";
@@ -61,4 +63,26 @@ describe("zombie presentation", () => {
       expect(profile.deathFold).toBeGreaterThan(0);
     }
   });
+  test("keeps archetype colors distinct by default and lets earned skins override them", () => {
+    const defaultSkin = {
+      id: "zombie-default",
+      skin: "#6f9f55",
+      cloth: "#42513f",
+      legs: "#35404a",
+    };
+    const kinds: StageEnemyKind[] = [0, 1, 2, 3, 4, 5, 6, 7];
+    const palettes = kinds.map((kind) => zombiePaletteForKind(kind, defaultSkin));
+
+    expect(palettes).toEqual(kinds.map((kind) => ZOMBIE_ARCHETYPE_PALETTES[kind]));
+    expect(new Set(palettes.map((palette) => palette.skin)).size).toBe(8);
+
+    const earnedSkin = {
+      id: "zombie-nightfall",
+      skin: "#536f63",
+      cloth: "#28333a",
+      legs: "#202932",
+    };
+    expect(zombiePaletteForKind(7, earnedSkin)).toEqual(earnedSkin);
+  });
+
 });
