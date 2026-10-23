@@ -81,21 +81,23 @@ for (const viewport of CAPTURE_VIEWPORTS) {
     });
     expect(towerBuilt, "a starter Rifleman should build successfully in the captured game").toBe(true);
 
-    await expect.poll(() =>
-      page.evaluate(() => {
-        const api = (window as Window & {
-          __ROTWOOD_QA__?: {
-            getCombatSnapshot: () => { activeZombieCount: number };
-            getRunSnapshot: () => { wave: number };
-          };
-        }).__ROTWOOD_QA__;
-        return api ? api.getCombatSnapshot().activeZombieCount : 0;
-      }),
-    , {
-      timeout: 25_000,
-      intervals: [100, 250, 500],
-      message: "An actual active zombie should appear before the gameplay screenshots are taken.",
-    }).toBeGreaterThan(0);
+    await expect.poll(
+      () =>
+        page.evaluate(() => {
+          const api = (window as Window & {
+            __ROTWOOD_QA__?: {
+              getCombatSnapshot: () => { activeZombieCount: number };
+              getRunSnapshot: () => { wave: number };
+            };
+          }).__ROTWOOD_QA__;
+          return api ? api.getCombatSnapshot().activeZombieCount : 0;
+        }),
+      {
+        timeout: 25_000,
+        intervals: [100, 250, 500],
+        message: "An actual active zombie should appear before the gameplay screenshots are taken.",
+      },
+    ).toBeGreaterThan(0);
 
     const waveNumber = await page.evaluate(() => {
       const api = (window as Window & { __ROTWOOD_QA__?: { getRunSnapshot: () => { wave: number } } }).__ROTWOOD_QA__;
@@ -165,9 +167,5 @@ for (const viewport of CAPTURE_VIEWPORTS) {
     expect(canvasContentCheck.height).toBeGreaterThan(100);
     expect(canvasContentCheck.uniqueColors, "canvas screenshot should contain rendered scene content").toBeGreaterThan(2);
 
-    testInfo.attachments.push(
-      { name: `${stem}-full-viewport`, contentType: "image/png", path: fullViewportPath },
-      { name: `${stem}-canvas-only`, contentType: "image/png", path: canvasOnlyPath },
-    );
   });
 }
