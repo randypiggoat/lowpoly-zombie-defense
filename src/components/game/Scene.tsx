@@ -1521,19 +1521,56 @@ function Bullets() {
 /* ---------------- scene root ---------------- */
 
 function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const basePosition = useRef(new THREE.Vector3());
   const baseTarget = useRef(new THREE.Vector3());
   useEffect(() => {
-    const portrait = size.height / Math.max(size.width, 1) > 1.4;
+    const aspect = size.width / Math.max(size.height, 1);
+    const portrait = aspect < 1 / 1.4;
+    const compactLandscape = !portrait && aspect < 1.35;
+    const wideLandscape = aspect >= 1.9;
     const cam = camera as THREE.PerspectiveCamera;
-    cam.fov = portrait ? 44 : 38;
-    cam.position.set(0, portrait ? 38 : 34, portrait ? 15 : 26);
+    let profile: "portrait" | "compact-landscape" | "landscape" | "wide-landscape";
+    let targetZ: number;
+
+    // Map bounds are authored around z=-3.5 and then placed at z=-7 by the
+    // scene root. Aim near that transformed center instead of toward the base,
+    // and use aspect-specific framing so the whole road remains in view.
+    if (portrait) {
+      profile = "portrait";
+      cam.fov = 48;
+      cam.position.set(0, 38, 15);
+      targetZ = -6;
+    } else if (compactLandscape) {
+      profile = "compact-landscape";
+      cam.fov = 37;
+      cam.position.set(0, 33, 21);
+      targetZ = -6;
+    } else if (wideLandscape) {
+      profile = "wide-landscape";
+      cam.fov = 35;
+      cam.position.set(0, 29, 20);
+      targetZ = -7;
+    } else {
+      profile = "landscape";
+      cam.fov = 35;
+      cam.position.set(0, 32, 20);
+      targetZ = -7;
+    }
+
     basePosition.current.copy(cam.position);
-    baseTarget.current.set(0, 0, portrait ? -3 : -2);
+    baseTarget.current.set(0, 0, targetZ);
     cam.lookAt(baseTarget.current);
     cam.updateProjectionMatrix();
-  }, [camera, size.width, size.height]);
+
+    // Expose read-only renderer/camera diagnostics in development so image
+    // quality and responsive framing can be checked in the browser and E2E tests.
+    if (import.meta.env.DEV) {
+      gl.domElement.dataset.cameraProfile = profile;
+      gl.domElement.dataset.cameraFov = cam.fov.toFixed(1);
+      gl.domElement.dataset.cameraTargetZ = targetZ.toFixed(1);
+    }
+  }, [camera, gl, size.width, size.height]);
 
   useFrame(({ clock }) => {
     const shake = reducedMotion ? 0 : Math.min(1, game.state.screenShake);
