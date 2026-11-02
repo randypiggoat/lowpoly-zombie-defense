@@ -218,23 +218,51 @@ test("streamlined upgrade UI hides combat math while keeping upgrade effects rea
   });
 
   await page.goto("/?qa=1");
+
+  const root = page.locator(".rotwood-app");
+  const finishTransition = async () => {
+    await expect(root).toHaveAttribute("data-screen-transition", "idle", { timeout: 5_000 });
+  };
+
   await page.getByRole("button", { name: /Tower Workshop/ }).click();
+  await expect(root).toHaveAttribute("data-screen", "arsenal");
+  await finishTransition();
+  await expect(page.getByRole("heading", { name: "Tower Workshop" })).toBeVisible();
+
   await page.getByRole("button", { name: /Tower Armory/ }).click();
-  await expect(page.getByText("Tower guide", { exact: true })).toBeVisible();
+  await expect(root).toHaveAttribute("data-screen", "towers");
+  await finishTransition();
+  await expect(page.getByRole("heading", { name: "Tower Armory" })).toBeVisible();
+  await expect(page.getByText("Tower blueprints", { exact: true })).toBeVisible();
   await expect(page.getByText("Scout Optic", { exact: true })).toBeVisible();
   await expect(page.getByText("Twin Guns", { exact: true })).toBeVisible();
   await expect(page.getByText("Longer sightline; shots at distant targets (6+ tiles) deal 30% more damage.", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: /BACK|← BACK/i }).first().click();
+  // The armory is nested inside the workshop; back returns to the workshop,
+  // and the workshop's own back action returns to the main menu.
+  await page.getByRole("button", { name: /TOWER WORKSHOP/i }).click();
+  await expect(root).toHaveAttribute("data-screen", "arsenal");
+  await finishTransition();
+  await expect(page.getByRole("heading", { name: "Tower Workshop" })).toBeVisible();
+  await page.getByRole("button", { name: /MAIN MENU/i }).click();
+  await expect(root).toHaveAttribute("data-screen", "main-menu");
+  await finishTransition();
+
   await page.getByRole("button", { name: /Challenges/i }).click();
+  await expect(root).toHaveAttribute("data-screen", "operations");
+  await finishTransition();
+  await expect(page.getByRole("heading", { name: "Challenges" })).toBeVisible();
   await page.getByRole("button", { name: /Stage Map/i }).click();
+  await expect(root).toHaveAttribute("data-screen", "stage-select");
+  await finishTransition();
+  await expect(page.getByRole("heading", { name: /Stage Map/i })).toBeVisible();
   await expect(page.getByText("Completion Reward:", { exact: false })).toHaveCount(0);
   await expect(page.getByText("First Clear Bonus:", { exact: false })).toHaveCount(0);
   await expect(page.getByText("Reward x", { exact: false })).toHaveCount(0);
   await expect(page.getByText("Waves:", { exact: false })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "PLAY" }).first().click();
-  await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "gameplay");
+  await page.locator('[data-stage-id="1"]').getByRole("button", { name: /START RUN/i }).click();
+  await expect(root).toHaveAttribute("data-screen", "gameplay");
 
   await expect.poll(() =>
     page.evaluate(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__)),
