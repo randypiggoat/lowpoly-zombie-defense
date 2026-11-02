@@ -41,6 +41,23 @@ describe("tower combat impact profiles", () => {
     }
   });
 
+  test("gives each attack a bounded and meaningful hit-shard silhouette", () => {
+    const profiles = EXPECTED_TOWERS.map((kind) => TOWER_IMPACT_PROFILES[kind]);
+    const shardSignatures = profiles.map((profile) => profile.sparkScale.join(":"));
+
+    expect(new Set(shardSignatures).size).toBe(EXPECTED_TOWERS.length);
+
+    for (const profile of profiles) {
+      expect(profile.sparkCount).toBeGreaterThanOrEqual(2);
+      expect(profile.sparkCount).toBeLessThanOrEqual(4);
+      expect(profile.sparkScale).toHaveLength(3);
+      for (const axisScale of profile.sparkScale) {
+        expect(axisScale).toBeGreaterThan(0);
+        expect(axisScale).toBeLessThanOrEqual(3.2);
+      }
+    }
+  });
+
   test("returns no tower-specific profile when the hit has no known attack source", () => {
     expect(getCombatImpactProfile(null)).toBeNull();
     expect(getCombatImpactProfile(undefined)).toBeNull();
