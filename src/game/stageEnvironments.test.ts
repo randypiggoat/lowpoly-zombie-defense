@@ -19,4 +19,15 @@ describe("stage environment catalog", () => {
       expect(getStageEnvironment(environment.id)).toBe(environment);
     }
   });
+
+  test("graveyard uses authored tombstones and one crypt without changing other biomes", () => {
+    const graveyard = getStageEnvironment("graveyard");
+    expect(graveyard.props.filter((item) => item.kind === "tombstone")).toHaveLength(5);
+    expect(graveyard.props.filter((item) => item.kind === "crypt")).toHaveLength(1);
+
+    for (const environment of Object.values(STAGE_ENVIRONMENTS)) {
+      if (environment.id === "graveyard") continue;
+      expect(environment.props.some((item) => item.kind === "crypt")).toBe(false);
+    }
+  });
 });

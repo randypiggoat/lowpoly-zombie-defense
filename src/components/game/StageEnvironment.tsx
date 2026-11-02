@@ -1,11 +1,23 @@
-import type { ReactNode } from "react";
+import { useFrame } from "@react-three/fiber";
+import { createContext, Suspense, useContext, useMemo, useRef, type ReactNode } from "react";
+import * as THREE from "three";
 import type {
   EnvironmentLandmark,
   EnvironmentProp,
   EnvironmentPropKind,
+  StageEnvironmentDefinition,
   StageEnvironmentId,
 } from "@/game/stageEnvironments";
-import { getStageEnvironment } from "@/game/stageEnvironments";
+import { getEnvironmentArtTone } from "@/game/environmentVisuals";
+import {
+  getKenneyGravestoneAsset,
+  getKenneyNatureAsset,
+  KENNEY_GRAVEYARD_ASSETS,
+  KENNEY_NATURE_ASSETS,
+  getKenneyVehicleAsset,
+  KENNEY_VEHICLE_ASSETS,
+} from "@/game/kenneyEnvironmentAssets";
+import { KenneyModel } from "./KenneyModel";
 
 const C = {
   wood: "#6f4c35",
@@ -34,13 +46,35 @@ const C = {
   sandbag: "#9a8a63",
 };
 
+const EnvironmentArtToneContext = createContext<StageEnvironmentId>("suburban");
+
+export function EnvironmentArtToneProvider({
+  environmentId,
+  children,
+}: {
+  environmentId: StageEnvironmentId;
+  children: ReactNode;
+}) {
+  return (
+    <EnvironmentArtToneContext.Provider value={environmentId}>
+      {children}
+    </EnvironmentArtToneContext.Provider>
+  );
+}
+
 function Mat({ color }: { color: string }) {
+  const environmentId = useContext(EnvironmentArtToneContext);
+  const tonedColor = useMemo(() => {
+    const materialColor = new THREE.Color(color);
+    materialColor.lerp(new THREE.Color(getEnvironmentArtTone(environmentId)), 0.14);
+    return "#" + materialColor.getHexString();
+  }, [color, environmentId]);
   const metal = color === C.metal || color === C.metal2;
   const crystal = color === C.ice || color === C.ice2 || color === C.glass || color === C.neon;
   const selfLit = color === C.lava || color === C.lava2 || color === C.neon;
   return (
     <meshStandardMaterial
-      color={color}
+      color={tonedColor}
       flatShading
       roughness={metal ? 0.48 : crystal ? 0.42 : 0.86}
       metalness={metal ? 0.28 : 0.035}
@@ -50,7 +84,17 @@ function Mat({ color }: { color: string }) {
   );
 }
 
-function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }) {
+function Tree({
+  pine = false,
+  dead = false,
+  variant = 0,
+}: {
+  pine?: boolean;
+  dead?: boolean;
+  variant?: number;
+}) {
+  const foliageScale = variant === 1 ? 0.92 : variant === 2 ? 1.1 : 1;
+  const foliageOffset = variant === 1 ? 0.16 : variant === 2 ? -0.18 : 0;
   return (
     <>
       <mesh position={[0, pine ? 1 : 0.6, 0]}>
@@ -70,14 +114,35 @@ function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }
         </>
       ) : pine ? (
         <>
-          <mesh position={[0, 2, 0]}><coneGeometry args={[0.95, 1.8, 6]} /><Mat color={C.pine} /></mesh>
-          <mesh position={[0, 2.75, 0]}><coneGeometry args={[0.72, 1.35, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 3.35, 0]}><coneGeometry args={[0.45, 0.95, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 2, 0]}>
+            <coneGeometry args={[0.95 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.pine} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.75, 0]}>
+            <coneGeometry args={[0.72 * foliageScale, 1.35, 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset, 3.35, 0]}>
+            <coneGeometry args={[0.45 * foliageScale, 0.95, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
         </>
       ) : (
         <>
-          <mesh position={[0, 1.55, 0]}><coneGeometry args={[1.05, 1.8, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 2.3, 0]}><coneGeometry args={[0.75, 1.25, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 1.55, variant === 2 ? 0.1 : 0]}>
+            <coneGeometry args={[1.05 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.3, 0]}>
+            <coneGeometry args={[0.75 * foliageScale, 1.25, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
+          {variant !== 0 && (
+            <mesh position={[foliageOffset * 1.8 + 0.34, 1.42, -0.16]}>
+              <coneGeometry args={[0.48, 0.82, 5]} />
+              <Mat color={variant === 1 ? C.leaf2 : C.leaf} />
+            </mesh>
+          )}
         </>
       )}
     </>
@@ -191,6 +256,22 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
     case "ore": return <Rock big />;
     case "sandbag": return <><mesh position={[-0.55, 0.28, 0]}><boxGeometry args={[0.62, 0.45, 0.42]} /><Mat color={C.sandbag} /></mesh><mesh position={[0, 0.32, 0]}><boxGeometry args={[0.62, 0.45, 0.42]} /><Mat color={C.sandbag} /></mesh><mesh position={[0.55, 0.28, 0]}><boxGeometry args={[0.62, 0.45, 0.42]} /><Mat color={C.sandbag} /></mesh></>;
     case "tombstone": return <group><mesh position={[0, 0.5, 0]}><boxGeometry args={[0.65, 1, 0.18]} /><Mat color={C.bone} /></mesh><mesh position={[0, 1, 0]}><coneGeometry args={[0.32, 0.35, 4]} /><Mat color={C.bone} /></mesh></group>;
+    case "crypt": return (
+      <group>
+        <mesh position={[0, 0.58, 0]} castShadow>
+          <boxGeometry args={[1.6, 1.16, 1.5]} />
+          <Mat color={C.stone2} />
+        </mesh>
+        <mesh position={[0, 1.34, 0]} rotation-y={Math.PI / 4} castShadow>
+          <coneGeometry args={[1.15, 0.55, 4]} />
+          <Mat color={C.stone} />
+        </mesh>
+        <mesh position={[0, 0.62, 0.76]}>
+          <boxGeometry args={[0.55, 0.74, 0.06]} />
+          <Mat color={C.dark} />
+        </mesh>
+      </group>
+    );
     case "rubble": return <><mesh position={[-0.35, 0.28, 0]}><dodecahedronGeometry args={[0.42, 0]} /><Mat color="#676c6e" /></mesh><mesh position={[0.3, 0.2, 0.15]}><dodecahedronGeometry args={[0.34, 0]} /><Mat color={C.stone2} /></mesh></>;
     case "pipe": return <mesh position={[0, 0.45, 0]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.14, 0.14, 2.1, 8]} /><Mat color={C.metal} /></mesh>;
     case "vent": return <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[0.42, 0.5, 0.5, 10]} /><Mat color={C.metal2} /></mesh>;
@@ -203,22 +284,97 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   }
 }
 
-export function EnvironmentPropMesh({ item }: { item: EnvironmentProp }) {
+function KenneyNatureProp({
+  environmentId,
+  kind,
+  fallback,
+  variantIndex = 0,
+}: {
+  environmentId: StageEnvironmentId;
+  kind: EnvironmentPropKind;
+  fallback: ReactNode;
+  variantIndex?: number;
+}) {
+  const assetId = getKenneyNatureAsset(environmentId, kind);
+  if (!assetId) return fallback;
+  const asset = KENNEY_NATURE_ASSETS[assetId];
+  const scale = variantIndex % 3 === 1 ? 0.96 : variantIndex % 3 === 2 ? 1.05 : 1;
+  return (
+    <Suspense fallback={fallback}>
+      <group rotation-y={variantIndex * 0.47} scale={scale}>
+        <KenneyModel {...asset} castShadow={false} receiveShadow={false} />
+      </group>
+    </Suspense>
+  );
+}
+
+function KenneyVehicleProp({
+  environmentId,
+  fallback,
+}: {
+  environmentId: StageEnvironmentId;
+  fallback: ReactNode;
+}) {
+  const assetId = getKenneyVehicleAsset(environmentId);
+  if (!assetId) return fallback;
+  const asset = KENNEY_VEHICLE_ASSETS[assetId];
+  return (
+    <Suspense fallback={fallback}>
+      <KenneyModel {...asset} castShadow={false} receiveShadow={false} />
+    </Suspense>
+  );
+}
+
+export function EnvironmentPropMesh({
+  item,
+  environmentId,
+  variantIndex = 0,
+}: {
+  item: EnvironmentProp;
+  environmentId: StageEnvironmentId;
+  variantIndex?: number;
+}) {
   let node: ReactNode;
   switch (item.kind) {
-    case "tree": node = <Tree />; break;
-    case "pine": node = <Tree pine />; break;
-    case "palm": node = <Palm />; break;
+    case "tombstone": {
+      if (environmentId !== "graveyard") {
+        node = <Industrial kind={item.kind} />;
+        break;
+      }
+      const asset = KENNEY_GRAVEYARD_ASSETS[getKenneyGravestoneAsset(variantIndex)];
+      node = (
+        <Suspense fallback={<Industrial kind={item.kind} />}>
+          <KenneyModel src={asset.src} sourceHeight={asset.sourceHeight} width={2} depth={2} height={2} />
+        </Suspense>
+      );
+      break;
+    }
+    case "crypt": {
+      if (environmentId !== "graveyard") {
+        node = <Industrial kind={item.kind} />;
+        break;
+      }
+      const asset = KENNEY_GRAVEYARD_ASSETS.cryptLarge;
+      node = (
+        <Suspense fallback={<Industrial kind={item.kind} />}>
+          <KenneyModel {...asset} />
+        </Suspense>
+      );
+      break;
+    }
+    case "tree": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Tree variant={variantIndex % 3} />} />; break;
+    case "pine": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Tree pine variant={variantIndex % 3} />} />; break;
+    case "palm": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Palm />} />; break;
     case "dead-tree": node = <Tree dead />; break;
     case "rock": node = <Rock />; break;
     case "boulder": node = <Rock big />; break;
-    case "cactus": node = <Cactus />; break;
+    case "cactus": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Cactus />} />; break;
     case "shrub": node = <mesh position={[0, 0.35, 0]} scale={[1.2, 0.7, 1]}><icosahedronGeometry args={[0.6, 0]} /><Mat color={C.leaf2} /></mesh>; break;
     case "crate": node = <BoxProp />; break;
     case "barrel": node = <BoxProp barrel />; break;
     case "fence": node = <Fence />; break;
     case "lamp": node = <Lamp />; break;
-    case "car": node = <Car />; break;
+    case "car": node = <KenneyVehicleProp environmentId={environmentId} fallback={<Car />} />; break;
     default: node = <Industrial kind={item.kind} />;
   }
   return <group position={item.position} rotation-y={item.rotation} scale={item.scale}>{node}</group>;
@@ -228,8 +384,46 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   const common = { position: item.position, rotation: [0, item.rotation, 0] as [number, number, number], scale: item.scale };
   switch (item.kind) {
     case "windmill": return <group {...common}><mesh position={[0,1.7,0]}><coneGeometry args={[0.65,3.4,6]} /><Mat color={C.stone}/></mesh><mesh position={[0,3.25,0.4]} rotation-x={Math.PI/2}><cylinderGeometry args={[0.22,0.22,0.18,8]}/><Mat color={C.metal2}/></mesh>{[0,1.57,3.14,4.71].map(r=><mesh key={r} position={[Math.sin(r)*0.85,3.25+Math.cos(r)*0.85,0.4]} rotation-z={r}><boxGeometry args={[0.12,1.6,0.08]}/><Mat color={C.wood2}/></mesh>)}</group>;
-    case "giant-tree":
-    case "redwood-giant": return <group {...common}><mesh position={[0,3.2,0]}><cylinderGeometry args={[0.55,0.85,6.4,8]}/><Mat color={C.wood}/></mesh><mesh position={[0,6.1,0]}><coneGeometry args={[2.6,4.4,7]}/><Mat color={C.leaf}/></mesh><mesh position={[0,7.6,0]}><coneGeometry args={[1.8,3.1,7]}/><Mat color={C.leaf2}/></mesh></group>;
+    case "giant-tree": return (
+      <group {...common}>
+        <mesh position={[0, 3.2, 0]} castShadow>
+          <cylinderGeometry args={[0.55, 0.85, 6.4, 8]} />
+          <Mat color={C.wood} />
+        </mesh>
+        <mesh position={[0, 6.1, 0]} castShadow>
+          <coneGeometry args={[2.6, 4.4, 7]} />
+          <Mat color={C.leaf} />
+        </mesh>
+        <mesh position={[0, 7.6, 0]} castShadow>
+          <coneGeometry args={[1.8, 3.1, 7]} />
+          <Mat color={C.leaf2} />
+        </mesh>
+      </group>
+    );
+    case "redwood-giant": return (
+      <group {...common}>
+        <Suspense
+          fallback={
+            <group>
+              <mesh position={[0, 3.2, 0]} castShadow>
+                <cylinderGeometry args={[0.55, 0.85, 6.4, 8]} />
+                <Mat color={C.wood} />
+              </mesh>
+              <mesh position={[0, 6.1, 0]} castShadow>
+                <coneGeometry args={[2.6, 4.4, 7]} />
+                <Mat color={C.pine} />
+              </mesh>
+              <mesh position={[0, 7.6, 0]} castShadow>
+                <coneGeometry args={[1.8, 3.1, 7]} />
+                <Mat color={C.leaf2} />
+              </mesh>
+            </group>
+          }
+        >
+          <KenneyModel {...KENNEY_NATURE_ASSETS.pineGiant} />
+        </Suspense>
+      </group>
+    );
     case "market-arcade": return (
       <group {...common}>
         {[-2.1, 0, 2.1].map((x) => (
@@ -277,7 +471,28 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
     );
     case "ice-cave": return <group {...common}>{[-1.5,0,1.5].map((x,i)=><mesh key={x} position={[x,1.8+(i===1?0.8:0),0]}><coneGeometry args={[1.5,3.8+(i===1?1:0),6]}/><Mat color={C.ice2}/></mesh>)}</group>;
     case "lighthouse": return <group {...common}><mesh position={[0,2.2,0]}><cylinderGeometry args={[0.7,1.05,4.4,8]}/><Mat color={C.snow}/></mesh><mesh position={[0,4.65,0]}><cylinderGeometry args={[0.78,0.82,0.5,8]}/><Mat color={C.hazard}/></mesh><mesh position={[0,5.15,0]}><coneGeometry args={[0.9,0.55,8]}/><Mat color={C.metal2}/></mesh></group>;
-    case "oasis": return <group {...common}><mesh position={[0,0.08,0]}><cylinderGeometry args={[2,2,0.12,16]}/><meshStandardMaterial color={C.water} transparent opacity={0.8}/></mesh><group position={[-1.2,0,0]}><Palm/></group><group position={[1.3,0,0.2]} scale={0.8}><Palm/></group></group>;
+    case "oasis": return (
+      <group {...common}>
+        <mesh position={[0, 0.08, 0]}>
+          <cylinderGeometry args={[2, 2, 0.12, 16]} />
+          <meshStandardMaterial color={C.water} transparent opacity={0.8} />
+        </mesh>
+        <group position={[-1.2, 0, 0]}>
+          <KenneyNatureProp
+            environmentId="desert-bazaar"
+            kind="palm"
+            fallback={<Palm />}
+          />
+        </group>
+        <group position={[1.3, 0, 0.2]} scale={0.8}>
+          <KenneyNatureProp
+            environmentId="desert-bazaar"
+            kind="palm"
+            fallback={<Palm />}
+          />
+        </group>
+      </group>
+    );
     case "canyon-bridge": return <group {...common}><mesh position={[0,1.2,0]}><boxGeometry args={[5.5,0.35,1.6]}/><Mat color={C.wood2}/></mesh>{[-2.2,2.2].map(x=><mesh key={x} position={[x,0.55,0]}><boxGeometry args={[0.3,1.5,1.1]}/><Mat color={C.stone2}/></mesh>)}</group>;
     case "mine-headframe": return <group {...common}>{[-1.4,1.4].map(x=><mesh key={x} position={[x,1.8,0]} rotation-z={x*0.16}><boxGeometry args={[0.3,3.6,0.3]}/><Mat color={C.wood}/></mesh>)}<mesh position={[0,3.1,0]}><boxGeometry args={[3.5,0.32,0.35]}/><Mat color={C.wood2}/></mesh></group>;
     case "radar-dish": return <group {...common}><mesh position={[0,1.4,0]}><cylinderGeometry args={[0.12,0.18,2.8,6]}/><Mat color={C.metal2}/></mesh><mesh position={[0,2.75,0.18]} scale={[1,0.65,0.35]} rotation-x={-0.55}><sphereGeometry args={[1,10,6]}/><Mat color={C.metal}/></mesh></group>;
@@ -380,12 +595,88 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   }
 }
 
-export function StageEnvironment({ environmentId }: { environmentId: StageEnvironmentId }) {
-  const environment = getStageEnvironment(environmentId);
+const SWAYING_PROP_KINDS = new Set<EnvironmentPropKind>([
+  "tree",
+  "pine",
+  "palm",
+  "dead-tree",
+]);
+
+function SwayingEnvironmentPropMesh({
+  item,
+  environmentId,
+  variantIndex,
+  reducedMotion,
+}: {
+  item: EnvironmentProp;
+  environmentId: StageEnvironmentId;
+  variantIndex: number;
+  reducedMotion: boolean;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const phase = item.position[0] * 0.37 + item.position[2] * 0.19;
+  const localItem: EnvironmentProp = { ...item, position: [0, 0, 0] };
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    group.current.rotation.z = reducedMotion
+      ? 0
+      : Math.sin(clock.elapsedTime * 0.48 + phase) * 0.012;
+  });
+
+  return (
+    <group ref={group} position={item.position}>
+      <EnvironmentPropMesh
+        item={localItem}
+        environmentId={environmentId}
+        variantIndex={variantIndex}
+      />
+    </group>
+  );
+}
+
+export function EnvironmentPropVisual({
+  item,
+  environmentId,
+  variantIndex = 0,
+  reducedMotion = false,
+}: {
+  item: EnvironmentProp;
+  environmentId: StageEnvironmentId;
+  variantIndex?: number;
+  reducedMotion?: boolean;
+}) {
+  return SWAYING_PROP_KINDS.has(item.kind) ? (
+    <SwayingEnvironmentPropMesh
+      item={item}
+      environmentId={environmentId}
+      variantIndex={variantIndex}
+      reducedMotion={reducedMotion}
+    />
+  ) : (
+    <EnvironmentPropMesh item={item} environmentId={environmentId} variantIndex={variantIndex} />
+  );
+}
+
+export function StageEnvironment({
+  layout,
+  reducedMotion = false,
+}: {
+  layout: StageEnvironmentDefinition;
+  reducedMotion?: boolean;
+}) {
   return (
     <group>
-      {environment.props.map((item, index) => <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />)}
-      <LandmarkMesh item={environment.landmark} />
+      {layout.props.map((item, index) => (
+        <EnvironmentPropVisual
+          key={`${item.kind}-${index}`}
+          item={item}
+          environmentId={layout.id}
+          variantIndex={index}
+          reducedMotion={reducedMotion}
+        />
+      ))}
+      <LandmarkMesh item={layout.landmark} />
     </group>
   );
 }

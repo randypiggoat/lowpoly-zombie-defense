@@ -67,3 +67,31 @@ export const ENVIRONMENT_VISUALS: Record<StageEnvironmentId, EnvironmentVisualPr
 export function getEnvironmentVisualProfile(id: StageEnvironmentId) {
   return ENVIRONMENT_VISUALS[id];
 }
+
+/** Subtle per-biome material tint for shared procedural scenery meshes. */
+export const ENVIRONMENT_ART_TONES: Record<StageEnvironmentId, string> = {
+  suburban: "#d5e8b7",
+  orchard: "#f0d79a",
+  market: "#e8b59b",
+  "rail-yard": "#b8cbd4",
+  "river-checkpoint": "#9fd8ce",
+  "jungle-ruins": "#c0d68c",
+  mangrove: "#9bc9ac",
+  redwood: "#d8bc83",
+  "frozen-lab": "#c0e9f7",
+  "ice-cavern": "#9dd5e8",
+  harbor: "#8ac8d4",
+  "desert-bazaar": "#f0c57e",
+  "redrock-canyon": "#e8a07d",
+  "deep-mine": "#aeb5b3",
+  "military-outpost": "#c2c99c",
+  "abandoned-city": "#a8bfce",
+  foundry: "#e39a72",
+  graveyard: "#b4c1af",
+  volcano: "#dc8058",
+  blacksite: "#70d7d5",
+};
+
+export function getEnvironmentArtTone(id: StageEnvironmentId) {
+  return ENVIRONMENT_ART_TONES[id];
+}

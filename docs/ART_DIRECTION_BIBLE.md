@@ -410,3 +410,98 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - The in-match A/B upgrade columns now expose an accessible four-segment progress meter backed by the existing owned-tier value, and carry explicit path/state attributes for deterministic styling.
 - Damage specialization and support/control have distinct restrained accent treatments in the panel; the support/control purchase action uses its aqua accent while preserving real prices, unlock rules and purchase callback.
 - This is UI presentation only. No additional upgrade, currency or progression mechanics were introduced.
+
+
+## Change log — 2026-11-02
+
+### Integrate selected Kenney low-poly buildings into live maps
+
+- Bundled four self-contained local GLB models from Kenney's City Kit (Suburban) and City Kit (Commercial): two suburban houses, one commercial mid-rise, and one narrow skyscraper.
+- Replaced the authored **Family house** and **Garage** obstacle visuals on the suburban map with the matching Kenney building silhouettes. The Garden wall remains purpose-built geometry.
+- Replaced the authored **Apartment block**, **Office block**, **Parking deck**, and **Collapsed storefront** obstacle visuals on the abandoned-city map with two contrasting imported building profiles. Tall skyline forms and shorter block forms create more deliberate height variation.
+- Each model is cloned as a static scene instance, aligned to its measured GLB base, scaled to the obstacle footprint, and rendered from local public assets. Each instance retains a procedural Suspense fallback so the scene remains visible while a model is loading.
+- Only presentation meshes changed. `maps.ts` remains authoritative for obstacle bounds, route clearance, tower placement, collision and line-of-sight rules.
+- The four GLBs are CC0 1.0, use embedded textures, total approximately 543 KB, and are documented in `docs/ASSET_INVENTORY.md`. Their license notice is copied to `public/models/kenney/LICENSE.txt`. No third-party network request is made during gameplay.
+- Added a tested environment-to-model selector so imported buildings cannot leak into unrelated biomes or replace walls, market stalls, foundry structures or graveyard landmarks.
+- **Verification boundary:** source files and license metadata are recorded. Exact visual scale, texture sharpness, shadow quality and mobile GPU cost still require browser screenshot inspection and physical-device review. Automated checks on the final commit must pass before merge.
+
+
+### Cemetery identity pass — Kenney Graveyard Kit
+
+- Replaced the five simple block tombstones on the Graveyard map with three deterministic CC0 gravestone silhouettes: cross, bevel and broken stone.
+- Replaced the final decorative dead tree at its existing authored prop coordinate with a larger crypt/mausoleum model. The cemetery now has a stronger graveyard-specific skyline rather than relying only on the cathedral landmark.
+- Added a shared `KenneyModel` component so all imported static GLBs use the same measured ground alignment, cloned scene hierarchy, static shadow flags, and local-file loading behavior.
+- The graveyard assets are included in `docs/ASSET_INVENTORY.md` and covered by the local Kenney CC0 notice.
+- Only stage-environment decoration changed. No campaign map route, obstacle, tower-placement, collision, enemy, wave or reward rule was edited.
+- **Verification boundary:** deterministic asset selection and graveyard prop assignment have unit tests. Visual composition, silhouette clarity at phone scale, and mobile shadow/performance behavior still require screenshot inspection and device testing on the final commit.
+
+
+### Tower impact palette cohesion — 2026-11-02
+
+- Per-tower impact flashes now reuse the exact canonical accent color already defined in `TOWER_INFO` and recorded in this bible: Rifleman gold, Shotgunner amber, Sniper sage, Tesla violet, Flamethrower orange, Freezer ice blue, Rocket coral, and Laser mint.
+- Geometry, ring aspect, spread, lift and rotation still differentiate the eight attack signatures; the hue is no longer an unrelated second palette.
+- A unit test checks every impact profile against its canonical tower accent, so later palette edits cannot silently desynchronize the tower model and hit feedback.
+
+
+### Biome-specific vegetation pass — Kenney Nature Kit
+
+- Replaced selected procedural environment vegetation with measured Kenney low-poly silhouettes: broad oak, tall pine, detailed palm and tall cactus.
+- **Suburban, orchard and river checkpoint:** oak canopies establish a rounder, broadleaf environment profile.
+- **Redwood:** tall pine silhouettes reinforce the map's vertical forest identity.
+- **Jungle ruins and mangrove:** detailed palm silhouettes separate tropical foliage from the temperate tree shapes.
+- **Desert bazaar:** a distinctive branching cactus replaces the generic primitive cactus.
+- Selection is driven by both `StageEnvironmentId` and `EnvironmentPropKind`; mismatched combinations continue to use the authored procedural fallback.
+- The shared GLB loader now uses measured source width, depth, height and minimum-Y values, so vegetation is scaled to its real source bounds and planted at the ground plane.
+- No gameplay collision, route, placement, lighting-budget or enemy rule was changed. These are visual-only environment props.
+- **Verification boundary:** map-specific selector tests cover the combinations and fallbacks. Actual camera composition, texture sharpness, clipping, shadow quality and phone-GPU cost still require inspection of the final screenshot artifacts and physical devices.
+
+
+### Imported foliage shadow budget — 2026-11-02
+
+- The shared GLB component now accepts explicit shadow flags.
+- Imported buildings, cemetery stones and crypts keep their cast/receive shadow presentation.
+- Imported ambient vegetation is explicitly non-shadow-casting and non-shadow-receiving, preserving the existing scenery optimization where the procedural scenery renderer disables shadow casters.
+- This avoids adding a new set of foliage shadow casters on lower-power mobile devices. The actual GPU cost still requires target-device measurement.
+
+
+### Signature landmark vegetation reuse — 2026-11-02
+
+- The Redwood signature landmark now uses the same detailed Kenney tall pine as its surrounding forest props, at a separate giant-tree scale. This creates a consistent foliage language while preserving the original landmark position and overall tall-tree mass.
+- The Desert Bazaar oasis now uses the same detailed palm model as tropical props rather than a separate procedural palm approximation.
+- Both landmarks retain procedural fallbacks while their local GLBs load.
+- Their environment definition coordinates, landmark scale, road, obstacle placement and gameplay rules remain unchanged.
+- The pine source mesh is shared through the GLTF cache; only per-instance transforms differ.
+
+
+### Tower-specific impact shard silhouettes — 2026-11-02
+
+- The pooled hit burst now differentiates not only color and ring proportions, but the shape language of its four preallocated octahedral shards.
+- Rifleman and Sniper create narrow precision needles; Shotgunner uses broad fragments; Tesla uses upright electrical spikes; Flamethrower throws ember-like shards; Freezer uses elongated crystal forms; Rocket uses heavier debris; Laser uses exceptionally thin slashes.
+- Per-profile shard count and three-axis scale are bounded and tested. Inactive shards are made transparent rather than created or destroyed per hit.
+- The existing pool remains fixed at 24 bursts × 4 preallocated shards. No per-hit React components or dynamic particle allocations were added. Combat simulation, damage, targeting, and status effects are unchanged.
+
+
+### Biome-specific vehicle models — Kenney Car Kit
+
+- Replaced the simple box-and-cylinder car proxy with two actual low-poly vehicle models from Kenney's CC0 Car Kit.
+- Suburban and Market use the compact red sedan; Abandoned City uses the larger green SUV to give the damaged urban environment a heavier vehicle silhouette.
+- Both models use measured GLB bounds and local static paths. They retain a procedural car fallback while loading.
+- Existing authored environment prop coordinates, rotations, scales, and map collision/placement rules remain unchanged. Vehicles remain decorative, non-colliding scenery and do not block enemy routes or tower line of sight.
+- The additional GLBs are included in `docs/ASSET_INVENTORY.md` and the local CC0 notice.
+
+
+### Crypt silhouette refinement — Kenney Graveyard Kit
+
+- Replaced the small block-like crypt with the larger arched-entry crypt model. Its entrance and perimeter buttresses make the cemetery landmark read as a mausoleum rather than a generic box.
+- Ground placement uses the measured 2 × 2 × 2.400175 source bounds and minimum Y of -1; the game uses a deliberate 2.5 × 2.3 × 3.0 target form at the authored cemetery prop coordinate.
+- The existing graveyard prop position remains unchanged. No path, obstacle, tower-placement or collision rules were modified.
+
+### Deterministic map-specific environment composition — 2026-11-02
+
+- Integrated the map-aware composition system from the open map-scenery work into this branch rather than creating a second competing placement system.
+- Authored landmarks and ambient props now receive deterministic, nearest-safe placement against route width, map bounds, obstacle footprints, blocked zones, the base, and already occupied environment footprints.
+- Ambient props are placed in stable perimeter and obstacle-adjacent clusters, with separate per-map seed streams; this replaces the prior uniform random scatter shared by every map.
+- Added smaller faceted terrain accents with clearance from routes and authored scenery to break up the oversized flat ground patches.
+- Added 20 restrained environment material tones for procedural props, three procedural tree silhouette variants, and low-amplitude foliage sway that is disabled under reduced motion.
+- All imported Kenney models remain local and retain their measured GLB transforms. Map route, gameplay obstacle, tower placement, enemy navigation, and line-of-sight systems remain authoritative and unchanged.
+- Automated tests cover deterministic layouts, unique per-map scenery, safe clearance, all 20 material tones, and terrain-accent placement. Screenshot inspection and device performance still require final CI artifacts and target-device review.

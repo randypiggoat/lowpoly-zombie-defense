@@ -1,5 +1,11 @@
+import { Suspense } from "react";
 import type { StageEnvironmentId } from "@/game/stageEnvironments";
 import { getEnvironmentVisualProfile } from "@/game/environmentVisuals";
+import {
+  getKenneyBuildingAsset,
+  KENNEY_BUILDING_ASSETS,
+} from "@/game/kenneyEnvironmentAssets";
+import { KenneyModel } from "./KenneyModel";
 
 type Props = {
   environmentId: StageEnvironmentId;
@@ -82,6 +88,48 @@ export function ThemedBuilding({ environmentId, label, x, z, width, depth, heigh
   const roof = profile.palette.roof;
   const glass = profile.palette.glass;
   const key = environmentId + "-" + label + "-" + index;
+  const importedAsset = getKenneyBuildingAsset(environmentId, label);
+
+  if (importedAsset) {
+    // The suburban houses and city skyline deliberately use different height
+    // families so the imported silhouettes create a readable miniature skyline.
+    const modelHeight =
+      importedAsset === "suburbanHouseA"
+        ? Math.max(2.25, h * 1.7)
+        : importedAsset === "suburbanHouseF"
+          ? Math.max(1.9, h * 1.7)
+          : importedAsset === "citySkyscraperA"
+            ? Math.max(5.4, h * 1.15)
+            : Math.max(3.1, h * 0.72);
+
+    return (
+      <group key={key} position={[x, 0, z]}>
+        <Suspense
+          fallback={
+            <group>
+              <Shell w={w} h={modelHeight} d={d} color={shell} />
+              {style === "residential" ? (
+                <GabledRoof w={w} d={d} y={modelHeight + 0.2} color={roof} />
+              ) : (
+                <mesh position={[0, modelHeight + 0.07, 0]} castShadow>
+                  <boxGeometry args={[w + 0.08, 0.14, d + 0.08]} />
+                  <Mat color={trim} />
+                </mesh>
+              )}
+            </group>
+          }
+        >
+          <KenneyModel
+            src={KENNEY_BUILDING_ASSETS[importedAsset].src}
+            sourceHeight={KENNEY_BUILDING_ASSETS[importedAsset].sourceHeight}
+            width={w}
+            depth={d}
+            height={modelHeight}
+          />
+        </Suspense>
+      </group>
+    );
+  }
 
   if (style === "city") {
     return (
