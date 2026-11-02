@@ -60,6 +60,7 @@ test("campaign victory can continue into endless without resetting the active de
   expect(won.gameOver).toBe(true);
   expect(won.stageWon).toBe(true);
   expect(won.wave).toBe(won.stageWaveTarget);
+  await expect(page.locator(".rw-results-screen")).toBeVisible();
   await expect(page.getByRole("button", { name: /CONTINUE IN ENDLESS/i })).toBeVisible();
   await page.getByRole("button", { name: /CONTINUE IN ENDLESS/i }).click();
   const after = await page.evaluate(() => {

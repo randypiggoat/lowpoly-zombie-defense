@@ -26,6 +26,39 @@ describe("zombie presentation", () => {
     expect(ZOMBIE_PRESENTATION[5].faceZ).toBeGreaterThan(ZOMBIE_PRESENTATION[0].faceZ);
   });
 
+  test("defines distinct bounded locomotion and impact accents for every archetype", () => {
+    const profiles = Object.values(ZOMBIE_PRESENTATION);
+    const motionFields = [
+      "stepLift",
+      "torsoTwist",
+      "armAsymmetry",
+      "bodyPulse",
+      "idleJitter",
+      "hitStagger",
+      "hitSideRoll",
+      "deathTwist",
+    ] as const;
+
+    for (const profile of profiles) {
+      for (const field of motionFields) {
+        expect(Number.isFinite(profile[field])).toBe(true);
+        expect(profile[field]).toBeGreaterThanOrEqual(0);
+      }
+      expect(profile.stepLift).toBeLessThanOrEqual(0.2);
+      expect(profile.hitStagger).toBeLessThanOrEqual(0.25);
+      expect(profile.deathTwist).toBeLessThanOrEqual(0.5);
+    }
+
+    expect(new Set(profiles.map((profile) => profile.stepLift)).size).toBe(8);
+    expect(new Set(profiles.map((profile) => profile.bodyPulse)).size).toBe(8);
+    expect(new Set(profiles.map((profile) => profile.hitStagger)).size).toBe(8);
+    expect(new Set(profiles.map((profile) => profile.deathTwist)).size).toBe(8);
+    expect(ZOMBIE_PRESENTATION[1].stepLift).toBeGreaterThan(ZOMBIE_PRESENTATION[2].stepLift);
+    expect(ZOMBIE_PRESENTATION[2].hitStagger).toBeLessThan(ZOMBIE_PRESENTATION[1].hitStagger);
+    expect(ZOMBIE_PRESENTATION[4].bodyPulse).toBeGreaterThan(ZOMBIE_PRESENTATION[0].bodyPulse);
+    expect(ZOMBIE_PRESENTATION[7].hitSideRoll).toBeGreaterThan(ZOMBIE_PRESENTATION[5].hitSideRoll);
+  });
+
   test("keeps archetype scale deterministic and applies the boss multiplier once", () => {
     const expected: Record<StageEnemyKind, number> = {
       0: 1,

@@ -66,8 +66,11 @@ function useGameSnapshot() {
   const [, force] = useState(0);
   useSyncExternalStore(
     (cb) => game.subscribe(cb),
-    () => game.state.gold + game.state.wave * 1000,
-    () => 0,
+    () => {
+      const { gold, wave, gameOver, stageWon, endlessMode } = game.state;
+      return `${gold}:${wave}:${gameOver}:${stageWon}:${endlessMode}`;
+    },
+    () => "",
   );
   useEffect(() => {
     const id = setInterval(() => force((n) => n + 1), 200);
@@ -617,12 +620,25 @@ export function GameCanvas() {
   }, []);
 
   useEffect(() => {
-    if (screen === "gameplay" && state.gameOver) {
+    if (screen !== "gameplay") return;
+
+    const showResults = () => {
+      if (!game.state.gameOver) return;
       setOverlay(null);
       setSelection(null);
       setScreen("results");
-    }
-  }, [screen, state.gameOver]);
+    };
+
+    // Keep the event-driven transition for normal simulation updates, and also
+    // re-check the authoritative state when the React snapshot changes. This
+    // covers deterministic QA/test updates that call game.tick() directly and
+    // do not emit a store notification.
+    const unsubscribe = game.subscribe(showResults);
+    showResults();
+    return () => {
+      unsubscribe();
+    };
+  }, [screen, state.gameOver, setScreen]);
 
   useEffect(() => {
     if (screen !== "results" || !state.gameOver || !lastReward) return;
