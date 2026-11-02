@@ -71,6 +71,7 @@ describe("Kenney biome vegetation selection", () => {
     expect(getKenneyNatureAsset("redwood", "pine")).toBe("pineTall");
     expect(getKenneyNatureAsset("jungle-ruins", "palm")).toBe("palmTall");
     expect(getKenneyNatureAsset("mangrove", "palm")).toBe("palmTall");
+    expect(getKenneyNatureAsset("desert-bazaar", "palm")).toBe("palmTall");
     expect(getKenneyNatureAsset("desert-bazaar", "cactus")).toBe("cactusTall");
   });
 
