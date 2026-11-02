@@ -10,6 +10,8 @@ export type CombatImpactProfile = Readonly<{
   ringScaleY: number;
   ringTilt: number;
   rotationSpeed: number;
+  sparkCount: 2 | 3 | 4;
+  sparkScale: readonly [number, number, number];
 }>;
 
 /**
@@ -30,6 +32,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 0.72,
     ringTilt: Math.PI / 2,
     rotationSpeed: 3.1,
+    sparkCount: 3,
+    sparkScale: [0.42, 1.55, 0.42],
   },
   shotgunner: {
     color: "#d98a3c",
@@ -41,6 +45,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 1.12,
     ringTilt: Math.PI / 2,
     rotationSpeed: 4.8,
+    sparkCount: 4,
+    sparkScale: [1.35, 0.86, 0.62],
   },
   sniper: {
     color: "#8fb98a",
@@ -52,6 +58,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 0.36,
     ringTilt: Math.PI / 2,
     rotationSpeed: 1.2,
+    sparkCount: 2,
+    sparkScale: [0.22, 2.65, 0.22],
   },
   tesla: {
     color: "#b892ff",
@@ -63,6 +71,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 1.26,
     ringTilt: 0.18,
     rotationSpeed: 6.2,
+    sparkCount: 4,
+    sparkScale: [0.32, 2.05, 0.32],
   },
   flamethrower: {
     color: "#f2703b",
@@ -74,6 +84,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 0.82,
     ringTilt: Math.PI / 2,
     rotationSpeed: 2.6,
+    sparkCount: 4,
+    sparkScale: [0.78, 1.35, 0.52],
   },
   freezer: {
     color: "#79c7e3",
@@ -85,6 +97,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 1.24,
     ringTilt: Math.PI / 2,
     rotationSpeed: -2.2,
+    sparkCount: 4,
+    sparkScale: [0.62, 1.95, 0.62],
   },
   rocket: {
     color: "#e2725b",
@@ -96,6 +110,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 1.34,
     ringTilt: Math.PI / 2,
     rotationSpeed: 5.2,
+    sparkCount: 4,
+    sparkScale: [1.72, 1.05, 0.86],
   },
   laser: {
     color: "#63e6c3",
@@ -107,6 +123,8 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     ringScaleY: 0.24,
     ringTilt: Math.PI / 2,
     rotationSpeed: 0.35,
+    sparkCount: 2,
+    sparkScale: [0.14, 3.1, 0.14],
   },
 };
 
