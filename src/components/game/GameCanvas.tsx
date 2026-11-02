@@ -572,7 +572,9 @@ export function GameCanvas() {
 
   const openSettings = (backScreen: PrimaryScreen) => {
     setSettingsBackScreen(backScreen);
-    setOverlay(null);
+    // Keep the battlefield paused during the menu exit animation when Settings
+    // was opened from the in-game pause menu.
+    setOverlay(backScreen === "gameplay" ? "pause" : null);
     setScreen("settings");
   };
 
@@ -1001,8 +1003,8 @@ export function GameCanvas() {
       {screen === "endless-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/65 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
+            <ScreenButton onClick={() => setScreen("operations")} variant="secondary">
+              ← CHALLENGES
             </ScreenButton>
             <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
               <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Long-tail mode</p>
@@ -1067,8 +1069,8 @@ export function GameCanvas() {
       {screen === "boss-trial-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
+            <ScreenButton onClick={() => setScreen("operations")} variant="secondary">
+              ← CHALLENGES
             </ScreenButton>
             <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 text-panel-foreground shadow-panel">
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Weekly rotation</p>
@@ -1158,7 +1160,7 @@ export function GameCanvas() {
       {screen === "side-mode-select" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/65 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <ScreenButton onClick={() => setScreen("operations")} variant="secondary">← CHALLENGES</ScreenButton>
 
             <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 text-panel-foreground shadow-panel">
               <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Repeatable content</p>
@@ -1359,7 +1361,7 @@ export function GameCanvas() {
 {screen === "collection" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <ScreenButton onClick={() => setScreen("arsenal")} variant="secondary">← TOWER WORKSHOP</ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
               <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Long-term collection</p>
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Tower Skins</h2>
@@ -1427,7 +1429,7 @@ export function GameCanvas() {
       {screen === "events" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <ScreenButton onClick={() => setScreen("operations")} variant="secondary">← CHALLENGES</ScreenButton>
             <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 shadow-panel">
               <p className="text-xs uppercase tracking-[0.2em] text-panel-muted">Limited event</p>
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">{seasonalEvent.name}</h2>
@@ -1599,8 +1601,8 @@ export function GameCanvas() {
       {screen === "missions" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
+            <ScreenButton onClick={() => setScreen("field-intel")} variant="secondary">
+              ← FIELD INTEL
             </ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">
@@ -1643,8 +1645,8 @@ export function GameCanvas() {
       {screen === "achievements" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
+            <ScreenButton onClick={() => setScreen("field-intel")} variant="secondary">
+              ← FIELD INTEL
             </ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
               <h2 className="font-display text-2xl tracking-wide text-panel-foreground">
@@ -1713,8 +1715,8 @@ export function GameCanvas() {
       {screen === "shop" && (
         <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">
-              ← BACK
+            <ScreenButton onClick={() => setScreen("supply-depot")} variant="secondary">
+              ← SUPPLY DEPOT
             </ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
               <div className="flex items-start justify-between gap-3">
