@@ -495,3 +495,13 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Replaced the small block-like crypt with the larger arched-entry crypt model. Its entrance and perimeter buttresses make the cemetery landmark read as a mausoleum rather than a generic box.
 - Ground placement uses the measured 2 × 2 × 2.400175 source bounds and minimum Y of -1; the game uses a deliberate 2.5 × 2.3 × 3.0 target form at the authored cemetery prop coordinate.
 - The existing graveyard prop position remains unchanged. No path, obstacle, tower-placement or collision rules were modified.
+
+### Deterministic map-specific environment composition — 2026-11-02
+
+- Integrated the map-aware composition system from the open map-scenery work into this branch rather than creating a second competing placement system.
+- Authored landmarks and ambient props now receive deterministic, nearest-safe placement against route width, map bounds, obstacle footprints, blocked zones, the base, and already occupied environment footprints.
+- Ambient props are placed in stable perimeter and obstacle-adjacent clusters, with separate per-map seed streams; this replaces the prior uniform random scatter shared by every map.
+- Added smaller faceted terrain accents with clearance from routes and authored scenery to break up the oversized flat ground patches.
+- Added 20 restrained environment material tones for procedural props, three procedural tree silhouette variants, and low-amplitude foliage sway that is disabled under reduced motion.
+- All imported Kenney models remain local and retain their measured GLB transforms. Map route, gameplay obstacle, tower placement, enemy navigation, and line-of-sight systems remain authoritative and unchanged.
+- Automated tests cover deterministic layouts, unique per-map scenery, safe clearance, all 20 material tones, and terrain-accent placement. Screenshot inspection and device performance still require final CI artifacts and target-device review.

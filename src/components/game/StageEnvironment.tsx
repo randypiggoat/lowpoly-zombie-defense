@@ -1,11 +1,14 @@
-import { Suspense, type ReactNode } from "react";
+import { useFrame } from "@react-three/fiber";
+import { createContext, useContext, useMemo, useRef, type ReactNode } from "react";
+import * as THREE from "three";
 import type {
   EnvironmentLandmark,
   EnvironmentProp,
   EnvironmentPropKind,
+  StageEnvironmentDefinition,
   StageEnvironmentId,
 } from "@/game/stageEnvironments";
-import { getStageEnvironment } from "@/game/stageEnvironments";
+import { getEnvironmentArtTone } from "@/game/environmentVisuals";
 import {
   getKenneyGravestoneAsset,
   getKenneyNatureAsset,
@@ -43,13 +46,35 @@ const C = {
   sandbag: "#9a8a63",
 };
 
+const EnvironmentArtToneContext = createContext<StageEnvironmentId>("suburban");
+
+export function EnvironmentArtToneProvider({
+  environmentId,
+  children,
+}: {
+  environmentId: StageEnvironmentId;
+  children: ReactNode;
+}) {
+  return (
+    <EnvironmentArtToneContext.Provider value={environmentId}>
+      {children}
+    </EnvironmentArtToneContext.Provider>
+  );
+}
+
 function Mat({ color }: { color: string }) {
+  const environmentId = useContext(EnvironmentArtToneContext);
+  const tonedColor = useMemo(() => {
+    const materialColor = new THREE.Color(color);
+    materialColor.lerp(new THREE.Color(getEnvironmentArtTone(environmentId)), 0.14);
+    return "#" + materialColor.getHexString();
+  }, [color, environmentId]);
   const metal = color === C.metal || color === C.metal2;
   const crystal = color === C.ice || color === C.ice2 || color === C.glass || color === C.neon;
   const selfLit = color === C.lava || color === C.lava2 || color === C.neon;
   return (
     <meshStandardMaterial
-      color={color}
+      color={tonedColor}
       flatShading
       roughness={metal ? 0.48 : crystal ? 0.42 : 0.86}
       metalness={metal ? 0.28 : 0.035}
@@ -59,7 +84,17 @@ function Mat({ color }: { color: string }) {
   );
 }
 
-function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }) {
+function Tree({
+  pine = false,
+  dead = false,
+  variant = 0,
+}: {
+  pine?: boolean;
+  dead?: boolean;
+  variant?: number;
+}) {
+  const foliageScale = variant === 1 ? 0.92 : variant === 2 ? 1.1 : 1;
+  const foliageOffset = variant === 1 ? 0.16 : variant === 2 ? -0.18 : 0;
   return (
     <>
       <mesh position={[0, pine ? 1 : 0.6, 0]}>
@@ -79,14 +114,35 @@ function Tree({ pine = false, dead = false }: { pine?: boolean; dead?: boolean }
         </>
       ) : pine ? (
         <>
-          <mesh position={[0, 2, 0]}><coneGeometry args={[0.95, 1.8, 6]} /><Mat color={C.pine} /></mesh>
-          <mesh position={[0, 2.75, 0]}><coneGeometry args={[0.72, 1.35, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 3.35, 0]}><coneGeometry args={[0.45, 0.95, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 2, 0]}>
+            <coneGeometry args={[0.95 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.pine} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.75, 0]}>
+            <coneGeometry args={[0.72 * foliageScale, 1.35, 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset, 3.35, 0]}>
+            <coneGeometry args={[0.45 * foliageScale, 0.95, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
         </>
       ) : (
         <>
-          <mesh position={[0, 1.55, 0]}><coneGeometry args={[1.05, 1.8, 6]} /><Mat color={C.leaf} /></mesh>
-          <mesh position={[0, 2.3, 0]}><coneGeometry args={[0.75, 1.25, 6]} /><Mat color={C.leaf2} /></mesh>
+          <mesh position={[foliageOffset, 1.55, variant === 2 ? 0.1 : 0]}>
+            <coneGeometry args={[1.05 * foliageScale, 1.8, variant === 1 ? 5 : 6]} />
+            <Mat color={C.leaf} />
+          </mesh>
+          <mesh position={[foliageOffset * -0.6, 2.3, 0]}>
+            <coneGeometry args={[0.75 * foliageScale, 1.25, 6]} />
+            <Mat color={C.leaf2} />
+          </mesh>
+          {variant !== 0 && (
+            <mesh position={[foliageOffset * 1.8 + 0.34, 1.42, -0.16]}>
+              <coneGeometry args={[0.48, 0.82, 5]} />
+              <Mat color={variant === 1 ? C.leaf2 : C.leaf} />
+            </mesh>
+          )}
         </>
       )}
     </>
@@ -232,17 +288,22 @@ function KenneyNatureProp({
   environmentId,
   kind,
   fallback,
+  variantIndex = 0,
 }: {
   environmentId: StageEnvironmentId;
   kind: EnvironmentPropKind;
   fallback: ReactNode;
+  variantIndex?: number;
 }) {
   const assetId = getKenneyNatureAsset(environmentId, kind);
   if (!assetId) return fallback;
   const asset = KENNEY_NATURE_ASSETS[assetId];
+  const scale = variantIndex % 3 === 1 ? 0.96 : variantIndex % 3 === 2 ? 1.05 : 1;
   return (
     <Suspense fallback={fallback}>
-      <KenneyModel {...asset} castShadow={false} receiveShadow={false} />
+      <group rotation-y={variantIndex * 0.47} scale={scale}>
+        <KenneyModel {...asset} castShadow={false} receiveShadow={false} />
+      </group>
     </Suspense>
   );
 }
@@ -301,13 +362,13 @@ export function EnvironmentPropMesh({
       );
       break;
     }
-    case "tree": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Tree />} />; break;
-    case "pine": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Tree pine />} />; break;
-    case "palm": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Palm />} />; break;
+    case "tree": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Tree variant={variantIndex % 3} />} />; break;
+    case "pine": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Tree pine variant={variantIndex % 3} />} />; break;
+    case "palm": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Palm />} />; break;
     case "dead-tree": node = <Tree dead />; break;
     case "rock": node = <Rock />; break;
     case "boulder": node = <Rock big />; break;
-    case "cactus": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Cactus />} />; break;
+    case "cactus": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} variantIndex={variantIndex} fallback={<Cactus />} />; break;
     case "shrub": node = <mesh position={[0, 0.35, 0]} scale={[1.2, 0.7, 1]}><icosahedronGeometry args={[0.6, 0]} /><Mat color={C.leaf2} /></mesh>; break;
     case "crate": node = <BoxProp />; break;
     case "barrel": node = <BoxProp barrel />; break;
@@ -534,19 +595,88 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   }
 }
 
-export function StageEnvironment({ environmentId }: { environmentId: StageEnvironmentId }) {
-  const environment = getStageEnvironment(environmentId);
+const SWAYING_PROP_KINDS = new Set<EnvironmentPropKind>([
+  "tree",
+  "pine",
+  "palm",
+  "dead-tree",
+]);
+
+function SwayingEnvironmentPropMesh({
+  item,
+  environmentId,
+  variantIndex,
+  reducedMotion,
+}: {
+  item: EnvironmentProp;
+  environmentId: StageEnvironmentId;
+  variantIndex: number;
+  reducedMotion: boolean;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const phase = item.position[0] * 0.37 + item.position[2] * 0.19;
+  const localItem: EnvironmentProp = { ...item, position: [0, 0, 0] };
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    group.current.rotation.z = reducedMotion
+      ? 0
+      : Math.sin(clock.elapsedTime * 0.48 + phase) * 0.012;
+  });
+
+  return (
+    <group ref={group} position={item.position}>
+      <EnvironmentPropMesh
+        item={localItem}
+        environmentId={environmentId}
+        variantIndex={variantIndex}
+      />
+    </group>
+  );
+}
+
+export function EnvironmentPropVisual({
+  item,
+  environmentId,
+  variantIndex = 0,
+  reducedMotion = false,
+}: {
+  item: EnvironmentProp;
+  environmentId: StageEnvironmentId;
+  variantIndex?: number;
+  reducedMotion?: boolean;
+}) {
+  return SWAYING_PROP_KINDS.has(item.kind) ? (
+    <SwayingEnvironmentPropMesh
+      item={item}
+      environmentId={environmentId}
+      variantIndex={variantIndex}
+      reducedMotion={reducedMotion}
+    />
+  ) : (
+    <EnvironmentPropMesh item={item} environmentId={environmentId} variantIndex={variantIndex} />
+  );
+}
+
+export function StageEnvironment({
+  layout,
+  reducedMotion = false,
+}: {
+  layout: StageEnvironmentDefinition;
+  reducedMotion?: boolean;
+}) {
   return (
     <group>
-      {environment.props.map((item, index) => (
-        <EnvironmentPropMesh
+      {layout.props.map((item, index) => (
+        <EnvironmentPropVisual
           key={`${item.kind}-${index}`}
           item={item}
-          environmentId={environmentId}
+          environmentId={layout.id}
           variantIndex={index}
+          reducedMotion={reducedMotion}
         />
       ))}
-      <LandmarkMesh item={environment.landmark} />
+      <LandmarkMesh item={layout.landmark} />
     </group>
   );
 }
