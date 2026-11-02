@@ -8,6 +8,9 @@ export type KenneyModelProps = {
   width: number;
   depth: number;
   height: number;
+  sourceWidth?: number;
+  sourceDepth?: number;
+  sourceMinY?: number;
 };
 
 /**
@@ -17,7 +20,16 @@ export type KenneyModelProps = {
  * their ground contact at local Y=-1. The measured source height is supplied
  * explicitly so scaling keeps the model's base planted at world Y=0.
  */
-export function KenneyModel({ src, sourceHeight, width, depth, height }: KenneyModelProps) {
+export function KenneyModel({
+  src,
+  sourceHeight,
+  width,
+  depth,
+  height,
+  sourceWidth = 2,
+  sourceDepth = 2,
+  sourceMinY = -1,
+}: KenneyModelProps) {
   const { scene } = useGLTF(src);
   const model = useMemo(() => {
     const clone = scene.clone(true);
@@ -31,10 +43,13 @@ export function KenneyModel({ src, sourceHeight, width, depth, height }: KenneyM
     return clone;
   }, [scene]);
 
-  const verticalScale = height / sourceHeight;
+  const scaleX = width / sourceWidth;
+  const scaleY = height / sourceHeight;
+  const scaleZ = depth / sourceDepth;
+  const baseOffsetY = -sourceMinY * scaleY;
 
   return (
-    <group position={[0, verticalScale, 0]} scale={[width / 2, verticalScale, depth / 2]}>
+    <group position={[0, baseOffsetY, 0]} scale={[scaleX, scaleY, scaleZ]}>
       <primitive object={model} dispose={null} />
     </group>
   );
