@@ -304,8 +304,46 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
   const common = { position: item.position, rotation: [0, item.rotation, 0] as [number, number, number], scale: item.scale };
   switch (item.kind) {
     case "windmill": return <group {...common}><mesh position={[0,1.7,0]}><coneGeometry args={[0.65,3.4,6]} /><Mat color={C.stone}/></mesh><mesh position={[0,3.25,0.4]} rotation-x={Math.PI/2}><cylinderGeometry args={[0.22,0.22,0.18,8]}/><Mat color={C.metal2}/></mesh>{[0,1.57,3.14,4.71].map(r=><mesh key={r} position={[Math.sin(r)*0.85,3.25+Math.cos(r)*0.85,0.4]} rotation-z={r}><boxGeometry args={[0.12,1.6,0.08]}/><Mat color={C.wood2}/></mesh>)}</group>;
-    case "giant-tree":
-    case "redwood-giant": return <group {...common}><mesh position={[0,3.2,0]}><cylinderGeometry args={[0.55,0.85,6.4,8]}/><Mat color={C.wood}/></mesh><mesh position={[0,6.1,0]}><coneGeometry args={[2.6,4.4,7]}/><Mat color={C.leaf}/></mesh><mesh position={[0,7.6,0]}><coneGeometry args={[1.8,3.1,7]}/><Mat color={C.leaf2}/></mesh></group>;
+    case "giant-tree": return (
+      <group {...common}>
+        <mesh position={[0, 3.2, 0]} castShadow>
+          <cylinderGeometry args={[0.55, 0.85, 6.4, 8]} />
+          <Mat color={C.wood} />
+        </mesh>
+        <mesh position={[0, 6.1, 0]} castShadow>
+          <coneGeometry args={[2.6, 4.4, 7]} />
+          <Mat color={C.leaf} />
+        </mesh>
+        <mesh position={[0, 7.6, 0]} castShadow>
+          <coneGeometry args={[1.8, 3.1, 7]} />
+          <Mat color={C.leaf2} />
+        </mesh>
+      </group>
+    );
+    case "redwood-giant": return (
+      <group {...common}>
+        <Suspense
+          fallback={
+            <group>
+              <mesh position={[0, 3.2, 0]} castShadow>
+                <cylinderGeometry args={[0.55, 0.85, 6.4, 8]} />
+                <Mat color={C.wood} />
+              </mesh>
+              <mesh position={[0, 6.1, 0]} castShadow>
+                <coneGeometry args={[2.6, 4.4, 7]} />
+                <Mat color={C.pine} />
+              </mesh>
+              <mesh position={[0, 7.6, 0]} castShadow>
+                <coneGeometry args={[1.8, 3.1, 7]} />
+                <Mat color={C.leaf2} />
+              </mesh>
+            </group>
+          }
+        >
+          <KenneyModel {...KENNEY_NATURE_ASSETS.pineGiant} />
+        </Suspense>
+      </group>
+    );
     case "market-arcade": return (
       <group {...common}>
         {[-2.1, 0, 2.1].map((x) => (
@@ -353,7 +391,28 @@ function LandmarkMesh({ item }: { item: EnvironmentLandmark }) {
     );
     case "ice-cave": return <group {...common}>{[-1.5,0,1.5].map((x,i)=><mesh key={x} position={[x,1.8+(i===1?0.8:0),0]}><coneGeometry args={[1.5,3.8+(i===1?1:0),6]}/><Mat color={C.ice2}/></mesh>)}</group>;
     case "lighthouse": return <group {...common}><mesh position={[0,2.2,0]}><cylinderGeometry args={[0.7,1.05,4.4,8]}/><Mat color={C.snow}/></mesh><mesh position={[0,4.65,0]}><cylinderGeometry args={[0.78,0.82,0.5,8]}/><Mat color={C.hazard}/></mesh><mesh position={[0,5.15,0]}><coneGeometry args={[0.9,0.55,8]}/><Mat color={C.metal2}/></mesh></group>;
-    case "oasis": return <group {...common}><mesh position={[0,0.08,0]}><cylinderGeometry args={[2,2,0.12,16]}/><meshStandardMaterial color={C.water} transparent opacity={0.8}/></mesh><group position={[-1.2,0,0]}><Palm/></group><group position={[1.3,0,0.2]} scale={0.8}><Palm/></group></group>;
+    case "oasis": return (
+      <group {...common}>
+        <mesh position={[0, 0.08, 0]}>
+          <cylinderGeometry args={[2, 2, 0.12, 16]} />
+          <meshStandardMaterial color={C.water} transparent opacity={0.8} />
+        </mesh>
+        <group position={[-1.2, 0, 0]}>
+          <KenneyNatureProp
+            environmentId="desert-bazaar"
+            kind="palm"
+            fallback={<Palm />}
+          />
+        </group>
+        <group position={[1.3, 0, 0.2]} scale={0.8}>
+          <KenneyNatureProp
+            environmentId="desert-bazaar"
+            kind="palm"
+            fallback={<Palm />}
+          />
+        </group>
+      </group>
+    );
     case "canyon-bridge": return <group {...common}><mesh position={[0,1.2,0]}><boxGeometry args={[5.5,0.35,1.6]}/><Mat color={C.wood2}/></mesh>{[-2.2,2.2].map(x=><mesh key={x} position={[x,0.55,0]}><boxGeometry args={[0.3,1.5,1.1]}/><Mat color={C.stone2}/></mesh>)}</group>;
     case "mine-headframe": return <group {...common}>{[-1.4,1.4].map(x=><mesh key={x} position={[x,1.8,0]} rotation-z={x*0.16}><boxGeometry args={[0.3,3.6,0.3]}/><Mat color={C.wood}/></mesh>)}<mesh position={[0,3.1,0]}><boxGeometry args={[3.5,0.32,0.35]}/><Mat color={C.wood2}/></mesh></group>;
     case "radar-dish": return <group {...common}><mesh position={[0,1.4,0]}><cylinderGeometry args={[0.12,0.18,2.8,6]}/><Mat color={C.metal2}/></mesh><mesh position={[0,2.75,0.18]} scale={[1,0.65,0.35]} rotation-x={-0.55}><sphereGeometry args={[1,10,6]}/><Mat color={C.metal}/></mesh></group>;
