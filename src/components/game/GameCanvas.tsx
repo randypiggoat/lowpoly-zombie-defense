@@ -631,7 +631,9 @@ export function GameCanvas() {
 
     const unsubscribe = game.subscribe(showResults);
     showResults();
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, [screen]);
 
   useEffect(() => {
