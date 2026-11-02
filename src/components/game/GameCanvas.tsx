@@ -412,6 +412,7 @@ export function GameCanvas() {
       const timeout = window.setTimeout(() => setScreenTransition("idle"), 240);
       return () => window.clearTimeout(timeout);
     }
+    return undefined;
   }, [screenTransition]);
 
   useEffect(() => {
