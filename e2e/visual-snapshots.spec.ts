@@ -136,7 +136,7 @@ for (const viewport of CAPTURE_VIEWPORTS) {
       "/models/kenney/graveyard-kit/gravestone-cross.glb",
       "/models/kenney/graveyard-kit/gravestone-bevel.glb",
       "/models/kenney/graveyard-kit/gravestone-broken.glb",
-      "/models/kenney/graveyard-kit/crypt-small.glb",
+      "/models/kenney/graveyard-kit/crypt-large.glb",
       "/models/kenney/nature-kit/tree-oak.glb",
       "/models/kenney/nature-kit/tree-pinetalla-detailed.glb",
       "/models/kenney/nature-kit/tree-palmdetailedtall.glb",
