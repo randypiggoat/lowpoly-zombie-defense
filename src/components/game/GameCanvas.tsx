@@ -66,8 +66,11 @@ function useGameSnapshot() {
   const [, force] = useState(0);
   useSyncExternalStore(
     (cb) => game.subscribe(cb),
-    () => game.state.gold + game.state.wave * 1000,
-    () => 0,
+    () => {
+      const { gold, wave, gameOver, stageWon, endlessMode } = game.state;
+      return `${gold}:${wave}:${gameOver}:${stageWon}:${endlessMode}`;
+    },
+    () => "",
   );
   useEffect(() => {
     const id = setInterval(() => force((n) => n + 1), 200);
