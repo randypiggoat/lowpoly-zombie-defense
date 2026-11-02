@@ -377,7 +377,42 @@ export function GameCanvas() {
   const [selection, setSelection] = useState<Selection>(null);
   const [placementPreview, setPlacementPreview] = useState<{ x: number; z: number } | null>(null);
   const placementPreviewRef = useRef<{ x: number; z: number } | null>(null);
-  const [screen, setScreen] = useState<PrimaryScreen>("main-menu");
+  const [screen, setScreenState] = useState<PrimaryScreen>("main-menu");
+  const [screenTransition, setScreenTransition] = useState<"idle" | "exit" | "enter">("idle");
+  const pendingScreenRef = useRef<PrimaryScreen | null>(null);
+  const setScreen = useCallback((nextScreen: PrimaryScreen) => {
+    if (screenTransition !== "idle" || nextScreen === screen) return;
+    const reduceMotion =
+      player.reducedMotion ||
+      (typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (reduceMotion) {
+      setScreenState(nextScreen);
+      return;
+    }
+    pendingScreenRef.current = nextScreen;
+    setScreenTransition("exit");
+  }, [player.reducedMotion, screen, screenTransition]);
+
+  useEffect(() => {
+    if (screenTransition === "exit") {
+      const timeout = window.setTimeout(() => {
+        const nextScreen = pendingScreenRef.current;
+        pendingScreenRef.current = null;
+        if (!nextScreen) {
+          setScreenTransition("idle");
+          return;
+        }
+        setScreenState(nextScreen);
+        setScreenTransition("enter");
+      }, 130);
+      return () => window.clearTimeout(timeout);
+    }
+    if (screenTransition === "enter") {
+      const timeout = window.setTimeout(() => setScreenTransition("idle"), 240);
+      return () => window.clearTimeout(timeout);
+    }
+  }, [screenTransition]);
 
   useEffect(() => {
     placementPreviewRef.current = placementPreview;
@@ -418,6 +453,11 @@ export function GameCanvas() {
     setOverlay("pause");
   }, []);
   const [armoryTowerKind, setArmoryTowerKind] = useState<TowerKind>("rifleman");
+  const [workshopReturnScreen, setWorkshopReturnScreen] = useState<PrimaryScreen>("main-menu");
+  const openWorkshop = (returnScreen: PrimaryScreen) => {
+    setWorkshopReturnScreen(returnScreen);
+    setScreen("arsenal");
+  };
   const activeStage = getStageById(activeStageId);
   const gameplayStage =
     state.gameMode === "endless" && activeChallenge
@@ -543,7 +583,7 @@ export function GameCanvas() {
       return;
     }
     setScreen(settingsBackScreen);
-  }, [settingsBackScreen]);
+  }, [settingsBackScreen, setScreen]);
 
   useEffect(() => {
     let active = true;
@@ -726,7 +766,10 @@ export function GameCanvas() {
   }).length;
 
   return (
-    <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
+    <div className="rotwood-app fixed inset-0 overflow-hidden bg-sky" data-screen={screen} data-screen-transition={screenTransition} data-reduced-motion={player.reducedMotion ? "true" : "false"} onPointerDown={() => unlockAudio()}>
+      {screenTransition !== "idle" ? (
+        <div className="rw-transition-shield absolute inset-0 z-[80]" data-phase={screenTransition} aria-hidden="true" />
+      ) : null}
       {canvasReady && (
         <Canvas
           frameloop={screen === "gameplay" ? "always" : "never"}
@@ -792,7 +835,7 @@ export function GameCanvas() {
               <div className="rw-brand-lockup">
                 <span className="rw-brand-emblem"><ShieldMark size={25} /></span>
                 <div className="min-w-0">
-                  <p className="rw-eyebrow">LAST DEFENSE NETWORK</p>
+                  <p className="rw-eyebrow">ROTWOOD DEFENSE FORCE</p>
                   <h1 className="rw-brand-title">ROTWOOD <span>DEFENSE</span></h1>
                 </div>
               </div>
@@ -804,10 +847,10 @@ export function GameCanvas() {
               <div className="rw-hero-art"><OutbreakIllustration /></div>
               <div className="rw-hero-scrim" aria-hidden="true" />
               <div className="rw-hero-content">
-                <p className="rw-eyebrow rw-hero-eyebrow"><span className="rw-live-dot" /> CONTAINMENT ALERT · SECTOR 04</p>
+                <p className="rw-eyebrow rw-hero-eyebrow"><span className="rw-live-dot" /> ENDLESS WAVES · SECTOR 04</p>
                 <h2 id="rw-home-hero-title">THE LAST LIGHT<br /><span>HOLDS.</span></h2>
-                <p className="rw-hero-copy">Build your defenses. Hold the line. Survive the night.</p>
-                <div className="rw-sector-stamp"><span>RW-04</span><span>THREAT LEVEL: HIGH</span></div>
+                <p className="rw-hero-copy">Survive the horde. Improve your defenses. Push farther every run.</p>
+                <div className="rw-sector-stamp"><span>RW-04</span><span>THREAT: HIGH</span></div>
               </div>
             </section>
             <section className="rw-player-strip" aria-label="Player progress and resources">
@@ -827,7 +870,7 @@ export function GameCanvas() {
             <section className="rw-deploy-panel rotwood-card" aria-label="Recommended defense mission">
               <div className="rw-deploy-heading">
                 <div className="min-w-0">
-                  <p className="rw-eyebrow">CURRENT DIRECTIVE</p>
+                  <p className="rw-eyebrow">YOUR NEXT RUN</p>
                   <h2>STAGE {recommendedStage.stageNumber}</h2>
                   <p className="rw-mission-name">{recommendedStage.name} <span>·</span> {recommendedStage.difficulty}</p>
                 </div>
@@ -835,7 +878,18 @@ export function GameCanvas() {
                   <span>★</span><strong>{recommendedStage.stars ? "×" + recommendedStage.stars : "NEW"}</strong>
                 </div>
               </div>
-              <p className="rw-next-unlock">{nextTower ? "NEXT UNLOCK: " + TOWER_INFO[nextTower.kind].name + " · LEVEL " + nextTower.level : "FULL ROSTER · ALL TOWERS UNLOCKED"}</p>
+              <p className="rw-next-unlock">
+                {recommendedStage.bestWave > 0
+                  ? "BEST WAVE " + recommendedStage.bestWave + " / " + recommendedStage.waveCount + (recommendedStage.completed ? " · STAGE CLEARED" : " · KEEP PUSHING")
+                  : nextTower
+                    ? "NEXT TOWER: " + TOWER_INFO[nextTower.kind].name + " · LEVEL " + nextTower.level
+                    : "ALL TOWERS UNLOCKED"}
+              </p>
+              {recommendedStage.bestWave > 0 ? (
+                <div className="rw-run-progress" aria-label={"Best attempt reached wave " + recommendedStage.bestWave + " of " + recommendedStage.waveCount}>
+                  <span style={{ width: Math.min(100, (recommendedStage.bestWave / Math.max(1, recommendedStage.waveCount)) * 100) + "%" }} />
+                </div>
+              ) : null}
               <ScreenButton className="rw-deploy-button" onClick={() => {
                 resetGameplayState();
                 setActiveStageId(recommendedStage.id);
@@ -843,17 +897,20 @@ export function GameCanvas() {
                 game.startStage(recommendedStage);
                 setScreen("gameplay");
               }}>
-                <span>{isFirstRun ? "DEFEND NOW" : "CONTINUE DEFENSE"}</span><Swords size={19} />
+                <span>{isFirstRun ? "START FIRST RUN" : recommendedStage.completed ? "REPLAY STAGE" : recommendedStage.bestWave > 0 ? "TRY AGAIN" : "START RUN"}</span><Swords size={19} />
               </ScreenButton>
+              <button type="button" className="rw-stage-map-link" onClick={() => setScreen("stage-select")}>
+                VIEW STAGE MAP <span aria-hidden="true">↗</span>
+              </button>
             </section>
             <section className="rw-home-navigation" aria-labelledby="rw-nav-title">
               <div className="rw-section-heading">
-                <div><p className="rw-eyebrow">TACTICAL NETWORK</p><h2 id="rw-nav-title">Command Center</h2></div>
-                <span>SELECT DESTINATION</span>
+                <div><p className="rw-eyebrow">PLAN THE NEXT ATTEMPT</p><h2 id="rw-nav-title">Between Runs</h2></div>
+                <span>UPGRADE · REVIEW · RETURN</span>
               </div>
               <div className="rw-menu-grid">
-                <HomeShortcut title="Operations" subtitle="Campaigns & combat modes" icon={<Swords size={20} />} onClick={() => setScreen("operations")} />
-                <HomeShortcut title="Armory" subtitle="Towers & field knowledge" icon={<Wrench size={20} />} onClick={() => setScreen("arsenal")} />
+                <HomeShortcut title="Challenges" subtitle="Special runs & weekly trials" icon={<Swords size={20} />} onClick={() => setScreen("operations")} />
+                <HomeShortcut title="Tower Workshop" subtitle="Tower roles & permanent upgrades" icon={<Wrench size={20} />} onClick={() => openWorkshop("main-menu")} />
                 <HomeShortcut title="Field Intel" subtitle="Missions & achievements" icon={<Trophy size={20} />} {...(readyMissionCount + readyAchievementCount > 0 ? { badge: readyMissionCount + readyAchievementCount } : {})} onClick={() => setScreen("field-intel")} />
                 <HomeShortcut title="Supply Depot" subtitle="Daily drops & store" icon={<ShoppingBag size={20} />} onClick={() => setScreen("supply-depot")} />
               </div>
