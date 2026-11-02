@@ -454,3 +454,11 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - The shared GLB loader now uses measured source width, depth, height and minimum-Y values, so vegetation is scaled to its real source bounds and planted at the ground plane.
 - No gameplay collision, route, placement, lighting-budget or enemy rule was changed. These are visual-only environment props.
 - **Verification boundary:** map-specific selector tests cover the combinations and fallbacks. Actual camera composition, texture sharpness, clipping, shadow quality and phone-GPU cost still require inspection of the final screenshot artifacts and physical devices.
+
+
+### Imported foliage shadow budget — 2026-11-02
+
+- The shared GLB component now accepts explicit shadow flags.
+- Imported buildings, cemetery stones and crypts keep their cast/receive shadow presentation.
+- Imported ambient vegetation is explicitly non-shadow-casting and non-shadow-receiving, preserving the existing scenery optimization where the procedural scenery renderer disables shadow casters.
+- This avoids adding a new set of foliage shadow casters on lower-power mobile devices. The actual GPU cost still requires target-device measurement.
