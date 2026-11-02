@@ -110,3 +110,29 @@ comes from the existing authored stage-environment prop coordinates.
 
 The models are used only for authored environment decoration in compatible
 biomes. They do not add collision or modify map placement rules.
+
+
+## Measured source bounds
+
+The following source bounds were read from the GLB position accessors. Values are
+in source model units (width × height × depth), before game scaling.
+
+| Model | Source bounds (W × H × D) | Ground minimum Y |
+|---|---:|---:|
+| City Kit Suburban — Building Type A | 2 × 2 × 2 | -1 |
+| City Kit Suburban — Building Type F | 2.0000002 × 2.1375 × 2.0000002 | -1 |
+| City Kit Commercial — Building Skyscraper A | 2.0000002 × 3.88 × 2.0000002 | -1 |
+| City Kit Commercial — Building F | 2 × 2.693 × 2 | -1 |
+| Graveyard Kit — Gravestone Cross | 2 × 2 × 2 | -1 |
+| Graveyard Kit — Gravestone Bevel | 2 × 2 × 2 | -1 |
+| Graveyard Kit — Gravestone Broken | 2 × 2 × 2 | -1 |
+| Graveyard Kit — Crypt Small | 2 × 2 × 2 | -1 |
+| Nature Kit — Tree Oak | 0.640554 × 1.22623992 × 0.739648 | 0 |
+| Nature Kit — Tree Pine Tall A Detailed | 0.386272922 × 1.529606 × 0.39195 | 0 |
+| Nature Kit — Tree Palm Detailed Tall | 1.034329 × 1.247613 × 1.034329 | 0 |
+| Nature Kit — Cactus Tall | 0.39624995 × 0.75 × 0.339082063 | 0 |
+
+These bounds drive the shared `KenneyModel` transform. The component scales each
+axis using the model's measured dimensions and offsets the model by its measured
+minimum Y so the mesh sits on the ground plane. The nature assets use their own
+narrower source footprints rather than assuming every GLB is a unit cube.
