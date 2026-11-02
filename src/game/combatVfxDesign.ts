@@ -13,14 +13,15 @@ export type CombatImpactProfile = Readonly<{
 }>;
 
 /**
- * Small, pooled impact accents that make each tower's hit readable without
+ * Impact hues reuse the exact canonical tower accent tokens from the art bible.
+ * Small, pooled accents make each tower's hit readable without
  * changing combat simulation, damage, status effects, or reward calculations.
  * These values are presentation-only and intentionally avoid large screen-filling
  * effects on mobile.
  */
 export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfile>> = {
   rifleman: {
-    color: "#ffe7b3",
+    color: "#e9b44c",
     scale: 0.78,
     spread: 0.34,
     verticalSpread: 0.1,
@@ -31,7 +32,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: 3.1,
   },
   shotgunner: {
-    color: "#ffd08a",
+    color: "#d98a3c",
     scale: 1.12,
     spread: 0.58,
     verticalSpread: 0.16,
@@ -42,7 +43,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: 4.8,
   },
   sniper: {
-    color: "#f5f4df",
+    color: "#8fb98a",
     scale: 0.84,
     spread: 0.24,
     verticalSpread: 0.06,
@@ -53,7 +54,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: 1.2,
   },
   tesla: {
-    color: "#7de9f4",
+    color: "#b892ff",
     scale: 1.02,
     spread: 0.5,
     verticalSpread: 0.58,
@@ -64,7 +65,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: 6.2,
   },
   flamethrower: {
-    color: "#ff9c45",
+    color: "#f2703b",
     scale: 0.98,
     spread: 0.42,
     verticalSpread: 0.44,
@@ -75,7 +76,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: 2.6,
   },
   freezer: {
-    color: "#b9ecff",
+    color: "#79c7e3",
     scale: 0.92,
     spread: 0.4,
     verticalSpread: 0.22,
@@ -86,7 +87,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: -2.2,
   },
   rocket: {
-    color: "#ffb45c",
+    color: "#e2725b",
     scale: 1.42,
     spread: 0.78,
     verticalSpread: 0.34,
@@ -97,7 +98,7 @@ export const TOWER_IMPACT_PROFILES: Readonly<Record<TowerKind, CombatImpactProfi
     rotationSpeed: 5.2,
   },
   laser: {
-    color: "#ffc7f4",
+    color: "#63e6c3",
     scale: 0.76,
     spread: 0.2,
     verticalSpread: 0.035,
