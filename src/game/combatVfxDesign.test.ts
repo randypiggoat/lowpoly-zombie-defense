@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { TOWER_INFO } from "./engine";
 import { getCombatImpactProfile, TOWER_IMPACT_PROFILES } from "./combatVfxDesign";
 
 const EXPECTED_TOWERS = [
@@ -15,6 +16,12 @@ const EXPECTED_TOWERS = [
 describe("tower combat impact profiles", () => {
   test("defines a dedicated presentation profile for every tower", () => {
     expect(Object.keys(TOWER_IMPACT_PROFILES).sort()).toEqual([...EXPECTED_TOWERS].sort());
+  });
+
+  test("uses the canonical art-direction accent for every tower impact", () => {
+    for (const kind of EXPECTED_TOWERS) {
+      expect(TOWER_IMPACT_PROFILES[kind].color).toBe(TOWER_INFO[kind].accent);
+    }
   });
 
   test("uses distinct impact colors and readable scale ranges", () => {
