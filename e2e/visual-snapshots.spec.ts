@@ -28,6 +28,14 @@ for (const viewport of CAPTURE_VIEWPORTS) {
     test.setTimeout(90_000);
 
     mkdirSync(SNAPSHOT_DIRECTORY, { recursive: true });
+    const localModelResponses = new Map<string, number>();
+    page.on("response", (response) => {
+      const pathname = new URL(response.url()).pathname;
+      if (pathname.startsWith("/models/kenney/") && pathname.endsWith(".glb")) {
+        localModelResponses.set(pathname, response.status());
+      }
+    });
+
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/?qa=1");
 
@@ -104,6 +112,20 @@ for (const viewport of CAPTURE_VIEWPORTS) {
       return api?.getRunSnapshot().wave ?? 0;
     });
     expect(waveNumber, "capture should be during an actual wave").toBeGreaterThan(0);
+
+    const requiredLocalModels = [
+      "/models/kenney/city-kit-suburban/building-type-a.glb",
+      "/models/kenney/city-kit-suburban/building-type-f.glb",
+      "/models/kenney/nature-kit/tree-oak.glb",
+    ];
+    await expect.poll(
+      () => requiredLocalModels.every((path) => localModelResponses.get(path) === 200),
+      {
+        timeout: 15_000,
+        intervals: [100, 250, 500],
+        message: "The suburban screenshot must use the bundled local Kenney house and oak models, not only procedural fallbacks.",
+      },
+    ).toBe(true);
 
     // Let fonts and a pair of paint frames settle, without pausing the live simulation.
     await page.evaluate(async () => {
