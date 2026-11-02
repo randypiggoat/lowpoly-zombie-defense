@@ -202,7 +202,9 @@ function createFacetedVolumeGeometry(form: FacetedForm, seed = 0) {
       const b = ring * count + next;
       const c = (ring + 1) * count + segment;
       const d = (ring + 1) * count + next;
-      indices.push(a, b, c, b, d, c);
+      // Keep the exterior faces front-facing; reversed winding would cull the
+      // visible shell under the standard one-sided zombie materials.
+      indices.push(a, c, b, b, c, d);
     }
   }
 
@@ -212,9 +214,9 @@ function createFacetedVolumeGeometry(form: FacetedForm, seed = 0) {
   positions.push(0, form.rings[form.rings.length - 1]![0] * height, 0);
   for (let segment = 0; segment < count; segment++) {
     const next = (segment + 1) % count;
-    indices.push(bottomCenter, next, segment);
+    indices.push(bottomCenter, segment, next);
     const topStart = (form.rings.length - 1) * count;
-    indices.push(topCenter, topStart + segment, topStart + next);
+    indices.push(topCenter, topStart + next, topStart + segment);
   }
 
   const geometry = new THREE.BufferGeometry();
