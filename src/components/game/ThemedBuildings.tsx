@@ -1,12 +1,11 @@
-import { Suspense, useMemo } from "react";
-import { useGLTF } from "@react-three/drei";
-import * as THREE from "three";
+import { Suspense } from "react";
 import type { StageEnvironmentId } from "@/game/stageEnvironments";
 import { getEnvironmentVisualProfile } from "@/game/environmentVisuals";
 import {
   getKenneyBuildingAsset,
   KENNEY_BUILDING_ASSETS,
 } from "@/game/kenneyEnvironmentAssets";
+import { KenneyModel } from "./KenneyModel";
 
 type Props = {
   environmentId: StageEnvironmentId;
@@ -70,38 +69,6 @@ function GabledRoof({ w, d, y, color }: { w: number; d: number; y: number; color
   );
 }
 
-type ImportedKenneyBuildingProps = {
-  assetId: keyof typeof KENNEY_BUILDING_ASSETS;
-  width: number;
-  depth: number;
-  height: number;
-};
-
-/** Loads a self-contained local CC0 GLB and scales its measured base footprint to its authored obstacle. */
-function ImportedKenneyBuilding({ assetId, width, depth, height }: ImportedKenneyBuildingProps) {
-  const asset = KENNEY_BUILDING_ASSETS[assetId];
-  const { scene } = useGLTF(asset.src);
-  const model = useMemo(() => {
-    const clone = scene.clone(true);
-    clone.traverse((object) => {
-      const mesh = object as THREE.Mesh;
-      if (mesh.isMesh) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-      }
-    });
-    return clone;
-  }, [scene]);
-
-  const verticalScale = height / asset.sourceHeight;
-
-  return (
-    <group position={[0, verticalScale, 0]} scale={[width / 2, verticalScale, depth / 2]}>
-      <primitive object={model} dispose={null} />
-    </group>
-  );
-}
-
 export function ThemedBuilding({ environmentId, label, x, z, width, depth, height, index }: Props) {
   const profile = getEnvironmentVisualProfile(environmentId);
   const style = profile.buildingStyle;
@@ -152,8 +119,9 @@ export function ThemedBuilding({ environmentId, label, x, z, width, depth, heigh
             </group>
           }
         >
-          <ImportedKenneyBuilding
-            assetId={importedAsset}
+          <KenneyModel
+            src={KENNEY_BUILDING_ASSETS[importedAsset].src}
+            sourceHeight={KENNEY_BUILDING_ASSETS[importedAsset].sourceHeight}
             width={w}
             depth={d}
             height={modelHeight}
