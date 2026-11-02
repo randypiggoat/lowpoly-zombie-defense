@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import type {
   EnvironmentLandmark,
   EnvironmentProp,
@@ -6,6 +6,11 @@ import type {
   StageEnvironmentId,
 } from "@/game/stageEnvironments";
 import { getStageEnvironment } from "@/game/stageEnvironments";
+import {
+  getKenneyGravestoneAsset,
+  KENNEY_GRAVEYARD_ASSETS,
+} from "@/game/kenneyEnvironmentAssets";
+import { KenneyModel } from "./KenneyModel";
 
 const C = {
   wood: "#6f4c35",
@@ -191,6 +196,22 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
     case "ore": return <Rock big />;
     case "sandbag": return <><mesh position={[-0.55, 0.28, 0]}><boxGeometry args={[0.62, 0.45, 0.42]} /><Mat color={C.sandbag} /></mesh><mesh position={[0, 0.32, 0]}><boxGeometry args={[0.62, 0.45, 0.42]} /><Mat color={C.sandbag} /></mesh><mesh position={[0.55, 0.28, 0]}><boxGeometry args={[0.62, 0.45, 0.42]} /><Mat color={C.sandbag} /></mesh></>;
     case "tombstone": return <group><mesh position={[0, 0.5, 0]}><boxGeometry args={[0.65, 1, 0.18]} /><Mat color={C.bone} /></mesh><mesh position={[0, 1, 0]}><coneGeometry args={[0.32, 0.35, 4]} /><Mat color={C.bone} /></mesh></group>;
+    case "crypt": return (
+      <group>
+        <mesh position={[0, 0.58, 0]} castShadow>
+          <boxGeometry args={[1.6, 1.16, 1.5]} />
+          <Mat color={C.stone2} />
+        </mesh>
+        <mesh position={[0, 1.34, 0]} rotation-y={Math.PI / 4} castShadow>
+          <coneGeometry args={[1.15, 0.55, 4]} />
+          <Mat color={C.stone} />
+        </mesh>
+        <mesh position={[0, 0.62, 0.76]}>
+          <boxGeometry args={[0.55, 0.74, 0.06]} />
+          <Mat color={C.dark} />
+        </mesh>
+      </group>
+    );
     case "rubble": return <><mesh position={[-0.35, 0.28, 0]}><dodecahedronGeometry args={[0.42, 0]} /><Mat color="#676c6e" /></mesh><mesh position={[0.3, 0.2, 0.15]}><dodecahedronGeometry args={[0.34, 0]} /><Mat color={C.stone2} /></mesh></>;
     case "pipe": return <mesh position={[0, 0.45, 0]} rotation-z={Math.PI / 2}><cylinderGeometry args={[0.14, 0.14, 2.1, 8]} /><Mat color={C.metal} /></mesh>;
     case "vent": return <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[0.42, 0.5, 0.5, 10]} /><Mat color={C.metal2} /></mesh>;
@@ -203,9 +224,43 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   }
 }
 
-export function EnvironmentPropMesh({ item }: { item: EnvironmentProp }) {
+export function EnvironmentPropMesh({
+  item,
+  environmentId,
+  variantIndex = 0,
+}: {
+  item: EnvironmentProp;
+  environmentId: StageEnvironmentId;
+  variantIndex?: number;
+}) {
   let node: ReactNode;
   switch (item.kind) {
+    case "tombstone": {
+      if (environmentId !== "graveyard") {
+        node = <Industrial kind={item.kind} />;
+        break;
+      }
+      const asset = KENNEY_GRAVEYARD_ASSETS[getKenneyGravestoneAsset(variantIndex)];
+      node = (
+        <Suspense fallback={<Industrial kind={item.kind} />}>
+          <KenneyModel src={asset.src} sourceHeight={asset.sourceHeight} width={2} depth={2} height={2} />
+        </Suspense>
+      );
+      break;
+    }
+    case "crypt": {
+      if (environmentId !== "graveyard") {
+        node = <Industrial kind={item.kind} />;
+        break;
+      }
+      const asset = KENNEY_GRAVEYARD_ASSETS.cryptSmall;
+      node = (
+        <Suspense fallback={<Industrial kind={item.kind} />}>
+          <KenneyModel src={asset.src} sourceHeight={asset.sourceHeight} width={2} depth={2} height={2} />
+        </Suspense>
+      );
+      break;
+    }
     case "tree": node = <Tree />; break;
     case "pine": node = <Tree pine />; break;
     case "palm": node = <Palm />; break;
@@ -384,7 +439,14 @@ export function StageEnvironment({ environmentId }: { environmentId: StageEnviro
   const environment = getStageEnvironment(environmentId);
   return (
     <group>
-      {environment.props.map((item, index) => <EnvironmentPropMesh key={`${item.kind}-${index}`} item={item} />)}
+      {environment.props.map((item, index) => (
+        <EnvironmentPropMesh
+          key={`${item.kind}-${index}`}
+          item={item}
+          environmentId={environmentId}
+          variantIndex={index}
+        />
+      ))}
       <LandmarkMesh item={environment.landmark} />
     </group>
   );
