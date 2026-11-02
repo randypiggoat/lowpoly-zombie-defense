@@ -9,6 +9,8 @@ Crediting Kenney is appreciated but not required.
 Original asset pack pages:
 - https://kenney.nl/assets/city-kit-suburban
 - https://kenney.nl/assets/city-kit-commercial
+- https://kenney.nl/assets/graveyard-kit
+- https://kenney.nl/assets/nature-kit
 
 The GLB files in this project were obtained from the Tiny Game Engine free
 model library, which converts the Kenney models to self-contained GLB files
@@ -18,11 +20,5 @@ and converted GLB derivatives as CC0 1.0:
 https://github.com/Hidencod/tge-assets
 https://github.com/Hidencod/tge-assets/blob/main/LICENSE
 
-No raw packs are included; only the four listed model files used by the game
-are bundled here.
-
-Original asset pack page:
-- https://kenney.nl/assets/graveyard-kit
-
-Original asset pack page:
-- https://kenney.nl/assets/nature-kit
+No raw packs are included. Only twelve individual model files selected for
+the game are bundled in their respective subdirectories.
