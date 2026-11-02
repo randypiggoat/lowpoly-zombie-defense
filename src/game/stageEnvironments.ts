@@ -49,7 +49,7 @@ export type EnvironmentPropKind =
   | "antenna"
   | "barrier"
   | "hay-bale"
-  | "shed" | "igloo";
+  | "shed" | "igloo" | "crypt";
 
 export type EnvironmentLandmarkKind =
   | "windmill"
@@ -418,7 +418,7 @@ export const STAGE_ENVIRONMENTS: Record<StageEnvironmentId, StageEnvironmentDefi
       prop("tombstone", -10.1, 12.8, 0.76),
       prop("dead-tree", 8.7, 13, 0.74),
       prop("tombstone", -13.1, 15.4, 0.65),
-      prop("dead-tree", 13.1, 15.4, 0.68),
+      prop("crypt", 13.1, 15.4, 0.78),
     ],
   },
   volcano: {
