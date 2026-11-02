@@ -665,7 +665,7 @@ export function GameCanvas() {
     : state.sideModeId
       ? state.stageWon ? "RUN COMPLETE" : "RUN FAILED"
       : state.endlessMode
-        ? "SIEGE OVER"
+        ? state.continuedAfterVictory ? "ENDLESS RUN OVER" : "SIEGE OVER"
         : state.stageWon
           ? "STAGE COMPLETE"
           : "GAME OVER";
@@ -923,11 +923,11 @@ export function GameCanvas() {
       {screen === "operations" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
-            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 01</p><h1>Operations</h1><p>Pick a deployment. Every route leads to a different kind of fight.</p></header>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">OPTIONAL RUN TYPES</p><h1>Challenges</h1><p>Stage attempts are the main path. Pick a special run when you want a different test.</p></header>
             <div className="rw-hub-list">
-              <MenuTile title="Campaign" subtitle="Structured stages, stars, and tower unlocks." onClick={() => setScreen("stage-select")} />
-              <MenuTile title="Endless Siege" subtitle="Push your build as far as it can go." onClick={() => setScreen("endless-select")} />
+              <MenuTile title="Stage Map" subtitle="Choose a stage, track your best wave, and return until it is cleared." onClick={() => setScreen("stage-select")} />
+              <MenuTile title="Endless Siege" subtitle="A separate endless challenge with its own record." onClick={() => setScreen("endless-select")} />
               <MenuTile title="Boss Trials" subtitle="Take on the weekly boss and its mastery rules." onClick={() => setScreen("boss-trial-select")} />
               <MenuTile title="Side Operations" subtitle="Short resource runs and focused challenges." onClick={() => setScreen("side-mode-select")} />
               <MenuTile title="Live Events" subtitle="Rotating objectives and seasonal milestones." {...(readyEventCount > 0 ? { badge: "READY · " + readyEventCount } : {})} onClick={() => setScreen("events")} />
@@ -939,14 +939,14 @@ export function GameCanvas() {
       {screen === "arsenal" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
-            <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 02</p><h1>Armory</h1><p>Know your tools before the next wave reaches the walls.</p></header>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen(workshopReturnScreen)}>{workshopReturnScreen === "results" ? "← RUN RESULTS" : "← MAIN MENU"}</ScreenButton>
+            <header className="rw-hub-intro"><p className="rw-eyebrow">BETWEEN-RUN DEFENSE DEVELOPMENT</p><h1>Tower Workshop</h1><p>Study the tower roster, inspect in-run upgrade paths, and invest credits in permanent defense knowledge before your next attempt.</p></header>
             <div className="rw-hub-list">
-              <MenuTile title="Tower Armory" subtitle="Browse towers, roles, unlocks, and upgrade paths." onClick={() => setScreen("towers")} />
-              <MenuTile title="Field Knowledge" subtitle="Spend permanent knowledge on your long-term strategy." onClick={() => setScreen("knowledge")} />
+              <MenuTile title="Tower Armory" subtitle="Browse tower roles, unlocks, mastery, and A/B upgrade paths." onClick={() => setScreen("towers")} />
+              <MenuTile title="Field Knowledge" subtitle="Buy permanent defense upgrades with credits between attempts." onClick={() => setScreen("knowledge")} />
               <MenuTile title="Collection" subtitle="View your earned tower and zombie cosmetics." onClick={() => setScreen("collection")} />
             </div>
-            <div className="rw-hub-note"><Sparkles size={18} /><p><strong>Build with intent.</strong><br />Different towers solve different threats. A balanced defense gives you more answers when the horde changes.</p></div>
+            <div className="rw-hub-note"><Sparkles size={18} /><p><strong>Every attempt teaches you something.</strong><br />Tower paths are chosen during a run. Field Knowledge is the persistent upgrade system that strengthens future attempts.</p></div>
           </main>
         </div>
       )}
@@ -954,7 +954,7 @@ export function GameCanvas() {
       {screen === "field-intel" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
             <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 03</p><h1>Field Intel</h1><p>Your next objective, recent milestones, and the progress worth chasing.</p></header>
             <div className="rw-hub-list">
               <MenuTile title="Daily Missions" subtitle="Complete field tasks and claim available rewards." {...(readyMissionCount > 0 ? { badge: "READY · " + readyMissionCount } : {})} onClick={() => setScreen("missions")} />
@@ -967,7 +967,7 @@ export function GameCanvas() {
       {screen === "supply-depot" && (
         <div className="rw-screen rw-hub-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <main className="rw-hub-wrap mx-auto">
-            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← COMMAND CENTER</ScreenButton>
+            <ScreenButton className="rw-back-button" variant="secondary" onClick={() => setScreen("main-menu")}>← MAIN MENU</ScreenButton>
             <header className="rw-hub-intro"><p className="rw-eyebrow">TACTICAL NETWORK / 04</p><h1>Supply Depot</h1><p>Collect the supplies you have earned. Optional purchases never replace progression earned through play.</p></header>
             <section className="rw-supply-card">
               <div className="rw-supply-icon"><Gift size={21} /></div>
@@ -1269,13 +1269,13 @@ export function GameCanvas() {
       )}
 
       {screen === "stage-select" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="rw-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
-            <div className="mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Campaign</p>
-              <h2 className="font-display text-2xl tracking-wide">20 Locations · 4 Worlds</h2>
-              <p className="mt-1 text-xs text-panel-muted">Choose a route and defend it. Each world introduces a new environment language and tactical rhythm.</p>
+            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← MAIN MENU</ScreenButton>
+            <div className="rw-stage-map-intro mt-3 rounded-2xl border border-white/10 bg-panel/95 p-3 text-panel-foreground shadow-panel">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Stage progression</p>
+              <h2 className="font-display text-2xl tracking-wide">Stage Map · 20 Stages</h2>
+              <p className="mt-1 text-xs text-panel-muted">Reach each stage's wave target to clear it. Every attempt records your best wave; after a clear, carry the same defense into endless overtime.</p>
             </div>
             <div className="mt-3 space-y-2">
               {stages.map((stage) => (
@@ -1283,7 +1283,7 @@ export function GameCanvas() {
                   key={stage.id}
                   data-stage-id={stage.id}
                   data-world-id={stage.worldId}
-                  className={"rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}
+                  className={"rw-stage-card rounded-2xl border bg-panel/95 p-3 text-panel-foreground shadow-panel " + (stage.locked ? "border-white/5 opacity-75" : "border-white/10")}
                 >
                   <p className="mb-1 text-[9px] uppercase tracking-[0.18em] text-accent">
                     World {stage.worldId} · {stage.worldName}
@@ -1301,11 +1301,16 @@ export function GameCanvas() {
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.14em] text-panel-muted">
-                    <span>{stage.locked ? stage.requiredText.toUpperCase() : stage.completed ? "COMPLETED" : "READY"}</span>
-                    {!stage.locked && stage.bestWave > 0 ? <span>BEST WAVE {stage.bestWave}</span> : null}
+                    <span>{stage.locked ? stage.requiredText.toUpperCase() : stage.completed ? "STAGE CLEARED" : stage.bestWave > 0 ? "BEST RUN SAVED" : "READY TO DEPLOY"}</span>
+                    {!stage.locked ? <span>BEST {stage.bestWave || "—"} / {stage.waveCount}</span> : null}
                   </div>
+                  {!stage.locked ? (
+                    <div className="rw-stage-progress" aria-label={"Best wave " + stage.bestWave + " of " + stage.waveCount}>
+                      <span style={{ width: Math.min(100, (stage.bestWave / Math.max(1, stage.waveCount)) * 100) + "%" }} />
+                    </div>
+                  ) : null}
                   <div className="mt-2">
-                    {stage.locked ? <div className="rounded-xl bg-black/25 px-3 py-2 text-center text-xs text-panel-muted">🔒 {stage.requiredText}</div> : <ScreenButton onClick={() => startStage(stage.id)}>{stage.completed ? "REPLAY" : "PLAY"}</ScreenButton>}
+                    {stage.locked ? <div className="rounded-xl bg-black/25 px-3 py-2 text-center text-xs text-panel-muted">🔒 {stage.requiredText}</div> : <ScreenButton onClick={() => startStage(stage.id)}>{stage.completed ? "RUN AGAIN" : stage.bestWave > 0 ? "TRY AGAIN" : "START RUN"}</ScreenButton>}
                   </div>
                   {stage.completed && (
                     <div className="mt-2">
@@ -1483,13 +1488,13 @@ export function GameCanvas() {
       )}
 
       {screen === "towers" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="rw-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/60 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <ScreenButton onClick={() => setScreen("arsenal")} variant="secondary">← TOWER WORKSHOP</ScreenButton>
             <div className="mt-3 rounded-2xl bg-panel/95 p-3 shadow-panel">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Tower guide</p>
-              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Armory</h2>
-              <p className="mt-1 text-xs text-panel-muted">Learn each tower’s role and every upgrade path. Combat numbers stay in battle.</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Tower blueprints</p>
+              <h2 className="font-display text-2xl tracking-wide text-panel-foreground">Tower Armory</h2>
+              <p className="mt-1 text-xs text-panel-muted">Inspect each tower's role, unlock state, mastery, and its in-run upgrade paths. These paths are purchased during a run.</p>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {TOWER_KINDS.map((kind) => {
@@ -1535,9 +1540,9 @@ export function GameCanvas() {
         </div>
       )}
 {screen === "knowledge" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="rw-screen pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-black/72 p-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto w-full max-w-md">
-            <ScreenButton onClick={() => setScreen("main-menu")} variant="secondary">← BACK</ScreenButton>
+            <ScreenButton onClick={() => setScreen("arsenal")} variant="secondary">← TOWER WORKSHOP</ScreenButton>
             <div className="mt-3 rounded-2xl border border-accent/25 bg-panel/95 p-3 shadow-panel">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1829,14 +1834,16 @@ export function GameCanvas() {
       )}
 
       {screen === "results" && (
-        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/70 p-3">
+        <div className="rw-screen rw-results-screen pointer-events-auto absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/70 p-3">
           <ScreenCard>
             <h2 className={"text-center font-display text-3xl tracking-wide " + (state.stageWon ? "text-accent" : state.endlessMode ? "text-accent" : "text-danger")}>{resultLabel}</h2>
             {state.bossTrial && activeBossTrial
               ? <p className="mt-1 text-center text-sm text-panel-muted">{activeBossTrial.bossName} · {activeBossTrial.title}</p>
               : state.endlessMode && activeChallenge
                 ? <p className="mt-1 text-center text-sm text-panel-muted">{activeChallenge.name}</p>
-                : activeSideMode
+                : state.continuedAfterVictory
+                  ? <p className="mt-1 text-center text-xs text-panel-muted">The stage clear is saved. This defense pushed into endless overtime, and your earlier stage rewards remain yours.</p>
+                  : activeSideMode
                   ? <p className="mt-1 text-center text-sm text-panel-muted">{activeSideMode.name} · {activeSideMode.category === "resource" ? "Resource Ops" : activeSideMode.category === "challenge" ? "Challenge Gauntlet" : "Seasonal Event"}</p>
                   : <p className="mt-1 text-center text-xs text-panel-muted">{state.stageWon ? "Defense held. Your rewards are ready." : "The horde broke through. Try again or change your approach."}</p>}
             {lastReward && !state.continuedAfterVictory ? (
@@ -1927,6 +1934,11 @@ export function GameCanvas() {
                   setScreen("gameplay");
                 }}>CONTINUE IN ENDLESS</ScreenButton>
               </div>
+            ) : null}
+            {!state.bossTrial && !state.sideModeId && (!state.stageWon || state.continuedAfterVictory) ? (
+              <ScreenButton className="mt-4" variant="secondary" onClick={() => openWorkshop("results")}>
+                UPGRADE DEFENSES BETWEEN RUNS
+              </ScreenButton>
             ) : null}
             <div className="mt-4 space-y-2">
               {state.stageWon && nextStage ? <ScreenButton onClick={() => startStage(nextStage.id)}>NEXT STAGE</ScreenButton>
