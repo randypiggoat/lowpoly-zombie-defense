@@ -434,3 +434,10 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - The graveyard assets are included in `docs/ASSET_INVENTORY.md` and covered by the local Kenney CC0 notice.
 - Only stage-environment decoration changed. No campaign map route, obstacle, tower-placement, collision, enemy, wave or reward rule was edited.
 - **Verification boundary:** deterministic asset selection and graveyard prop assignment have unit tests. Visual composition, silhouette clarity at phone scale, and mobile shadow/performance behavior still require screenshot inspection and device testing on the final commit.
+
+
+### Tower impact palette cohesion — 2026-11-02
+
+- Per-tower impact flashes now reuse the exact canonical accent color already defined in `TOWER_INFO` and recorded in this bible: Rifleman gold, Shotgunner amber, Sniper sage, Tesla violet, Flamethrower orange, Freezer ice blue, Rocket coral, and Laser mint.
+- Geometry, ring aspect, spread, lift and rotation still differentiate the eight attack signatures; the hue is no longer an unrelated second palette.
+- A unit test checks every impact profile against its canonical tower accent, so later palette edits cannot silently desynchronize the tower model and hit feedback.
