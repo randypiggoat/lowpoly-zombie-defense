@@ -1,5 +1,12 @@
+import { Suspense, useMemo } from "react";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
 import type { StageEnvironmentId } from "@/game/stageEnvironments";
 import { getEnvironmentVisualProfile } from "@/game/environmentVisuals";
+import {
+  getKenneyBuildingAsset,
+  KENNEY_BUILDING_ASSETS,
+} from "@/game/kenneyEnvironmentAssets";
 
 type Props = {
   environmentId: StageEnvironmentId;
@@ -63,6 +70,38 @@ function GabledRoof({ w, d, y, color }: { w: number; d: number; y: number; color
   );
 }
 
+type ImportedKenneyBuildingProps = {
+  assetId: keyof typeof KENNEY_BUILDING_ASSETS;
+  width: number;
+  depth: number;
+  height: number;
+};
+
+/** Loads a self-contained local CC0 GLB and scales its measured base footprint to its authored obstacle. */
+function ImportedKenneyBuilding({ assetId, width, depth, height }: ImportedKenneyBuildingProps) {
+  const asset = KENNEY_BUILDING_ASSETS[assetId];
+  const { scene } = useGLTF(asset.src);
+  const model = useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+    return clone;
+  }, [scene]);
+
+  const verticalScale = height / asset.sourceHeight;
+
+  return (
+    <group position={[0, verticalScale, 0]} scale={[width / 2, verticalScale, depth / 2]}>
+      <primitive object={model} dispose={null} />
+    </group>
+  );
+}
+
 export function ThemedBuilding({ environmentId, label, x, z, width, depth, height, index }: Props) {
   const profile = getEnvironmentVisualProfile(environmentId);
   const style = profile.buildingStyle;
@@ -82,6 +121,47 @@ export function ThemedBuilding({ environmentId, label, x, z, width, depth, heigh
   const roof = profile.palette.roof;
   const glass = profile.palette.glass;
   const key = environmentId + "-" + label + "-" + index;
+  const importedAsset = getKenneyBuildingAsset(environmentId, label);
+
+  if (importedAsset) {
+    // The suburban houses and city skyline deliberately use different height
+    // families so the imported silhouettes create a readable miniature skyline.
+    const modelHeight =
+      importedAsset === "suburbanHouseA"
+        ? Math.max(2.25, h * 1.7)
+        : importedAsset === "suburbanHouseF"
+          ? Math.max(1.9, h * 1.7)
+          : importedAsset === "citySkyscraperA"
+            ? Math.max(5.4, h * 1.15)
+            : Math.max(3.1, h * 0.72);
+
+    return (
+      <group key={key} position={[x, 0, z]}>
+        <Suspense
+          fallback={
+            <group>
+              <Shell w={w} h={modelHeight} d={d} color={shell} />
+              {style === "residential" ? (
+                <GabledRoof w={w} d={d} y={modelHeight + 0.2} color={roof} />
+              ) : (
+                <mesh position={[0, modelHeight + 0.07, 0]} castShadow>
+                  <boxGeometry args={[w + 0.08, 0.14, d + 0.08]} />
+                  <Mat color={trim} />
+                </mesh>
+              )}
+            </group>
+          }
+        >
+          <ImportedKenneyBuilding
+            assetId={importedAsset}
+            width={w}
+            depth={d}
+            height={modelHeight}
+          />
+        </Suspense>
+      </group>
+    );
+  }
 
   if (style === "city") {
     return (
