@@ -441,3 +441,16 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Per-tower impact flashes now reuse the exact canonical accent color already defined in `TOWER_INFO` and recorded in this bible: Rifleman gold, Shotgunner amber, Sniper sage, Tesla violet, Flamethrower orange, Freezer ice blue, Rocket coral, and Laser mint.
 - Geometry, ring aspect, spread, lift and rotation still differentiate the eight attack signatures; the hue is no longer an unrelated second palette.
 - A unit test checks every impact profile against its canonical tower accent, so later palette edits cannot silently desynchronize the tower model and hit feedback.
+
+
+### Biome-specific vegetation pass — Kenney Nature Kit
+
+- Replaced selected procedural environment vegetation with measured Kenney low-poly silhouettes: broad oak, tall pine, detailed palm and tall cactus.
+- **Suburban, orchard and river checkpoint:** oak canopies establish a rounder, broadleaf environment profile.
+- **Redwood:** tall pine silhouettes reinforce the map's vertical forest identity.
+- **Jungle ruins and mangrove:** detailed palm silhouettes separate tropical foliage from the temperate tree shapes.
+- **Desert bazaar:** a distinctive branching cactus replaces the generic primitive cactus.
+- Selection is driven by both `StageEnvironmentId` and `EnvironmentPropKind`; mismatched combinations continue to use the authored procedural fallback.
+- The shared GLB loader now uses measured source width, depth, height and minimum-Y values, so vegetation is scaled to its real source bounds and planted at the ground plane.
+- No gameplay collision, route, placement, lighting-budget or enemy rule was changed. These are visual-only environment props.
+- **Verification boundary:** map-specific selector tests cover the combinations and fallbacks. Actual camera composition, texture sharpness, clipping, shadow quality and phone-GPU cost still require inspection of the final screenshot artifacts and physical devices.
