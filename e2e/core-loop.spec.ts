@@ -21,12 +21,12 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   await expect(page.getByRole("heading", { name: /ROTWOOD.*DEFENSE/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: /THE LAST LIGHT/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Operations/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Armory/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Challenges/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Tower Workshop/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Field Intel/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Supply Depot/i })).toBeVisible();
 
-  const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+  const playButton = page.getByRole("button", { name: /START FIRST RUN|START RUN|TRY AGAIN|REPLAY STAGE/ });
   await expect(playButton).toBeVisible();
 
   await playButton.click();
@@ -82,7 +82,7 @@ test("new player can enter gameplay from the main menu", async ({ page }) => {
 test("weekly boss trials have a distinct entry screen", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: /Operations/i }).click();
+  await page.getByRole("button", { name: /Challenges/i }).click();
   await page.getByRole("button", { name: /Boss Trials/i }).click();
 
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "boss-trial-select");
