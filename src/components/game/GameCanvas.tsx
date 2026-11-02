@@ -620,12 +620,19 @@ export function GameCanvas() {
   }, []);
 
   useEffect(() => {
-    if (screen === "gameplay" && state.gameOver) {
+    if (screen !== "gameplay") return;
+
+    const showResults = () => {
+      if (!game.state.gameOver) return;
       setOverlay(null);
       setSelection(null);
       setScreen("results");
-    }
-  }, [screen, state.gameOver]);
+    };
+
+    const unsubscribe = game.subscribe(showResults);
+    showResults();
+    return unsubscribe;
+  }, [screen]);
 
   useEffect(() => {
     if (screen !== "results" || !state.gameOver || !lastReward) return;
