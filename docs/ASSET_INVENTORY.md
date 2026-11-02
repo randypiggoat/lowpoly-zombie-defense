@@ -83,3 +83,30 @@ models from Kenney, GitHub, or any other external host at runtime.
 
 These models replace selected decorative cemetery props only. Their placement
 comes from the existing authored stage-environment prop coordinates.
+
+
+## Kenney — Nature Kit
+
+- Creator: Kenney
+- Pack: Nature Kit
+- Official source page: https://kenney.nl/assets/nature-kit
+- Source files: self-contained GLB derivatives from https://github.com/Hidencod/tge-assets
+- License: CC0 1.0 Universal
+- License evidence: source repository LICENSE and README identify Kenney as
+  creator and state CC0 1.0 applies to the converted GLB derivatives.
+- Date obtained: 2026-11-02 UTC
+- Modifications: none to source meshes or embedded textures; the game uses
+  measured source bounds to scale each model to its authored prop size.
+- Commercial game use: permitted
+- Attribution: not required; Kenney is credited here as a courtesy
+- Distribution note: four selected models only; the full pack is not bundled.
+
+| Asset | Repository path | Source file size |
+|---|---|---:|
+| Tree Oak | `public/models/kenney/nature-kit/tree-oak.glb` | 14,644 bytes |
+| Tree Pine Tall A Detailed | `public/models/kenney/nature-kit/tree-pinetalla-detailed.glb` | 10,708 bytes |
+| Tree Palm Detailed Tall | `public/models/kenney/nature-kit/tree-palmdetailedtall.glb` | 28,204 bytes |
+| Cactus Tall | `public/models/kenney/nature-kit/cactus-tall.glb` | 9,668 bytes |
+
+The models are used only for authored environment decoration in compatible
+biomes. They do not add collision or modify map placement rules.
