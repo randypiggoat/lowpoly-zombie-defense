@@ -1,8 +1,9 @@
 # External Asset Inventory
 
-All bundled external 3D assets in this inventory are Kenney low-poly building
-models released under **CC0 1.0 Universal**. Commercial use, modification, and
-distribution in the game are permitted. Attribution is appreciated but not
+All twelve bundled external 3D assets documented here are selected Kenney low-poly
+environment models released under **CC0 1.0 Universal**: buildings, graveyard
+architecture, gravestones, trees, palms, and cactus. Commercial use, modification,
+and distribution in the game are permitted. Attribution is appreciated but not
 required.
 
 ## Kenney — City Kit (Suburban)
