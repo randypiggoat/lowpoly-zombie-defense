@@ -48,3 +48,30 @@ export function getKenneyBuildingAsset(
 
   return null;
 }
+
+export const KENNEY_GRAVEYARD_ASSETS = {
+  gravestoneCross: {
+    src: "/models/kenney/graveyard-kit/gravestone-cross.glb",
+    sourceHeight: 2,
+  },
+  gravestoneBevel: {
+    src: "/models/kenney/graveyard-kit/gravestone-bevel.glb",
+    sourceHeight: 2,
+  },
+  gravestoneBroken: {
+    src: "/models/kenney/graveyard-kit/gravestone-broken.glb",
+    sourceHeight: 2,
+  },
+  cryptSmall: {
+    src: "/models/kenney/graveyard-kit/crypt-small.glb",
+    sourceHeight: 2,
+  },
+} as const;
+
+export type KenneyGraveyardAssetId = keyof typeof KENNEY_GRAVEYARD_ASSETS;
+
+export function getKenneyGravestoneAsset(index: number): Exclude<KenneyGraveyardAssetId, "cryptSmall"> {
+  const variants = ["gravestoneCross", "gravestoneBevel", "gravestoneBroken"] as const;
+  const safeIndex = Number.isFinite(index) ? Math.abs(Math.trunc(index)) : 0;
+  return variants[safeIndex % variants.length]!;
+}
