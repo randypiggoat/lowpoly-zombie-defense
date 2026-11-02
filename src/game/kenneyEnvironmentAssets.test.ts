@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { getKenneyBuildingAsset, KENNEY_BUILDING_ASSETS } from "./kenneyEnvironmentAssets";
+import {
+  getKenneyBuildingAsset,
+  getKenneyGravestoneAsset,
+  KENNEY_BUILDING_ASSETS,
+  KENNEY_GRAVEYARD_ASSETS,
+} from "./kenneyEnvironmentAssets";
 
 describe("Kenney environment building selection", () => {
   test("uses CC0 house models for the two authored suburban structures", () => {
@@ -25,6 +30,33 @@ describe("Kenney environment building selection", () => {
     for (const asset of Object.values(KENNEY_BUILDING_ASSETS)) {
       expect(asset.sourceHeight).toBeGreaterThan(0);
       expect(asset.src.startsWith("/models/kenney/")).toBe(true);
+    }
+  });
+});
+
+describe("Kenney graveyard asset selection", () => {
+  test("cycles through three distinct gravestone silhouettes deterministically", () => {
+    expect([0, 1, 2, 3, 4, 5].map(getKenneyGravestoneAsset)).toEqual([
+      "gravestoneCross",
+      "gravestoneBevel",
+      "gravestoneBroken",
+      "gravestoneCross",
+      "gravestoneBevel",
+      "gravestoneBroken",
+    ]);
+  });
+
+  test("includes a separate crypt asset for the cemetery's mausoleum prop", () => {
+    expect(KENNEY_GRAVEYARD_ASSETS.cryptSmall.src).toBe(
+      "/models/kenney/graveyard-kit/crypt-small.glb",
+    );
+    expect(KENNEY_GRAVEYARD_ASSETS.cryptSmall.sourceHeight).toBeGreaterThan(0);
+  });
+
+  test("all selected graveyard models use local, measured GLB metadata", () => {
+    for (const asset of Object.values(KENNEY_GRAVEYARD_ASSETS)) {
+      expect(asset.sourceHeight).toBeGreaterThan(0);
+      expect(asset.src.startsWith("/models/kenney/graveyard-kit/")).toBe(true);
     }
   });
 });
