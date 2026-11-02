@@ -471,3 +471,11 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Both landmarks retain procedural fallbacks while their local GLBs load.
 - Their environment definition coordinates, landmark scale, road, obstacle placement and gameplay rules remain unchanged.
 - The pine source mesh is shared through the GLTF cache; only per-instance transforms differ.
+
+
+### Tower-specific impact shard silhouettes — 2026-11-02
+
+- The pooled hit burst now differentiates not only color and ring proportions, but the shape language of its four preallocated octahedral shards.
+- Rifleman and Sniper create narrow precision needles; Shotgunner uses broad fragments; Tesla uses upright electrical spikes; Flamethrower throws ember-like shards; Freezer uses elongated crystal forms; Rocket uses heavier debris; Laser uses exceptionally thin slashes.
+- Per-profile shard count and three-axis scale are bounded and tested. Inactive shards are made transparent rather than created or destroyed per hit.
+- The existing pool remains fixed at 24 bursts × 4 preallocated shards. No per-hit React components or dynamic particle allocations were added. Combat simulation, damage, targeting, and status effects are unchanged.
