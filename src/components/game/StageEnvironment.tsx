@@ -8,7 +8,9 @@ import type {
 import { getStageEnvironment } from "@/game/stageEnvironments";
 import {
   getKenneyGravestoneAsset,
+  getKenneyNatureAsset,
   KENNEY_GRAVEYARD_ASSETS,
+  KENNEY_NATURE_ASSETS,
 } from "@/game/kenneyEnvironmentAssets";
 import { KenneyModel } from "./KenneyModel";
 
@@ -224,6 +226,25 @@ function Industrial({ kind }: { kind: EnvironmentPropKind }) {
   }
 }
 
+function KenneyNatureProp({
+  environmentId,
+  kind,
+  fallback,
+}: {
+  environmentId: StageEnvironmentId;
+  kind: EnvironmentPropKind;
+  fallback: ReactNode;
+}) {
+  const assetId = getKenneyNatureAsset(environmentId, kind);
+  if (!assetId) return fallback;
+  const asset = KENNEY_NATURE_ASSETS[assetId];
+  return (
+    <Suspense fallback={fallback}>
+      <KenneyModel {...asset} />
+    </Suspense>
+  );
+}
+
 export function EnvironmentPropMesh({
   item,
   environmentId,
@@ -261,13 +282,13 @@ export function EnvironmentPropMesh({
       );
       break;
     }
-    case "tree": node = <Tree />; break;
-    case "pine": node = <Tree pine />; break;
-    case "palm": node = <Palm />; break;
+    case "tree": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Tree />} />; break;
+    case "pine": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Tree pine />} />; break;
+    case "palm": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Palm />} />; break;
     case "dead-tree": node = <Tree dead />; break;
     case "rock": node = <Rock />; break;
     case "boulder": node = <Rock big />; break;
-    case "cactus": node = <Cactus />; break;
+    case "cactus": node = <KenneyNatureProp environmentId={environmentId} kind={item.kind} fallback={<Cactus />} />; break;
     case "shrub": node = <mesh position={[0, 0.35, 0]} scale={[1.2, 0.7, 1]}><icosahedronGeometry args={[0.6, 0]} /><Mat color={C.leaf2} /></mesh>; break;
     case "crate": node = <BoxProp />; break;
     case "barrel": node = <BoxProp barrel />; break;
