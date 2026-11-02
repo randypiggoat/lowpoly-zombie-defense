@@ -6,6 +6,7 @@ import { getCombatImpactProfile } from "@/game/combatVfxDesign";
 
 const MAX_BURSTS = 24;
 const MAX_ZOMBIES = 60;
+const DEFAULT_SPARK_SCALE: [number, number, number] = [1, 1, 1];
 
 type BurstState = {
   active: boolean;
@@ -193,10 +194,12 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
         (core.material as THREE.MeshBasicMaterial).color.set(state.color);
       }
       const sparkRefs = sparks.current[index];
+      const sparkCount = impact?.sparkCount ?? 4;
+      const sparkScale = impact?.sparkScale ?? DEFAULT_SPARK_SCALE;
       for (let shard = 0; shard < 4; shard++) {
         const spark = sparkRefs?.[shard];
         if (spark) {
-          const angle = shard * Math.PI * 0.5 + progress * (state.kind === "kill" ? 0.7 : 0.28);
+          const angle = shard * ((Math.PI * 2) / sparkCount) + progress * (state.kind === "kill" ? 0.7 : 0.28);
           const spread = state.kind === "kill"
             ? 0.22 + eased * 0.72
             : state.kind === "heal"
@@ -216,8 +219,10 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
           }
           spark.rotation.x = angle * 0.35;
           spark.rotation.z = angle;
+          spark.scale.set(sparkScale[0], sparkScale[1], sparkScale[2]);
           (spark.material as THREE.MeshBasicMaterial).color.set(state.color);
-          (spark.material as THREE.MeshBasicMaterial).opacity = 0.78 * (1 - progress);
+          (spark.material as THREE.MeshBasicMaterial).opacity =
+            (shard < sparkCount ? 0.78 : 0) * (1 - progress);
         }
       }
 
