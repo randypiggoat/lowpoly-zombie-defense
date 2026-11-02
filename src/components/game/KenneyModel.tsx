@@ -11,6 +11,8 @@ export type KenneyModelProps = {
   sourceWidth?: number;
   sourceDepth?: number;
   sourceMinY?: number;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
 };
 
 /**
@@ -29,6 +31,8 @@ export function KenneyModel({
   sourceWidth = 2,
   sourceDepth = 2,
   sourceMinY = -1,
+  castShadow = true,
+  receiveShadow = true,
 }: KenneyModelProps) {
   const { scene } = useGLTF(src);
   const model = useMemo(() => {
@@ -36,8 +40,8 @@ export function KenneyModel({
     clone.traverse((object) => {
       const mesh = object as THREE.Mesh;
       if (mesh.isMesh) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        mesh.castShadow = castShadow;
+        mesh.receiveShadow = receiveShadow;
       }
     });
     return clone;
