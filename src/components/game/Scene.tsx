@@ -134,6 +134,121 @@ const ZOMBIE_FACE_FEATURES: Record<number, readonly FaceFeature[]> = {
   ],
 };
 
+
+type FacetedRing = readonly [number, number, number, number?, number?];
+type FacetedForm = {
+  size: readonly [number, number, number];
+  rings: readonly FacetedRing[];
+  segments: number;
+};
+
+const ZOMBIE_BODY_FORMS: readonly FacetedForm[] = [
+  { size: [0.62, 0.85, 0.42], segments: 7, rings: [[-0.5, 0.58, 0.62], [-0.28, 0.72, 0.76], [-0.02, 0.88, 0.9], [0.27, 1.02, 0.9], [0.5, 0.78, 0.72, -0.035, 0]] },
+  { size: [0.5, 0.9, 0.34], segments: 7, rings: [[-0.5, 0.48, 0.52], [-0.25, 0.62, 0.65], [0.02, 0.78, 0.72], [0.3, 0.88, 0.72], [0.5, 0.58, 0.56, 0.015, 0.015]] },
+  { size: [1.1, 1.1, 1.1], segments: 8, rings: [[-0.5, 0.62, 0.7], [-0.28, 0.82, 0.86], [0.02, 0.98, 0.92], [0.3, 1.08, 1.02], [0.5, 0.94, 0.9]] },
+  { size: [1.04, 1.04, 1.04], segments: 7, rings: [[-0.5, 0.62, 0.7, 0.04, -0.02], [-0.27, 0.8, 0.82, -0.02, 0.015], [0.02, 0.94, 0.94, 0.055, -0.015], [0.3, 0.88, 0.9, -0.035, 0.015], [0.5, 0.68, 0.72, 0.04, 0.025]] },
+  { size: [0.7, 0.8, 0.5], segments: 8, rings: [[-0.5, 0.6, 0.68], [-0.27, 0.82, 0.9, 0, 0.025], [0.02, 1.08, 1.12, 0, 0.12], [0.28, 0.9, 0.88], [0.5, 0.72, 0.72]] },
+  { size: [1.24, 0.95, 1.24], segments: 8, rings: [[-0.5, 0.78, 0.82], [-0.25, 0.9, 0.9], [0.02, 0.92, 0.9], [0.3, 1.04, 1.04], [0.5, 0.96, 0.98]] },
+  { size: [1, 1, 1], segments: 7, rings: [[-0.5, 0.58, 0.62], [-0.25, 0.7, 0.7], [0.02, 0.76, 0.76], [0.3, 0.66, 0.7, 0, 0.025], [0.5, 0.52, 0.62]] },
+  { size: [1.04, 1.04, 1.04], segments: 6, rings: [[-0.5, 0.48, 0.56], [-0.25, 0.72, 0.76], [0.02, 0.9, 0.86], [0.3, 0.78, 0.78], [0.5, 0.5, 0.58]] },
+];
+
+const ZOMBIE_HEAD_FORMS: readonly FacetedForm[] = [
+  { size: [0.46, 0.46, 0.46], segments: 7, rings: [[-0.5, 0.62, 0.66, 0.015, -0.015], [-0.2, 0.9, 0.9], [0.16, 1, 0.96], [0.5, 0.78, 0.82, 0.02, 0]] },
+  { size: [0.6, 0.6, 0.6], segments: 7, rings: [[-0.5, 0.52, 0.6, 0, 0.04], [-0.18, 0.74, 0.8, 0, 0.02], [0.18, 0.92, 0.88], [0.5, 0.68, 0.68, 0, -0.035]] },
+  { size: [0.68, 0.68, 0.68], segments: 8, rings: [[-0.5, 0.9, 0.82], [-0.18, 1.05, 0.94, 0, 0.02], [0.18, 0.98, 0.9], [0.5, 0.86, 0.84]] },
+  { size: [0.66, 0.66, 0.66], segments: 7, rings: [[-0.5, 0.62, 0.68, 0.08, 0], [-0.18, 0.9, 0.9, -0.04, 0.02], [0.18, 0.92, 0.9, 0.055, -0.025], [0.5, 0.7, 0.78, -0.025, 0.015]] },
+  { size: [0.5, 0.42, 0.44], segments: 8, rings: [[-0.5, 0.82, 0.8], [-0.18, 1.02, 0.94, 0, 0.03], [0.18, 1, 0.9], [0.5, 0.78, 0.72]] },
+  { size: [0.68, 0.68, 0.68], segments: 7, rings: [[-0.5, 0.84, 0.78], [-0.18, 0.94, 0.9], [0.18, 0.98, 0.94], [0.5, 0.9, 0.88]] },
+  { size: [0.68, 0.68, 0.68], segments: 7, rings: [[-0.5, 0.56, 0.7], [-0.18, 0.78, 0.82], [0.18, 0.84, 0.8], [0.5, 0.72, 0.76, 0, -0.02]] },
+  { size: [0.7, 0.7, 0.7], segments: 6, rings: [[-0.5, 0.7, 0.66], [-0.18, 0.94, 0.9], [0.18, 1.04, 1], [0.5, 0.88, 0.88]] },
+];
+
+const ZOMBIE_ARM_WIDTHS: readonly (readonly [number, number, number])[] = [
+  [0.82, 0.88, 0.58], [0.58, 0.7, 0.42], [1.35, 1.18, 0.98], [1.02, 0.9, 0.58],
+  [1.08, 1.16, 0.9], [1.24, 1.28, 1.08], [0.72, 0.76, 0.48], [0.68, 0.72, 0.46],
+];
+const ZOMBIE_LEG_WIDTHS: readonly (readonly [number, number, number])[] = [
+  [0.9, 0.82, 0.62], [0.68, 0.66, 0.46], [1.3, 1.18, 0.96], [1.02, 0.9, 0.68],
+  [1.12, 1.06, 0.86], [1.22, 1.16, 1], [0.8, 0.74, 0.55], [0.72, 0.74, 0.5],
+];
+const ZOMBIE_BODY_SCALE: readonly (readonly [number, number, number])[] = [
+  [1, 1.04, 0.94], [0.68, 1.06, 0.72], [1.42, 1.28, 1.25], [0.94, 1.08, 0.88],
+  [1.12, 1.02, 1.05], [1.22, 1.1, 1.13], [0.82, 1.12, 0.84], [0.78, 0.8, 0.78],
+];
+
+function createFacetedVolumeGeometry(form: FacetedForm, seed = 0) {
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const [width, height, depth] = form.size;
+  const count = form.segments;
+
+  form.rings.forEach(([y, radiusX, radiusZ, offsetX = 0, offsetZ = 0], ringIndex) => {
+    for (let segment = 0; segment < count; segment++) {
+      const angle = (segment / count) * Math.PI * 2 + (ringIndex % 2) * 0.055;
+      const facet = 1 + Math.sin(segment * 1.73 + ringIndex * 1.21 + seed) * 0.035;
+      positions.push(
+        offsetX * width + Math.cos(angle) * width * 0.5 * radiusX * facet,
+        y * height,
+        offsetZ * depth + Math.sin(angle) * depth * 0.5 * radiusZ * facet,
+      );
+    }
+  });
+
+  for (let ring = 0; ring < form.rings.length - 1; ring++) {
+    for (let segment = 0; segment < count; segment++) {
+      const next = (segment + 1) % count;
+      const a = ring * count + segment;
+      const b = ring * count + next;
+      const c = (ring + 1) * count + segment;
+      const d = (ring + 1) * count + next;
+      indices.push(a, b, c, b, d, c);
+    }
+  }
+
+  const bottomCenter = positions.length / 3;
+  positions.push(0, form.rings[0]![0] * height, 0);
+  const topCenter = positions.length / 3;
+  positions.push(0, form.rings[form.rings.length - 1]![0] * height, 0);
+  for (let segment = 0; segment < count; segment++) {
+    const next = (segment + 1) % count;
+    indices.push(bottomCenter, next, segment);
+    const topStart = (form.rings.length - 1) * count;
+    indices.push(topCenter, topStart + segment, topStart + next);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createZombieBodyGeometry(kind: number) {
+  return createFacetedVolumeGeometry(ZOMBIE_BODY_FORMS[kind] ?? ZOMBIE_BODY_FORMS[0]!, kind * 0.47);
+}
+
+function createZombieHeadGeometry(kind: number) {
+  return createFacetedVolumeGeometry(ZOMBIE_HEAD_FORMS[kind] ?? ZOMBIE_HEAD_FORMS[0]!, kind * 0.83);
+}
+
+function createZombieLimbGeometry(kind: number, leg: boolean) {
+  const widths = (leg ? ZOMBIE_LEG_WIDTHS : ZOMBIE_ARM_WIDTHS)[kind] ?? [0.8, 0.8, 0.6];
+  const form: FacetedForm = {
+    size: leg ? [0.22, 0.6, 0.22] : [0.2, 0.72, 0.2],
+    segments: 6,
+    rings: [
+      [-0.5, widths[2] * 0.68, widths[2] * 0.72],
+      [-0.28, widths[2], widths[2], kind === 3 ? 0.025 : 0, 0],
+      [0.02, widths[1], widths[1], kind === 3 ? -0.018 : 0, 0],
+      [0.32, widths[0], widths[0] * 0.96],
+      [0.5, widths[0] * 0.72, widths[0] * 0.76],
+    ],
+  };
+  return createFacetedVolumeGeometry(form, kind * 1.17 + (leg ? 0.51 : 0));
+}
+
 function createZombieFaceGeometry(kind: number) {
   const features = ZOMBIE_FACE_FEATURES[kind] ?? ZOMBIE_FACE_FEATURES[0]!;
   const positions: number[] = [];
@@ -580,16 +695,10 @@ function Zombies({
    */
   towerRevision: string;
 }) {
-  const bodyGeometries = useMemo(() => ({
-    0: new THREE.BoxGeometry(0.62, 0.85, 0.42),
-    1: new THREE.BoxGeometry(0.5, 0.9, 0.34),
-    2: new THREE.DodecahedronGeometry(0.55, 0),
-    3: new THREE.OctahedronGeometry(0.52, 0),
-    4: new THREE.BoxGeometry(0.7, 0.8, 0.5),
-    5: new THREE.CylinderGeometry(0.52, 0.62, 0.95, 6),
-    6: new THREE.IcosahedronGeometry(0.5, 0),
-    7: new THREE.TetrahedronGeometry(0.52, 0),
-  } as Record<number, THREE.BufferGeometry>), []);
+  const bodyGeometries = useMemo(
+    () => Object.fromEntries(Array.from({ length: 8 }, (_, kind) => [kind, createZombieBodyGeometry(kind)])) as Record<number, THREE.BufferGeometry>,
+    [],
+  );
   const equippedZombieSkin = useMemo(
     () =>
       ZOMBIE_COSMETICS.find(
@@ -605,16 +714,18 @@ function Zombies({
       ) as Record<number, THREE.BufferGeometry>,
     [],
   );
-  const headGeometries = useMemo(() => ({
-    0: new THREE.BoxGeometry(0.46, 0.46, 0.46),
-    1: new THREE.IcosahedronGeometry(0.3, 0),
-    2: new THREE.DodecahedronGeometry(0.34, 0),
-    3: new THREE.OctahedronGeometry(0.33, 0),
-    4: new THREE.BoxGeometry(0.5, 0.42, 0.44),
-    5: new THREE.OctahedronGeometry(0.34, 0),
-    6: new THREE.IcosahedronGeometry(0.34, 0),
-    7: new THREE.TetrahedronGeometry(0.35, 0),
-  } as Record<number, THREE.BufferGeometry>), []);
+  const headGeometries = useMemo(
+    () => Object.fromEntries(Array.from({ length: 8 }, (_, kind) => [kind, createZombieHeadGeometry(kind)])) as Record<number, THREE.BufferGeometry>,
+    [],
+  );
+  const armGeometries = useMemo(
+    () => Object.fromEntries(Array.from({ length: 8 }, (_, kind) => [kind, createZombieLimbGeometry(kind, false)])) as Record<number, THREE.BufferGeometry>,
+    [],
+  );
+  const legGeometries = useMemo(
+    () => Object.fromEntries(Array.from({ length: 8 }, (_, kind) => [kind, createZombieLimbGeometry(kind, true)])) as Record<number, THREE.BufferGeometry>,
+    [],
+  );
   const guardianShieldGeometry = useMemo(() => {
     const shape = new THREE.Shape();
     shape.moveTo(0, 0.58);
@@ -624,16 +735,26 @@ function Zombies({
     shape.lineTo(-0.4, -0.16);
     shape.lineTo(-0.45, 0.34);
     shape.closePath();
-    return new THREE.ShapeGeometry(shape);
+    return new THREE.ExtrudeGeometry(shape, {
+      depth: 0.12,
+      steps: 1,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      bevelSize: 0.035,
+      bevelThickness: 0.035,
+      curveSegments: 1,
+    });
   }, []);
   useEffect(
     () => () => {
       Object.values(bodyGeometries).forEach((geometry) => geometry.dispose());
       Object.values(headGeometries).forEach((geometry) => geometry.dispose());
+      Object.values(armGeometries).forEach((geometry) => geometry.dispose());
+      Object.values(legGeometries).forEach((geometry) => geometry.dispose());
       Object.values(faceGeometries).forEach((geometry) => geometry.dispose());
       guardianShieldGeometry.dispose();
     },
-    [bodyGeometries, headGeometries, faceGeometries, guardianShieldGeometry],
+    [bodyGeometries, headGeometries, armGeometries, legGeometries, faceGeometries, guardianShieldGeometry],
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const lastFlash = useRef<number[]>([]);
@@ -796,6 +917,10 @@ function Zombies({
         if (body && head && leftArm && rightArm && leftLeg && rightLeg) {
           body.geometry = bodyGeometries[z.kind] ?? bodyGeometries[0]!;
           head.geometry = headGeometries[z.kind] ?? headGeometries[0]!;
+          leftArm.geometry = armGeometries[z.kind] ?? armGeometries[0]!;
+          rightArm.geometry = armGeometries[z.kind] ?? armGeometries[0]!;
+          leftLeg.geometry = legGeometries[z.kind] ?? legGeometries[0]!;
+          rightLeg.geometry = legGeometries[z.kind] ?? legGeometries[0]!;
           if (face) {
             face.geometry = faceGeometries[z.kind] ?? faceGeometries[0]!;
             face.position.set(0, presentation.faceY, presentation.faceZ);
@@ -952,33 +1077,71 @@ function Zombies({
         const rightArm = refs["right-arm"] as THREE.Mesh | undefined;
         const leftLeg = refs["left-leg"] as THREE.Mesh | undefined;
         const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
-        if (body) body.rotation.x = -presentation.deathFold * deathProgress;
-        if (head) head.rotation.z = presentation.hitTwist * deathProgress * 0.65;
+        const deathWave = Math.sin(deathProgress * Math.PI);
+        if (body) {
+          body.rotation.x = -presentation.deathFold * deathProgress;
+          body.rotation.z = presentation.deathTwist * deathProgress * (z.kind % 2 === 0 ? 1 : -1);
+        }
+        if (head) {
+          head.rotation.z = presentation.hitTwist * deathProgress * 0.65
+            + presentation.deathTwist * deathProgress * 0.35;
+          head.rotation.x = -deathProgress * 0.3;
+        }
         if (face) face.visible = false;
-        if (leftArm) leftArm.rotation.x = -1.2 - deathProgress * 0.8;
-        if (rightArm) rightArm.rotation.x = -1.35 + deathProgress * 0.8;
-        if (leftLeg) leftLeg.rotation.x = -deathProgress * 0.45;
-        if (rightLeg) rightLeg.rotation.x = deathProgress * 0.55;
+        if (leftArm) {
+          leftArm.rotation.x = -1.2 - deathProgress * (z.kind === 1 ? 1.05 : 0.8) + deathWave * 0.22;
+          leftArm.rotation.z = -presentation.deathTwist * deathProgress;
+        }
+        if (rightArm) {
+          rightArm.rotation.x = -1.35 + deathProgress * (z.kind === 1 ? 1.05 : 0.8) - deathWave * 0.16;
+          rightArm.rotation.z = presentation.deathTwist * deathProgress;
+        }
+        if (leftLeg) leftLeg.rotation.x = -deathProgress * (z.kind === 2 ? 0.3 : 0.45);
+        if (rightLeg) rightLeg.rotation.x = deathProgress * (z.kind === 2 ? 0.3 : 0.55);
       } else {
         const phase = z.wobble + i * 0.43;
         const animationFactor = reducedMotion ? 0.35 : 1;
-        const gaitWave = Math.sin(phase * presentation.gait) * animationFactor;
-        const altGaitWave = Math.sin(phase * presentation.gait + Math.PI) * animationFactor;
+        const locomotionFactor = z.stun && z.stun > 0 ? 0.08 : z.slow > 0 ? 0.58 : 1;
+        const gaitWave = Math.sin(phase * presentation.gait) * animationFactor * locomotionFactor;
+        const altGaitWave = Math.sin(phase * presentation.gait + Math.PI) * animationFactor * locomotionFactor;
         const idleWave = Math.sin(phase * presentation.idleRate) * animationFactor;
+        const idleJitter = Math.sin(now * (0.0018 + z.kind * 0.00025) + i * 1.73) * presentation.idleJitter * animationFactor;
         const facingY = z.facingY ?? 0;
-        // Restore archetype/boss scale every active frame so a prior pooled death fade
-        // cannot leak into a new enemy.
-        g.scale.setScalar(baseScale);
+        const cosYaw = Math.cos(facingY);
+        const sinYaw = Math.sin(facingY);
+        const localHitX = z.hitX * cosYaw - z.hitZ * sinYaw;
+        const localHitZ = z.hitX * sinYaw + z.hitZ * cosYaw;
         const impact = zombieHitAmount(z.flash, reducedMotion);
+        const hitEnvelope = Math.min(1, z.hitReact) * Math.min(1, Math.max(0, z.hitForce) * 0.72) * (reducedMotion ? 0.45 : 1);
+        const explosiveHit = z.hitKind === "rocket" || z.hitKind === "shotgunner";
+        const electricHit = z.hitKind === "tesla";
+        const fireHit = z.hitKind === "flamethrower";
+        const freezeHit = z.hitKind === "freezer";
+        const precisionHit = z.hitKind === "sniper" || z.hitKind === "laser";
+        const hitStyle = hitEnvelope * (
+          explosiveHit ? 1.32 : electricHit ? 1.12 : precisionHit ? 1.04 : fireHit ? 0.84 : freezeHit ? 0.62 : 0.9
+        );
+        const electricJitter = electricHit
+          ? Math.sin(now * 0.052 + i * 2.7) * hitStyle * 0.11
+          : 0;
+        const healerFloat = z.kind === 6 ? Math.sin(phase * 1.55) * 0.035 : 0;
+
+        // The simulation supplies a normalized push direction and force. Convert the
+        // direction into the zombie's local frame so reactions turn away from the hit.
+        g.scale.setScalar(baseScale);
         g.position.set(
-          z.x,
-          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.headBob * 0.45) * animationFactor + idleWave * presentation.idleAmp + impact * presentation.hitRecoil * 0.05,
-          z.z,
+          z.x + z.hitX * hitStyle * 0.052,
+          0.1 + Math.abs(Math.sin(z.wobble)) * (0.1 + presentation.stepLift) * animationFactor
+            + idleWave * presentation.idleAmp + healerFloat + idleJitter * 0.35
+            + hitStyle * presentation.hitStagger * 0.12,
+          z.z + z.hitZ * hitStyle * 0.052,
         );
         const movementSway = idleWave * presentation.bodySway;
-        g.rotation.y = facingY;
-        g.rotation.x = presentation.forwardLean - impact * presentation.damageLean;
-        g.rotation.z = movementSway + impact * presentation.hitTwist * 0.18;
+        g.rotation.y = facingY + localHitX * hitStyle * 0.055 + electricJitter * 0.3;
+        g.rotation.x = presentation.forwardLean - impact * presentation.damageLean
+          + localHitZ * hitStyle * presentation.hitStagger + electricJitter * 0.2
+          - (freezeHit ? hitStyle * 0.025 : 0);
+        g.rotation.z = movementSway + idleJitter + localHitX * hitStyle * presentation.hitSideRoll + electricJitter;
 
         const body = refs["body"] as THREE.Mesh | undefined;
         const head = refs["head"] as THREE.Mesh | undefined;
@@ -989,14 +1152,25 @@ function Zombies({
         const rightLeg = refs["right-leg"] as THREE.Mesh | undefined;
 
         if (body) {
+          const baseBodyScale = ZOMBIE_BODY_SCALE[z.kind] ?? ZOMBIE_BODY_SCALE[0]!;
+          const breath = Math.sin(phase * (z.kind === 2 ? 0.72 : 1.08)) * presentation.bodyPulse;
+          const bomberPulse = z.kind === 4 ? Math.max(0, Math.sin(phase * 2.3)) * 0.035 : 0;
           body.rotation.x = Math.sin(phase * presentation.gait * 0.5) * presentation.bodySway * 0.9;
-          body.rotation.y = 0;
-          const baseBodyScaleY = z.kind === 1 ? 1.06 : z.kind === 2 ? 1.28 : 1;
-          body.scale.y = baseBodyScaleY * (1 - impact * 0.07);
+          body.rotation.y = gaitWave * presentation.torsoTwist + electricJitter * 0.75;
+          body.rotation.z = idleJitter * 0.55 + (z.kind === 3 ? Math.sin(phase * 2.1) * 0.045 * animationFactor : 0);
+          body.scale.set(
+            baseBodyScale[0] * (1 + breath + bomberPulse),
+            baseBodyScale[1] * (1 - impact * 0.07 + Math.abs(breath) * 0.18),
+            baseBodyScale[2] * (1 + breath * 0.75 + bomberPulse * 0.85),
+          );
         }
         if (head) {
-          head.rotation.x = Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75 - impact * presentation.hitRecoil * 0.12;
-          head.rotation.z = Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45 + impact * presentation.hitTwist * 0.16;
+          const headSnap = precisionHit ? hitStyle * 0.2 : hitStyle * 0.11;
+          head.rotation.x = Math.sin(phase * presentation.gait + 0.6) * presentation.headBob * 0.75
+            - impact * presentation.hitRecoil * 0.12 - headSnap + electricJitter;
+          head.rotation.y = Math.sin(phase * 0.7 + i) * presentation.torsoTwist * 0.28 + electricJitter * 1.2;
+          head.rotation.z = Math.sin(phase * presentation.gait * 0.55 + 1.1) * presentation.headTurn * 0.45
+            + localHitX * hitStyle * presentation.hitTwist * 0.2;
         }
         if (face) {
           face.visible = true;
@@ -1005,18 +1179,28 @@ function Zombies({
           face.position.z = presentation.faceZ;
         }
         if (leftArm) {
-          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing;
-          leftArm.rotation.z = idleWave * 0.04;
+          leftArm.rotation.x = -1.2 + altGaitWave * presentation.armSwing
+            - hitStyle * (explosiveHit ? 0.28 : fireHit ? 0.22 : 0.12);
+          leftArm.rotation.y = gaitWave * presentation.torsoTwist * 0.5;
+          leftArm.rotation.z = idleWave * 0.04 + localHitX * hitStyle * presentation.armAsymmetry
+            + electricJitter * 1.4;
         }
         if (rightArm) {
-          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing;
-          rightArm.rotation.z = -idleWave * 0.04;
+          rightArm.rotation.x = -1.35 + gaitWave * presentation.armSwing
+            - hitStyle * (explosiveHit ? 0.2 : fireHit ? 0.17 : 0.1);
+          rightArm.rotation.y = -gaitWave * presentation.torsoTwist * 0.5;
+          rightArm.rotation.z = -idleWave * 0.04 - localHitX * hitStyle * presentation.armAsymmetry
+            - electricJitter * 1.2;
         }
         if (leftLeg) {
-          leftLeg.rotation.x = altGaitWave * presentation.stride;
+          leftLeg.rotation.x = altGaitWave * presentation.stride
+            - localHitZ * hitStyle * presentation.hitStagger * 0.24;
+          leftLeg.position.y = -0.25 + Math.max(0, altGaitWave) * presentation.stepLift;
         }
         if (rightLeg) {
-          rightLeg.rotation.x = gaitWave * presentation.stride;
+          rightLeg.rotation.x = gaitWave * presentation.stride
+            - localHitZ * hitStyle * presentation.hitStagger * 0.24;
+          rightLeg.position.y = -0.25 + Math.max(0, gaitWave) * presentation.stepLift;
         }
 
         const signatureName =
@@ -1030,8 +1214,14 @@ function Zombies({
         if (signature) {
           const signatureRate = z.kind === 7 ? 0.0024 : z.kind === 3 ? 0.0014 : 0.0007;
           signature.rotation.y = now * signatureRate * animationFactor + i * 0.1;
-          const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
+          const signaturePulse = 1 + Math.sin(phase * 1.6) * presentation.idleAmp * animationFactor
+            * (z.kind === 4 || z.kind === 6 ? 1.4 : 0.75);
           signature.scale.setScalar(signaturePulse);
+          if (z.kind === 1) signature.rotation.z = Math.sin(phase * 1.8) * 0.08 * animationFactor;
+          if (z.kind === 3) signature.rotation.x = Math.sin(phase * 2.2) * 0.16 * animationFactor;
+          if (z.kind === 5) signature.rotation.x = -0.08 + Math.max(0, gaitWave) * 0.08;
+          if (z.kind === 6) signature.rotation.z = Math.sin(phase * 1.2) * 0.05 * animationFactor;
+          if (z.kind === 7) signature.rotation.x = Math.sin(phase * 2.8) * 0.18 * animationFactor;
         }
       }
       // damage flash
