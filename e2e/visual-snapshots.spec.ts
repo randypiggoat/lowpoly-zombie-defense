@@ -39,8 +39,70 @@ for (const viewport of CAPTURE_VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/?qa=1");
 
-    await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
-    const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+    const app = page.locator(".rotwood-app");
+    const waitForMenuIdle = async () => {
+      await expect(app).toHaveAttribute("data-screen-transition", "idle", { timeout: 5_000 });
+    };
+    const captureMenuScreen = async (name: string) => {
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        await new Promise<void>((done) => requestAnimationFrame(() => done()));
+        await new Promise<void>((done) => requestAnimationFrame(() => done()));
+      });
+      const screenshotPath = resolve(SNAPSHOT_DIRECTORY, `${viewport.id}-menu-${name}.png`);
+      await page.screenshot({
+        path: screenshotPath,
+        fullPage: false,
+        animations: "disabled",
+        caret: "hide",
+      });
+      expect(existsSync(screenshotPath), `${name} menu screenshot should exist`).toBe(true);
+      expect(statSync(screenshotPath).size, `${name} menu screenshot should not be empty`).toBeGreaterThan(1_000);
+    };
+
+    await expect(app).toHaveAttribute("data-screen", "main-menu");
+    await waitForMenuIdle();
+    await captureMenuScreen("main-menu");
+
+    await page.getByRole("button", { name: /VIEW STAGE MAP/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "stage-select");
+    await waitForMenuIdle();
+    await expect(page.getByRole("heading", { name: /Stage Map/i })).toBeVisible();
+    await captureMenuScreen("stage-map");
+
+    await page.getByRole("button", { name: /MAIN MENU/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "main-menu");
+    await waitForMenuIdle();
+
+    await page.getByRole("button", { name: /Tower Workshop/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "arsenal");
+    await waitForMenuIdle();
+    await expect(page.getByRole("heading", { name: "Tower Workshop" })).toBeVisible();
+    await captureMenuScreen("tower-workshop");
+
+    await page.getByRole("button", { name: /Tower Armory/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "towers");
+    await waitForMenuIdle();
+    await expect(page.getByRole("heading", { name: "Tower Armory" })).toBeVisible();
+    await captureMenuScreen("tower-armory");
+
+    await page.getByRole("button", { name: /TOWER WORKSHOP/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "arsenal");
+    await waitForMenuIdle();
+    await page.getByRole("button", { name: /Field Knowledge/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "knowledge");
+    await waitForMenuIdle();
+    await expect(page.getByRole("heading", { name: "Field Knowledge" })).toBeVisible();
+    await captureMenuScreen("field-knowledge");
+
+    await page.getByRole("button", { name: /TOWER WORKSHOP/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "arsenal");
+    await waitForMenuIdle();
+    await page.getByRole("button", { name: /MAIN MENU/i }).click();
+    await expect(app).toHaveAttribute("data-screen", "main-menu");
+    await waitForMenuIdle();
+
+    const playButton = page.getByRole("button", { name: /START FIRST RUN|START RUN|TRY AGAIN|REPLAY STAGE/ });
     await expect(playButton).toBeVisible();
     await playButton.click();
 
@@ -236,6 +298,25 @@ for (const viewport of CAPTURE_VIEWPORTS) {
     expect(canvasContentCheck.width).toBeGreaterThan(100);
     expect(canvasContentCheck.height).toBeGreaterThan(100);
     expect(canvasContentCheck.uniqueColors, "canvas screenshot should contain rendered scene content").toBeGreaterThan(2);
+
+    const stageVictoryTriggered = await page.evaluate(() => {
+      const api = (window as Window & {
+        __ROTWOOD_QA__?: { forceStageVictoryForTest: () => boolean };
+      }).__ROTWOOD_QA__;
+      return api?.forceStageVictoryForTest() ?? false;
+    });
+    expect(stageVictoryTriggered, "the visual run should reach the real stage-clear results state").toBe(true);
+    await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "results");
+    await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen-transition", "idle", { timeout: 5_000 });
+    const resultsPath = resolve(SNAPSHOT_DIRECTORY, `${viewport.id}-run-results.png`);
+    await page.screenshot({
+      path: resultsPath,
+      fullPage: false,
+      animations: "disabled",
+      caret: "hide",
+    });
+    expect(existsSync(resultsPath), "run-results screenshot should exist").toBe(true);
+    expect(statSync(resultsPath).size, "run-results screenshot should not be empty").toBeGreaterThan(1_000);
 
   });
 }

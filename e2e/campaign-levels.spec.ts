@@ -12,8 +12,8 @@ test("campaign exposes all twenty locations across four worlds", async ({ page }
   });
 
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: /Operations/i }).click();
-  await page.getByRole("button", { name: /Campaign/i }).click();
+  await page.getByRole("button", { name: /Challenges/i }).click();
+  await page.getByRole("button", { name: /Stage Map/i }).click();
 
   await expect(page.locator('[data-stage-id]')).toHaveCount(20);
   await expect(page.locator('[data-world-id="1"]')).toHaveCount(5);
@@ -32,9 +32,9 @@ test("campaign victory can continue into endless without resetting the active de
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.goto("/?qa=1");
-  await page.getByRole("button", { name: /Operations/i }).click();
-  await page.getByRole("button", { name: /Campaign/i }).click();
-  await page.locator('[data-stage-id="1"]').getByRole("button", { name: "PLAY", exact: true }).click();
+  await page.getByRole("button", { name: /Challenges/i }).click();
+  await page.getByRole("button", { name: /Stage Map/i }).click();
+  await page.locator('[data-stage-id="1"]').getByRole("button", { name: "START RUN", exact: true }).click();
   await page.waitForFunction(() => Boolean((window as Window & { __ROTWOOD_QA__?: unknown }).__ROTWOOD_QA__));
   const before = await page.evaluate(() => {
     const qa = (window as Window & { __ROTWOOD_QA__?: {
