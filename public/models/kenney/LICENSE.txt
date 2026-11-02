@@ -20,3 +20,6 @@ https://github.com/Hidencod/tge-assets/blob/main/LICENSE
 
 No raw packs are included; only the four listed model files used by the game
 are bundled here.
+
+Original asset pack page:
+- https://kenney.nl/assets/graveyard-kit

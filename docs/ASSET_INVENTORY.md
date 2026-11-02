@@ -56,3 +56,30 @@ A copy of the applicable CC0 notice and source references is stored at
 
 The app loads these files from its own static public assets. It does not fetch
 models from Kenney, GitHub, or any other external host at runtime.
+
+
+## Kenney — Graveyard Kit
+
+- Creator: Kenney
+- Pack: Graveyard Kit
+- Official source page: https://kenney.nl/assets/graveyard-kit
+- Source files: self-contained GLB derivatives from https://github.com/Hidencod/tge-assets
+- License: CC0 1.0 Universal
+- License evidence: source repository LICENSE and README; both identify Kenney
+  as creator and state CC0 1.0 applies to converted GLB derivatives.
+- Date obtained: 2026-11-02 UTC
+- Modifications: none to source meshes or embedded textures; model transforms
+  and prop selection are performed at runtime.
+- Commercial game use: permitted
+- Attribution: not required; Kenney is credited here as a courtesy
+- Distribution note: four selected models only; the full pack is not bundled.
+
+| Asset | Repository path | Source file size |
+|---|---|---:|
+| Gravestone Cross | `public/models/kenney/graveyard-kit/gravestone-cross.glb` | 31,576 bytes |
+| Gravestone Bevel | `public/models/kenney/graveyard-kit/gravestone-bevel.glb` | 26,844 bytes |
+| Gravestone Broken | `public/models/kenney/graveyard-kit/gravestone-broken.glb` | 23,912 bytes |
+| Crypt Small | `public/models/kenney/graveyard-kit/crypt-small.glb` | 47,856 bytes |
+
+These models replace selected decorative cemetery props only. Their placement
+comes from the existing authored stage-environment prop coordinates.
