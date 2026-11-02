@@ -51,10 +51,10 @@ describe("Kenney graveyard asset selection", () => {
   });
 
   test("includes a separate crypt asset for the cemetery's mausoleum prop", () => {
-    expect(KENNEY_GRAVEYARD_ASSETS.cryptSmall.src).toBe(
-      "/models/kenney/graveyard-kit/crypt-small.glb",
+    expect(KENNEY_GRAVEYARD_ASSETS.cryptLarge.src).toBe(
+      "/models/kenney/graveyard-kit/crypt-large.glb",
     );
-    expect(KENNEY_GRAVEYARD_ASSETS.cryptSmall.sourceHeight).toBeGreaterThan(0);
+    expect(KENNEY_GRAVEYARD_ASSETS.cryptLarge.sourceHeight).toBeGreaterThan(0);
   });
 
   test("all selected graveyard models use local, measured GLB metadata", () => {

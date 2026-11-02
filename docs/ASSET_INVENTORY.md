@@ -80,7 +80,7 @@ models from Kenney, GitHub, or any other external host at runtime.
 | Gravestone Cross | `public/models/kenney/graveyard-kit/gravestone-cross.glb` | 31,576 bytes |
 | Gravestone Bevel | `public/models/kenney/graveyard-kit/gravestone-bevel.glb` | 26,844 bytes |
 | Gravestone Broken | `public/models/kenney/graveyard-kit/gravestone-broken.glb` | 23,912 bytes |
-| Crypt Small | `public/models/kenney/graveyard-kit/crypt-small.glb` | 47,856 bytes |
+| Crypt Large | `public/models/kenney/graveyard-kit/crypt-large.glb` | 65,840 bytes |
 
 These models replace selected decorative cemetery props only. Their placement
 comes from the existing authored stage-environment prop coordinates.
@@ -127,7 +127,7 @@ in source model units (width × height × depth), before game scaling.
 | Graveyard Kit — Gravestone Cross | 2 × 2 × 2 | -1 |
 | Graveyard Kit — Gravestone Bevel | 2 × 2 × 2 | -1 |
 | Graveyard Kit — Gravestone Broken | 2 × 2 × 2 | -1 |
-| Graveyard Kit — Crypt Small | 2 × 2 × 2 | -1 |
+| Graveyard Kit — Crypt Large | 2 × 2 × 2 | -1 |
 | Nature Kit — Tree Oak | 0.640554 × 1.22623992 × 0.739648 | 0 |
 | Nature Kit — Tree Pine Tall A Detailed | 0.386272922 × 1.529606 × 0.39195 | 0 |
 | Nature Kit — Tree Palm Detailed Tall | 1.034329 × 1.247613 × 1.034329 | 0 |

@@ -429,7 +429,7 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 ### Cemetery identity pass — Kenney Graveyard Kit
 
 - Replaced the five simple block tombstones on the Graveyard map with three deterministic CC0 gravestone silhouettes: cross, bevel and broken stone.
-- Replaced the final decorative dead tree at its existing authored prop coordinate with a compact crypt/mausoleum model. The cemetery now has a stronger graveyard-specific skyline rather than relying only on the cathedral landmark.
+- Replaced the final decorative dead tree at its existing authored prop coordinate with a larger crypt/mausoleum model. The cemetery now has a stronger graveyard-specific skyline rather than relying only on the cathedral landmark.
 - Added a shared `KenneyModel` component so all imported static GLBs use the same measured ground alignment, cloned scene hierarchy, static shadow flags, and local-file loading behavior.
 - The graveyard assets are included in `docs/ASSET_INVENTORY.md` and covered by the local Kenney CC0 notice.
 - Only stage-environment decoration changed. No campaign map route, obstacle, tower-placement, collision, enemy, wave or reward rule was edited.
@@ -488,3 +488,10 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Both models use measured GLB bounds and local static paths. They retain a procedural car fallback while loading.
 - Existing authored environment prop coordinates, rotations, scales, and map collision/placement rules remain unchanged. Vehicles remain decorative, non-colliding scenery and do not block enemy routes or tower line of sight.
 - The additional GLBs are included in `docs/ASSET_INVENTORY.md` and the local CC0 notice.
+
+
+### Crypt silhouette refinement — Kenney Graveyard Kit
+
+- Replaced the small block-like crypt with the larger arched-entry crypt model. Its entrance and perimeter buttresses make the cemetery landmark read as a mausoleum rather than a generic box.
+- Ground placement uses the measured 2 × 2 × 2.400175 source bounds and minimum Y of -1; the game uses a deliberate 2.5 × 2.3 × 3.0 target form at the authored cemetery prop coordinate.
+- The existing graveyard prop position remains unchanged. No path, obstacle, tower-placement or collision rules were modified.

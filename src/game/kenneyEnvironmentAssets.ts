@@ -62,15 +62,21 @@ export const KENNEY_GRAVEYARD_ASSETS = {
     src: "/models/kenney/graveyard-kit/gravestone-broken.glb",
     sourceHeight: 2,
   },
-  cryptSmall: {
-    src: "/models/kenney/graveyard-kit/crypt-small.glb",
+  cryptLarge: {
+    src: "/models/kenney/graveyard-kit/crypt-large.glb",
+    sourceWidth: 2,
+    sourceDepth: 2.4001754522,
     sourceHeight: 2,
+    sourceMinY: -1,
+    width: 2.5,
+    depth: 3,
+    height: 2.3,
   },
 } as const;
 
 export type KenneyGraveyardAssetId = keyof typeof KENNEY_GRAVEYARD_ASSETS;
 
-export function getKenneyGravestoneAsset(index: number): Exclude<KenneyGraveyardAssetId, "cryptSmall"> {
+export function getKenneyGravestoneAsset(index: number): Exclude<KenneyGraveyardAssetId, "cryptLarge"> {
   const variants = ["gravestoneCross", "gravestoneBevel", "gravestoneBroken"] as const;
   const safeIndex = Number.isFinite(index) ? Math.abs(Math.trunc(index)) : 0;
   return variants[safeIndex % variants.length]!;

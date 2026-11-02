@@ -293,10 +293,10 @@ export function EnvironmentPropMesh({
         node = <Industrial kind={item.kind} />;
         break;
       }
-      const asset = KENNEY_GRAVEYARD_ASSETS.cryptSmall;
+      const asset = KENNEY_GRAVEYARD_ASSETS.cryptLarge;
       node = (
         <Suspense fallback={<Industrial kind={item.kind} />}>
-          <KenneyModel src={asset.src} sourceHeight={asset.sourceHeight} width={2} depth={2} height={2} />
+          <KenneyModel {...asset} />
         </Suspense>
       );
       break;
