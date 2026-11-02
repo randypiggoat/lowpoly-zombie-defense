@@ -424,3 +424,13 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - The four GLBs are CC0 1.0, use embedded textures, total approximately 543 KB, and are documented in `docs/ASSET_INVENTORY.md`. Their license notice is copied to `public/models/kenney/LICENSE.txt`. No third-party network request is made during gameplay.
 - Added a tested environment-to-model selector so imported buildings cannot leak into unrelated biomes or replace walls, market stalls, foundry structures or graveyard landmarks.
 - **Verification boundary:** source files and license metadata are recorded. Exact visual scale, texture sharpness, shadow quality and mobile GPU cost still require browser screenshot inspection and physical-device review. Automated checks on the final commit must pass before merge.
+
+
+### Cemetery identity pass — Kenney Graveyard Kit
+
+- Replaced the five simple block tombstones on the Graveyard map with three deterministic CC0 gravestone silhouettes: cross, bevel and broken stone.
+- Replaced the final decorative dead tree at its existing authored prop coordinate with a compact crypt/mausoleum model. The cemetery now has a stronger graveyard-specific skyline rather than relying only on the cathedral landmark.
+- Added a shared `KenneyModel` component so all imported static GLBs use the same measured ground alignment, cloned scene hierarchy, static shadow flags, and local-file loading behavior.
+- The graveyard assets are included in `docs/ASSET_INVENTORY.md` and covered by the local Kenney CC0 notice.
+- Only stage-environment decoration changed. No campaign map route, obstacle, tower-placement, collision, enemy, wave or reward rule was edited.
+- **Verification boundary:** deterministic asset selection and graveyard prop assignment have unit tests. Visual composition, silhouette clarity at phone scale, and mobile shadow/performance behavior still require screenshot inspection and device testing on the final commit.
