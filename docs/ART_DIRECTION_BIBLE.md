@@ -462,3 +462,12 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Imported buildings, cemetery stones and crypts keep their cast/receive shadow presentation.
 - Imported ambient vegetation is explicitly non-shadow-casting and non-shadow-receiving, preserving the existing scenery optimization where the procedural scenery renderer disables shadow casters.
 - This avoids adding a new set of foliage shadow casters on lower-power mobile devices. The actual GPU cost still requires target-device measurement.
+
+
+### Signature landmark vegetation reuse — 2026-11-02
+
+- The Redwood signature landmark now uses the same detailed Kenney tall pine as its surrounding forest props, at a separate giant-tree scale. This creates a consistent foliage language while preserving the original landmark position and overall tall-tree mass.
+- The Desert Bazaar oasis now uses the same detailed palm model as tropical props rather than a separate procedural palm approximation.
+- Both landmarks retain procedural fallbacks while their local GLBs load.
+- Their environment definition coordinates, landmark scale, road, obstacle placement and gameplay rules remain unchanged.
+- The pine source mesh is shared through the GLTF cache; only per-instance transforms differ.
