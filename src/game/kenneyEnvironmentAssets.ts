@@ -97,6 +97,16 @@ export const KENNEY_NATURE_ASSETS = {
     depth: 1.25,
     height: 3.8,
   },
+  pineGiant: {
+    src: "/models/kenney/nature-kit/tree-pinetalla-detailed.glb",
+    sourceWidth: 0.386272922,
+    sourceDepth: 0.39195,
+    sourceHeight: 1.529606,
+    sourceMinY: 0,
+    width: 4.5,
+    depth: 4.5,
+    height: 10.5,
+  },
   palmTall: {
     src: "/models/kenney/nature-kit/tree-palmdetailedtall.glb",
     sourceWidth: 1.034329,
@@ -129,7 +139,7 @@ export function getKenneyNatureAsset(
     return "treeOak";
   }
   if (kind === "pine" && environmentId === "redwood") return "pineTall";
-  if (kind === "palm" && ["jungle-ruins", "mangrove"].includes(environmentId)) {
+  if (kind === "palm" && ["jungle-ruins", "mangrove", "desert-bazaar"].includes(environmentId)) {
     return "palmTall";
   }
   if (kind === "cactus" && environmentId === "desert-bazaar") return "cactusTall";
