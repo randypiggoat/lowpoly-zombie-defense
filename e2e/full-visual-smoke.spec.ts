@@ -37,7 +37,7 @@ test("Rotwood menu and settings visual smoke", async ({ page }) => {
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
   await assertShell(page);
 
-  for (const name of ["Operations", "Armory", "Field Intel", "Supply Depot"]) {
+  for (const name of ["Challenges", "Tower Workshop", "Field Intel", "Supply Depot"]) {
     await expect(page.getByRole("button", { name: new RegExp(name) })).toBeVisible();
   }
 
@@ -59,9 +59,9 @@ test("Rotwood menu and settings visual smoke", async ({ page }) => {
   await assertShell(page);
 
   await page.getByRole("button", { name: /BACK|CLOSE|← BACK/i }).first().click({ force: true });
-  await page.getByRole("button", { name: /Operations/i }).click();
-  await page.getByRole("button", { name: /Campaign/i }).click();
+  await page.getByRole("button", { name: /VIEW STAGE MAP/i }).click();
   await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "stage-select");
+  await expect(page.getByRole("heading", { name: /Stage Map/i })).toBeVisible();
   await expect(page.getByText(/Suburbs|World 1/).first()).toBeVisible();
   await assertShell(page);
 
