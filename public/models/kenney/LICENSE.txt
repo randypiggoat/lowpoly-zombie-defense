@@ -1,0 +1,22 @@
+Kenney assets — CC0 1.0 Universal
+
+The models in this directory were created by Kenney and are released under
+Creative Commons Zero (CC0 1.0 Universal).
+
+You may use, modify, and distribute these models, including in commercial games.
+Crediting Kenney is appreciated but not required.
+
+Original asset pack pages:
+- https://kenney.nl/assets/city-kit-suburban
+- https://kenney.nl/assets/city-kit-commercial
+
+The GLB files in this project were obtained from the Tiny Game Engine free
+model library, which converts the Kenney models to self-contained GLB files
+with embedded textures. Its repository license identifies the source models
+and converted GLB derivatives as CC0 1.0:
+
+https://github.com/Hidencod/tge-assets
+https://github.com/Hidencod/tge-assets/blob/main/LICENSE
+
+No raw packs are included; only the four listed model files used by the game
+are bundled here.
