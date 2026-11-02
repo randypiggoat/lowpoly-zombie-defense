@@ -1,4 +1,4 @@
-import type { StageEnvironmentId } from "./stageEnvironments";
+import type { EnvironmentPropKind, StageEnvironmentId } from "./stageEnvironments";
 
 export const KENNEY_BUILDING_ASSETS = {
   suburbanHouseA: {
@@ -74,4 +74,64 @@ export function getKenneyGravestoneAsset(index: number): Exclude<KenneyGraveyard
   const variants = ["gravestoneCross", "gravestoneBevel", "gravestoneBroken"] as const;
   const safeIndex = Number.isFinite(index) ? Math.abs(Math.trunc(index)) : 0;
   return variants[safeIndex % variants.length]!;
+}
+
+export const KENNEY_NATURE_ASSETS = {
+  treeOak: {
+    src: "/models/kenney/nature-kit/tree-oak.glb",
+    sourceWidth: 0.640554,
+    sourceDepth: 0.739648,
+    sourceHeight: 1.22623992,
+    sourceMinY: 0,
+    width: 1.5,
+    depth: 1.5,
+    height: 3,
+  },
+  pineTall: {
+    src: "/models/kenney/nature-kit/tree-pinetalla-detailed.glb",
+    sourceWidth: 0.386272922,
+    sourceDepth: 0.39195,
+    sourceHeight: 1.529606,
+    sourceMinY: 0,
+    width: 1.25,
+    depth: 1.25,
+    height: 3.8,
+  },
+  palmTall: {
+    src: "/models/kenney/nature-kit/tree-palmdetailedtall.glb",
+    sourceWidth: 1.034329,
+    sourceDepth: 1.034329,
+    sourceHeight: 1.247613,
+    sourceMinY: 0,
+    width: 2.6,
+    depth: 2.6,
+    height: 3.6,
+  },
+  cactusTall: {
+    src: "/models/kenney/nature-kit/cactus-tall.glb",
+    sourceWidth: 0.39624995,
+    sourceDepth: 0.339082063,
+    sourceHeight: 0.75,
+    sourceMinY: 0,
+    width: 1.3,
+    depth: 1.1,
+    height: 2.4,
+  },
+} as const;
+
+export type KenneyNatureAssetId = keyof typeof KENNEY_NATURE_ASSETS;
+
+export function getKenneyNatureAsset(
+  environmentId: StageEnvironmentId,
+  kind: EnvironmentPropKind,
+): KenneyNatureAssetId | null {
+  if (kind === "tree" && ["suburban", "orchard", "river-checkpoint"].includes(environmentId)) {
+    return "treeOak";
+  }
+  if (kind === "pine" && environmentId === "redwood") return "pineTall";
+  if (kind === "palm" && ["jungle-ruins", "mangrove"].includes(environmentId)) {
+    return "palmTall";
+  }
+  if (kind === "cactus" && environmentId === "desert-bazaar") return "cactusTall";
+  return null;
 }
