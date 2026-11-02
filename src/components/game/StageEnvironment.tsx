@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { createContext, useContext, useMemo, useRef, type ReactNode } from "react";
+import { createContext, Suspense, useContext, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import type {
   EnvironmentLandmark,
