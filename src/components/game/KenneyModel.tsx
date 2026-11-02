@@ -45,7 +45,7 @@ export function KenneyModel({
       }
     });
     return clone;
-  }, [scene]);
+  }, [scene, castShadow, receiveShadow]);
 
   const scaleX = width / sourceWidth;
   const scaleY = height / sourceHeight;
