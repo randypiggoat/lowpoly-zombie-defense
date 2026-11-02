@@ -629,12 +629,16 @@ export function GameCanvas() {
       setScreen("results");
     };
 
+    // Keep the event-driven transition for normal simulation updates, and also
+    // re-check the authoritative state when the React snapshot changes. This
+    // covers deterministic QA/test updates that call game.tick() directly and
+    // do not emit a store notification.
     const unsubscribe = game.subscribe(showResults);
     showResults();
     return () => {
       unsubscribe();
     };
-  }, [screen]);
+  }, [screen, state.gameOver, setScreen]);
 
   useEffect(() => {
     if (screen !== "results" || !state.gameOver || !lastReward) return;
