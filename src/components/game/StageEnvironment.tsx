@@ -240,7 +240,7 @@ function KenneyNatureProp({
   const asset = KENNEY_NATURE_ASSETS[assetId];
   return (
     <Suspense fallback={fallback}>
-      <KenneyModel {...asset} />
+      <KenneyModel {...asset} castShadow={false} receiveShadow={false} />
     </Suspense>
   );
 }
