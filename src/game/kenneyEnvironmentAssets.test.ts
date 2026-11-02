@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   getKenneyBuildingAsset,
   getKenneyGravestoneAsset,
+  getKenneyNatureAsset,
   KENNEY_BUILDING_ASSETS,
   KENNEY_GRAVEYARD_ASSETS,
+  KENNEY_NATURE_ASSETS,
 } from "./kenneyEnvironmentAssets";
 
 describe("Kenney environment building selection", () => {
@@ -57,6 +59,37 @@ describe("Kenney graveyard asset selection", () => {
     for (const asset of Object.values(KENNEY_GRAVEYARD_ASSETS)) {
       expect(asset.sourceHeight).toBeGreaterThan(0);
       expect(asset.src.startsWith("/models/kenney/graveyard-kit/")).toBe(true);
+    }
+  });
+});
+
+describe("Kenney biome vegetation selection", () => {
+  test("uses the right authored foliage silhouette for each supported biome", () => {
+    expect(getKenneyNatureAsset("suburban", "tree")).toBe("treeOak");
+    expect(getKenneyNatureAsset("orchard", "tree")).toBe("treeOak");
+    expect(getKenneyNatureAsset("river-checkpoint", "tree")).toBe("treeOak");
+    expect(getKenneyNatureAsset("redwood", "pine")).toBe("pineTall");
+    expect(getKenneyNatureAsset("jungle-ruins", "palm")).toBe("palmTall");
+    expect(getKenneyNatureAsset("mangrove", "palm")).toBe("palmTall");
+    expect(getKenneyNatureAsset("desert-bazaar", "cactus")).toBe("cactusTall");
+  });
+
+  test("keeps special dead trees and mismatched prop kinds on their authored geometry", () => {
+    expect(getKenneyNatureAsset("graveyard", "dead-tree")).toBeNull();
+    expect(getKenneyNatureAsset("graveyard", "pine")).toBeNull();
+    expect(getKenneyNatureAsset("volcano", "tree")).toBeNull();
+    expect(getKenneyNatureAsset("market", "cactus")).toBeNull();
+  });
+
+  test("uses measured source bounds and self-hosted GLBs for all vegetation", () => {
+    for (const asset of Object.values(KENNEY_NATURE_ASSETS)) {
+      expect(asset.sourceWidth).toBeGreaterThan(0);
+      expect(asset.sourceDepth).toBeGreaterThan(0);
+      expect(asset.sourceHeight).toBeGreaterThan(0);
+      expect(asset.width).toBeGreaterThan(0);
+      expect(asset.depth).toBeGreaterThan(0);
+      expect(asset.height).toBeGreaterThan(0);
+      expect(asset.src.startsWith("/models/kenney/nature-kit/")).toBe(true);
     }
   });
 });
