@@ -250,7 +250,7 @@ export const ZOMBIE_PRESENTATION: Record<StageEnemyKind, ZombiePresentation> = {
     hitRecoil: 0.3,
     hitTwist: 0.22,
     deathFold: 0.95,
-    stepLift: 0.055,
+    stepLift: 0.06,
     torsoTwist: 0.105,
     armAsymmetry: 0.13,
     bodyPulse: 0.06,
