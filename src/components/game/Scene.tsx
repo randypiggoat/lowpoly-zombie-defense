@@ -311,7 +311,7 @@ function Scenery({ count = 46, map }: { count?: number; map: ReturnType<typeof g
   return (
     <group ref={root}>
       {items.map((item, index) => (
-        <EnvironmentPropMesh key={"scenery-" + index} item={item} />
+        <EnvironmentPropMesh key={"scenery-" + index} item={item} environmentId={map.environmentId} variantIndex={index} />
       ))}
     </group>
   );
