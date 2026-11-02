@@ -16,9 +16,9 @@ export type KenneyModelProps = {
 /**
  * Renders one static, self-contained Kenney GLB.
  *
- * The selected source meshes have a centered X/Z footprint from -1 to 1 and
- * their ground contact at local Y=-1. The measured source height is supplied
- * explicitly so scaling keeps the model's base planted at world Y=0.
+ * Source width, depth, height, and minimum Y are measured from each GLB.
+ * Explicit source bounds keep models correctly proportioned and place their
+ * ground contact at world Y=0, including non-unit nature assets.
  */
 export function KenneyModel({
   src,
