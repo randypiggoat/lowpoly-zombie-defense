@@ -1,6 +1,6 @@
 # External Asset Inventory
 
-All twelve bundled external 3D assets documented here are selected Kenney low-poly
+All fourteen bundled external 3D assets documented here are selected Kenney low-poly
 environment models released under **CC0 1.0 Universal**: buildings, graveyard
 architecture, gravestones, trees, palms, and cactus. Commercial use, modification,
 and distribution in the game are permitted. Attribution is appreciated but not
@@ -137,3 +137,36 @@ These bounds drive the shared `KenneyModel` transform. The component scales each
 axis using the model's measured dimensions and offsets the model by its measured
 minimum Y so the mesh sits on the ground plane. The nature assets use their own
 narrower source footprints rather than assuming every GLB is a unit cube.
+
+
+## Kenney — Car Kit
+
+- Creator: Kenney
+- Pack: Car Kit
+- Official source page: https://kenney.nl/assets/car-kit
+- Source files: self-contained GLB derivatives from https://github.com/Hidencod/tge-assets
+- License: CC0 1.0 Universal
+- License evidence: source repository LICENSE and README identify Kenney as
+  creator and state CC0 1.0 applies to converted GLB derivatives.
+- Date obtained: 2026-11-02 UTC
+- Modifications: none to source meshes or embedded textures; game transforms
+  use measured source bounds.
+- Commercial game use: permitted
+- Attribution: not required; Kenney is credited here as a courtesy
+- Distribution note: two selected vehicle models only; the full pack is not bundled.
+
+| Asset | Repository path | Source file size |
+|---|---|---:|
+| Sedan | `public/models/kenney/car-kit/sedan.glb` | 184,504 bytes |
+| SUV | `public/models/kenney/car-kit/suv.glb` | 219,840 bytes |
+
+The sedan is used in suburban and market scenery. The SUV is used in the
+abandoned-city scenery. Both are decorative props and do not introduce collision
+or modify map placement and line-of-sight rules.
+
+## Vehicle source bounds
+
+| Model | Source bounds (W × H × D) | Ground minimum Y |
+|---|---:|---:|
+| Car Kit — Sedan | 2 × 2.15 × 2.55 | -1 |
+| Car Kit — SUV | 2 × 2.1 × 2.55 | -1 |

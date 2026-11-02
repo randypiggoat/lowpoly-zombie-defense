@@ -11,6 +11,8 @@ import {
   getKenneyNatureAsset,
   KENNEY_GRAVEYARD_ASSETS,
   KENNEY_NATURE_ASSETS,
+  getKenneyVehicleAsset,
+  KENNEY_VEHICLE_ASSETS,
 } from "@/game/kenneyEnvironmentAssets";
 import { KenneyModel } from "./KenneyModel";
 
@@ -245,6 +247,23 @@ function KenneyNatureProp({
   );
 }
 
+function KenneyVehicleProp({
+  environmentId,
+  fallback,
+}: {
+  environmentId: StageEnvironmentId;
+  fallback: ReactNode;
+}) {
+  const assetId = getKenneyVehicleAsset(environmentId);
+  if (!assetId) return fallback;
+  const asset = KENNEY_VEHICLE_ASSETS[assetId];
+  return (
+    <Suspense fallback={fallback}>
+      <KenneyModel {...asset} castShadow={false} receiveShadow={false} />
+    </Suspense>
+  );
+}
+
 export function EnvironmentPropMesh({
   item,
   environmentId,
@@ -294,7 +313,7 @@ export function EnvironmentPropMesh({
     case "barrel": node = <BoxProp barrel />; break;
     case "fence": node = <Fence />; break;
     case "lamp": node = <Lamp />; break;
-    case "car": node = <Car />; break;
+    case "car": node = <KenneyVehicleProp environmentId={environmentId} fallback={<Car />} />; break;
     default: node = <Industrial kind={item.kind} />;
   }
   return <group position={item.position} rotation-y={item.rotation} scale={item.scale}>{node}</group>;

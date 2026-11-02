@@ -3,9 +3,11 @@ import {
   getKenneyBuildingAsset,
   getKenneyGravestoneAsset,
   getKenneyNatureAsset,
+  getKenneyVehicleAsset,
   KENNEY_BUILDING_ASSETS,
   KENNEY_GRAVEYARD_ASSETS,
   KENNEY_NATURE_ASSETS,
+  KENNEY_VEHICLE_ASSETS,
 } from "./kenneyEnvironmentAssets";
 
 describe("Kenney environment building selection", () => {
@@ -91,6 +93,28 @@ describe("Kenney biome vegetation selection", () => {
       expect(asset.depth).toBeGreaterThan(0);
       expect(asset.height).toBeGreaterThan(0);
       expect(asset.src.startsWith("/models/kenney/nature-kit/")).toBe(true);
+    }
+  });
+});
+
+describe("Kenney biome vehicle selection", () => {
+  test("uses sedans for settled urban maps and SUVs for the abandoned city", () => {
+    expect(getKenneyVehicleAsset("suburban")).toBe("sedan");
+    expect(getKenneyVehicleAsset("market")).toBe("sedan");
+    expect(getKenneyVehicleAsset("abandoned-city")).toBe("suv");
+    expect(getKenneyVehicleAsset("foundry")).toBeNull();
+    expect(getKenneyVehicleAsset("military-outpost")).toBeNull();
+  });
+
+  test("uses measured source bounds and local car-kit models", () => {
+    for (const asset of Object.values(KENNEY_VEHICLE_ASSETS)) {
+      expect(asset.sourceWidth).toBeGreaterThan(0);
+      expect(asset.sourceDepth).toBeGreaterThan(0);
+      expect(asset.sourceHeight).toBeGreaterThan(0);
+      expect(asset.width).toBeGreaterThan(0);
+      expect(asset.depth).toBeGreaterThan(0);
+      expect(asset.height).toBeGreaterThan(0);
+      expect(asset.src.startsWith("/models/kenney/car-kit/")).toBe(true);
     }
   });
 });

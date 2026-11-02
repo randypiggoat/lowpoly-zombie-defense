@@ -145,3 +145,34 @@ export function getKenneyNatureAsset(
   if (kind === "cactus" && environmentId === "desert-bazaar") return "cactusTall";
   return null;
 }
+
+export const KENNEY_VEHICLE_ASSETS = {
+  sedan: {
+    src: "/models/kenney/car-kit/sedan.glb",
+    sourceWidth: 2,
+    sourceDepth: 2.55,
+    sourceHeight: 2.15,
+    sourceMinY: -1,
+    width: 1.55,
+    depth: 2.0,
+    height: 1.28,
+  },
+  suv: {
+    src: "/models/kenney/car-kit/suv.glb",
+    sourceWidth: 2,
+    sourceDepth: 2.55,
+    sourceHeight: 2.1,
+    sourceMinY: -1,
+    width: 1.62,
+    depth: 2.05,
+    height: 1.32,
+  },
+} as const;
+
+export type KenneyVehicleAssetId = keyof typeof KENNEY_VEHICLE_ASSETS;
+
+export function getKenneyVehicleAsset(environmentId: StageEnvironmentId): KenneyVehicleAssetId | null {
+  if (environmentId === "suburban" || environmentId === "market") return "sedan";
+  if (environmentId === "abandoned-city") return "suv";
+  return null;
+}

@@ -479,3 +479,12 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - Rifleman and Sniper create narrow precision needles; Shotgunner uses broad fragments; Tesla uses upright electrical spikes; Flamethrower throws ember-like shards; Freezer uses elongated crystal forms; Rocket uses heavier debris; Laser uses exceptionally thin slashes.
 - Per-profile shard count and three-axis scale are bounded and tested. Inactive shards are made transparent rather than created or destroyed per hit.
 - The existing pool remains fixed at 24 bursts × 4 preallocated shards. No per-hit React components or dynamic particle allocations were added. Combat simulation, damage, targeting, and status effects are unchanged.
+
+
+### Biome-specific vehicle models — Kenney Car Kit
+
+- Replaced the simple box-and-cylinder car proxy with two actual low-poly vehicle models from Kenney's CC0 Car Kit.
+- Suburban and Market use the compact red sedan; Abandoned City uses the larger green SUV to give the damaged urban environment a heavier vehicle silhouette.
+- Both models use measured GLB bounds and local static paths. They retain a procedural car fallback while loading.
+- Existing authored environment prop coordinates, rotations, scales, and map collision/placement rules remain unchanged. Vehicles remain decorative, non-colliding scenery and do not block enemy routes or tower line of sight.
+- The additional GLBs are included in `docs/ASSET_INVENTORY.md` and the local CC0 notice.
