@@ -410,3 +410,17 @@ No tower stats, enemy stats, route geometry, collision/placement rules, currency
 - The in-match A/B upgrade columns now expose an accessible four-segment progress meter backed by the existing owned-tier value, and carry explicit path/state attributes for deterministic styling.
 - Damage specialization and support/control have distinct restrained accent treatments in the panel; the support/control purchase action uses its aqua accent while preserving real prices, unlock rules and purchase callback.
 - This is UI presentation only. No additional upgrade, currency or progression mechanics were introduced.
+
+
+## Change log — 2026-11-02
+
+### Integrate selected Kenney low-poly buildings into live maps
+
+- Bundled four self-contained local GLB models from Kenney's City Kit (Suburban) and City Kit (Commercial): two suburban houses, one commercial mid-rise, and one narrow skyscraper.
+- Replaced the authored **Family house** and **Garage** obstacle visuals on the suburban map with the matching Kenney building silhouettes. The Garden wall remains purpose-built geometry.
+- Replaced the authored **Apartment block**, **Office block**, **Parking deck**, and **Collapsed storefront** obstacle visuals on the abandoned-city map with two contrasting imported building profiles. Tall skyline forms and shorter block forms create more deliberate height variation.
+- Each model is cloned as a static scene instance, aligned to its measured GLB base, scaled to the obstacle footprint, and rendered from local public assets. Each instance retains a procedural Suspense fallback so the scene remains visible while a model is loading.
+- Only presentation meshes changed. `maps.ts` remains authoritative for obstacle bounds, route clearance, tower placement, collision and line-of-sight rules.
+- The four GLBs are CC0 1.0, use embedded textures, total approximately 543 KB, and are documented in `docs/ASSET_INVENTORY.md`. Their license notice is copied to `public/models/kenney/LICENSE.txt`. No third-party network request is made during gameplay.
+- Added a tested environment-to-model selector so imported buildings cannot leak into unrelated biomes or replace walls, market stalls, foundry structures or graveyard landmarks.
+- **Verification boundary:** source files and license metadata are recorded. Exact visual scale, texture sharpness, shadow quality and mobile GPU cost still require browser screenshot inspection and physical-device review. Automated checks on the final commit must pass before merge.
