@@ -1,7 +1,8 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
-import { game } from "@/game/engine";
+import { game, type TowerKind } from "@/game/engine";
+import { getCombatImpactProfile } from "@/game/combatVfxDesign";
 
 const MAX_BURSTS = 24;
 const MAX_ZOMBIES = 60;
@@ -16,6 +17,7 @@ type BurstState = {
   size: number;
   kind: "hit" | "kill" | "heal";
   color: string;
+  attack: TowerKind | null;
 };
 
 const BOSS_COLORS: Record<number, string> = {
@@ -27,8 +29,14 @@ const BOSS_COLORS: Record<number, string> = {
   7: "#9ce06d",
 };
 
-function effectColor(kind: BurstState["kind"], zombieKind: number, boss: boolean) {
+function effectColor(
+  kind: BurstState["kind"],
+  zombieKind: number,
+  boss: boolean,
+  attack: TowerKind | null = null,
+) {
   if (kind === "heal") return "#8ee6a0";
+  if (kind === "hit" && attack) return getCombatImpactProfile(attack)?.color ?? "#fff1c7";
   if (boss) return BOSS_COLORS[zombieKind] ?? "#f0c75e";
   return kind === "kill" ? "#ffd66d" : "#fff1c7";
 }
@@ -44,6 +52,7 @@ function createBurstState(): BurstState {
     size: 1,
     kind: "hit",
     color: "#fff1c7",
+    attack: null,
   };
 }
 
@@ -61,7 +70,15 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
   const previousHeal = useRef<number[]>([]);
   const previousDead = useRef<boolean[]>([]);
 
-  function spawn(x: number, y: number, z: number, kind: BurstState["kind"], size: number, color: string) {
+  function spawn(
+    x: number,
+    y: number,
+    z: number,
+    kind: BurstState["kind"],
+    size: number,
+    color: string,
+    attack: TowerKind | null = null,
+  ) {
     if (reducedMotion) return;
     const index = cursor.current;
     cursor.current = (cursor.current + 1) % MAX_BURSTS;
@@ -72,9 +89,10 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
     state.x = x;
     state.y = y;
     state.z = z;
-    state.size = size;
+    state.size = size * (kind === "hit" ? (getCombatImpactProfile(attack)?.scale ?? 1) : 1);
     state.kind = kind;
     state.color = color;
+    state.attack = kind === "hit" ? attack : null;
 
     const root = groups.current[index];
     if (root) {
@@ -104,7 +122,15 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
       const lastDead = previousDead.current[i] ?? false;
 
       if (!z.dead && z.flash > 0.86 && lastFlash <= 0.86) {
-        spawn(z.x, 0.56 + z.y, z.z, "hit", z.boss ? 1.18 : 0.72, effectColor("hit", z.kind, z.boss));
+        spawn(
+          z.x,
+          0.56 + z.y,
+          z.z,
+          "hit",
+          z.boss ? 1.18 : 0.72,
+          effectColor("hit", z.kind, z.boss, z.hitKind ?? null),
+          z.hitKind ?? null,
+        );
       }
 
       if (z.dead && !lastDead) {
@@ -129,23 +155,29 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
       if (!root) continue;
       const progress = Math.min(1, state.life / state.duration);
       const eased = 1 - Math.pow(1 - progress, 3);
-      root.position.set(state.x, state.y + eased * (state.kind === "kill" ? 0.18 : 0.08), state.z);
+      const impact = state.attack ? getCombatImpactProfile(state.attack) : null;
+      const lift = state.kind === "kill" ? 0.18 : impact?.lift ?? 0.08;
+      root.position.set(state.x, state.y + eased * lift, state.z);
       const pulse = state.kind === "kill" ? 0.55 + eased * 2.2 : 0.5 + eased * 1.65;
       root.scale.setScalar(state.size * pulse);
-      root.rotation.y += dt * (state.kind === "kill" ? 7 : 4.5);
-      root.rotation.z += dt * (state.kind === "heal" ? -2.5 : 2.8);
+      root.rotation.y += dt * (state.kind === "kill" ? 7 : impact?.rotationSpeed ?? 4.5);
+      root.rotation.z += dt * (state.kind === "heal" ? -2.5 : impact ? impact.rotationSpeed * 0.35 : 2.8);
 
       const ring = rings.current[index];
       const core = cores.current[index];
       if (ring) {
         // Hits spread across the ground plane; healing forms an upright rising pulse.
-        ring.rotation.set(state.kind === "heal" ? 0 : Math.PI / 2, 0, 0);
+        ring.rotation.set(state.kind === "heal" ? 0 : impact?.ringTilt ?? Math.PI / 2, 0, 0);
         const ringScale = state.kind === "kill"
           ? 1.18 + (1 - progress) * 0.3
           : state.kind === "heal"
             ? 0.76 + eased * 0.42
             : 1 + (1 - progress) * 0.12;
-        ring.scale.setScalar(ringScale);
+        ring.scale.set(
+          ringScale * (impact?.ringScaleX ?? 1),
+          ringScale * (impact?.ringScaleY ?? 1),
+          1,
+        );
         (ring.material as THREE.MeshBasicMaterial).color.set(state.color);
         (ring.material as THREE.MeshBasicMaterial).opacity =
           (state.kind === "heal" ? 0.6 : 0.72) * (1 - progress * 0.85);
@@ -169,13 +201,18 @@ export function CombatVFX({ reducedMotion = false }: { reducedMotion?: boolean }
             ? 0.22 + eased * 0.72
             : state.kind === "heal"
               ? 0.16 + eased * 0.24
-              : 0.2 + eased * 0.34;
+              : (0.2 + eased * 0.34) * ((impact?.spread ?? 0.34) / 0.34);
           if (state.kind === "heal") {
             spark.position.set(Math.cos(angle) * spread, 0.08 + eased * 0.48 + Math.sin(angle) * spread * 0.4, Math.sin(angle) * spread);
           } else if (state.kind === "kill") {
             spark.position.set(Math.cos(angle) * spread, Math.sin(angle) * spread + eased * 0.2, Math.cos(angle * 0.7) * spread * 0.46);
           } else {
-            spark.position.set(Math.cos(angle) * spread, 0.045 + eased * 0.13, Math.sin(angle) * spread);
+            const verticalSpread = impact?.verticalSpread ?? 0.13;
+            spark.position.set(
+              Math.cos(angle) * spread,
+              verticalSpread * (0.35 + eased),
+              Math.sin(angle) * spread,
+            );
           }
           spark.rotation.x = angle * 0.35;
           spark.rotation.z = angle;
