@@ -40,7 +40,7 @@ for (const viewport of CAPTURE_VIEWPORTS) {
     await page.goto("/?qa=1");
 
     await expect(page.locator(".rotwood-app")).toHaveAttribute("data-screen", "main-menu");
-    const playButton = page.getByRole("button", { name: /DEFEND NOW|CONTINUE DEFENSE/ });
+    const playButton = page.getByRole("button", { name: /START FIRST RUN|START RUN|TRY AGAIN|REPLAY STAGE/ });
     await expect(playButton).toBeVisible();
     await playButton.click();
 
